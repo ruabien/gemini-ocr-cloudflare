@@ -560,7 +560,11 @@ function App() {
 
               {/* Right Column: Result Viewer */}
               <div className="lg:col-span-7 h-[calc(100vh-140px)] sticky top-20">
-                <ResultViewer file={activeFile} onUpdateResult={handleUpdateResult} />
+                <ResultViewer 
+                  file={activeFile} 
+                  allFiles={files} 
+                  onUpdateResult={handleUpdateResult} 
+                />
               </div>
             </div>
           )}
