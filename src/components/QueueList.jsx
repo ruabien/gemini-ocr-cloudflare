@@ -47,7 +47,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
   const mainDocuments = files.filter(f => !f.isPdfPage);
 
   return (
-    <div className="w-full flex flex-col h-full max-h-[600px]">
+    <div className="w-full flex flex-col flex-1 min-h-0">
       <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2 shrink-0">
         Danh sách hàng đợi
         <span className="bg-blue-100 text-blue-700 py-0.5 px-2.5 rounded-full text-xs font-bold">
@@ -55,7 +55,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
         </span>
       </h3>
       
-      <div className="flex flex-col gap-4 overflow-y-auto pr-2 pb-4">
+      <div className="flex flex-col gap-4 overflow-y-auto pr-2 pb-4 flex-1 min-h-0">
         {mainDocuments.map((file) => {
           const statusUI = getStatusUI(file);
           const isActive = activeFileId === file.id;
