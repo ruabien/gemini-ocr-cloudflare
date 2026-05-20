@@ -4,17 +4,13 @@ import { Copy, Check, FileText, Download, AlertCircle } from 'lucide-react';
 export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
-  const [viewMode, setViewMode] = useState("single"); // "single" or "merged"
 
   useEffect(() => {
     setLocalText(file?.result || "");
-    setViewMode("single");
   }, [file?.id, file?.result]);
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
-  const finishedImages = imageFiles.filter(f => f.status === 'success' && f.result);
-  const totalCount = imageFiles.length;
-  const finishedCount = finishedImages.length;
+  const isMultiImage = imageFiles.length > 1;
 
   const getCleanLine = (text) => {
     if (!text) return "";
@@ -25,10 +21,24 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
       .trim();
   };
 
-  const mergedText = imageFiles
-    .map(d => getCleanLine(d.result))
-    .filter(Boolean)
-    .join(' ');
+  const getMergedNormalizedText = () => {
+    // Sắp xếp và nối toàn bộ văn bản của các file ảnh theo đúng thứ tự tên file ảnh đầu vào trong hàng đợi
+    const rawMerged = imageFiles
+      .map(d => d.result || '')
+      .filter(Boolean)
+      .join(' ');
+    
+    // Chuẩn hóa chuỗi về 1 dòng duy nhất theo đúng yêu cầu:
+    // Loại bỏ ký tự Markdown *, #, -
+    // Thay thế tất cả dấu xuống dòng bằng khoảng trắng
+    // Thu gọn nhiều khoảng trắng liên tiếp thành 1 khoảng trắng duy nhất bằng Regex .replace(/\s+/g, ' ')
+    // và .trim() khoảng trắng ở đầu/cuối
+    return rawMerged
+      .replace(/[*#\-]/g, '')
+      .replace(/[\n\r]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
 
   if (!file) {
     return (
@@ -40,17 +50,17 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   }
 
   const handleCopy = async () => {
-    const textToCopy = viewMode === "merged" ? mergedText : localText;
-    if (!textToCopy) return;
+    if (isMultiImage) return; // Bỏ qua copy nhanh khi ocr nhiều ảnh hàng loạt
+    if (!localText) return;
     try {
-      await navigator.clipboard.writeText(textToCopy);
+      await navigator.clipboard.writeText(localText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
       // Fallback
       const textArea = document.createElement("textarea");
-      textArea.value = textToCopy;
+      textArea.value = localText;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand("Copy");
@@ -61,31 +71,50 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   };
 
   const handleExportTxt = () => {
-    const textToExport = viewMode === "merged" ? mergedText : localText;
-    if (!textToExport) return;
-    
-    // Bước 1: Xử lý chuỗi theo yêu cầu
-    let processedText = getCleanLine(textToExport);
+    if (isMultiImage) {
+      const processedText = getMergedNormalizedText();
+      if (!processedText) return;
       
-    // Bước 2: Tạo tên file chuẩn
-    let fileName = "gop_ketqua_ocr.txt";
-    if (viewMode !== "merged") {
+      // Lấy tên của file ảnh đầu tiên trong danh sách và thêm hậu tố _gop_all.txt
+      const firstImageFile = imageFiles[0];
+      let fileName = "gop_all.txt";
+      if (firstImageFile) {
+        const originalName = firstImageFile.originalFile?.name || firstImageFile.name || 'anh';
+        const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+        fileName = `${baseName}_gop_all.txt`;
+      }
+      
+      const blob = new Blob([processedText], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      if (!localText) return;
+      
+      let processedText = getCleanLine(localText);
       const originalName = file.originalFile?.name || 'tailieu_ocr.txt';
       const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
-      fileName = `${baseName}.txt`;
+      const fileName = `${baseName}.txt`;
+      
+      const blob = new Blob([processedText], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
-    
-    // Bước 3: Sử dụng Data URI thay vì Blob để né lỗi mất tên file
-    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(processedText);
-    
-    // Bước 4: Tải xuống tự động
-    const a = document.createElement('a');
-    a.href = dataStr;
-    a.download = fileName;
-    
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   };
 
   const handleChange = (e) => {
@@ -97,68 +126,37 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
 
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px]">
-      {/* Tab Selector Header if there are multiple documents */}
-      {totalCount > 1 && (
-        <div className="flex border-b border-gray-150 bg-slate-50 p-1.5 gap-1 shrink-0">
-          <button
-            onClick={() => setViewMode("single")}
-            className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              viewMode === "single"
-                ? "bg-white text-blue-600 shadow-xs border border-gray-200/50"
-                : "text-slate-500 hover:text-slate-700 hover:bg-gray-100/50"
-            }`}
-          >
-            Tệp đang chọn ({file.originalFile?.name || 'Tài liệu'})
-          </button>
-          <button
-            onClick={() => setViewMode("merged")}
-            className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              viewMode === "merged"
-                ? "bg-white text-blue-600 shadow-xs border border-gray-200/50"
-                : "text-slate-500 hover:text-slate-700 hover:bg-gray-100/50"
-            }`}
-          >
-            Gộp các ảnh ({finishedCount}/{totalCount} ảnh)
-          </button>
-        </div>
-      )}
-
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/80">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
           <FileText size={16} className="text-blue-500 shrink-0" />
-          <h3 className="font-medium text-sm text-gray-700 truncate" title={viewMode === "merged" ? "Kết quả gộp của toàn bộ ảnh" : (file.originalFile?.name || 'Kết quả OCR')}>
-            {viewMode === "merged" ? "Kết quả gộp các ảnh" : `Kết quả: ${file.originalFile?.name || 'Tài liệu'}`}
+          <h3 className="font-medium text-sm text-gray-700 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
+            Kết quả: {file.originalFile?.name || 'Tài liệu'}
           </h3>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportTxt}
-            disabled={viewMode === "merged" ? !mergedText : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            title="Xuất file TXT chuẩn hoá 1 dòng"
+            disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
+            title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
           >
             <Download size={14} />
-            Xuất file TXT
+            Xuất file TXT {isMultiImage && "(Gộp)"}
           </button>
-          <button
-            onClick={handleCopy}
-            disabled={viewMode === "merged" ? !mergedText : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-            {copied ? 'Đã copy' : 'Copy nhanh'}
-          </button>
+          {!isMultiImage && (
+            <button
+              onClick={handleCopy}
+              disabled={!localText && file.status !== 'error'}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+              {copied ? 'Đã copy' : 'Copy nhanh'}
+            </button>
+          )}
         </div>
       </div>
       
-      {viewMode === "merged" ? (
-        <textarea
-          value={mergedText}
-          readOnly={true}
-          placeholder="Chưa có dữ liệu trích xuất từ các tệp hoàn thành."
-          className="flex-1 w-full p-4 resize-none outline-none text-gray-750 text-sm leading-relaxed bg-slate-50/10"
-        />
-      ) : file.status === 'error' ? (
+      {file.status === 'error' ? (
         <div className="flex-1 p-6 text-red-600 bg-red-50/30 overflow-auto">
           <p className="font-bold mb-2">Đã xảy ra lỗi:</p>
           <p className="text-sm whitespace-pre-wrap font-mono">{file.error}</p>
@@ -193,7 +191,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           value={localText}
           onChange={handleChange}
           placeholder="Chưa có dữ liệu trích xuất."
-          className="flex-1 w-full p-4 resize-none outline-none text-gray-700 text-sm leading-relaxed"
+          className="flex-1 w-full p-4 resize-none outline-none text-gray-750 text-sm leading-relaxed"
         />
       )}
     </div>
