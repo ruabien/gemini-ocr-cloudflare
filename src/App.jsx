@@ -196,21 +196,18 @@ function App() {
     setIsProcessing(true);
     processingRef.current = true;
 
+    // Reset trạng thái lỗi của các tệp (cả trang con và ảnh độc lập)
     setFiles(prev => prev.map(f => {
       if (f.status === 'error') {
-        // Reset trạng thái lỗi của các tệp (cả trang con và ảnh độc lập)
         return { ...f, status: 'waiting', error: null };
       }
       return f;
     }));
 
-    // Chỉ lấy các file cần chạy OCR thực tế (trang con PDF hoặc ảnh độc lập, loại bỏ PDF cha)
-    // Cần lấy danh sách tệp mới nhất dựa trên state hiện tại tại thời điểm click chạy
-    let currentWaiting = [];
-    setFiles(prev => {
-      currentWaiting = prev.filter(f => !f.isParentPdf && (f.status === 'waiting' || f.status === 'error'));
-      return prev;
-    });
+    // Lấy danh sách tệp cần chạy OCR thực tế một cách đồng bộ từ state files hiện tại
+    const currentWaiting = files
+      .map(f => f.status === 'error' ? { ...f, status: 'waiting', error: null } : f)
+      .filter(f => !f.isParentPdf && f.status === 'waiting');
 
     let currentIndex = 0;
 
