@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check, FileText, Download } from 'lucide-react';
+import { Copy, Check, FileText, Download, AlertCircle } from 'lucide-react';
 
 export default function ResultViewer({ file, onUpdateResult }) {
   const [copied, setCopied] = useState(false);
@@ -110,12 +110,29 @@ export default function ResultViewer({ file, onUpdateResult }) {
           <p className="text-sm whitespace-pre-wrap font-mono">{file.error}</p>
         </div>
       ) : file.status === 'processing' ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-blue-500 bg-blue-50/10">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-2 bg-blue-200 rounded w-48 mb-4"></div>
-            <div className="h-2 bg-blue-200 rounded w-32"></div>
-          </div>
-          <p className="mt-4 text-sm font-medium animate-pulse">AI đang phân tích và trích xuất...</p>
+        <div className={`flex-1 flex flex-col items-center justify-center bg-blue-50/10 ${file.retryInfo ? 'text-amber-600' : 'text-blue-500'}`}>
+          {file.retryInfo ? (
+            <div className="flex flex-col items-center max-w-md text-center px-6">
+              <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 mb-4 animate-bounce">
+                <AlertCircle size={24} />
+              </div>
+              <h4 className="font-bold text-base mb-2">Google Gemini quá tải</h4>
+              <p className="text-xs text-amber-500 mb-4 whitespace-pre-wrap font-mono bg-amber-50/50 p-2.5 rounded-lg border border-amber-100 max-h-[150px] overflow-auto">
+                {file.retryInfo.errorMsg}
+              </p>
+              <div className="px-4 py-2 bg-amber-100/50 border border-amber-200 rounded-full text-xs font-semibold">
+                Thử lại lần {file.retryInfo.attempt}/{file.retryInfo.maxAttempts} sau {file.retryInfo.secondsLeft}s...
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="animate-pulse flex flex-col items-center">
+                <div className="h-2 bg-blue-200 rounded w-48 mb-4"></div>
+                <div className="h-2 bg-blue-200 rounded w-32"></div>
+              </div>
+              <p className="mt-4 text-sm font-medium animate-pulse">AI đang phân tích và trích xuất...</p>
+            </>
+          )}
         </div>
       ) : (
         <textarea

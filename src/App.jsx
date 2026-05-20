@@ -35,7 +35,12 @@ function App() {
       if (f.id === parentId) {
         let displayName = f.originalFile.name;
         if (!isDone) {
-          displayName = `${f.originalFile.name} (Đang xử lý: trang ${processingPageIdx}/${totalPages}...)`;
+          if (processingPage && processingPage.retryInfo) {
+            const { attempt, secondsLeft } = processingPage.retryInfo;
+            displayName = `${f.originalFile.name} (Quá tải, thử lại lần ${attempt} sau ${secondsLeft}s...)`;
+          } else {
+            displayName = `${f.originalFile.name} (Đang xử lý: trang ${processingPageIdx}/${totalPages}...)`;
+          }
         }
         return {
           ...f,
@@ -226,14 +231,31 @@ function App() {
       });
 
       try {
-        const textResult = await processOCR(fileToProcess.originalFile, config.apiKey, config.model);
+        const textResult = await processOCR(
+          fileToProcess.originalFile,
+          config.apiKey,
+          config.model,
+          (attempt, maxAttempts, secondsLeft, errorMsg) => {
+            setFiles(prev => {
+              const updated = prev.map(f => f.id === fileToProcess.id ? {
+                ...f,
+                retryInfo: { attempt, maxAttempts, secondsLeft, errorMsg }
+              } : f);
+              if (fileToProcess.isPdfPage) {
+                return updateParentProgress(updated, fileToProcess.parentPdfId);
+              }
+              return updated;
+            });
+          }
+        );
 
         setFiles(prev => {
           let updated = prev.map(f => f.id === fileToProcess.id ? {
             ...f,
             status: 'completed',
             progress: 100,
-            result: textResult
+            result: textResult,
+            retryInfo: null
           } : f);
 
           if (fileToProcess.isPdfPage) {
@@ -249,7 +271,8 @@ function App() {
             ...f,
             status: 'error',
             progress: 0,
-            error: error.message
+            error: error.message,
+            retryInfo: null
           } : f);
 
           if (fileToProcess.isPdfPage) {

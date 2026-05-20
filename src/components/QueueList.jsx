@@ -16,7 +16,18 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
     return <ImageIcon className="text-blue-500" size={24} strokeWidth={1.5} />;
   };
 
-  const getStatusUI = (status, progress) => {
+  const getStatusUI = (file) => {
+    const { status, progress, retryInfo } = file;
+    if (status === 'processing' && retryInfo) {
+      const { attempt, secondsLeft } = retryInfo;
+      return { 
+        label: `Bận, thử lại lần ${attempt} sau ${secondsLeft}s...`, 
+        icon: <Loader2 size={16} className="animate-spin text-amber-500" />, 
+        color: 'text-amber-600', 
+        bar: 'bg-amber-500', 
+        width: `${progress}%` 
+      };
+    }
     switch(status) {
       case 'splitting':
         return { label: 'Đang tách trang...', icon: <Loader2 size={16} className="animate-spin text-amber-500" />, color: 'text-amber-600', bar: 'bg-amber-500', width: `${progress}%` };
@@ -46,7 +57,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
       
       <div className="flex flex-col gap-4 overflow-y-auto pr-2 pb-4">
         {mainDocuments.map((file) => {
-          const statusUI = getStatusUI(file.status, file.progress);
+          const statusUI = getStatusUI(file);
           const isActive = activeFileId === file.id;
           const pages = file.isParentPdf ? files.filter(p => p.parentPdfId === file.id && p.isPdfPage) : [];
           
@@ -100,7 +111,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
               {pages.length > 0 && (
                 <div className="pl-4 pr-1 flex flex-col gap-1.5 border-l-2 border-slate-200 ml-6 py-0.5">
                   {pages.map((page) => {
-                    const pageStatusUI = getStatusUI(page.status, page.progress);
+                    const pageStatusUI = getStatusUI(page);
                     const isPageActive = activeFileId === page.id;
                     
                     return (

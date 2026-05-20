@@ -1,9 +1,9 @@
 const SYSTEM_PROMPT = "Bạn là một chuyên gia OCR tài liệu tiếng Việt chất lượng cao. Hãy trích xuất toàn bộ văn bản có trong tài liệu này. Giữ nguyên định dạng gốc, các đoạn xuống dòng, tiêu đề và cấu trúc bảng biểu nếu có. Tuyệt đối không tự bịa thông tin, không thêm lời giải thích hay bình luận, chỉ trả về văn bản được trích xuất.";
 
 /**
- * Hàm gọi API với cơ chế tự động thử lại (Retry) khi server quá tải
+ * Hàm gọi API với cơ chế tự động thử lại (Retry) nâng cao và đếm ngược thời gian chờ
  */
-const fetchWithRetry = async (url, options, maxRetries = 3) => {
+const fetchWithRetry = async (url, options, maxRetries = 5, onRetry) => {
   for (let i = 0; i < maxRetries; i++) {
     const response = await fetch(url, options);
     
@@ -11,16 +11,31 @@ const fetchWithRetry = async (url, options, maxRetries = 3) => {
       return response;
     }
     
-    // Bắt lỗi 503, 429 hoặc các lỗi 5xx từ server
+    // Bắt lỗi 503 (High Demand), 429 (Quota Exceeded) hoặc các lỗi 5xx khác
     if (response.status === 503 || response.status === 429 || response.status >= 500) {
       if (i === maxRetries - 1) {
         return response; // Hết số lần thử, trả về lỗi cuối cùng
       }
       
-      const waitTime = (i + 1) * 5000;
-      console.warn(`Server Google bận (Status ${response.status}). Tự động thử lại lần ${i + 1} sau ${waitTime/1000}s...`);
+      // Tính toán thời gian chờ theo hàm mũ (Exponential Backoff): 6s, 12s, 24s, 48s...
+      const waitTime = Math.pow(2, i) * 6000;
       
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      let errorMsg = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.clone().json();
+        errorMsg = errorData?.error?.message || errorMsg;
+      } catch (_) {}
+
+      console.warn(`Server Google bận (${errorMsg}). Tự động thử lại lần ${i + 1}/${maxRetries} sau ${waitTime/1000}s...`);
+      
+      // Thực hiện đếm ngược từng giây để báo cáo tiến trình lên UI
+      const totalSeconds = waitTime / 1000;
+      for (let seconds = totalSeconds; seconds > 0; seconds--) {
+        if (onRetry) {
+          onRetry(i + 1, maxRetries, seconds, errorMsg);
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
       continue;
     }
     
@@ -43,10 +58,8 @@ const uploadFileToGemini = async (file, apiKey) => {
       'X-Goog-Upload-Header-Content-Type': file.type,
       'Content-Type': file.type,
     },
-    // Gửi trực tiếp đối tượng File (Binary Stream) lên server Google, 
-    // KHÔNG qua Base64 giúp tiết kiệm RAM và không làm tắc nghẽn băng thông.
     body: file, 
-  }, 3);
+  }, 3); // Giữ nguyên 3 lần thử khi upload file
 
   if (!response.ok) {
     const errorData = await response.json();
@@ -54,13 +67,13 @@ const uploadFileToGemini = async (file, apiKey) => {
   }
 
   const data = await response.json();
-  return data.file; // Trả về thông tin file gồm file.uri
+  return data.file;
 };
 
 /**
  * Hàm xử lý gọi trực tiếp qua fetch đến Google Gemini Cloud API
  */
-export const processOCR = async (file, apiKey, modelName) => {
+export const processOCR = async (file, apiKey, modelName, onRetry) => {
   if (!apiKey) throw new Error("Vui lòng nhập API Key cấu hình ở trên.");
   if (!modelName) throw new Error("Vui lòng chọn Model.");
 
@@ -94,7 +107,7 @@ export const processOCR = async (file, apiKey, modelName) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody)
-    }, 3); // Thử lại tối đa 3 lần nếu Google bị bận
+    }, 5, onRetry); // Thử lại tối đa 5 lần với exponential backoff nếu Google bận
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -103,7 +116,6 @@ export const processOCR = async (file, apiKey, modelName) => {
 
     const data = await response.json();
     
-    // Trích xuất văn bản từ response chuẩn của Gemini REST API
     const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (textResult === undefined || textResult === null) {
