@@ -129,7 +129,7 @@ export default function ApiConfig({ onConfigChange }) {
               title="Lưu API Key vào trình duyệt"
             >
               <Save size={14} />
-              <span>Lưu Key</span>
+              <span>Lưu</span>
             </button>
           </div>
 

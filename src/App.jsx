@@ -353,11 +353,23 @@ function App() {
     },
     {
       q: "Tại sao ứng dụng lại tự động ghép kết quả thành một hàng ngang?",
-      a: "Đây là tính năng tối ưu đặc biệt được thiết kế cho các tác vụ tự động hóa và nhập liệu nhanh (ví dụ: dán dữ liệu vào Google Sheets, Excel hoặc hệ thống CRM). Việc ghép văn bản thành một dòng giúp loại bỏ các ký tự xuống dòng phức tạp gây lỗi định dạng bảng biểu."
+      a: "Đây là tính năng tối ưu đặc biệt được thiết kế cho các tác vụ tự động hóa và nhập liệu nhanh (ví dụ: dán dữ liệu vào Word, Excel hoặc Ai). Việc ghép văn bản thành một dòng giúp loại bỏ các ký tự xuống dòng phức tạp gây lỗi định dạng bảng biểu."
     },
     {
       q: "Làm thế nào để lấy Gemini API Key miễn phí?",
-      a: "Bạn có thể truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google của bạn và nhấn nút \"Get API key\" để tạo một mã khóa mới hoàn toàn miễn phí."
+      a: (
+        <span>
+          Bạn có thể truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google của bạn và nhấn nút "Get API key" để tạo một mã khóa mới hoàn toàn miễn phí.{" "}
+          <a
+            href="https://www.youtube.com/watch?v=ag0bHshpQ4U"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-indigo-500 font-semibold underline transition-colors"
+          >
+            Xem Video hướng dẫn
+          </a>
+        </span>
+      )
     }
   ];
 
