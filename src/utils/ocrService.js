@@ -1,130 +1,90 @@
-const SYSTEM_PROMPT = "Bạn là một chuyên gia OCR tài liệu tiếng Việt chất lượng cao. Hãy trích xuất toàn bộ văn bản có trong tài liệu này. Giữ nguyên định dạng gốc, các đoạn xuống dòng, tiêu đề và cấu trúc bảng biểu nếu có. Tuyệt đối không tự bịa thông tin, không thêm lời giải thích hay bình luận, chỉ trả về văn bản được trích xuất.";
-
 /**
- * Hàm gọi API với cơ chế tự động thử lại (Retry) nâng cao và đếm ngược thời gian chờ
+ * Hàm gọi Cloudflare Worker để chạy OCR với cơ chế stream nhận dữ liệu thời gian thực
+ * @param {File} file - File ảnh hoặc PDF thô
+ * @param {string} apiKey - API Key Gemini của người dùng
+ * @param {string} modelName - Tên Model (ví dụ: gemini-1.5-flash)
+ * @param {string} workerUrl - URL của Cloudflare Worker Backend
+ * @param {Function} onEvent - Callback nhận các sự kiện stream (init, page_start, page_retry, page_complete, page_error, complete)
+ * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
-const fetchWithRetry = async (url, options, maxRetries = 5, onRetry) => {
-  for (let i = 0; i < maxRetries; i++) {
-    const response = await fetch(url, options);
-    
-    if (response.ok) {
-      return response;
-    }
-    
-    // Bắt lỗi 503 (High Demand), 429 (Quota Exceeded) hoặc các lỗi 5xx khác
-    if (response.status === 503 || response.status === 429 || response.status >= 500) {
-      if (i === maxRetries - 1) {
-        return response; // Hết số lần thử, trả về lỗi cuối cùng
-      }
-      
-      // Tính toán thời gian chờ theo hàm mũ (Exponential Backoff): 6s, 12s, 24s, 48s...
-      const waitTime = Math.pow(2, i) * 6000;
-      
-      let errorMsg = `HTTP ${response.status}`;
-      try {
-        const errorData = await response.clone().json();
-        errorMsg = errorData?.error?.message || errorMsg;
-      } catch (_) {}
-
-      console.warn(`Server Google bận (${errorMsg}). Tự động thử lại lần ${i + 1}/${maxRetries} sau ${waitTime/1000}s...`);
-      
-      // Thực hiện đếm ngược từng giây để báo cáo tiến trình lên UI
-      const totalSeconds = waitTime / 1000;
-      for (let seconds = totalSeconds; seconds > 0; seconds--) {
-        if (onRetry) {
-          onRetry(i + 1, maxRetries, seconds, errorMsg);
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-      continue;
-    }
-    
-    return response;
-  }
-};
-
-/**
- * Hàm upload file lên Google Gemini File API (Tránh lỗi 503 do Payload Base64 quá lớn)
- */
-const uploadFileToGemini = async (file, apiKey) => {
-  const url = `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`;
+export const processOCR = async (file, apiKey, modelName, workerUrl, onEvent) => {
+  if (!workerUrl) throw new Error("Vui lòng cấu hình địa chỉ Cloudflare Worker URL ở phía trên.");
+  if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
-  const response = await fetchWithRetry(url, {
+  // Chuẩn hoá URL của Worker
+  let targetUrl = workerUrl.trim();
+  if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    targetUrl = 'https://' + targetUrl;
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('apiKey', apiKey);
+  formData.append('model', modelName);
+
+  const response = await fetch(targetUrl, {
     method: 'POST',
-    headers: {
-      'x-goog-api-key': apiKey,
-      'X-Goog-Upload-Protocol': 'raw',
-      'X-Goog-Upload-Header-Content-Length': file.size.toString(),
-      'X-Goog-Upload-Header-Content-Type': file.type,
-      'Content-Type': file.type,
-    },
-    body: file, 
-  }, 3); // Giữ nguyên 3 lần thử khi upload file
+    body: formData,
+  });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData?.error?.message || `Lỗi Upload File: HTTP ${response.status}`);
+    let errorMsg = `HTTP ${response.status}`;
+    try {
+      const errJson = await response.json();
+      errorMsg = errJson.error || errorMsg;
+    } catch (_) {}
+    throw new Error(errorMsg);
   }
 
-  const data = await response.json();
-  return data.file;
-};
-
-/**
- * Hàm xử lý gọi trực tiếp qua fetch đến Google Gemini Cloud API
- */
-export const processOCR = async (file, apiKey, modelName, onRetry) => {
-  if (!apiKey) throw new Error("Vui lòng nhập API Key cấu hình ở trên.");
-  if (!modelName) throw new Error("Vui lòng chọn Model.");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalResult = '';
 
   try {
-    // BƯỚC 1: Tải file lên hệ thống File API của Google
-    const uploadedFile = await uploadFileToGemini(file, apiKey);
-    
-    // BƯỚC 2: Gọi lệnh generateContent với File URI vừa được cấp
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-    
-    const requestBody = {
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: SYSTEM_PROMPT },
-            { 
-              fileData: { 
-                mimeType: uploadedFile.mimeType, 
-                fileUri: uploadedFile.uri 
-              } 
-            }
-          ]
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // Giữ lại dòng chưa hoàn chỉnh trong bộ đệm
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        let dataStr = trimmed;
+        if (trimmed.startsWith('data: ')) {
+          dataStr = trimmed.slice(6);
         }
-      ]
-    };
 
-    const response = await fetchWithRetry(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
-    }, 5, onRetry); // Thử lại tối đa 5 lần với exponential backoff nếu Google bận
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData?.error?.message || `HTTP Error ${response.status}`);
+        try {
+          const event = JSON.parse(dataStr);
+          if (onEvent) {
+            onEvent(event);
+          }
+          if (event.type === 'complete') {
+            finalResult = event.text;
+            if (event.status === 'error') {
+              throw new Error(event.error || 'Một số trang có lỗi khi chạy OCR.');
+            }
+          }
+          if (event.type === 'error') {
+            throw new Error(event.error || 'Lỗi xử lý hệ thống Worker.');
+          }
+        } catch (e) {
+          // Nếu đó là lỗi của OCR (quá trình truyền lỗi từ Worker), ta ném lỗi ra
+          if (e.message.includes('Lỗi') || e.message.includes('error')) {
+            throw e;
+          }
+          console.error("Lỗi parse dòng dữ liệu stream:", dataStr, e);
+        }
+      }
     }
-
-    const data = await response.json();
-    
-    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (textResult === undefined || textResult === null) {
-      throw new Error("API không trả về kết quả văn bản hợp lệ.");
-    }
-
-    return textResult;
-  } catch (error) {
-    console.error("Lỗi khi xử lý OCR:", error);
-    throw new Error(error.message || "Đã xảy ra lỗi khi kết nối Gemini API.");
+  } finally {
+    reader.releaseLock();
   }
+
+  return finalResult;
 };

@@ -17,7 +17,6 @@ import {
   FileText 
 } from 'lucide-react';
 import { processOCR } from './utils/ocrService';
-import { splitPdfToImages } from './utils/pdfProcessor';
 
 function App() {
   const [config, setConfig] = useState(null);
@@ -88,96 +87,25 @@ function App() {
             error: hasErrors ? 'Một số trang có lỗi khi chạy OCR.' : null
           };
         }
-        return f;
-      });
-    }
-    return currentFiles;
-  };
-
-  const handleFilesSelected = async (newOriginalFiles) => {
-    for (const file of newOriginalFiles) {
+        return   const handleFilesSelected = async (newOriginalFiles) => {
+    const newItems = newOriginalFiles.map(file => {
       const id = Math.random().toString(36).substring(2, 9);
-
-      if (file.type === 'application/pdf') {
-        // Tạo một placeholder tạm thời cho PDF đang tách trang
-        const placeholderItem = {
-          id: id,
-          name: `${file.name} (Đang chuẩn bị...)`,
-          originalFile: file,
-          status: 'splitting',
-          progress: 0,
-          result: '',
-          error: null,
-          isParentPdf: true,
-          totalPages: 0
-        };
-
-        setFiles(prev => [...prev, placeholderItem]);
-        setActiveFileId(prev => prev || id);
-
-        try {
-          const imageFiles = await splitPdfToImages(file, (current, total) => {
-            setFiles(prev => prev.map(f => f.id === id ? {
-              ...f,
-              progress: Math.round((current / total) * 100),
-              name: `${file.name} (Đang bóc tách: ${current}/${total} trang...)`
-            } : f));
-          });
-
-          const pageItems = imageFiles.map((pageFile, idx) => ({
-            id: Math.random().toString(36).substring(2, 9),
-            name: `${file.name} - Trang ${idx + 1}`,
-            originalFile: pageFile,
-            status: 'waiting',
-            progress: 0,
-            result: '',
-            error: null,
-            isPdfPage: true,
-            parentPdfId: id,
-            pageIndex: idx,
-            totalPages: imageFiles.length
-          }));
-
-          setFiles(prev => {
-            const index = prev.findIndex(f => f.id === id);
-            if (index === -1) return prev;
-
-            const updatedParent = {
-              ...prev[index],
-              name: file.name,
-              status: 'waiting',
-              progress: 0,
-              totalPages: imageFiles.length
-            };
-
-            const newArray = [...prev];
-            newArray.splice(index, 1, updatedParent, ...pageItems);
-            return newArray;
-          });
-
-        } catch (err) {
-          console.error("Lỗi bóc tách PDF:", err);
-          setFiles(prev => prev.map(f => f.id === id ? {
-            ...f,
-            status: 'error',
-            name: `${file.name} (Lỗi phân tách)`,
-            error: `Lỗi bóc tách PDF: ${err.message}`
-          } : f));
-        }
-      } else {
-        // Tệp ảnh thông thường
-        const newImage = {
-          id: id,
-          name: file.name,
-          originalFile: file,
-          status: 'waiting',
-          progress: 0,
-          result: '',
-          error: null
-        };
-        setFiles(prev => [...prev, newImage]);
-        setActiveFileId(prev => prev || id);
-      }
+      const isPdf = file.type === 'application/pdf';
+      return {
+        id: id,
+        name: file.name,
+        originalFile: file,
+        status: 'waiting',
+        progress: 0,
+        result: '',
+        error: null,
+        isParentPdf: isPdf,
+        totalPages: 0
+      };
+    });
+    setFiles(prev => [...prev, ...newItems]);
+    if (newItems.length > 0) {
+      setActiveFileId(prev => prev || newItems[0].id);
     }
   };
 
@@ -204,6 +132,10 @@ function App() {
       alert("Vui lòng cấu hình API Key ở phía trên cùng trước khi bắt đầu.");
       return;
     }
+    if (!config.workerUrl) {
+      alert("Vui lòng cấu hình Cloudflare Worker URL ở phía trên cùng trước khi bắt đầu.");
+      return;
+    }
 
     setIsProcessing(true);
     processingRef.current = true;
@@ -219,7 +151,7 @@ function App() {
     // Lấy danh sách tệp cần chạy OCR thực tế một cách đồng bộ từ state files hiện tại
     const currentWaiting = files
       .map(f => f.status === 'error' ? { ...f, status: 'waiting', error: null } : f)
-      .filter(f => !f.isParentPdf && f.status === 'waiting');
+      .filter(f => !f.isPdfPage && f.status === 'waiting');
 
     let currentIndex = 0;
 
@@ -232,11 +164,7 @@ function App() {
       setActiveFileId(fileToProcess.id);
 
       setFiles(prev => {
-        const updated = prev.map(f => f.id === fileToProcess.id ? { ...f, status: 'processing', progress: 50, error: null } : f);
-        if (fileToProcess.isPdfPage) {
-          return updateParentProgress(updated, fileToProcess.parentPdfId);
-        }
-        return updated;
+        return prev.map(f => f.id === fileToProcess.id ? { ...f, status: 'processing', progress: 10, error: null } : f);
       });
 
       try {
@@ -244,55 +172,181 @@ function App() {
           fileToProcess.originalFile,
           config.apiKey,
           config.model,
-          (attempt, maxAttempts, secondsLeft, errorMsg) => {
-            setFiles(prev => {
-              const updated = prev.map(f => f.id === fileToProcess.id ? {
+          config.workerUrl,
+          (event) => {
+            if (event.type === 'status') {
+              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
                 ...f,
-                retryInfo: { attempt, maxAttempts, secondsLeft, errorMsg }
-              } : f);
-              if (fileToProcess.isPdfPage) {
-                return updateParentProgress(updated, fileToProcess.parentPdfId);
+                name: `${fileToProcess.originalFile.name} (${event.message})`
+              } : f));
+            } else if (event.type === 'init') {
+              if (fileToProcess.isParentPdf) {
+                setFiles(prev => {
+                  const updatedParent = {
+                    ...prev.find(f => f.id === fileToProcess.id),
+                    name: fileToProcess.originalFile.name,
+                    status: 'processing',
+                    totalPages: event.totalPages,
+                    progress: 0
+                  };
+                  const pageItems = Array.from({ length: event.totalPages }).map((_, idx) => ({
+                    id: `${fileToProcess.id}-page-${idx}`,
+                    name: `${fileToProcess.originalFile.name} - Trang ${idx + 1}`,
+                    originalFile: null,
+                    status: 'waiting',
+                    progress: 0,
+                    result: '',
+                    error: null,
+                    isPdfPage: true,
+                    parentPdfId: fileToProcess.id,
+                    pageIndex: idx,
+                    totalPages: event.totalPages
+                  }));
+                  const newArray = [...prev];
+                  const filteredArray = newArray.filter(f => f.parentPdfId !== fileToProcess.id);
+                  const parentIdx = filteredArray.findIndex(f => f.id === fileToProcess.id);
+                  filteredArray.splice(parentIdx, 1, updatedParent, ...pageItems);
+                  return filteredArray;
+                });
+              } else {
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  name: fileToProcess.originalFile.name,
+                  status: 'processing',
+                  progress: 0
+                } : f));
               }
-              return updated;
-            });
+            } else if (event.type === 'page_start') {
+              if (fileToProcess.isParentPdf) {
+                setFiles(prev => {
+                  const updated = prev.map(f => f.id === `${fileToProcess.id}-page-${event.pageIndex}` ? {
+                    ...f,
+                    status: 'processing',
+                    progress: 25
+                  } : f);
+                  return updateParentProgress(updated, fileToProcess.id);
+                });
+              } else {
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  status: 'processing',
+                  progress: 50
+                } : f));
+              }
+            } else if (event.type === 'page_retry') {
+              if (fileToProcess.isParentPdf) {
+                setFiles(prev => {
+                  const updated = prev.map(f => f.id === `${fileToProcess.id}-page-${event.pageIndex}` ? {
+                    ...f,
+                    retryInfo: {
+                      attempt: event.attempt,
+                      maxAttempts: event.maxAttempts,
+                      secondsLeft: event.secondsLeft,
+                      errorMsg: event.errorMsg
+                    }
+                  } : f);
+                  return updateParentProgress(updated, fileToProcess.id);
+                });
+              } else {
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  retryInfo: {
+                    attempt: event.attempt,
+                    maxAttempts: event.maxAttempts,
+                    secondsLeft: event.secondsLeft,
+                    errorMsg: event.errorMsg
+                  }
+                } : f));
+              }
+            } else if (event.type === 'page_complete') {
+              if (fileToProcess.isParentPdf) {
+                setFiles(prev => {
+                  const updated = prev.map(f => f.id === `${fileToProcess.id}-page-${event.pageIndex}` ? {
+                    ...f,
+                    status: 'completed',
+                    progress: 100,
+                    result: event.text,
+                    retryInfo: null
+                  } : f);
+                  return updateParentProgress(updated, fileToProcess.id);
+                });
+              } else {
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  status: 'completed',
+                  progress: 100,
+                  result: event.text,
+                  retryInfo: null
+                } : f));
+              }
+            } else if (event.type === 'page_error') {
+              if (fileToProcess.isParentPdf) {
+                setFiles(prev => {
+                  const updated = prev.map(f => f.id === `${fileToProcess.id}-page-${event.pageIndex}` ? {
+                    ...f,
+                    status: 'error',
+                    progress: 0,
+                    error: event.error,
+                    retryInfo: null
+                  } : f);
+                  return updateParentProgress(updated, fileToProcess.id);
+                });
+              } else {
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  status: 'error',
+                  progress: 0,
+                  error: event.error,
+                  retryInfo: null
+                } : f));
+              }
+            }
           }
         );
 
-        setFiles(prev => {
-          let updated = prev.map(f => f.id === fileToProcess.id ? {
-            ...f,
-            status: 'completed',
-            progress: 100,
-            result: textResult,
-            retryInfo: null
-          } : f);
-
-          if (fileToProcess.isPdfPage) {
-            updated = updateParentProgress(updated, fileToProcess.parentPdfId);
-            updated = checkAndMergePdfText(updated, fileToProcess.parentPdfId);
-          }
-          return updated;
-        });
+        setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+          ...f,
+          status: 'completed',
+          progress: 100,
+          result: textResult,
+          name: fileToProcess.originalFile.name,
+          retryInfo: null,
+          error: null
+        } : f));
 
       } catch (error) {
+        console.error("Lỗi khi xử lý OCR file:", fileToProcess.name, error);
         setFiles(prev => {
           let updated = prev.map(f => f.id === fileToProcess.id ? {
             ...f,
             status: 'error',
             progress: 0,
             error: error.message,
+            name: fileToProcess.originalFile.name,
             retryInfo: null
           } : f);
-
-          if (fileToProcess.isPdfPage) {
-            updated = updateParentProgress(updated, fileToProcess.parentPdfId);
-            updated = checkAndMergePdfText(updated, fileToProcess.parentPdfId);
+          
+          if (fileToProcess.isParentPdf) {
+            // Set all non-completed pages to error as well
+            updated = updated.map(f => {
+              if (f.parentPdfId === fileToProcess.id && f.status !== 'completed') {
+                return { ...f, status: 'error', error: error.message };
+              }
+              return f;
+            });
+            updated = updateParentProgress(updated, fileToProcess.id);
           }
           return updated;
         });
       }
 
-      // Khoảng trễ 4 giây giữa các trang PDF (hoặc giữa các tệp OCR)
+      // Khoảng trễ nhỏ giữa các file chính (ví dụ 1 giây)
+      if (currentIndex < currentWaiting.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      await processNext();
+    };��a các tệp OCR)
       if (currentIndex < currentWaiting.length) {
         await new Promise(resolve => setTimeout(resolve, 4000));
       }

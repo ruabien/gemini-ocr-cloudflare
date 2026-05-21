@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Eye, EyeOff, KeyRound, Bot, RefreshCw } from 'lucide-react';
+import { Settings2, Eye, EyeOff, KeyRound, Bot, RefreshCw, Server } from 'lucide-react';
 
 const DEFAULT_MODELS = [
   'gemini-1.5-flash',
@@ -11,6 +11,7 @@ const DEFAULT_MODELS = [
 
 export default function ApiConfig({ onConfigChange }) {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('ocr_api_key') || '');
+  const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem('ocr_worker_url') || 'http://localhost:8787');
   
   const [availableModels, setAvailableModels] = useState(() => {
     try {
@@ -35,14 +36,16 @@ export default function ApiConfig({ onConfigChange }) {
     localStorage.setItem('ocr_model', model);
     localStorage.setItem('ocr_custom_model', customModel);
     localStorage.setItem('ocr_available_models', JSON.stringify(availableModels));
+    localStorage.setItem('ocr_worker_url', workerUrl);
     
     if (onConfigChange) {
       onConfigChange({
         apiKey,
-        model: model === 'Khác' ? customModel : model
+        model: model === 'Khác' ? customModel : model,
+        workerUrl
       });
     }
-  }, [apiKey, model, customModel, availableModels, onConfigChange]);
+  }, [apiKey, model, customModel, availableModels, workerUrl, onConfigChange]);
 
   const fetchModels = async () => {
     if (!apiKey) {
@@ -90,6 +93,19 @@ export default function ApiConfig({ onConfigChange }) {
 
         <div className="flex flex-1 md:flex-none flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
           
+          <div className="relative w-full sm:w-60 group">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500">
+              <Server size={16} />
+            </div>
+            <input
+              type="text"
+              placeholder="Cloudflare Worker URL"
+              value={workerUrl}
+              onChange={(e) => setWorkerUrl(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-700"
+            />
+          </div>
+
           <div className="relative w-full sm:w-64 group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500">
               <KeyRound size={16} />
