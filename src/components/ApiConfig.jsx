@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Eye, EyeOff, KeyRound, Bot, RefreshCw, Server } from 'lucide-react';
+import { Settings2, KeyRound, Bot, RefreshCw, Server } from 'lucide-react';
 
 const DEFAULT_MODELS = [
   'gemini-1.5-flash',
@@ -40,7 +40,6 @@ export default function ApiConfig({ onConfigChange }) {
   });
   
   const [customModel, setCustomModel] = useState(() => localStorage.getItem('ocr_custom_model') || '');
-  const [showKey, setShowKey] = useState(false);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
 
   useEffect(() => {
@@ -104,7 +103,7 @@ export default function ApiConfig({ onConfigChange }) {
           <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
             <Settings2 size={20} />
           </div>
-          <h1 className="font-bold text-lg tracking-tight hidden sm:block">Gemini OCR Config</h1>
+          <h1 className="font-bold text-lg tracking-tight hidden sm:block">Cấu hình</h1>
         </div>
 
         <div className="flex flex-1 md:flex-none flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -129,19 +128,12 @@ export default function ApiConfig({ onConfigChange }) {
               <KeyRound size={16} />
             </div>
             <input
-              type={showKey ? "text" : "password"}
+              type="password"
               placeholder="Nhập Gemini API Key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-700"
+              className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-700"
             />
-            <button
-              onClick={() => setShowKey(!showKey)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
-              title={showKey ? "Ẩn API Key" : "Hiện API Key"}
-            >
-              {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
           </div>
 
           <div className="flex w-full sm:w-auto gap-2">
