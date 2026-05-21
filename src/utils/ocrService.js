@@ -74,11 +74,11 @@ export const processOCR = async (file, apiKey, modelName, workerUrl, onEvent) =>
             throw new Error(event.error || 'Lỗi xử lý hệ thống Worker.');
           }
         } catch (e) {
-          // Nếu đó là lỗi của OCR (quá trình truyền lỗi từ Worker), ta ném lỗi ra
-          if (e.message.includes('Lỗi') || e.message.includes('error')) {
+          if (e instanceof SyntaxError) {
+            console.error("Lỗi parse JSON dòng dữ liệu stream:", dataStr, e);
+          } else {
             throw e;
           }
-          console.error("Lỗi parse dòng dữ liệu stream:", dataStr, e);
         }
       }
     }
