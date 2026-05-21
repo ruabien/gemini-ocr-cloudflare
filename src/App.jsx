@@ -18,7 +18,8 @@ import {
   XCircle,
   AlertCircle,
   Lock,
-  Zap
+  Zap,
+  ShieldAlert
 } from 'lucide-react';
 import { processOCR } from './utils/ocrService';
 
@@ -527,7 +528,7 @@ function App() {
             </div>
 
             {/* Pain Point 4 */}
-            <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-150 flex flex-col group hover:bg-rose-50/10 hover:border-rose-200 transition-all duration-300 hover:shadow-xs lg:col-span-1 md:col-span-1 lg:ml-auto">
+            <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-150 flex flex-col group hover:bg-rose-50/10 hover:border-rose-200 transition-all duration-300 hover:shadow-xs">
               <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <XCircle size={22} />
               </div>
@@ -540,7 +541,7 @@ function App() {
             </div>
 
             {/* Pain Point 5 */}
-            <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-150 flex flex-col group hover:bg-rose-50/10 hover:border-rose-200 transition-all duration-300 hover:shadow-xs lg:col-span-1 md:col-span-1 lg:mr-auto">
+            <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-150 flex flex-col group hover:bg-rose-50/10 hover:border-rose-200 transition-all duration-300 hover:shadow-xs">
               <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Lock size={22} />
               </div>
@@ -549,6 +550,19 @@ function App() {
               </h3>
               <p className="text-slate-500 text-sm leading-relaxed">
                 Bị giới hạn ngặt nghèo chỉ cho phép dùng thử 1 - 2 trang. Bắt ép người dùng trả các khoản phí dịch vụ đắt đỏ nếu muốn xử lý nhiều tài liệu hơn.
+              </p>
+            </div>
+
+            {/* Pain Point 6 */}
+            <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-150 flex flex-col group hover:bg-rose-50/10 hover:border-rose-200 transition-all duration-300 hover:shadow-xs">
+              <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <ShieldAlert size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-700 transition-colors">
+                Nỗi sợ lộ bí mật tài liệu
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Khi sử dụng các web dịch vụ trực tuyến, tài liệu của bạn bị lưu lại trên máy chủ của họ, đối mặt với nguy cơ rò rỉ thông tin tối mật của hồ sơ vụ án, hợp đồng hoặc dữ liệu nội bộ doanh nghiệp.
               </p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings2, KeyRound, Bot, RefreshCw, Server } from 'lucide-react';
+import { KeyRound, Bot, RefreshCw, Save } from 'lucide-react';
 
 const DEFAULT_MODELS = [
   'gemini-1.5-flash',
@@ -16,14 +16,7 @@ const DEFAULT_WORKER_URL = 'https://gemini-ocr-backend.ruabien1504.workers.dev';
 export default function ApiConfig({ onConfigChange }) {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('ocr_api_key') || '');
   const [workerUrl, setWorkerUrl] = useState(() => localStorage.getItem('ocr_worker_url') || DEFAULT_WORKER_URL);
-  
-  const [isAdmin, setIsAdmin] = useState(() => {
-    return typeof window !== 'undefined' && window.location.search.includes('admin=true');
-  });
-
-  const handleTitleDoubleClick = () => {
-    setIsAdmin(prev => !prev);
-  };
+  const [showToast, setShowToast] = useState(false);
   
   const [availableModels, setAvailableModels] = useState(() => {
     try {
@@ -43,7 +36,6 @@ export default function ApiConfig({ onConfigChange }) {
   const [isFetchingModels, setIsFetchingModels] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('ocr_api_key', apiKey);
     localStorage.setItem('ocr_model', model);
     localStorage.setItem('ocr_custom_model', customModel);
     localStorage.setItem('ocr_available_models', JSON.stringify(availableModels));
@@ -57,6 +49,18 @@ export default function ApiConfig({ onConfigChange }) {
       });
     }
   }, [apiKey, model, customModel, availableModels, workerUrl, onConfigChange]);
+
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
+
+  const handleSaveKey = () => {
+    localStorage.setItem('ocr_api_key', apiKey);
+    setShowToast(true);
+  };
 
   const fetchModels = async () => {
     if (!apiKey) {
@@ -95,45 +99,38 @@ export default function ApiConfig({ onConfigChange }) {
     <div className="bg-white w-full rounded-2xl">
       <div className="px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
-        <div 
-          className="flex items-center gap-2 text-slate-800 cursor-pointer select-none" 
-          onDoubleClick={handleTitleDoubleClick}
-          title="Nhấp đúp chuột để bật/tắt Cấu hình nâng cao"
-        >
-          <div className="p-2 bg-indigo-55 text-indigo-600 rounded-xl">
-            <Settings2 size={18} />
+        <div className="flex items-center gap-2 text-slate-800 select-none">
+          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+            <KeyRound size={18} />
           </div>
-          <h1 className="font-bold text-sm tracking-tight">Cấu hình</h1>
+          <h1 className="font-bold text-sm tracking-tight text-slate-800">Điền API Key của bạn</h1>
         </div>
 
         <div className="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full lg:justify-end">
           
-          {isAdmin && (
-            <div className="relative w-full sm:w-60 group animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="flex w-full sm:w-auto gap-2">
+            <div className="relative flex-1 sm:w-64 group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500">
-                <Server size={14} />
+                <KeyRound size={14} />
               </div>
               <input
-                type="text"
-                placeholder="Cloudflare Worker URL"
-                value={workerUrl}
-                onChange={(e) => setWorkerUrl(e.target.value)}
+                type="password"
+                placeholder="Nhập Gemini API Key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700"
               />
             </div>
-          )}
 
-          <div className="relative w-full sm:w-64 group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500">
-              <KeyRound size={14} />
-            </div>
-            <input
-              type="password"
-              placeholder="Nhập Gemini API Key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-700"
-            />
+            <button
+              onClick={handleSaveKey}
+              disabled={!apiKey}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+              title="Lưu API Key vào trình duyệt"
+            >
+              <Save size={14} />
+              <span>Lưu Key</span>
+            </button>
           </div>
 
           <div className="flex w-full sm:w-auto gap-2">
@@ -179,6 +176,13 @@ export default function ApiConfig({ onConfigChange }) {
           
         </div>
       </div>
+
+      {showToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+          <span className="text-sm font-semibold">✨ Đã lưu API Key của bạn an toàn!</span>
+        </div>
+      )}
     </div>
   );
 }
