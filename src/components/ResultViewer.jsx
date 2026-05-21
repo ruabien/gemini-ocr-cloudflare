@@ -42,9 +42,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
 
   if (!file) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 min-h-[400px]">
-        <FileText size={48} strokeWidth={1} className="mb-4 opacity-50" />
-        <p>Chọn một file đã hoàn thành để xem kết quả</p>
+      <div className="h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800 min-h-[400px]">
+        <FileText size={48} strokeWidth={1} className="mb-4 opacity-40 text-slate-400" />
+        <p className="text-slate-400 text-sm">Chọn một file đã hoàn thành để xem kết quả</p>
       </div>
     );
   }
@@ -59,12 +59,12 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
     } catch (err) {
       console.error("Failed to copy text: ", err);
       // Fallback
-      const textArea = document.createElement("textarea");
-      textArea.value = localText;
-      document.body.appendChild(textArea);
-      textArea.select();
+      const textSub = document.createElement("textarea");
+      textSub.value = localText;
+      document.body.appendChild(textSub);
+      textSub.select();
       document.execCommand("Copy");
-      textArea.remove();
+      textSub.remove();
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -125,11 +125,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/80">
+    <div className="flex flex-col h-full bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden min-h-[500px]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/40">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
-          <FileText size={16} className="text-blue-500 shrink-0" />
-          <h3 className="font-medium text-sm text-gray-700 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
+          <FileText size={16} className="text-indigo-400 shrink-0" />
+          <h3 className="font-medium text-sm text-slate-200 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
             Kết quả: {file.originalFile?.name || 'Tài liệu'}
           </h3>
         </div>
@@ -137,7 +137,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           <button
             onClick={handleExportTxt}
             disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-950 border border-slate-800 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
             title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
           >
             <Download size={14} />
@@ -147,9 +147,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-950 border border-slate-800 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+              {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
               {copied ? 'Đã copy' : 'Copy nhanh'}
             </button>
           )}
@@ -157,33 +157,33 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
       </div>
       
       {file.status === 'error' ? (
-        <div className="flex-1 p-6 text-red-600 bg-red-50/30 overflow-auto">
+        <div className="flex-1 p-6 text-rose-300 bg-rose-950/20 border border-rose-900/30 overflow-auto font-sans">
           <p className="font-bold mb-2">Đã xảy ra lỗi:</p>
           <p className="text-sm whitespace-pre-wrap font-mono">{file.error}</p>
         </div>
       ) : file.status === 'processing' ? (
-        <div className={`flex-1 flex flex-col items-center justify-center bg-blue-50/10 ${file.retryInfo ? 'text-amber-600' : 'text-blue-500'}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center bg-slate-950/20 ${file.retryInfo ? 'text-amber-400' : 'text-indigo-400'}`}>
           {file.retryInfo ? (
             <div className="flex flex-col items-center max-w-md text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 mb-4 animate-bounce">
+              <div className="w-12 h-12 rounded-full bg-amber-950 border border-amber-900 flex items-center justify-center text-amber-500 mb-4 animate-bounce">
                 <AlertCircle size={24} />
               </div>
-              <h4 className="font-bold text-base mb-2">Google Gemini quá tải</h4>
-              <p className="text-xs text-amber-500 mb-4 whitespace-pre-wrap font-mono bg-amber-50/50 p-2.5 rounded-lg border border-amber-100 max-h-[150px] overflow-auto">
+              <h4 className="font-bold text-base mb-2 text-slate-200">Google Gemini quá tải</h4>
+              <p className="text-xs text-amber-450 mb-4 whitespace-pre-wrap font-mono bg-amber-950/50 p-2.5 rounded-lg border border-amber-900/40 max-h-[150px] overflow-auto">
                 {file.retryInfo.errorMsg}
               </p>
-              <div className="px-4 py-2 bg-amber-100/50 border border-amber-200 rounded-full text-xs font-semibold">
+              <div className="px-4 py-2 bg-amber-950/80 border border-amber-900 rounded-full text-xs font-semibold text-amber-400">
                 Thử lại lần {file.retryInfo.attempt}/{file.retryInfo.maxAttempts} sau {file.retryInfo.secondsLeft}s...
               </div>
             </div>
           ) : (
-            <>
+            <div className="flex flex-col items-center">
               <div className="animate-pulse flex flex-col items-center">
-                <div className="h-2 bg-blue-200 rounded w-48 mb-4"></div>
-                <div className="h-2 bg-blue-200 rounded w-32"></div>
+                <div className="h-2 bg-slate-800 rounded w-48 mb-4"></div>
+                <div className="h-2 bg-slate-800 rounded w-32"></div>
               </div>
-              <p className="mt-4 text-sm font-medium animate-pulse">AI đang phân tích và trích xuất...</p>
-            </>
+              <p className="mt-4 text-sm font-medium animate-pulse text-slate-400">AI đang phân tích và trích xuất...</p>
+            </div>
           )}
         </div>
       ) : (
@@ -191,7 +191,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           value={localText}
           onChange={handleChange}
           placeholder="Chưa có dữ liệu trích xuất."
-          className="flex-1 w-full p-4 resize-none outline-none text-gray-750 text-sm leading-relaxed"
+          className="flex-1 w-full p-4 bg-slate-950/40 text-slate-200 placeholder-slate-700 outline-none resize-none text-sm leading-relaxed focus:bg-slate-950/80 focus:ring-1 focus:ring-slate-800 transition-all"
         />
       )}
     </div>
