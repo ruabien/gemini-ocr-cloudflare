@@ -32,7 +32,9 @@ export const processOCR = async (file, apiKey, modelName, workerUrl, onEvent) =>
     try {
       const errJson = await response.json();
       errorMsg = errJson.error || errorMsg;
-    } catch (_) {}
+    } catch {
+      // Bỏ qua lỗi parse JSON nếu response không phải JSON
+    }
     throw new Error(errorMsg);
   }
 

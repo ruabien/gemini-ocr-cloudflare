@@ -239,7 +239,9 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRe
         try {
           const errorData = await response.json();
           errorMsg = errorData?.error?.message || errorMsg;
-        } catch (_) {}
+        } catch {
+          // Bỏ qua lỗi parse JSON nếu response không phải định dạng JSON hợp lệ
+        }
         throw new Error(`Đã thử lại ${maxRetries} lần nhưng thất bại: ${errorMsg}`);
       }
 
@@ -249,7 +251,9 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRe
       try {
         const errorData = await response.clone().json();
         errorMsg = errorData?.error?.message || errorMsg;
-      } catch (_) {}
+      } catch {
+        // Bỏ qua lỗi parse JSON khi clone response
+      }
 
       console.warn(`Lỗi Gemini (${errorMsg}). Đang chuẩn bị thử lại lần ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
 
@@ -269,7 +273,9 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRe
     try {
       const errorData = await response.json();
       errorMsg = errorData?.error?.message || errorMsg;
-    } catch (_) {}
+    } catch {
+      // Bỏ qua lỗi parse JSON cho response client-side
+    }
     throw new Error(`Lỗi API Gemini: ${errorMsg}`);
   }
 }

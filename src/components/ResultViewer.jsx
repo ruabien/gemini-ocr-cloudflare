@@ -6,6 +6,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   const [localText, setLocalText] = useState("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalText(file?.result || "");
   }, [file?.id, file?.result]);
 
@@ -15,7 +16,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   const getCleanLine = (text) => {
     if (!text) return "";
     return text
-      .replace(/[*#\-_]/g, '') // Loại bỏ markdown *, #, -, _
+      .replace(/[*#_-]/g, '') // Loại bỏ markdown *, #, -, _
       .replace(/[\n\r]+/g, ' ') // Thay dấu xuống dòng bằng khoảng trắng
       .replace(/\s+/g, ' ') // Thu gọn nhiều khoảng trắng liên tiếp
       .trim();
@@ -34,7 +35,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
     // Thu gọn nhiều khoảng trắng liên tiếp thành 1 khoảng trắng duy nhất bằng Regex .replace(/\s+/g, ' ')
     // và .trim() khoảng trắng ở đầu/cuối
     return rawMerged
-      .replace(/[*#\-]/g, '')
+      .replace(/[*#-]/g, '')
       .replace(/[\n\r]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -42,9 +43,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
 
   if (!file) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-slate-500 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800 min-h-[400px]">
-        <FileText size={48} strokeWidth={1} className="mb-4 opacity-40 text-slate-400" />
-        <p className="text-slate-400 text-sm">Chọn một file đã hoàn thành để xem kết quả</p>
+      <div className="h-full flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-300 min-h-[400px]">
+        <FileText size={48} strokeWidth={1} className="mb-4 opacity-40 text-slate-300" />
+        <p className="text-slate-500 text-sm">Chọn một file đã hoàn thành để xem kết quả</p>
       </div>
     );
   }
@@ -125,11 +126,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden min-h-[500px]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/40">
+    <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50/50">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
-          <FileText size={16} className="text-indigo-400 shrink-0" />
-          <h3 className="font-medium text-sm text-slate-200 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
+          <FileText size={16} className="text-indigo-600 shrink-0" />
+          <h3 className="font-semibold text-sm text-slate-800 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
             Kết quả: {file.originalFile?.name || 'Tài liệu'}
           </h3>
         </div>
@@ -137,7 +138,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           <button
             onClick={handleExportTxt}
             disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-950 border border-slate-800 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
             title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
           >
             <Download size={14} />
@@ -147,9 +148,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-950 border border-slate-800 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 hover:text-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+              {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
               {copied ? 'Đã copy' : 'Copy nhanh'}
             </button>
           )}
@@ -157,32 +158,32 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
       </div>
       
       {file.status === 'error' ? (
-        <div className="flex-1 p-6 text-rose-300 bg-rose-950/20 border border-rose-900/30 overflow-auto font-sans">
+        <div className="flex-1 p-6 text-rose-800 bg-rose-50 border border-rose-100 overflow-auto font-sans">
           <p className="font-bold mb-2">Đã xảy ra lỗi:</p>
           <p className="text-sm whitespace-pre-wrap font-mono">{file.error}</p>
         </div>
       ) : file.status === 'processing' ? (
-        <div className={`flex-1 flex flex-col items-center justify-center bg-slate-950/20 ${file.retryInfo ? 'text-amber-400' : 'text-indigo-400'}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center bg-slate-50/50 ${file.retryInfo ? 'text-amber-600' : 'text-indigo-600'}`}>
           {file.retryInfo ? (
             <div className="flex flex-col items-center max-w-md text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-amber-950 border border-amber-900 flex items-center justify-center text-amber-500 mb-4 animate-bounce">
+              <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-4 animate-bounce">
                 <AlertCircle size={24} />
               </div>
-              <h4 className="font-bold text-base mb-2 text-slate-200">Google Gemini quá tải</h4>
-              <p className="text-xs text-amber-450 mb-4 whitespace-pre-wrap font-mono bg-amber-950/50 p-2.5 rounded-lg border border-amber-900/40 max-h-[150px] overflow-auto">
+              <h4 className="font-bold text-base mb-2 text-slate-800">Google Gemini quá tải</h4>
+              <p className="text-xs text-amber-700 mb-4 whitespace-pre-wrap font-mono bg-amber-50 p-2.5 rounded-lg border border-amber-200 max-h-[150px] overflow-auto">
                 {file.retryInfo.errorMsg}
               </p>
-              <div className="px-4 py-2 bg-amber-950/80 border border-amber-900 rounded-full text-xs font-semibold text-amber-400">
+              <div className="px-4 py-2 bg-amber-100 border border-amber-200 rounded-full text-xs font-semibold text-amber-700">
                 Thử lại lần {file.retryInfo.attempt}/{file.retryInfo.maxAttempts} sau {file.retryInfo.secondsLeft}s...
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
               <div className="animate-pulse flex flex-col items-center">
-                <div className="h-2 bg-slate-800 rounded w-48 mb-4"></div>
-                <div className="h-2 bg-slate-800 rounded w-32"></div>
+                <div className="h-2 bg-slate-200 rounded w-48 mb-4"></div>
+                <div className="h-2 bg-slate-200 rounded w-32"></div>
               </div>
-              <p className="mt-4 text-sm font-medium animate-pulse text-slate-400">AI đang phân tích và trích xuất...</p>
+              <p className="mt-4 text-sm font-medium animate-pulse text-slate-500">AI đang phân tích và trích xuất...</p>
             </div>
           )}
         </div>
@@ -191,7 +192,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           value={localText}
           onChange={handleChange}
           placeholder="Chưa có dữ liệu trích xuất."
-          className="flex-1 w-full p-4 bg-slate-950/40 text-slate-200 placeholder-slate-700 outline-none resize-none text-sm leading-relaxed focus:bg-slate-950/80 focus:ring-1 focus:ring-slate-800 transition-all"
+          className="flex-1 w-full p-4 bg-white text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all border-t border-slate-100"
         />
       )}
     </div>
