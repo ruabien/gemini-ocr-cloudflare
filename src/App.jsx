@@ -134,7 +134,7 @@ function App() {
       setActiveFileId(fileToProcess.id);
 
       setFiles(prev => {
-        return prev.map(f => f.id === fileToProcess.id ? { ...f, status: 'processing', progress: 10, error: null } : f);
+        return prev.map(f => f.id === fileToProcess.id ? { ...f, status: 'processing', progress: 0, error: null } : f);
       });
 
       try {
@@ -441,7 +441,7 @@ function App() {
                   <div className="pt-4 mt-auto border-t border-outline-variant/20 shrink-0">
                     <button
                       onClick={startOCR}
-                      disabled={isProcessing || files.some(f => f.status === 'splitting') || !files.some(f => !f.isParentPdf && (f.status === 'waiting' || f.status === 'error'))}
+                      disabled={isProcessing || files.length === 0}
                       className="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}

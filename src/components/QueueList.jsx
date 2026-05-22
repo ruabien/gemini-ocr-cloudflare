@@ -32,7 +32,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
       case 'splitting':
         return { label: 'Đang tách trang...', icon: <Loader2 size={16} className="animate-spin text-secondary-fixed-dim" />, color: 'text-secondary', bar: 'bg-secondary-container', width: `${progress}%` };
       case 'processing': 
-        return { label: 'Đang xử lý AI...', icon: <Loader2 size={16} className="animate-spin text-primary" />, color: 'text-primary', bar: 'bg-primary', width: `${progress}%` };
+        return { label: `Đang xử lý... (${progress}%)`, icon: <Loader2 size={16} className="animate-spin text-primary" />, color: 'text-primary', bar: 'bg-primary', width: `${progress}%` };
       case 'completed': 
         return { label: 'Hoàn thành', icon: <CheckCircle2 size={16} className="text-tertiary" />, color: 'text-tertiary', bar: 'bg-tertiary', width: '100%' };
       case 'error': 
