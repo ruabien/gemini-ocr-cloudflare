@@ -82,7 +82,7 @@ export default {
                   'application/pdf',
                   apiKey,
                   model,
-                  async (attempt, maxAttempts, secondsLeft, errorMsg) => {
+                  async (attempt, maxAttempts, secondsLeft, errorMsg, customMessage) => {
                     await sendEvent({
                       type: 'page_retry',
                       pageIndex: i,
@@ -90,6 +90,7 @@ export default {
                       maxAttempts,
                       secondsLeft,
                       errorMsg,
+                      customMessage,
                     });
                   }
                 );
@@ -103,9 +104,9 @@ export default {
                 await sendEvent({ type: 'page_error', pageIndex: i, error: pageErr.message });
               }
 
-              // Khoảng trễ nhỏ giữa các trang tránh quá tải cục bộ (2 giây)
+              // Khoảng trễ giãn cách giữa các trang tránh quá tải API (4.5s)
               if (i < pageCount - 1) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
+                await new Promise((resolve) => setTimeout(resolve, 4500));
               }
             }
 
@@ -138,7 +139,7 @@ export default {
                 fileType,
                 apiKey,
                 model,
-                async (attempt, maxAttempts, secondsLeft, errorMsg) => {
+                async (attempt, maxAttempts, secondsLeft, errorMsg, customMessage) => {
                   await sendEvent({
                     type: 'page_retry',
                     pageIndex: 0,
@@ -146,6 +147,7 @@ export default {
                     maxAttempts,
                     secondsLeft,
                     errorMsg,
+                    customMessage,
                   });
                 }
               );
@@ -245,8 +247,8 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRe
         throw new Error(`Đã thử lại ${maxRetries} lần nhưng thất bại: ${errorMsg}`);
       }
 
-      // Exponential Backoff: 6s, 12s, 24s, 48s...
-      const waitTime = Math.pow(2, i) * 6000;
+      const isRateLimit = response.status === 429;
+      const waitTime = isRateLimit ? 60000 : Math.pow(2, i) * 6000;
       let errorMsg = `HTTP ${response.status}`;
       try {
         const errorData = await response.clone().json();
@@ -255,13 +257,20 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRe
         // Bỏ qua lỗi parse JSON khi clone response
       }
 
-      console.warn(`Lỗi Gemini (${errorMsg}). Đang chuẩn bị thử lại lần ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
+      if (isRateLimit) {
+        console.warn(`Lỗi Gemini Rate Limit (429). Đang tạm nghỉ 60s để tránh quá tải API...`);
+      } else {
+        console.warn(`Lỗi Gemini (${errorMsg}). Đang chuẩn bị thử lại lần ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
+      }
 
       // Thực hiện đếm ngược từng giây để cập nhật trạng thái lên UI qua Callback
       const totalSeconds = waitTime / 1000;
       for (let seconds = totalSeconds; seconds > 0; seconds--) {
         if (onRetry) {
-          await onRetry(i + 1, maxRetries, seconds, errorMsg);
+          const customMessage = isRateLimit 
+            ? `Đang tạm nghỉ ${seconds}s để tránh quá tải API...`
+            : null;
+          await onRetry(i + 1, maxRetries, seconds, errorMsg, customMessage);
         }
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }

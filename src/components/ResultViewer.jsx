@@ -179,12 +179,14 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
               <div className="w-12 h-12 rounded-full bg-secondary-fixed/10 border border-secondary-fixed-dim/30 flex items-center justify-center text-secondary mb-4 animate-bounce">
                 <AlertCircle size={24} />
               </div>
-              <h4 className="font-bold text-base mb-2 text-on-surface">Google Gemini quá tải</h4>
+              <h4 className="font-bold text-base mb-2 text-on-surface">
+                {file.retryInfo.customMessage ? "Hệ thống đang tạm nghỉ" : "Google Gemini quá tải"}
+              </h4>
               <p className="text-xs text-secondary-fixed-variant mb-4 whitespace-pre-wrap font-mono bg-secondary-fixed/5 p-2.5 rounded-lg border border-secondary-fixed-dim/20 max-h-[150px] overflow-auto">
                 {file.retryInfo.errorMsg}
               </p>
               <div className="px-4 py-2 bg-secondary-fixed/20 border border-secondary-fixed-dim/30 rounded-full text-xs font-semibold text-secondary-fixed-variant">
-                Thử lại lần {file.retryInfo.attempt}/{file.retryInfo.maxAttempts} sau {file.retryInfo.secondsLeft}s...
+                {file.retryInfo.customMessage || `Thử lại lần ${file.retryInfo.attempt}/${file.retryInfo.maxAttempts} sau ${file.retryInfo.secondsLeft}s...`}
               </div>
             </div>
           ) : (

@@ -40,8 +40,12 @@ function App() {
         let displayName = f.originalFile.name;
         if (!isDone) {
           if (processingPage && processingPage.retryInfo) {
-            const { attempt, secondsLeft } = processingPage.retryInfo;
-            displayName = `${f.originalFile.name} (Quá tải, thử lại lần ${attempt} sau ${secondsLeft}s...)`;
+            const { attempt, secondsLeft, customMessage } = processingPage.retryInfo;
+            if (customMessage) {
+              displayName = `${f.originalFile.name} (${customMessage})`;
+            } else {
+              displayName = `${f.originalFile.name} (Quá tải, thử lại lần ${attempt} sau ${secondsLeft}s...)`;
+            }
           } else {
             displayName = `${f.originalFile.name} (Đang xử lý: trang ${processingPageIdx}/${totalPages}...)`;
           }
@@ -212,7 +216,8 @@ function App() {
                       attempt: event.attempt,
                       maxAttempts: event.maxAttempts,
                       secondsLeft: event.secondsLeft,
-                      errorMsg: event.errorMsg
+                      errorMsg: event.errorMsg,
+                      customMessage: event.customMessage
                     }
                   } : f);
                   return updateParentProgress(updated, fileToProcess.id);
@@ -224,7 +229,8 @@ function App() {
                     attempt: event.attempt,
                     maxAttempts: event.maxAttempts,
                     secondsLeft: event.secondsLeft,
-                    errorMsg: event.errorMsg
+                    errorMsg: event.errorMsg,
+                    customMessage: event.customMessage
                   }
                 } : f));
               }

@@ -19,9 +19,9 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
   const getStatusUI = (file) => {
     const { status, progress, retryInfo } = file;
     if (status === 'processing' && retryInfo) {
-      const { attempt, secondsLeft } = retryInfo;
+      const { attempt, secondsLeft, customMessage } = retryInfo;
       return { 
-        label: `Thử lại ${attempt} sau ${secondsLeft}s...`, 
+        label: customMessage || `Thử lại ${attempt} sau ${secondsLeft}s...`, 
         icon: <Loader2 size={16} className="animate-spin text-secondary-fixed-dim" />, 
         color: 'text-secondary', 
         bar: 'bg-secondary-container', 
