@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { KeyRound, Bot, RefreshCw, Save } from 'lucide-react';
+import { KeyRound, Bot, RefreshCw, Save, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 const DEFAULT_MODELS = [
   'gemini-1.5-flash',
@@ -9,12 +9,10 @@ const DEFAULT_MODELS = [
   'Khác'
 ];
 
-// Bạn có thể thay địa chỉ URL Cloudflare Worker sau khi deploy vào đây
-// để làm địa chỉ mặc định cho tất cả người dùng mà không cần họ tự nhập.
 const DEFAULT_WORKER_URL = 'https://gemini-ocr-backend.ruabien1504.workers.dev';
 
 export default function ApiConfig({ onConfigChange }) {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('ocr_api_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('ocr_api_key') || localStorage.getItem('gemini_api_key') || '');
   const [workerUrl] = useState(() => localStorage.getItem('ocr_worker_url') || DEFAULT_WORKER_URL);
   const [showToast, setShowToast] = useState(false);
   
@@ -59,6 +57,7 @@ export default function ApiConfig({ onConfigChange }) {
 
   const handleSaveKey = () => {
     localStorage.setItem('ocr_api_key', apiKey);
+    localStorage.setItem('gemini_api_key', apiKey);
     setShowToast(true);
   };
 
@@ -75,7 +74,6 @@ export default function ApiConfig({ onConfigChange }) {
       }
       const data = await res.json();
       
-      // Lọc các model hỗ trợ generateContent và lấy phần tên phía sau "models/"
       const models = data.models
         .filter(m => m.supportedGenerationMethods?.includes("generateContent"))
         .map(m => m.name.replace('models/', ''));
@@ -96,86 +94,82 @@ export default function ApiConfig({ onConfigChange }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 w-full rounded-xl p-5 shadow-sm flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-slate-900 select-none">
-        <div className="p-2 bg-slate-50 text-slate-700 border border-slate-200/80 rounded-xl shrink-0">
-          <KeyRound size={16} />
-        </div>
-        <h2 className="font-bold text-lg tracking-tight text-slate-900">Điền API Key của bạn</h2>
-      </div>
-
-      <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-2 w-full">
-        <div className="flex flex-col sm:flex-row flex-1 min-w-full md:min-w-[280px] gap-2">
-          <div className="relative flex-1 group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900">
-              <KeyRound size={14} />
+    <div className="bg-white border border-slate-200/60 w-full rounded-[24px] p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,88,190,0.04)] flex flex-col gap-3 font-sans">
+      <div className="space-y-2 w-full">
+        <h2 className="font-display text-xl md:text-2xl font-bold text-[#0b1c30]">
+          Điền API Key của bạn
+        </h2>
+        
+        <div className="flex flex-col md:flex-row gap-3 w-full items-stretch">
+          {/* API Key Input and Save Button */}
+          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            <div className="relative flex-1 group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#0058be]">
+                <KeyRound size={16} />
+              </div>
+              <input
+                type="password"
+                placeholder="Nhập Gemini API Key của bạn"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="w-full pl-10 pr-4 h-12 bg-white border border-[#0058be]/20 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0058be]/50 focus:border-[#0058be] transition-all"
+              />
             </div>
-            <input
-              type="password"
-              placeholder="Nhập Gemini API Key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="w-full pl-9 pr-3 h-11 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-            />
-          </div>
-
-          <button
-            onClick={handleSaveKey}
-            disabled={!apiKey}
-            className="w-full sm:w-auto px-5 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-base font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer border border-transparent"
-            title="Lưu API Key vào trình duyệt"
-          >
-            <Save size={14} />
-            <span>Lưu</span>
-          </button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row flex-1 min-w-full md:min-w-[240px] gap-2">
-          <div className="relative flex-1 group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900">
-              <Bot size={14} />
-            </div>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full pl-9 pr-8 h-11 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+            <button
+              onClick={handleSaveKey}
+              disabled={!apiKey}
+              className="h-12 px-6 bg-[#0058be] hover:bg-[#004395] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer text-base w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {availableModels.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
-              <svg width="8" height="5" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+              <Save size={16} />
+              <span>Lưu Key</span>
+            </button>
           </div>
 
-          <button
-            onClick={fetchModels}
-            disabled={isFetchingModels || !apiKey}
-            className="w-full sm:w-11 h-11 bg-white text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 rounded-xl flex items-center justify-center disabled:opacity-50 cursor-pointer"
-            title="Đồng bộ danh sách Model từ Google"
-          >
-            <RefreshCw size={14} className={isFetchingModels ? "animate-spin" : ""} />
-            <span className="sm:hidden ml-2 text-base font-extrabold">Đồng bộ Model</span>
-          </button>
-        </div>
+          {/* Model Dropdown and Sync Button */}
+          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            <div className="relative flex-1 group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#0058be]">
+                <Bot size={16} />
+              </div>
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full pl-10 pr-10 h-12 bg-white border border-[#0058be]/20 rounded-xl text-base font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0058be]/50 focus:border-[#0058be] transition-all appearance-none cursor-pointer"
+              >
+                {availableModels.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
+                <ChevronDown size={16} />
+              </div>
+            </div>
+            <button
+              onClick={fetchModels}
+              disabled={isFetchingModels || !apiKey}
+              className="h-12 px-4 bg-white text-[#0b1c30] border border-[#0058be]/20 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-base font-bold w-full sm:w-auto"
+              title="Đồng bộ danh sách Model từ Google"
+            >
+              <RefreshCw size={16} className={isFetchingModels ? "animate-spin" : ""} />
+              <span>Đồng bộ Model</span>
+            </button>
+          </div>
 
-        {model === 'Khác' && (
-          <input
-            type="text"
-            placeholder="VD: gemini-1.5-pro-latest"
-            value={customModel}
-            onChange={(e) => setCustomModel(e.target.value)}
-            className="w-full md:w-48 px-3 h-11 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-          />
-        )}
+          {model === 'Khác' && (
+            <input
+              type="text"
+              placeholder="VD: gemini-1.5-pro-latest"
+              value={customModel}
+              onChange={(e) => setCustomModel(e.target.value)}
+              className="w-full md:w-48 h-12 px-4 bg-white border border-[#0058be]/20 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0058be]/50 focus:border-[#0058be] transition-all"
+            />
+          )}
+        </div>
       </div>
 
       {showToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-emerald-600 text-white px-6 py-3.5 rounded-lg border border-emerald-700 shadow-md animate-in fade-in slide-in-from-bottom-4 duration-300 font-bold text-sm">
-          <div className="w-2 h-2 bg-[#ffffff] rounded-full animate-ping" />
+        <div className="fixed bottom-6 right-6 z-[100] bg-emerald-600 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg text-base flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <CheckCircle2 size={20} className="text-white" />
           <span>✨ Đã lưu API Key của bạn an toàn!</span>
         </div>
       )}

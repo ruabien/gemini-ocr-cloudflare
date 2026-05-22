@@ -59,32 +59,26 @@ export default function FileDropzone({ onFilesSelected }) {
 
   return (
     <label
-      className={`w-full p-4 sm:p-8 border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer min-h-[160px] sm:min-h-[220px] rounded-xl shadow-sm ${
+      className={`w-full p-6 sm:p-10 border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 cursor-pointer min-h-[180px] sm:min-h-[220px] rounded-[24px] shadow-[0_4px_20px_rgba(0,88,190,0.04)] ${
         isDragActive 
-          ? 'border-indigo-500 bg-indigo-50/50 scale-[1.01]' 
-          : 'border-slate-300 bg-white hover:border-indigo-500 hover:bg-slate-50/30'
+          ? 'border-[#0058be] bg-[#2170e4]/5 scale-[1.01]' 
+          : 'border-[#0058be]/40 bg-white hover:border-[#0058be] hover:bg-slate-50/50'
       }`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className={`p-3 sm:p-4 rounded-xl mb-2 sm:mb-3 transition-colors border ${
-        isDragActive 
-          ? 'bg-indigo-100 text-indigo-600 border-indigo-200' 
-          : 'bg-slate-50 text-slate-600 border-slate-200/80'
-      }`}>
-        <UploadCloud size={32} className="sm:w-9 sm:h-9" strokeWidth={1.5} />
+      <div className="w-16 h-16 rounded-full bg-[#0058be]/10 flex items-center justify-center text-[#0058be] mb-4 transition-transform group-hover:scale-110">
+        <UploadCloud size={36} strokeWidth={1.5} />
       </div>
-      <h3 className="text-[16px] sm:text-lg font-bold text-slate-900 mb-1 text-center">
-        {isDragActive ? 'Thả file vào đây...' : 'Kéo thả file của bạn vào đây'}
+      <h3 className="font-display text-lg md:text-xl font-bold text-[#0b1c30] text-center mb-1 select-none">
+        {isDragActive ? 'Thả file vào đây...' : 'Kéo thả hoặc chạm để chọn file'}
       </h3>
-      <p className="text-slate-700 text-center text-[14px] sm:text-[15px] font-semibold leading-relaxed">
-        Hoặc click để duyệt file từ máy tính của bạn<br/>
-        <span className="text-[11px] sm:text-[12px] text-slate-400 mt-1 block font-bold">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
+      <p className="font-sans text-sm font-bold text-[#424754] text-center select-none">
+        (PDF, JPG, PNG)
       </p>
 
-      {/* Đặt thẻ input nằm trong label để xử lý click tự nhiên của trình duyệt, không cần JS click() tránh loop */}
       <input
         type="file"
         ref={fileInputRef}
