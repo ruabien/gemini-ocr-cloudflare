@@ -76,12 +76,12 @@ export default function FileDropzone({ onFilesSelected }) {
       }`}>
         <UploadCloud size={36} strokeWidth={1.5} />
       </div>
-      <h3 className="text-base font-extrabold text-slate-900 mb-1">
+      <h3 className="text-lg font-bold text-slate-900 mb-1">
         {isDragActive ? 'Thả file vào đây...' : 'Kéo thả file của bạn vào đây'}
       </h3>
-      <p className="text-slate-600 text-center text-xs font-semibold leading-relaxed">
+      <p className="text-slate-700 text-center text-[15px] font-semibold leading-relaxed">
         Hoặc click để duyệt file từ máy tính của bạn<br/>
-        <span className="text-[10px] text-slate-400 mt-1 block font-bold">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
+        <span className="text-[12px] text-slate-400 mt-1 block font-bold">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
       </p>
 
       {/* Đặt thẻ input nằm trong label để xử lý click tự nhiên của trình duyệt, không cần JS click() tránh loop */}

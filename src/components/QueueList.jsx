@@ -48,9 +48,9 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
 
   return (
     <div className="w-full flex flex-col flex-1 min-h-0">
-      <h3 className="text-sm font-extrabold text-slate-900 mb-4 flex items-center gap-2 shrink-0 select-none">
+      <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2 shrink-0 select-none">
         Danh sách hàng đợi
-        <span className="bg-indigo-50 text-indigo-600 border border-indigo-100 py-0.5 px-2.5 rounded-full text-[10px] font-bold">
+        <span className="bg-indigo-50 text-indigo-600 border border-indigo-100 py-0.5 px-2.5 rounded-full text-[12px] font-bold">
           {mainDocuments.length}
         </span>
       </h3>
@@ -76,17 +76,17 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
-                    <p className={`text-xs font-bold truncate pr-2 ${isActive ? 'text-indigo-950' : 'text-slate-600'}`} title={file.name}>
+                    <p className={`text-[15px] font-bold truncate pr-2 ${isActive ? 'text-indigo-950' : 'text-slate-700'}`} title={file.name}>
                       {file.name}
                     </p>
-                    <div className={`flex items-center gap-1.5 text-[10px] font-extrabold whitespace-nowrap ${statusUI.color}`}>
+                    <div className={`flex items-center gap-1.5 text-[12px] font-extrabold whitespace-nowrap ${statusUI.color}`}>
                       {statusUI.icon}
                       {statusUI.label}
                     </div>
                   </div>
                   
                   <div className="flex justify-between items-center mb-2">
-                    <p className="text-[10px] text-slate-500 font-bold">
+                    <p className="text-[12px] text-slate-500 font-bold">
                       {formatSize(file.originalFile?.size || 0)}
                     </p>
                     <button 
@@ -118,7 +118,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
                       <div
                         key={page.id}
                         onClick={() => onFileClick && onFileClick(page.id)}
-                        className={`flex items-center justify-between p-2.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all border ${
+                        className={`flex items-center justify-between p-2.5 rounded-lg text-[14px] font-bold cursor-pointer transition-all border ${
                           isPageActive 
                             ? 'bg-indigo-50/50 border-indigo-500 text-indigo-950 shadow-sm' 
                             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-indigo-950'
@@ -130,7 +130,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
                         </div>
                         
                         <div className="flex items-center gap-2 shrink-0">
-                          <div className={`flex items-center gap-1 text-[10px] font-semibold ${pageStatusUI.color}`}>
+                          <div className={`flex items-center gap-1 text-[12px] font-semibold ${pageStatusUI.color}`}>
                             {pageStatusUI.icon}
                             <span>{pageStatusUI.label}</span>
                           </div>

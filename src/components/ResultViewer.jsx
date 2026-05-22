@@ -45,7 +45,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-slate-500 bg-white rounded-xl border border-dashed border-slate-200/80 min-h-[400px] shadow-sm p-6">
         <FileText size={48} strokeWidth={1} className="mb-4 opacity-30 text-slate-500" />
-        <p className="text-sm font-semibold">Chọn một file đã hoàn thành để xem kết quả</p>
+        <p className="text-base font-semibold text-slate-700">Chọn một file đã hoàn thành để xem kết quả</p>
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
       <div className="flex items-center justify-between p-4 bg-slate-50 border-b border-slate-200/80 shrink-0">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
           <FileText size={16} className="text-slate-700 shrink-0" />
-          <h3 className="font-extrabold text-xs text-slate-800 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
+          <h3 className="font-bold text-[15px] text-slate-900 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
             Kết quả: {file.originalFile?.name || 'Tài liệu'}
           </h3>
         </div>
@@ -138,7 +138,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           <button
             onClick={handleExportTxt}
             disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border border-transparent"
+            className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-[15px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border border-transparent"
             title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
           >
             <Download size={14} />
@@ -148,7 +148,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-[15px] font-bold bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
               {copied ? 'Đã copy' : 'Copy nhanh'}
@@ -160,8 +160,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
       <div className="flex-1 min-h-0 flex flex-col p-4">
         {file.status === 'error' ? (
           <div className="flex-1 p-4 text-rose-800 bg-rose-50/20 border border-rose-100 rounded-xl overflow-auto font-sans">
-            <p className="font-bold mb-1.5 text-xs">Đã xảy ra lỗi:</p>
-            <p className="text-xs whitespace-pre-wrap font-mono leading-relaxed">{file.error}</p>
+            <p className="font-bold mb-1.5 text-sm">Đã xảy ra lỗi:</p>
+            <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">{file.error}</p>
           </div>
         ) : file.status === 'processing' ? (
           <div className={`flex-1 flex flex-col items-center justify-center bg-slate-50/30 rounded-xl border border-slate-200/80 ${file.retryInfo ? 'text-amber-600' : 'text-slate-800'}`}>
@@ -170,11 +170,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
                 <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-3 animate-bounce">
                   <AlertCircle size={20} />
                 </div>
-                <h4 className="font-extrabold text-sm mb-1.5 text-slate-800">Google Gemini quá tải</h4>
-                <p className="text-[11px] text-amber-700 mb-3 whitespace-pre-wrap font-mono bg-amber-50 p-2 rounded-lg border border-amber-200 max-h-[120px] overflow-auto">
+                <h4 className="font-extrabold text-base mb-1.5 text-slate-800">Google Gemini quá tải</h4>
+                <p className="text-sm text-amber-700 mb-3 whitespace-pre-wrap font-mono bg-amber-50 p-2 rounded-lg border border-amber-200 max-h-[120px] overflow-auto">
                   {file.retryInfo.errorMsg}
                 </p>
-                <div className="px-3.5 py-1.5 bg-amber-100 border border-amber-200 rounded-full text-[10px] font-bold text-amber-700">
+                <div className="px-3.5 py-1.5 bg-amber-100 border border-amber-200 rounded-full text-[12px] font-bold text-amber-700">
                   Thử lại lần {file.retryInfo.attempt}/{file.retryInfo.maxAttempts} sau {file.retryInfo.secondsLeft}s...
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
                   <div className="h-2 bg-slate-200 rounded w-40 mb-3"></div>
                   <div className="h-2 bg-slate-200 rounded w-24"></div>
                 </div>
-                <p className="mt-4 text-xs font-bold animate-pulse text-[#717171]">AI đang phân tích và trích xuất...</p>
+                <p className="mt-4 text-[15px] font-bold animate-pulse text-[#717171]">AI đang phân tích và trích xuất...</p>
               </div>
             )}
           </div>
@@ -193,7 +193,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
             value={localText}
             onChange={handleChange}
             placeholder="Chưa có dữ liệu trích xuất."
-            className="flex-1 w-full p-3 bg-white text-slate-800 placeholder-slate-400 outline-none resize-none text-xs font-semibold leading-relaxed focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all border border-slate-200 rounded-xl"
+            className="flex-1 w-full p-3 bg-white text-slate-800 placeholder-slate-400 outline-none resize-none text-base font-semibold leading-relaxed focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all border border-slate-200 rounded-xl"
           />
         )}
       </div>
