@@ -59,27 +59,27 @@ export default function FileDropzone({ onFilesSelected }) {
 
   return (
     <label
-      className={`w-full p-10 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer min-h-[300px] ${
+      className={`w-full p-8 border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer min-h-[220px] rounded-[24px] shadow-[0_0_2px_0_rgba(0,0,0,0.15),_0_8px_40px_0_rgba(0,0,0,0.04),_0_2px_5px_0_rgba(0,0,0,0.05)] ${
         isDragActive 
-          ? 'border-indigo-500 bg-indigo-50/50 shadow-inner scale-[1.01]' 
-          : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50/40'
+          ? 'border-[#ffdd00] bg-[#ffdd00]/10 shadow-inner scale-[1.01]' 
+          : 'border-slate-300 bg-[#ffffff] hover:border-[#ffdd00] hover:bg-slate-50/20'
       }`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className={`p-4 rounded-full mb-4 transition-colors ${
-        isDragActive ? 'bg-indigo-500/10 text-indigo-600' : 'bg-slate-100 text-slate-500 border border-slate-200'
+      <div className={`p-4 rounded-full mb-3 transition-colors ${
+        isDragActive ? 'bg-[#ffdd00]/20 text-[#222222]' : 'bg-slate-50 text-[#717171] border border-slate-200'
       }`}>
-        <UploadCloud size={48} strokeWidth={1.5} />
+        <UploadCloud size={36} strokeWidth={1.5} />
       </div>
-      <h3 className="text-xl font-semibold text-slate-900 mb-2">
+      <h3 className="text-base font-extrabold text-[#222222] mb-1">
         {isDragActive ? 'Thả file vào đây...' : 'Kéo thả file của bạn vào đây'}
       </h3>
-      <p className="text-slate-600 text-center text-sm">
+      <p className="text-[#717171] text-center text-xs font-semibold leading-relaxed">
         Hoặc click để duyệt file từ máy tính của bạn<br/>
-        <span className="text-xs text-slate-400 mt-2 block font-medium">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
+        <span className="text-[10px] text-slate-400 mt-1 block font-bold">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
       </p>
 
       {/* Đặt thẻ input nằm trong label để xử lý click tự nhiên của trình duyệt, không cần JS click() tránh loop */}
