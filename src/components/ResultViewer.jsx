@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Copy, Check, FileText, Download, AlertCircle } from 'lucide-react';
 
-export default function ResultViewer({ file, allFiles, onUpdateResult }) {
+export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
 
@@ -135,6 +135,16 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           </h3>
         </div>
         <div className="flex items-center gap-2">
+          {onReset && (
+            <button
+              onClick={onReset}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-[#0b1c30] border border-slate-200 rounded-xl transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
+              title="Làm mới toàn bộ hàng đợi và kết quả"
+            >
+              <span className="material-symbols-outlined text-[14px] font-bold">refresh</span>
+              <span>Làm mới</span>
+            </button>
+          )}
           <button
             onClick={handleExportTxt}
             disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}

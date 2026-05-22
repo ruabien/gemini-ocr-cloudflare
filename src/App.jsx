@@ -18,6 +18,11 @@ function App() {
     setConfig(newConfig);
   }, []);
 
+  const handleReset = useCallback(() => {
+    setFiles([]);
+    setActiveFileId(null);
+  }, []);
+
   // Helper cập nhật tiến trình của PDF cha dựa trên trạng thái các trang con
   const updateParentProgress = (currentFiles, parentId) => {
     const siblingPages = currentFiles.filter(f => f.parentPdfId === parentId && f.isPdfPage);
@@ -452,6 +457,7 @@ function App() {
                   file={activeFile} 
                   allFiles={files} 
                   onUpdateResult={handleUpdateResult} 
+                  onReset={handleReset}
                 />
               </div>
             </div>
