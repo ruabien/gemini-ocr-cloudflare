@@ -96,21 +96,21 @@ export default function ApiConfig({ onConfigChange }) {
   };
 
   return (
-    <div className="bg-[#ffffff] border border-[#0d0129] w-full rounded-none p-4 shadow-[1px_1px_3px_0px_rgba(0,0,0,1)]">
+    <div className="bg-white border border-slate-200/80 w-full rounded-xl p-6 shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
-        <div className="flex items-center gap-2 text-[#0d0129] select-none">
-          <div className="p-2.5 bg-[#fffcf7] text-[#0d0129] border border-[#0d0129] rounded-none shrink-0">
+        <div className="flex items-center gap-2 text-slate-900 select-none">
+          <div className="p-2.5 bg-slate-50 text-slate-700 border border-slate-200/80 rounded-xl shrink-0">
             <KeyRound size={18} />
           </div>
-          <h2 className="font-extrabold text-sm tracking-tight text-[#0d0129]">Điền API Key của bạn</h2>
+          <h2 className="font-extrabold text-sm tracking-tight text-slate-900">Điền API Key của bạn</h2>
         </div>
 
         <div className="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full lg:justify-end">
           
           <div className="flex w-full sm:w-auto gap-2">
             <div className="relative flex-1 sm:w-64 group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#717171] group-focus-within:text-[#0d0129]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900">
                 <KeyRound size={14} />
               </div>
               <input
@@ -118,36 +118,36 @@ export default function ApiConfig({ onConfigChange }) {
                 placeholder="Nhập Gemini API Key"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-[#ffffff] border border-[#0d0129] rounded-none text-xs font-semibold text-[#0d0129] placeholder-[#717171] focus:outline-none focus:ring-1 focus:ring-[#19615c] focus:border-[#19615c] transition-all"
+                className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
               />
             </div>
 
             <button
               onClick={handleSaveKey}
               disabled={!apiKey}
-              className="px-5 py-2.5 bg-[#0d0129] hover:bg-[#19615c] text-white rounded-[4px] text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer border border-[#0d0129]"
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer border border-transparent"
               title="Lưu API Key vào trình duyệt"
             >
               <Save size={14} />
-              <span>Lưu Key</span>
+              <span>Lưu</span>
             </button>
           </div>
 
           <div className="flex w-full sm:w-auto gap-2">
             <div className="relative flex-1 sm:w-48 group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#717171] group-focus-within:text-[#0d0129]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900">
                 <Bot size={14} />
               </div>
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 bg-[#ffffff] border border-[#0d0129] rounded-none text-xs font-semibold text-[#0d0129] focus:outline-none focus:ring-1 focus:ring-[#19615c] focus:border-[#19615c] transition-all appearance-none cursor-pointer"
+                className="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
               >
                 {availableModels.map(m => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-[#717171]">
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
                 <svg width="8" height="5" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -157,7 +157,7 @@ export default function ApiConfig({ onConfigChange }) {
             <button
               onClick={fetchModels}
               disabled={isFetchingModels || !apiKey}
-              className="px-3.5 py-2 bg-[#ffffff] text-[#0d0129] hover:bg-slate-50 hover:text-[#0d0129] transition-all border border-[#0d0129] rounded-none flex items-center justify-center disabled:opacity-50 cursor-pointer"
+              className="px-3.5 py-2 bg-white text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 rounded-xl flex items-center justify-center disabled:opacity-50 cursor-pointer"
               title="Đồng bộ danh sách Model từ Google"
             >
               <RefreshCw size={14} className={isFetchingModels ? "animate-spin" : ""} />
@@ -170,7 +170,7 @@ export default function ApiConfig({ onConfigChange }) {
               placeholder="VD: gemini-1.5-pro-latest"
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
-              className="w-full sm:w-48 px-3 py-2.5 bg-[#ffffff] border border-[#0d0129] rounded-none text-xs font-semibold text-[#0d0129] placeholder-[#717171] focus:outline-none focus:ring-1 focus:ring-[#19615c] focus:border-[#19615c] transition-all"
+              className="w-full sm:w-48 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
             />
           )}
           
@@ -178,9 +178,9 @@ export default function ApiConfig({ onConfigChange }) {
       </div>
 
       {showToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#19615c] text-white px-6 py-3.5 rounded-[4px] border border-[#0d0129] shadow-[2px_2px_6px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-4 duration-300 font-bold text-sm">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-emerald-600 text-white px-6 py-3.5 rounded-lg border border-emerald-700 shadow-md animate-in fade-in slide-in-from-bottom-4 duration-300 font-bold text-sm">
           <div className="w-2 h-2 bg-[#ffffff] rounded-full animate-ping" />
-          <span>✨ Đã lưu API Key thành công!</span>
+          <span>✨ Đã lưu API Key của bạn an toàn!</span>
         </div>
       )}
     </div>
