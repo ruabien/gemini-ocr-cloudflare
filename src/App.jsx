@@ -465,80 +465,125 @@ function App() {
             <p className="text-on-surface-variant text-body-md font-medium">So sánh sự khác biệt vượt trội</p>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-outline-variant/30 shadow-sm font-quicksand">
-            {/* Thanh Tiêu Đề Cố Định */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 bg-surface/50">
-              <div className="p-5 flex items-center gap-2 border-b md:border-b-0 md:border-r border-slate-200/60">
-                <span className="text-xl shrink-0">❌</span>
-                <span className="text-lg md:text-xl font-bold text-[#0b1c30]">Cách cũ</span>
+          <div className="space-y-6">
+            <div className="hidden md:grid grid-cols-2 gap-0 mb-2">
+              <div className="text-center py-2 bg-error-container/10 rounded-l-xl border border-outline-variant/30">
+                <span className="text-label-md font-bold text-error uppercase tracking-widest">Cách cũ (Truyền thống)</span>
               </div>
-              <div className="p-5 flex items-center gap-2">
-                <span className="text-xl shrink-0">✨</span>
-                <span className="text-lg md:text-xl font-bold text-[#0058be]">Giải pháp</span>
+              <div className="text-center py-2 bg-tertiary-container/10 rounded-r-xl border border-outline-variant/30 border-l-0">
+                <span className="text-label-md font-bold text-tertiary uppercase tracking-widest">Giải pháp ScanJoy</span>
               </div>
             </div>
 
-            {/* Hàng 1: Tối ưu quy trình xử lý */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="p-5 border-b md:border-b-0 md:border-r border-slate-200/60">
-                <p className="text-label-sm font-bold text-error mb-1.5 uppercase tracking-wider md:hidden">Cách cũ</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi cặm cụi copy từng đoạn thủ công cực kỳ mất thời gian.
-                </p>
-              </div>
-              <div className="p-5">
-                <p className="text-label-sm font-bold text-tertiary mb-1.5 uppercase tracking-wider md:hidden">Giải pháp</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Hỗ trợ OCR hàng loạt thả ga, tự động xử lý mượt mà hàng chục file ảnh/PDF cùng một lúc nhờ hệ thống hàng đợi thông minh.
-                </p>
-              </div>
-            </div>
-
-            {/* Hàng 2: Chuẩn hóa định dạng đầu ra */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="p-5 border-b md:border-b-0 md:border-r border-slate-200/60">
-                <p className="text-label-sm font-bold text-error mb-1.5 uppercase tracking-wider md:hidden">Cách cũ</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng thực chất là chứa hình ảnh dán vào, không thể chỉnh sửa text.
-                </p>
-              </div>
-              <div className="p-5">
-                <p className="text-label-sm font-bold text-tertiary mb-1.5 uppercase tracking-wider md:hidden">Giải pháp</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Tự động dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch ký tự rác, xuất file .txt chứa 100% ký tự sạch để paste thẳng vào Excel hoặc AI RAG.
-                </p>
+            {/* Row 1: Tối ưu quy trình xử lý */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>heart_broken</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng chứa hình ảnh dán vào.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Tự động dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch ký tự rác, xuất file .txt sạch 100% để sử dụng ngay.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Hàng 3: Độ chính xác & Giới hạn sử dụng */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="p-5 border-b md:border-b-0 md:border-r border-slate-200/60">
-                <p className="text-label-sm font-bold text-error mb-1.5 uppercase tracking-wider md:hidden">Cách cũ</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Ứng dụng nước ngoài nhận diện Tiếng Việt không chuẩn, lỗi chính tả be bét; giới hạn keo kiệt 1 - 2 trang và bắt đóng phí bản quyền đắt đỏ.
-                </p>
-              </div>
-              <div className="p-5">
-                <p className="text-label-sm font-bold text-tertiary mb-1.5 uppercase tracking-wider md:hidden">Giải pháp</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Tận dụng trí tuệ nhân tạo Gemini tối tân để đọc hiểu ngữ nghĩa và tự sửa chính tả; áp dụng mô hình BYOK (Tự điền Key miễn phí) để quét vô hạn số trang hoàn toàn miễn phí.
-                </p>
+            {/* Row 2: Chuẩn hóa định dạng đầu ra */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>payments</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Ứng dụng nước ngoài nhận diện Tiếng Việt không chuẩn; giới hạn keo kiệt 1 - 2 trang và bắt đóng phí đắt đỏ.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>all_inclusive</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Tận dụng AI Gemini tối tân để tự sửa chính tả; áp dụng mô hình BYOK để quét vô hạn số trang hoàn toàn miễn phí.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Hàng 4: Bảo mật an toàn dữ liệu */}
-            <div className="grid grid-cols-1 md:grid-cols-2 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="p-5 border-b md:border-b-0 md:border-r border-slate-200/60">
-                <p className="text-label-sm font-bold text-error mb-1.5 uppercase tracking-wider md:hidden">Cách cũ</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Tài liệu, hợp đồng, hồ sơ vụ án tối mật bị lưu lại trên máy chủ của bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
-                </p>
+            {/* Row 3: Độ chính xác & Giới hạn sử dụng */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Tài liệu bị lưu lại trên máy chủ bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>shield_lock</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Kiến trúc Zero-Server. Toàn bộ xử lý diễn ra trên trình duyệt, cam kết không lưu trữ bất kỳ tệp tin nào của bạn.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="p-5">
-                <p className="text-label-sm font-bold text-tertiary mb-1.5 uppercase tracking-wider md:hidden">Giải pháp</p>
-                <p className="text-base text-[#424754] leading-relaxed">
-                  Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ quá trình xử lý diễn ra trực tiếp trên trình duyệt của bạn hoặc hạ tầng Serverless Cloudflare, cam kết không lưu trữ bất kỳ tệp tin nào của người dùng.
-                </p>
+            </div>
+
+            {/* Row 4: Bảo mật an toàn dữ liệu */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Tài liệu tối mật bị lưu lại trên máy chủ bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <div>
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ xử lý diễn ra trên trình duyệt hoặc Cloudflare, cam kết không lưu trữ bất kỳ tệp tin nào.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
