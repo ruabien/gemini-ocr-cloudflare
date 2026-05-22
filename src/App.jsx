@@ -365,7 +365,7 @@ function App() {
     <div className="min-h-screen bg-background text-on-surface font-body-md selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
       {/* TopAppBar */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
-        <div className="flex justify-between items-center w-full px-gutter max-w-container-max mx-auto">
+        <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <span className="material-symbols-outlined text-primary text-headline-md">bubble_chart</span>
             <span className="text-headline-md font-headline-md font-bold text-primary">ScanJoy</span>
@@ -396,9 +396,9 @@ function App() {
         </div>
       </header>
 
-      <main className="pt-24 pb-12 space-y-16 flex-1 flex flex-col justify-start">
+      <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-24 pb-12 space-y-16 flex-1 flex flex-col justify-start w-full">
         {/* Section 1: Hero & App */}
-        <section id="cong-cu" className="max-w-container-max w-full mx-auto px-4 text-center space-y-8">
+        <section id="cong-cu" className="w-full text-center space-y-8">
           <div className="space-y-4 animate-fade-in">
             <h1 className="text-display-lg-mobile md:text-display-lg font-display-lg text-primary tracking-tight">
               Chuyển đổi Hình ảnh & PDF sang Văn bản
@@ -459,7 +459,7 @@ function App() {
         </section>
 
         {/* Section 2: Comparison */}
-        <section id="so-sanh" className="max-w-container-max w-full mx-auto px-4 space-y-8 pt-10">
+        <section id="so-sanh" className="w-full space-y-8 pt-10">
           <div className="text-center space-y-2">
             <h2 className="text-headline-lg font-headline-lg text-primary">Tại sao nên chọn ScanJoy?</h2>
             <p className="text-on-surface-variant text-body-md font-medium">So sánh sự khác biệt vượt trội</p>
@@ -596,7 +596,7 @@ function App() {
         </section>
 
         {/* Section 3: FAQ */}
-        <section id="faq" className="max-w-container-max w-full mx-auto px-4 space-y-8 pt-10">
+        <section id="faq" className="w-full space-y-8 pt-10">
           <h2 className="text-headline-lg font-headline-lg text-center text-primary">Câu hỏi thường gặp</h2>
           <div className="space-y-4 max-w-4xl mx-auto">
             {faqItems.map((item, index) => {
@@ -629,7 +629,7 @@ function App() {
 
       {/* Footer */}
       <footer className="bg-surface-container-lowest dark:bg-inverse-surface py-12 border-t border-outline-variant/30">
-        <div className="max-w-container-max mx-auto px-gutter text-center">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-8 text-center">
           <p className="text-label-md text-on-surface-variant">© 2026 Gemini OCR Tiếng Việt</p>
         </div>
       </footer>
