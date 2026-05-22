@@ -6,13 +6,17 @@ import ResultViewer from './components/ResultViewer';
 import { 
   Sparkles, 
   Play, 
+  Key, 
   ChevronDown, 
   Shield, 
-  ArrowRight,
-  Frown,
+  ArrowRight, 
+  Clock, 
+  FileText,
   XCircle,
-  Rocket,
-  CheckCircle2
+  AlertCircle,
+  Lock,
+  Zap,
+  ShieldAlert
 } from 'lucide-react';
 import { processOCR } from './utils/ocrService';
 
@@ -24,13 +28,11 @@ function App() {
 
   const processingRef = useRef(false);
 
-  const activeFile = files.find(f => f.id === activeFileId);
-
   const handleConfigChange = useCallback((newConfig) => {
     setConfig(newConfig);
   }, []);
 
-  // Helper updating parent PDF progress based on child pages
+  // Helper cập nhật tiến trình của PDF cha dựa trên trạng thái các trang con
   const updateParentProgress = (currentFiles, parentId) => {
     const siblingPages = currentFiles.filter(f => f.parentPdfId === parentId && f.isPdfPage);
     const completedPages = siblingPages.filter(p => p.status === 'completed' || p.status === 'error').length;
@@ -90,6 +92,7 @@ function App() {
     setFiles(prev => {
       const item = prev.find(f => f.id === id);
       if (item && item.isParentPdf) {
+        // Xóa PDF cha -> Xóa toàn bộ các trang con tương ứng
         return prev.filter(f => f.id !== id && f.parentPdfId !== id);
       }
       return prev.filter(f => f.id !== id);
@@ -104,15 +107,11 @@ function App() {
   };
 
   const startOCR = async () => {
-    const activeApiKey = config?.apiKey || localStorage.getItem('ocr_api_key') || localStorage.getItem('gemini_api_key');
-    const activeWorkerUrl = config?.workerUrl || localStorage.getItem('ocr_worker_url') || 'https://gemini-ocr-backend.ruabien1504.workers.dev';
-    const activeModel = config?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
-
-    if (!activeApiKey) {
-      alert("Vui lòng điền API Key của bạn trước khi bắt đầu.");
+    if (!config || !config.apiKey) {
+      alert("Vui lòng cấu hình API Key ở phía trên cùng trước khi bắt đầu.");
       return;
     }
-    if (!activeWorkerUrl) {
+    if (!config.workerUrl) {
       alert("Vui lòng cấu hình Cloudflare Worker URL ở phía trên cùng trước khi bắt đầu.");
       return;
     }
@@ -120,6 +119,7 @@ function App() {
     setIsProcessing(true);
     processingRef.current = true;
 
+    // Reset trạng thái lỗi của các tệp (cả trang con và ảnh độc lập)
     setFiles(prev => prev.map(f => {
       if (f.status === 'error') {
         return { ...f, status: 'waiting', error: null };
@@ -127,6 +127,7 @@ function App() {
       return f;
     }));
 
+    // Lấy danh sách tệp cần chạy OCR thực tế một cách đồng bộ từ state files hiện tại
     const currentWaiting = files
       .map(f => f.status === 'error' ? { ...f, status: 'waiting', error: null } : f)
       .filter(f => !f.isPdfPage && f.status === 'waiting');
@@ -148,9 +149,9 @@ function App() {
       try {
         const textResult = await processOCR(
           fileToProcess.originalFile,
-          activeApiKey,
-          activeModel,
-          activeWorkerUrl,
+          config.apiKey,
+          config.model,
+          config.workerUrl,
           (event) => {
             if (event.type === 'status') {
               setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
@@ -305,6 +306,7 @@ function App() {
           } : f);
           
           if (fileToProcess.isParentPdf) {
+            // Set all non-completed pages to error as well
             updated = updated.map(f => {
               if (f.parentPdfId === fileToProcess.id && f.status !== 'completed') {
                 return { ...f, status: 'error', error: error.message };
@@ -317,6 +319,7 @@ function App() {
         });
       }
 
+      // Khoảng trễ nhỏ giữa các file chính (ví dụ 1 giây)
       if (currentIndex < currentWaiting.length) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
@@ -330,14 +333,6 @@ function App() {
     processingRef.current = false;
   };
 
-  const handleConvertClick = () => {
-    if (files.length === 0) {
-      alert("Vui lòng kéo thả hoặc chọn file tài liệu trước!");
-      return;
-    }
-    startOCR();
-  };
-
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   const scrollToSection = (id) => {
@@ -349,63 +344,62 @@ function App() {
 
   const faqItems = [
     {
-      q: "ScanJoy có bảo mật không?",
-      a: "ScanJoy được thiết kế với kiến trúc bảo mật Zero-Server tuyệt đối. Tất cả các quá trình xử lý diễn ra trực tiếp trên trình duyệt của bạn thông qua API của Google Gemini, cam kết không lưu trữ bất kỳ tệp tin hay dữ liệu nào của bạn."
+      q: "Ứng dụng này có an toàn và bảo mật thông tin không?",
+      a: "Hoàn toàn bảo mật! Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tất cả tệp hình ảnh, tài liệu PDF và nội dung trích xuất đều được xử lý cục bộ và gửi trực tiếp tới API của Google qua HTTPS. Chúng tôi không sử dụng máy chủ trung gian và không lưu trữ bất kỳ dữ liệu nào của bạn."
     },
     {
-      q: "Có hỗ trợ tiếng Việt không?",
-      a: "Có, ScanJoy hỗ trợ nhận diện tiếng Việt cực kỳ tốt, kể cả các ký tự có dấu phức tạp và font chữ viết tay rõ ràng."
+      q: "API Key của tôi được lưu trữ ở đâu?",
+      a: "API Key được lưu trữ trực tiếp trong localStorage trên trình duyệt cá nhân của bạn. Dữ liệu này được lưu cục bộ bởi trình duyệt và không bao giờ bị gửi ra ngoài ngoại trừ việc xác thực trực tiếp với máy chủ Google Gemini."
     },
     {
-      q: "Giới hạn dung lượng file là bao nhiêu?",
-      a: "Bạn có thể tải file lên đến 20MB. Đối với các tệp PDF nhiều trang, chúng tôi khuyên bạn nên chia nhỏ nếu kích thước vượt quá giới hạn này."
+      q: "Tại sao ứng dụng lại tự động ghép kết quả thành một hàng ngang?",
+      a: "Đây là tính năng tối ưu đặc biệt được thiết kế cho các tác vụ tự động hóa và nhập liệu nhanh (ví dụ: dán dữ liệu vào Word, Excel hoặc Ai). Việc ghép văn bản thành một dòng giúp loại bỏ các ký tự xuống dòng phức tạp gây lỗi định dạng bảng biểu."
     },
     {
       q: "Làm thế nào để lấy Gemini API Key miễn phí?",
       a: (
         <span>
-          Bạn có thể truy cập{' '}
-          <a 
-            href="https://aistudio.google.com" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="underline hover:text-[#0058be] font-bold"
+          Bạn có thể truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google của bạn và nhấn nút "Get API key" để tạo một mã khóa mới hoàn toàn miễn phí.{" "}
+          <a
+            href="https://www.youtube.com/watch?v=ag0bHshpQ4U"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-indigo-500 font-semibold underline inline-flex items-center gap-0.5"
           >
-            Google AI Studio (aistudio.google.com)
+            Xem Video hướng dẫn
           </a>
-          , đăng nhập bằng tài khoản Google của bạn và nhấn nút "Get API key" để tạo một mã khóa mới hoàn toàn miễn phí.
         </span>
       )
     }
   ];
 
+  const activeFile = files.find(f => f.id === activeFileId);
+
   return (
-    <div className="min-h-screen bg-surface-bright text-on-surface font-sans selection:bg-primary-fixed/30 selection:text-on-primary-container flex flex-col scroll-smooth">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 h-16 flex items-center select-none">
-        <div className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Sparkles size={18} className="animate-pulse fill-current" />
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 flex flex-col scroll-smooth">
+      {/* Sticky Glassmorphism Navbar */}
+      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+              <Sparkles size={20} />
             </div>
-            <span className="font-display font-bold text-headline-md text-primary tracking-tight">
-              ScanJoy
+            <span className="font-extrabold text-lg text-indigo-950 tracking-tight flex items-center gap-1.5">
+              Gemini OCR <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider">1-Line</span>
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-label-md text-on-surface-variant">
-            <button onClick={() => scrollToSection('workspace')} className="hover:text-primary transition-colors cursor-pointer">Sử dụng</button>
-            <button onClick={() => scrollToSection('so-sanh')} className="hover:text-primary transition-colors cursor-pointer">So sánh đối ứng</button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-primary transition-colors cursor-pointer">Hỏi đáp & Bảo mật</button>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+            <button onClick={() => scrollToSection('cong-cu')} className="hover:text-indigo-600 transition-colors cursor-pointer">Sử dụng</button>
+            <button onClick={() => scrollToSection('noi-dau')} className="hover:text-indigo-600 transition-colors cursor-pointer">Nỗi đau khách hàng</button>
+            <button onClick={() => scrollToSection('giai-phap')} className="hover:text-indigo-600 transition-colors cursor-pointer">Giải pháp vượt trội</button>
+            <button onClick={() => scrollToSection('faq')} className="hover:text-indigo-600 transition-colors cursor-pointer">Hỏi đáp & Bảo mật</button>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <span className="text-label-sm bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
-              BYOK Client
-            </span>
+          <div>
             <button 
-              onClick={() => scrollToSection('workspace')}
-              className="px-4 h-11 text-label-md font-bold bg-primary hover:bg-primary-container text-on-primary rounded-full transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 duration-200"
+              onClick={() => scrollToSection('cong-cu')}
+              className="px-4.5 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               Trải nghiệm ngay
               <ArrowRight size={14} />
@@ -414,47 +408,46 @@ function App() {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-grow flex flex-col gap-12 md:gap-16">
-        
-        {/* Section 1: Hero ở trên cùng */}
-        <section className="max-w-container-max mx-auto text-center space-y-4 select-none pt-4">
-          <div className="space-y-4 animate-fade-in">
-            <h1 className="text-display-lg-mobile md:text-display-lg font-display-lg text-primary tracking-tight leading-tight">
-              Chuyển đổi Hình ảnh &amp; PDF sang Văn bản
+      {/* Section 1: OCR Tool Workspace (At the very top) */}
+      <section id="cong-cu" className="relative overflow-hidden bg-slate-50 py-10 lg:py-16 border-b border-slate-200/60 flex-1 flex flex-col justify-start">
+        <div className="absolute top-0 left-[10%] w-96 h-96 bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-0 right-[10%] w-96 h-96 bg-slate-200/40 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center mb-10 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-full text-xs font-semibold text-slate-600 mb-4 shadow-sm animate-fade-in">
+              <Sparkles size={12} className="text-indigo-600 animate-pulse" />
+              Ứng dụng Client-Side Bảo mật tuyệt đối - Không lưu trữ dữ liệu
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-indigo-950 tracking-tight leading-tight mb-4">
+              Bóc Tách Văn Bản Tiếng Việt<br />
+              <span className="text-amber-600">
+                Hàng Loạt Ra 1 Dòng Duy Nhất
+              </span>
             </h1>
-            <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
-              Biến mọi tài liệu giấy thành văn bản số chỉ trong vài giây với công nghệ AI hiện đại của ScanJoy.
+            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+              Tự cấu hình API Key Gemini của bạn để OCR không giới hạn trang, bóc tách hàng loạt file ảnh & PDF, tự động ghép và làm sạch định dạng.
             </p>
           </div>
-        </section>
 
-        {/* Section 1.5: Workspace */}
-        <section id="workspace" className="py-2 space-y-6 w-full max-w-5xl mx-auto animate-fade-in">
-          <ApiConfig onConfigChange={handleConfigChange} />
+          <div className="mb-8 max-w-4xl mx-auto bg-white rounded-2xl p-1.5 border border-slate-200/80 shadow-sm transition-all hover:border-slate-300">
+            <ApiConfig onConfigChange={handleConfigChange} />
+          </div>
 
           {files.length === 0 ? (
-            <div className="space-y-6 max-w-2xl mx-auto w-full">
+            <div className="max-w-3xl mx-auto bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 animate-in fade-in zoom-in duration-300">
               <FileDropzone onFilesSelected={handleFilesSelected} />
-              
-              <div className="flex justify-center pt-2 select-none">
-                <button 
-                  onClick={handleConvertClick}
-                  className="bg-primary hover:bg-primary-container text-on-primary h-14 px-8 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 w-full max-w-xs flex items-center justify-center gap-2 cursor-pointer text-body-lg"
-                >
-                  <span>Chuyển đổi ngay</span>
-                  <Sparkles size={18} className="animate-pulse" />
-                </button>
-              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[500px]">
-              <div className="lg:col-span-5 flex flex-col gap-5">
-                <div className="w-full">
-                  <FileDropzone onFilesSelected={handleFilesSelected} />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] animate-in fade-in slide-in-from-bottom-4 duration-300">
+              
+              {/* Left Column: Dropzone + Queue */}
+              <div className="lg:col-span-5 flex flex-col gap-6">
+                <div className="bg-white p-2 rounded-xl border border-slate-200/80 shadow-sm">
+                   <FileDropzone onFilesSelected={handleFilesSelected} />
                 </div>
                 
-                <div className="flex flex-col gap-4 bg-surface-container-lowest p-5 sm:p-6 rounded-xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,88,190,0.04)] flex-1 max-h-[550px] overflow-hidden">
+                <div className="flex flex-col gap-4 bg-white p-5 rounded-xl border border-slate-200/80 flex-1 max-h-[600px] overflow-hidden shadow-sm">
                   <QueueList 
                     files={files} 
                     activeFileId={activeFileId} 
@@ -462,19 +455,20 @@ function App() {
                     onRemoveFile={handleRemoveFile}
                   />
                   
-                  <div className="pt-4 mt-auto border-t border-outline-variant/30 shrink-0">
+                  <div className="pt-4 mt-auto border-t border-slate-100 shrink-0">
                     <button
                       onClick={startOCR}
                       disabled={isProcessing || files.some(f => f.status === 'splitting') || !files.some(f => !f.isParentPdf && (f.status === 'waiting' || f.status === 'error'))}
-                      className="w-full h-12 px-5 bg-primary hover:bg-primary-container text-on-primary font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-body-md"
+                      className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-sm active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <Play size={16} fill="white" stroke="white" />
-                      {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
+                      <Play size={18} fill="white" />
+                      {isProcessing ? 'Đang xử lý...' : 'Bắt đầu OCR'}
                     </button>
                   </div>
                 </div>
               </div>
 
+              {/* Right Column: Result Viewer */}
               <div className="lg:col-span-7 h-[calc(100vh-140px)] sticky top-20">
                 <ResultViewer 
                   file={activeFile} 
@@ -484,118 +478,237 @@ function App() {
               </div>
             </div>
           )}
-        </section>
+        </div>
+      </section>
 
-        {/* Section 2: Comparison Grid */}
-        <section id="so-sanh" className="max-w-container-max mx-auto w-full space-y-8">
-          <h2 className="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-center text-primary">
-            Tại sao nên chọn ScanJoy?
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Old Way */}
-            <div className="glass-card p-6 rounded-xl shadow-sm border border-outline-variant/30 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Frown size={60} className="text-error" />
+      {/* Section 2: Customer Pain Points */}
+      <section id="noi-dau" className="py-20 bg-white border-b border-slate-200/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full text-xs font-semibold text-rose-600 mb-4 uppercase tracking-wider">
+              Khó Khăn Thực Tế
+            </span>
+            <h2 className="text-3xl font-extrabold text-indigo-950 tracking-tight mb-4 sm:text-4xl">
+              Tại Sao Việc OCR Tiếng Việt Hiện Tại Lại Mệt Mỏi Đến Thế?
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base">
+              Bóc tách văn bản thủ công hay dùng các công cụ nước ngoài thông thường luôn đi kèm những phiền toái kinh điển đánh mất thời gian của bạn.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Pain Point 1 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
+              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Clock size={22} />
               </div>
-              <h3 className="text-headline-md font-headline-md text-on-surface mb-6">Cách cũ</h3>
-              <ul className="space-y-4">
-                <li className="flex items-center gap-3">
-                  <XCircle size={20} className="text-error shrink-0 fill-error/10" />
-                  <span className="text-body-md text-on-surface-variant">Gõ phím mỏi tay</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <XCircle size={20} className="text-error shrink-0 fill-error/10" />
-                  <span className="text-body-md text-on-surface-variant">Dễ sai sót</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <XCircle size={20} className="text-error shrink-0 fill-error/10" />
-                  <span className="text-body-md text-on-surface-variant">Mất hàng giờ</span>
-                </li>
-              </ul>
+              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
+                Bóc tách từng trang mệt mỏi
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Phải thực hiện OCR cho từng trang tài liệu một, rồi sao chép từng đoạn nhỏ lẻ thủ công từ Google Drive cực kỳ tốn thời gian khi bạn có cả một tập tài liệu dài.
+              </p>
             </div>
-            
-            {/* ScanJoy Way */}
-            <div className="bg-primary-container/10 p-6 rounded-xl shadow-md border border-primary/20 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Rocket size={60} className="text-primary" />
+
+            {/* Pain Point 2 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
+              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <FileText size={22} />
               </div>
-              <div className="flex items-center gap-2 mb-6">
-                <h3 className="text-headline-md font-headline-md text-primary">Cách ScanJoy</h3>
-                <span className="bg-secondary-container text-on-secondary-container text-label-sm px-2 py-0.5 rounded-full select-none animate-pulse">
-                  Khuyên dùng
-                </span>
+              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
+                Lỗi định dạng & Xuống dòng rác
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Văn bản trích xuất bị ngắt dòng vô tội vạ, dính khoảng trắng thừa lung tung. Bạn phải căng mắt ngồi chỉnh sửa thủ công để làm sạch trước khi đem đi sử dụng.
+              </p>
+            </div>
+
+            {/* Pain Point 3 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
+              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <AlertCircle size={22} />
               </div>
-              <ul className="space-y-4">
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 size={20} className="text-tertiary shrink-0 fill-tertiary/10" />
-                  <span className="text-body-md font-medium text-on-surface">Xử lý trong giây lát</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 size={20} className="text-tertiary shrink-0 fill-tertiary/10" />
-                  <span className="text-body-md font-medium text-on-surface">Độ chính xác 99%</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <CheckCircle2 size={20} className="text-tertiary shrink-0 fill-tertiary/10" />
-                  <span className="text-body-md font-medium text-on-surface">Tiết kiệm thời gian tối đa</span>
-                </li>
-              </ul>
+              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
+                AI ngoại ngữ dịch sai ngữ cảnh
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Sử dụng các trang web nước ngoài thì tiếng Việt nhận diện không chuẩn, lỗi chính tả nhiều do mô hình AI của họ không hiểu rõ đặc trưng ngữ cảnh tiếng Việt.
+              </p>
+            </div>
+
+            {/* Pain Point 4 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
+              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <XCircle size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
+                Xuất file Word "giả cầy" chứa ảnh
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Hệ thống xuất ra file .docx nhưng thực chất bên trong chỉ chứa hình ảnh dán trực tiếp vào, hoàn toàn không thể bôi đen hay chỉnh sửa nội dung văn bản.
+              </p>
+            </div>
+
+            {/* Pain Point 5 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
+              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <Lock size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
+                Giới hạn số trang & Phí đắt đỏ
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Bị giới hạn ngặt nghèo chỉ cho phép dùng thử 1 - 2 trang. Bắt ép người dùng trả các khoản phí dịch vụ đắt đỏ nếu muốn xử lý nhiều tài liệu hơn.
+              </p>
+            </div>
+
+            {/* Pain Point 6 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
+              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <ShieldAlert size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
+                Nỗi sợ lộ bí mật tài liệu
+              </h3>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Khi sử dụng các web dịch vụ trực tuyến, tài liệu của bạn bị lưu lại trên máy chủ của họ, đối mặt với nguy cơ rò rỉ thông tin tối mật của hồ sơ vụ án, hợp đồng hoặc dữ liệu nội bộ doanh nghiệp.
+              </p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Section 3: FAQ */}
-        <section id="faq" className="max-w-container-max mx-auto w-full space-y-8">
-          <h2 className="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-center text-primary">
-            Câu hỏi thường gặp
-          </h2>
+      {/* Section 3: Outstanding Solution */}
+      <section id="giai-phap" className="py-20 bg-slate-50 border-b border-slate-200/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-semibold text-indigo-600 mb-4 uppercase tracking-wider">
+              Giải Pháp Vượt Trội
+            </span>
+            <h2 className="text-3xl font-extrabold text-indigo-950 tracking-tight mb-4 sm:text-4xl">
+              Gemini OCR 1-Line - Công Nghệ Đột Phá
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base">
+              Chúng tôi mang đến giải pháp kết hợp sức mạnh trí tuệ nhân tạo của Google Gemini và cơ chế tối ưu luồng công việc của bạn.
+            </p>
+          </div>
 
-          <div className="space-y-4 w-full max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Solution 1 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
+              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                <Zap size={24} className="text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                  Xuất file TXT 1 dòng thuần túy, sạch rác định dạng
+                </h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Tính năng loại bỏ hoàn toàn các ký tự xuống dòng rác, khoảng trắng thừa thãi. Xuất ra tệp TXT 1 dòng cực sạch giúp dán thẳng vào Word, Excel hoặc nạp trực tiếp vào cơ sở dữ liệu AI RAG mà không bị lỗi cấu trúc bảng.
+                </p>
+              </div>
+            </div>
+
+            {/* Solution 2 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
+              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                <Sparkles size={24} className="text-indigo-650" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                  Tự động phát hiện và sửa lỗi chính tả bằng AI
+                </h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Tận dụng tối đa sức mạnh thấu hiểu ngữ nghĩa sâu sắc của Google Gemini để tự phát hiện và chuẩn hóa lỗi chính tả của ảnh gốc. Đọc tốt các chữ bị mờ, tài liệu cũ hoặc font chữ cổ xưa khó nhận diện.
+                </p>
+              </div>
+            </div>
+
+            {/* Solution 3 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
+              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                <Key size={24} className="text-indigo-650" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                  Mô hình BYOK: Tự nhập Key miễn phí, OCR vô hạn
+                </h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Sử dụng cơ chế Bring Your Own Key để tận dụng tài nguyên Google hoàn toàn miễn phí của riêng bạn. Thoải mái bóc tách hàng loạt file hình ảnh hay tài liệu PDF cực dài mà không lo giới hạn trang hay tốn chi phí.
+                </p>
+              </div>
+            </div>
+
+            {/* Solution 4 */}
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
+              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                <Shield size={24} className="text-indigo-650" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                  Bảo mật dữ liệu tuyệt đối cấp Client-Side
+                </h3>
+                <p className="text-slate-600 text-sm leading-relaxed">
+                  Cam kết bảo vệ dữ liệu ở mức cao nhất. Tài liệu của bạn chỉ được lưu trữ cục bộ trên trình duyệt và gửi trực tiếp tới API của Google qua HTTPS. Chúng tôi hoàn toàn không lưu trữ tệp trên bất kỳ máy chủ nào.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Accordion Section */}
+      <section id="faq" className="py-20 bg-white border-b border-slate-200/60">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-semibold text-indigo-600 mb-4">
+              <Shield size={12} />
+              Đảm bảo an toàn thông tin
+            </div>
+            <h2 className="text-3xl font-extrabold text-indigo-950 tracking-tight mb-4">
+              Hỏi Đáp & Chính Sách Bảo Mật
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base">
+              Giải đáp các thắc mắc về cơ chế hoạt động, độ tin cậy và cam kết bảo vệ dữ liệu người dùng.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4">
             {faqItems.map((item, index) => {
+              const isOpen = openFaqIndex === index;
               return (
-                <details 
+                <div 
                   key={index}
-                  open={openFaqIndex === index}
-                  onToggle={(e) => {
-                    if (e.target.open) {
-                      setOpenFaqIndex(index);
-                    } else if (openFaqIndex === index) {
-                      setOpenFaqIndex(null);
-                    }
-                  }}
-                  className="group bg-surface-container-lowest rounded-xl border border-outline-variant/30 open:border-primary/30 transition-all duration-300"
+                  className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden transition-all duration-300 animate-fade-in"
                 >
-                  <summary className="flex justify-between items-center p-5 cursor-pointer list-none list-inside select-none">
-                    <span className="text-body-lg font-bold text-on-surface leading-relaxed font-display pr-4">{item.q}</span>
+                  <button
+                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                    className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-slate-800 hover:text-indigo-600 hover:bg-slate-50/50 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    <span className="pr-4">{item.q}</span>
                     <ChevronDown 
                       size={18} 
-                      className="text-on-surface-variant group-open:rotate-180 transition-transform duration-300 shrink-0" 
+                      className={`text-slate-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-indigo-600' : ''}`} 
                     />
-                  </summary>
-                  <div className="px-5 pb-5 text-on-surface-variant leading-relaxed text-body-md">
-                    {item.a}
-                  </div>
-                </details>
+                  </button>
+                  
+                  {isOpen && (
+                    <div className="px-6 pb-5 pt-4 text-slate-600 text-sm leading-relaxed bg-slate-50/50 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                      {item.a}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
-        </section>
-
-      </main>
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="bg-surface-container-lowest py-12 border-t border-outline-variant/30 select-none">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-gutter max-w-container-max mx-auto">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <span className="text-label-md font-label-md font-bold text-secondary">ScanJoy</span>
-            <p className="text-label-sm font-label-sm text-on-surface-variant">© 2026 ScanJoy. Made with joy for efficient minds.</p>
-          </div>
-          <div className="flex gap-6">
-            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#workspace">Security</a>
-            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#workspace">Formats</a>
-            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#so-sanh">Pricing</a>
-            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#faq">Privacy</a>
-          </div>
+      <footer className="bg-white text-slate-500 py-8 border-t border-slate-200/85 text-center text-xs">
+        <div className="max-w-7xl mx-auto px-4">
+          <p className="mb-2 text-slate-600 font-semibold">Gemini OCR Tiếng Việt Hàng Loạt Ra 1 Dòng - Phiên bản Client-Side Bảo Mật</p>
+          <p className="text-slate-400">© {new Date().getFullYear()} Công cụ phát triển mã nguồn mở. Cam kết không thu thập dữ liệu người dùng.</p>
         </div>
       </footer>
     </div>
