@@ -12,9 +12,7 @@ import {
   ArrowRight, 
   Clock, 
   FileText,
-  XCircle,
   AlertCircle,
-  Lock,
   Zap,
   ShieldAlert
 } from 'lucide-react';
@@ -391,8 +389,7 @@ function App() {
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <button onClick={() => scrollToSection('cong-cu')} className="hover:text-indigo-600 transition-colors cursor-pointer">Sử dụng</button>
-            <button onClick={() => scrollToSection('noi-dau')} className="hover:text-indigo-600 transition-colors cursor-pointer">Nỗi đau khách hàng</button>
-            <button onClick={() => scrollToSection('giai-phap')} className="hover:text-indigo-600 transition-colors cursor-pointer">Giải pháp vượt trội</button>
+            <button onClick={() => scrollToSection('so-sanh')} className="hover:text-indigo-600 transition-colors cursor-pointer">Nỗi đau & Giải pháp</button>
             <button onClick={() => scrollToSection('faq')} className="hover:text-indigo-600 transition-colors cursor-pointer">Hỏi đáp & Bảo mật</button>
           </nav>
 
@@ -481,176 +478,167 @@ function App() {
         </div>
       </section>
 
-      {/* Section 2: Customer Pain Points */}
-      <section id="noi-dau" className="py-20 bg-white border-b border-slate-200/60">
+      {/* Section 2: So sánh Nỗi đau & Giải pháp */}
+      <section id="so-sanh" className="py-20 bg-white border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16 max-w-3xl mx-auto">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full text-xs font-semibold text-rose-600 mb-4 uppercase tracking-wider">
-              Khó Khăn Thực Tế
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-semibold text-indigo-600 mb-4 uppercase tracking-wider">
+              So Sánh Thực Tế
             </span>
             <h2 className="text-3xl font-extrabold text-indigo-950 tracking-tight mb-4 sm:text-4xl">
-              Tại Sao Việc OCR Tiếng Việt Hiện Tại Lại Mệt Mỏi Đến Thế?
+              Nỗi Đau Thủ Công vs. Giải Pháp Từ Gemini OCR
             </h2>
             <p className="text-slate-600 text-sm sm:text-base">
-              Bóc tách văn bản thủ công hay dùng các công cụ nước ngoài thông thường luôn đi kèm những phiền toái kinh điển đánh mất thời gian của bạn.
+              Đặt lên bàn cân giữa phương thức xử lý văn bản truyền thống đầy bất cập và giải pháp tự động hóa thông minh tối ưu hóa năng suất của bạn.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Pain Point 1 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Clock size={22} />
+          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+            {/* Header row on desktop */}
+            <div className="hidden md:grid grid-cols-2 bg-slate-50/75 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <div className="p-4 pl-8 border-r border-slate-200 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                Khó Khăn & Nỗi Đau (Thủ Công & Công Cụ Khác)
               </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
-                Bóc tách từng trang mệt mỏi
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Phải thực hiện OCR cho từng trang tài liệu một, rồi sao chép từng đoạn nhỏ lẻ thủ công từ Google Drive cực kỳ tốn thời gian khi bạn có cả một tập tài liệu dài.
-              </p>
+              <div className="p-4 pl-8 text-indigo-955 bg-indigo-50/20 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Giải Pháp Vượt Trội (Gemini OCR 1-Line)
+              </div>
             </div>
 
-            {/* Pain Point 2 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <FileText size={22} />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
-                Lỗi định dạng & Xuống dòng rác
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Văn bản trích xuất bị ngắt dòng vô tội vạ, dính khoảng trắng thừa lung tung. Bạn phải căng mắt ngồi chỉnh sửa thủ công để làm sạch trước khi đem đi sử dụng.
-              </p>
-            </div>
-
-            {/* Pain Point 3 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <AlertCircle size={22} />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
-                AI ngoại ngữ dịch sai ngữ cảnh
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Sử dụng các trang web nước ngoài thì tiếng Việt nhận diện không chuẩn, lỗi chính tả nhiều do mô hình AI của họ không hiểu rõ đặc trưng ngữ cảnh tiếng Việt.
-              </p>
-            </div>
-
-            {/* Pain Point 4 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <XCircle size={22} />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
-                Xuất file Word "giả cầy" chứa ảnh
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Hệ thống xuất ra file .docx nhưng thực chất bên trong chỉ chứa hình ảnh dán trực tiếp vào, hoàn toàn không thể bôi đen hay chỉnh sửa nội dung văn bản.
-              </p>
-            </div>
-
-            {/* Pain Point 5 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Lock size={22} />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
-                Giới hạn số trang & Phí đắt đỏ
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Bị giới hạn ngặt nghèo chỉ cho phép dùng thử 1 - 2 trang. Bắt ép người dùng trả các khoản phí dịch vụ đắt đỏ nếu muốn xử lý nhiều tài liệu hơn.
-              </p>
-            </div>
-
-            {/* Pain Point 6 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col group hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md transition-all duration-300 shadow-sm">
-              <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <ShieldAlert size={22} />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-rose-600 transition-colors">
-                Nỗi sợ lộ bí mật tài liệu
-              </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Khi sử dụng các web dịch vụ trực tuyến, tài liệu của bạn bị lưu lại trên máy chủ của họ, đối mặt với nguy cơ rò rỉ thông tin tối mật của hồ sơ vụ án, hợp đồng hoặc dữ liệu nội bộ doanh nghiệp.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 3: Outstanding Solution */}
-      <section id="giai-phap" className="py-20 bg-slate-50 border-b border-slate-200/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-16 max-w-3xl mx-auto">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-55 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-semibold text-indigo-600 mb-4 uppercase tracking-wider">
-              Giải Pháp Vượt Trội
-            </span>
-            <h2 className="text-3xl font-extrabold text-indigo-950 tracking-tight mb-4 sm:text-4xl">
-              Gemini OCR 1-Line - Công Nghệ Đột Phá
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base">
-              Chúng tôi mang đến giải pháp kết hợp sức mạnh trí tuệ nhân tạo của Google Gemini và cơ chế tối ưu luồng công việc của bạn.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Solution 1 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
-              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
-                <Zap size={24} className="text-indigo-600" />
-              </div>
+            {/* Comparison Rows */}
+            <div className="divide-y divide-slate-200">
+              {/* Row 1 */}
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                  Xuất file TXT 1 dòng thuần túy, sạch rác định dạng
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Tính năng loại bỏ hoàn toàn các ký tự xuống dòng rác, khoảng trắng thừa thãi. Xuất ra tệp TXT 1 dòng cực sạch giúp dán thẳng vào Word, Excel hoặc nạp trực tiếp vào cơ sở dữ liệu AI RAG mà không bị lỗi cấu trúc bảng.
-                </p>
+                {/* Row title bar */}
+                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
+                  Tối ưu quy trình xử lý
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                  {/* Left Column (Pain) */}
+                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <Clock size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Tải & Copy thủ công từng trang</h4>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi cặm cụi copy từng đoạn thủ công cực kỳ mất thời gian.
+                      </p>
+                    </div>
+                  </div>
+                  {/* Right Column (Solution) */}
+                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <Zap size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Hàng đợi tự động xử lý hàng loạt</h4>
+                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
+                        Hỗ trợ OCR hàng loạt thả ga, tự động xử lý mượt mà hàng chục file ảnh/PDF cùng một lúc nhờ hệ thống hàng đợi thông minh.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Solution 2 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
-              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
-                <Sparkles size={24} className="text-indigo-650" />
-              </div>
+              {/* Row 2 */}
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                  Tự động phát hiện và sửa lỗi chính tả bằng AI
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Tận dụng tối đa sức mạnh thấu hiểu ngữ nghĩa sâu sắc của Google Gemini để tự phát hiện và chuẩn hóa lỗi chính tả của ảnh gốc. Đọc tốt các chữ bị mờ, tài liệu cũ hoặc font chữ cổ xưa khó nhận diện.
-                </p>
+                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
+                  Chuẩn hóa định dạng đầu ra
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                  {/* Left Column (Pain) */}
+                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <FileText size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Lỗi ngắt dòng & Word giả chứa ảnh</h4>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng thực chất là chứa hình ảnh dán vào, không thể chỉnh sửa (edit) text.
+                      </p>
+                    </div>
+                  </div>
+                  {/* Right Column (Solution) */}
+                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <Sparkles size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Dàn phẳng 1 dòng text 100% sạch</h4>
+                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
+                        Tự động dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch ký tự rác, xuất file .txt chứa 100% ký tự sạch để paste thẳng vào Excel hoặc AI RAG.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Solution 3 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
-              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
-                <Key size={24} className="text-indigo-650" />
-              </div>
+              {/* Row 3 */}
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                  Mô hình BYOK: Tự nhập Key miễn phí, OCR vô hạn
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Sử dụng cơ chế Bring Your Own Key để tận dụng tài nguyên Google hoàn toàn miễn phí của riêng bạn. Thoải mái bóc tách hàng loạt file hình ảnh hay tài liệu PDF cực dài mà không lo giới hạn trang hay tốn chi phí.
-                </p>
+                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
+                  Độ chính xác & Giới hạn sử dụng
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                  {/* Left Column (Pain) */}
+                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <AlertCircle size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Sai chính tả & Phí trang đắt đỏ</h4>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Ứng dụng nước ngoài nhận diện Tiếng Việt không chuẩn, lỗi chính tả be bét; giới hạn keo kiệt 1 - 2 trang và bắt đóng phí bản quyền đắt đỏ.
+                      </p>
+                    </div>
+                  </div>
+                  {/* Right Column (Solution) */}
+                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <Key size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Trí tuệ Gemini & BYOK quét vô hạn</h4>
+                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
+                        Tận dụng trí tuệ nhân tạo Gemini tối tân để đọc hiểu ngữ nghĩa và tự sửa chính tả; áp dụng mô hình BYOK (Tự điền Key miễn phí) để quét vô hạn số trang hoàn toàn miễn phí.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Solution 4 */}
-            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex gap-6 hover:border-indigo-300 hover:-translate-y-0.5 transition-all duration-300 group">
-              <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
-                <Shield size={24} className="text-indigo-650" />
-              </div>
+              {/* Row 4 */}
               <div>
-                <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
-                  Bảo mật dữ liệu tuyệt đối cấp Client-Side
-                </h3>
-                <p className="text-slate-600 text-sm leading-relaxed">
-                  Cam kết bảo vệ dữ liệu ở mức cao nhất. Tài liệu của bạn chỉ được lưu trữ cục bộ trên trình duyệt và gửi trực tiếp tới API của Google qua HTTPS. Chúng tôi hoàn toàn không lưu trữ tệp trên bất kỳ máy chủ nào.
-                </p>
+                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
+                  Bảo mật an toàn dữ liệu
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                  {/* Left Column (Pain) */}
+                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <ShieldAlert size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Lưu trữ máy chủ & Rò rỉ dữ liệu</h4>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Tài liệu, hợp đồng, hồ sơ vụ án tối mật bị lưu lại trên máy chủ của bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
+                      </p>
+                    </div>
+                  </div>
+                  {/* Right Column (Solution) */}
+                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
+                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
+                      <Shield size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Xử lý cục bộ bảo mật tuyệt đối</h4>
+                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
+                        Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ quá trình xử lý diễn ra trực tiếp trên trình duyệt của bạn hoặc hạ tầng Serverless Cloudflare, cam kết không lưu trữ bất kỳ tệp tin nào.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
