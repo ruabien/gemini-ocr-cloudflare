@@ -127,31 +127,31 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
 
   return (
     <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden min-h-[500px]">
-      <div className="flex items-center justify-between p-4 bg-slate-50 border-b border-slate-200/80 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 border-b border-slate-200/80 gap-3 shrink-0">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
           <FileText size={16} className="text-slate-700 shrink-0" />
           <h3 className="font-bold text-[15px] text-slate-900 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
             Kết quả: {file.originalFile?.name || 'Tài liệu'}
           </h3>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-end shrink-0">
           <button
             onClick={handleExportTxt}
             disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-[15px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border border-transparent"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-11 px-4 text-[15px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border border-transparent"
             title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
           >
             <Download size={14} />
-            Tải File Gộp {isMultiImage && "(Gộp)"}
+            <span className="truncate">Tải File {isMultiImage && "(Gộp)"}</span>
           </button>
           {!isMultiImage && (
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
-              className="shrink-0 flex items-center gap-1.5 px-4 py-2 text-[15px] font-bold bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 h-11 px-4 text-[15px] font-bold bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-              {copied ? 'Đã copy' : 'Copy nhanh'}
+              <span className="truncate">{copied ? 'Đã copy' : 'Copy'}</span>
             </button>
           )}
         </div>

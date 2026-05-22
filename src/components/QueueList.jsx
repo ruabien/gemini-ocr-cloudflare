@@ -62,36 +62,36 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
           const pages = file.isParentPdf ? files.filter(p => p.parentPdfId === file.id && p.isPdfPage) : [];
           
           return (
-            <div key={file.id} className="flex flex-col gap-2 bg-slate-50/50 p-2.5 rounded-xl border border-slate-200/80">
+            <div key={file.id} className="flex flex-col gap-2 bg-slate-50/50 p-2 sm:p-2.5 rounded-xl border border-slate-200/80">
               {/* Card Tài liệu chính (Ảnh hoặc PDF cha) */}
               <div 
                 onClick={() => onFileClick && onFileClick(file.id)}
-                className={`bg-white border rounded-xl p-3 shadow-sm hover:border-indigo-500 transition-all flex items-center gap-3 cursor-pointer group ${
+                className={`bg-white border rounded-xl p-2.5 sm:p-3 shadow-sm hover:border-indigo-500 transition-all flex items-center gap-2 sm:gap-3 cursor-pointer group ${
                   isActive ? 'border-indigo-500 bg-indigo-50/10 ring-1 ring-indigo-500/10' : 'border-slate-200'
                 }`}
               >
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 shrink-0 text-slate-700">
+                <div className="p-2 sm:p-2.5 bg-slate-50 rounded-xl border border-slate-200 shrink-0 text-slate-700">
                   {getFileIcon(file.originalFile?.type)}
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className={`text-[15px] font-bold truncate pr-2 ${isActive ? 'text-indigo-950' : 'text-slate-700'}`} title={file.name}>
+                  <div className="flex justify-between items-start mb-1 gap-2">
+                    <p className={`text-[14px] sm:text-[15px] font-bold truncate pr-1 ${isActive ? 'text-indigo-950' : 'text-slate-700'}`} title={file.name}>
                       {file.name}
                     </p>
-                    <div className={`flex items-center gap-1.5 text-[12px] font-extrabold whitespace-nowrap ${statusUI.color}`}>
+                    <div className={`flex items-center gap-1.5 text-[11px] sm:text-[12px] font-extrabold whitespace-nowrap shrink-0 ${statusUI.color}`}>
                       {statusUI.icon}
                       {statusUI.label}
                     </div>
                   </div>
                   
                   <div className="flex justify-between items-center mb-2">
-                    <p className="text-[12px] text-slate-500 font-bold">
+                    <p className="text-[11px] sm:text-[12px] text-slate-500 font-bold">
                       {formatSize(file.originalFile?.size || 0)}
                     </p>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onRemoveFile && onRemoveFile(file.id); }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                      className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2 md:p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                       title="Xóa khỏi hàng đợi"
                     >
                       <X size={14} />

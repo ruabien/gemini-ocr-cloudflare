@@ -59,7 +59,7 @@ export default function FileDropzone({ onFilesSelected }) {
 
   return (
     <label
-      className={`w-full p-8 border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer min-h-[220px] rounded-xl shadow-sm ${
+      className={`w-full p-4 sm:p-8 border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer min-h-[160px] sm:min-h-[220px] rounded-xl shadow-sm ${
         isDragActive 
           ? 'border-indigo-500 bg-indigo-50/50 scale-[1.01]' 
           : 'border-slate-300 bg-white hover:border-indigo-500 hover:bg-slate-50/30'
@@ -69,19 +69,19 @@ export default function FileDropzone({ onFilesSelected }) {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className={`p-4 rounded-xl mb-3 transition-colors border ${
+      <div className={`p-3 sm:p-4 rounded-xl mb-2 sm:mb-3 transition-colors border ${
         isDragActive 
           ? 'bg-indigo-100 text-indigo-600 border-indigo-200' 
           : 'bg-slate-50 text-slate-600 border-slate-200/80'
       }`}>
-        <UploadCloud size={36} strokeWidth={1.5} />
+        <UploadCloud size={32} className="sm:w-9 sm:h-9" strokeWidth={1.5} />
       </div>
-      <h3 className="text-lg font-bold text-slate-900 mb-1">
+      <h3 className="text-[16px] sm:text-lg font-bold text-slate-900 mb-1 text-center">
         {isDragActive ? 'Thả file vào đây...' : 'Kéo thả file của bạn vào đây'}
       </h3>
-      <p className="text-slate-700 text-center text-[15px] font-semibold leading-relaxed">
+      <p className="text-slate-700 text-center text-[14px] sm:text-[15px] font-semibold leading-relaxed">
         Hoặc click để duyệt file từ máy tính của bạn<br/>
-        <span className="text-[12px] text-slate-400 mt-1 block font-bold">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
+        <span className="text-[11px] sm:text-[12px] text-slate-400 mt-1 block font-bold">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
       </p>
 
       {/* Đặt thẻ input nằm trong label để xử lý click tự nhiên của trình duyệt, không cần JS click() tránh loop */}

@@ -398,7 +398,7 @@ function App() {
           <div>
             <button 
               onClick={() => scrollToSection('cong-cu')}
-              className="px-5 py-2.5 text-[15px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm border border-transparent"
+              className="px-5 h-11 text-[15px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-transparent"
             >
               Trải nghiệm ngay
               <ArrowRight size={14} />
@@ -407,17 +407,17 @@ function App() {
         </div>
       </header>
 
-      <main className="max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 flex-grow flex flex-col gap-16">
+      <main className="max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 md:py-20 flex-grow flex flex-col gap-8 md:gap-16">
         <section id="cong-cu" className="flex flex-col gap-6 animate-fade-in">
           <div className="text-center py-4 max-w-3xl mx-auto select-none">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-bold text-indigo-700 mb-4 shadow-sm">
               <Sparkles size={12} className="text-indigo-600 fill-indigo-600 animate-pulse" />
               Ứng dụng Client-Side Bảo mật tuyệt đối - Không lưu trữ dữ liệu
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-3">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight mb-3">
               Bóc Tách Văn Bản Tiếng Việt Hàng Loạt Ra 1 Dòng Duy Nhất
             </h1>
-            <p className="text-slate-700 text-[15px] sm:text-base font-medium max-w-2xl mx-auto leading-relaxed">
+            <p className="text-slate-700 text-base font-medium max-w-2xl mx-auto leading-relaxed">
               Tự cấu hình API Key Gemini của bạn để OCR không giới hạn trang, bóc tách hàng loạt file ảnh & PDF, tự động ghép và làm sạch định dạng.
             </p>
           </div>
@@ -449,7 +449,7 @@ function App() {
                     <button
                       onClick={startOCR}
                       disabled={isProcessing || files.some(f => f.status === 'splitting') || !files.some(f => !f.isParentPdf && (f.status === 'waiting' || f.status === 'error'))}
-                      className="w-full py-3 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-lg transition-all shadow-sm border border-transparent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-base"
+                      className="w-full h-12 px-5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-lg transition-all shadow-sm border border-transparent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-base"
                     >
                       <Play size={16} fill="white" stroke="white" />
                       {isProcessing ? 'Đang xử lý...' : 'Bắt đầu OCR'}
@@ -469,15 +469,15 @@ function App() {
           )}
         </section>
 
-        <section id="so-sanh" className="flex flex-col gap-6 py-6">
+        <section id="so-sanh" className="flex flex-col gap-6 py-4 sm:py-6">
           <div className="text-center max-w-3xl mx-auto select-none">
             <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-bold text-indigo-700 uppercase tracking-wider mb-3">
               So Sánh Đối Ứng
             </span>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+            <h2 className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tight mb-2">
               Tại Sao Bạn Nên Chọn Gemini OCR 1-Line?
             </h2>
-            <p className="text-slate-700 text-[15px] sm:text-base font-medium leading-relaxed">
+            <p className="text-slate-700 text-base font-medium leading-relaxed">
               Bóc tách văn bản thủ công hay dùng các công cụ nước ngoài thông thường luôn đi kèm những phiền toái kinh điển. Xem bảng đối sánh dưới đây để thấy sự khác biệt vượt trội.
             </p>
           </div>
@@ -485,11 +485,11 @@ function App() {
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Header Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 bg-white border-b border-slate-200 select-none">
-              <div className="py-5 px-6 flex items-center gap-3 md:border-r border-slate-200">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex items-center gap-3 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200">
                 <span className="text-lg text-slate-500">❌</span>
                 <h3 className="text-lg md:text-xl font-bold text-slate-900">Khó khăn & Nỗi đau của bạn</h3>
               </div>
-              <div className="py-5 px-6 flex items-center gap-3">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex items-center gap-3">
                 <span className="text-lg text-indigo-600">✨</span>
                 <h3 className="text-lg md:text-xl font-bold text-slate-900">Giải pháp vượt trội từ App</h3>
               </div>
@@ -498,15 +498,15 @@ function App() {
             {/* Rows */}
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/80 hover:bg-slate-50/80 transition-colors duration-200">
-              <div className="py-5 px-6 md:border-r border-slate-200/80 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/80 flex gap-3.5 items-start">
                 <span className="text-base shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-slate-700 text-[15px] font-semibold leading-relaxed">
+                <p className="text-slate-700 text-base font-semibold leading-relaxed">
                   Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi cặm cụi copy từng đoạn thủ công rất mất thời gian.
                 </p>
               </div>
-              <div className="py-5 px-6 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex gap-3.5 items-start">
                 <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 p-1 rounded-lg text-xs shrink-0 select-none flex items-center justify-center">💡</span>
-                <p className="text-slate-900 text-[15px] font-bold leading-relaxed">
+                <p className="text-slate-900 text-base font-bold leading-relaxed">
                   Hỗ trợ OCR hàng loạt thả ga, xử lý mượt mà hàng chục file ảnh cùng một lúc nhờ hàng đợi tự động thông minh.
                 </p>
               </div>
@@ -514,15 +514,15 @@ function App() {
 
             {/* Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/80 hover:bg-slate-50/80 transition-colors duration-200">
-              <div className="py-5 px-6 md:border-r border-slate-200/80 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/80 flex gap-3.5 items-start">
                 <span className="text-base shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-slate-700 text-[15px] font-semibold leading-relaxed">
+                <p className="text-slate-700 text-base font-semibold leading-relaxed">
                   Văn bản sau khi quét bị lỗi định dạng lung tung, xuống dòng vô tội vạ, khoảng trắng thừa khiến bạn phải dùng phím Backspace edit tay mệt mỏi.
                 </p>
               </div>
-              <div className="py-5 px-6 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex gap-3.5 items-start">
                 <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 p-1 rounded-lg text-xs shrink-0 select-none flex items-center justify-center">💡</span>
-                <p className="text-slate-900 text-[15px] font-bold leading-relaxed">
+                <p className="text-slate-900 text-base font-bold leading-relaxed">
                   Tự động xử lý chuỗi và dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch rác định dạng, paste thẳng vào Excel hoặc AI RAG ăn ngay.
                 </p>
               </div>
@@ -530,15 +530,15 @@ function App() {
 
             {/* Row 3 */}
             <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/80 hover:bg-slate-50/80 transition-colors duration-200">
-              <div className="py-5 px-6 md:border-r border-slate-200/80 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/80 flex gap-3.5 items-start">
                 <span className="text-base shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-slate-700 text-[15px] font-semibold leading-relaxed">
+                <p className="text-slate-700 text-base font-semibold leading-relaxed">
                   Sử dụng các phần mềm, trang web nước ngoài thì nhận diện Tiếng Việt không chuẩn, lỗi chính tả be bét do AI không hiểu ngữ cảnh văn hóa.
                 </p>
               </div>
-              <div className="py-5 px-6 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex gap-3.5 items-start">
                 <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 p-1 rounded-lg text-xs shrink-0 select-none flex items-center justify-center">💡</span>
-                <p className="text-slate-900 text-[15px] font-bold leading-relaxed">
+                <p className="text-slate-900 text-base font-bold leading-relaxed">
                   Sử dụng trí tuệ nhân tạo Gemini tối tân, không chỉ 'nhìn chữ' mà còn 'đọc hiểu ngữ nghĩa pháp lý' để tự động sửa lỗi chính tả chuẩn xác 99%.
                 </p>
               </div>
@@ -546,15 +546,15 @@ function App() {
 
             {/* Row 4 */}
             <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/80 hover:bg-slate-50/80 transition-colors duration-200">
-              <div className="py-5 px-6 md:border-r border-slate-200/80 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/80 flex gap-3.5 items-start">
                 <span className="text-base shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-slate-700 text-[15px] font-semibold leading-relaxed">
+                <p className="text-slate-700 text-base font-semibold leading-relaxed">
                   Hào hứng bấm xuất file .docx từ các web chuyển đổi trực tuyến, để rồi nhận lại một file Word chứa toàn hình ảnh chụp lại, hoàn toàn không thể edit text.
                 </p>
               </div>
-              <div className="py-5 px-6 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex gap-3.5 items-start">
                 <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 p-1 rounded-lg text-xs shrink-0 select-none flex items-center justify-center">💡</span>
-                <p className="text-slate-900 text-[15px] font-bold leading-relaxed">
+                <p className="text-slate-900 text-base font-bold leading-relaxed">
                   Xuất file định dạng .txt thuần túy (text/plain), đảm bảo 100% dữ liệu là ký tự sạch, bôi đen, chỉnh sửa và khai thác văn bản thoải mái.
                 </p>
               </div>
@@ -562,15 +562,15 @@ function App() {
 
             {/* Row 5 */}
             <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/80 hover:bg-slate-50/80 transition-colors duration-200">
-              <div className="py-5 px-6 md:border-r border-slate-200/80 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/80 flex gap-3.5 items-start">
                 <span className="text-base shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-slate-700 text-[15px] font-semibold leading-relaxed">
+                <p className="text-slate-700 text-base font-semibold leading-relaxed">
                   Các ứng dụng miễn phí bóp nghẹt tính năng, chỉ cho quét keo kiệt 1 - 2 trang, bắt đóng phí bản quyền đắt đỏ hàng tháng nếu muốn dùng nhiều hơn.
                 </p>
               </div>
-              <div className="py-5 px-6 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex gap-3.5 items-start">
                 <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 p-1 rounded-lg text-xs shrink-0 select-none flex items-center justify-center">💡</span>
-                <p className="text-slate-900 text-[15px] font-bold leading-relaxed">
+                <p className="text-slate-900 text-base font-bold leading-relaxed">
                   Mô hình BYOK (Tự điền API Key miễn phí): OCR vô hạn số lượng trang, sở hữu trọn vẹn băng thông của Google mà không tốn một xu chi phí nào.
                 </p>
               </div>
@@ -578,15 +578,15 @@ function App() {
 
             {/* Row 6 */}
             <div className="grid grid-cols-1 md:grid-cols-2 hover:bg-slate-50/80 transition-colors duration-200">
-              <div className="py-5 px-6 md:border-r border-slate-200/80 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/80 flex gap-3.5 items-start">
                 <span className="text-base shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-slate-700 text-[15px] font-semibold leading-relaxed">
+                <p className="text-slate-700 text-base font-semibold leading-relaxed">
                   Tài liệu, hợp đồng, hồ sơ vụ án tối mật bị lưu lại trên máy chủ của các dịch vụ bên thứ ba, đối mặt với nguy cơ rò rỉ thông tin bí mật nghiêm trọng.
                 </p>
               </div>
-              <div className="py-5 px-6 flex gap-3.5 items-start">
+              <div className="py-4 px-4 md:py-5 md:px-6 flex gap-3.5 items-start">
                 <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 p-1 rounded-lg text-xs shrink-0 select-none flex items-center justify-center">💡</span>
-                <p className="text-slate-900 text-[15px] font-bold leading-relaxed">
+                <p className="text-slate-900 text-base font-bold leading-relaxed">
                   Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ quá trình xử lý diễn ra trực tiếp trên trình duyệt của bạn (hoặc qua hạ tầng Serverless Cloudflare an toàn), không lưu trữ bất kỳ tệp tin nào của người dùng.
                 </p>
               </div>
@@ -594,16 +594,16 @@ function App() {
           </div>
         </section>
 
-        <section id="faq" className="flex flex-col gap-6 py-6 max-w-3xl mx-auto w-full">
+        <section id="faq" className="flex flex-col gap-6 py-4 sm:py-6 max-w-3xl mx-auto w-full">
           <div className="text-center select-none">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-bold text-indigo-700 mb-3">
               <Shield size={12} className="text-indigo-600" />
               Đảm bảo an toàn thông tin
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+            <h2 className="text-lg md:text-2xl font-extrabold text-slate-900 tracking-tight mb-2">
               Hỏi Đáp & Chính Sách Bảo Mật
             </h2>
-            <p className="text-slate-700 text-[15px] sm:text-base font-medium leading-relaxed">
+            <p className="text-slate-700 text-base font-medium leading-relaxed">
               Giải đáp các thắc mắc về cơ chế hoạt động, độ tin cậy và cam kết bảo vệ dữ liệu người dùng.
             </p>
           </div>
@@ -618,7 +618,7 @@ function App() {
                 >
                   <button
                      onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                     className="w-full px-5 py-4 flex items-center justify-between text-left font-bold text-[15px] text-slate-900 hover:bg-slate-50/50 transition-colors focus:outline-none cursor-pointer"
+                     className="w-full px-5 py-4 flex items-center justify-between text-left font-bold text-base text-slate-900 hover:bg-slate-50/50 transition-colors focus:outline-none cursor-pointer"
                   >
                     <span className="pr-4 leading-relaxed">{item.q}</span>
                     <ChevronDown 
@@ -628,7 +628,7 @@ function App() {
                   </button>
                   
                   {isOpen && (
-                    <div className="px-5 pb-4 pt-3 text-slate-700 text-[15px] font-medium leading-relaxed bg-slate-50/30 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-250">
+                    <div className="px-5 pb-4 pt-3 text-slate-700 text-base font-medium leading-relaxed bg-slate-50/30 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-250">
                       {item.a}
                     </div>
                   )}

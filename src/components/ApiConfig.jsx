@@ -104,8 +104,8 @@ export default function ApiConfig({ onConfigChange }) {
         <h2 className="font-bold text-lg tracking-tight text-slate-900">Điền API Key của bạn</h2>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 w-full">
-        <div className="flex flex-1 min-w-[280px] gap-2">
+      <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-2 w-full">
+        <div className="flex flex-col sm:flex-row flex-1 min-w-full md:min-w-[280px] gap-2">
           <div className="relative flex-1 group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900">
               <KeyRound size={14} />
@@ -115,14 +115,14 @@ export default function ApiConfig({ onConfigChange }) {
               placeholder="Nhập Gemini API Key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-[15px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              className="w-full pl-9 pr-3 h-11 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
             />
           </div>
 
           <button
             onClick={handleSaveKey}
             disabled={!apiKey}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[15px] font-extrabold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer border border-transparent"
+            className="w-full sm:w-auto px-5 h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-base font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer border border-transparent"
             title="Lưu API Key vào trình duyệt"
           >
             <Save size={14} />
@@ -130,7 +130,7 @@ export default function ApiConfig({ onConfigChange }) {
           </button>
         </div>
 
-        <div className="flex flex-1 min-w-[240px] gap-2">
+        <div className="flex flex-col sm:flex-row flex-1 min-w-full md:min-w-[240px] gap-2">
           <div className="relative flex-1 group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-slate-900">
               <Bot size={14} />
@@ -138,7 +138,7 @@ export default function ApiConfig({ onConfigChange }) {
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-[15px] font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+              className="w-full pl-9 pr-8 h-11 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
             >
               {availableModels.map(m => (
                 <option key={m} value={m}>{m}</option>
@@ -154,10 +154,11 @@ export default function ApiConfig({ onConfigChange }) {
           <button
             onClick={fetchModels}
             disabled={isFetchingModels || !apiKey}
-            className="px-3.5 py-2 bg-white text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 rounded-xl flex items-center justify-center disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-11 h-11 bg-white text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 rounded-xl flex items-center justify-center disabled:opacity-50 cursor-pointer"
             title="Đồng bộ danh sách Model từ Google"
           >
             <RefreshCw size={14} className={isFetchingModels ? "animate-spin" : ""} />
+            <span className="sm:hidden ml-2 text-base font-extrabold">Đồng bộ Model</span>
           </button>
         </div>
 
@@ -167,7 +168,7 @@ export default function ApiConfig({ onConfigChange }) {
             placeholder="VD: gemini-1.5-pro-latest"
             value={customModel}
             onChange={(e) => setCustomModel(e.target.value)}
-            className="w-full sm:w-48 px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-[15px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+            className="w-full md:w-48 px-3 h-11 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
           />
         )}
       </div>
