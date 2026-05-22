@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { UploadCloud } from 'lucide-react';
 
 export default function FileDropzone({ onFilesSelected }) {
   const [isDragActive, setIsDragActive] = useState(false);
@@ -59,30 +58,35 @@ export default function FileDropzone({ onFilesSelected }) {
 
   return (
     <label
-      className={`w-full p-10 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer min-h-[300px] ${
+      className={`relative block w-full bg-surface-container-lowest border-2 border-dashed rounded-xl p-10 transition-all duration-300 cursor-pointer group shadow-[0_4px_20px_rgba(0,88,190,0.04)] select-none text-center ${
         isDragActive 
-          ? 'border-indigo-500 bg-indigo-50/50 shadow-inner scale-[1.01]' 
-          : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50/40'
+          ? 'border-primary bg-primary-container/10 scale-[1.01]' 
+          : 'border-primary/40 hover:border-primary hover:bg-primary-container/5'
       }`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className={`p-4 rounded-full mb-4 transition-colors ${
-        isDragActive ? 'bg-indigo-500/10 text-indigo-600' : 'bg-slate-100 text-slate-500 border border-slate-200'
-      }`}>
-        <UploadCloud size={48} strokeWidth={1.5} />
+      {/* Scanner Animation */}
+      {isDragActive && (
+        <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+          <div className="scanning-line"></div>
+        </div>
+      )}
+      
+      <div className="flex flex-col items-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-primary-container/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+          <span className="material-symbols-outlined text-4xl">cloud_upload</span>
+        </div>
+        <div className="space-y-1">
+          <p className="font-headline-md text-headline-md text-on-surface">
+            {isDragActive ? 'Thả file vào đây...' : 'Kéo thả hoặc chạm để chọn file'}
+          </p>
+          <p className="text-label-md text-on-surface-variant font-medium">(PDF, JPG, PNG)</p>
+        </div>
       </div>
-      <h3 className="text-xl font-semibold text-slate-900 mb-2">
-        {isDragActive ? 'Thả file vào đây...' : 'Kéo thả file của bạn vào đây'}
-      </h3>
-      <p className="text-slate-600 text-center text-sm">
-        Hoặc click để duyệt file từ máy tính của bạn<br/>
-        <span className="text-xs text-slate-400 mt-2 block font-medium">Hỗ trợ các định dạng: JPG, PNG, PDF</span>
-      </p>
 
-      {/* Đặt thẻ input nằm trong label để xử lý click tự nhiên của trình duyệt, không cần JS click() tránh loop */}
       <input
         type="file"
         ref={fileInputRef}
@@ -94,3 +98,4 @@ export default function FileDropzone({ onFilesSelected }) {
     </label>
   );
 }
+

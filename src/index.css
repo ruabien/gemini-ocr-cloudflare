@@ -1,1 +1,139 @@
 @import "tailwindcss";
+
+@theme {
+  --color-secondary-fixed-dim: #ffb95f;
+  --color-surface-bright: #f8f9ff;
+  --color-on-error-container: #93000a;
+  --color-on-tertiary: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-on-surface: #0b1c30;
+  --color-on-tertiary-container: #f5fff6;
+  --color-tertiary-container: #00855b;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary-container: #684000;
+  --color-on-secondary-fixed: #2a1700;
+  --color-surface-dim: #cbdbf5;
+  --color-surface-container: #e5eeff;
+  --color-background: #f8f9ff;
+  --color-error-container: #ffdad6;
+  --color-primary-fixed-dim: #adc6ff;
+  --color-outline-variant: #c2c6d6;
+  --color-secondary-fixed: #ffddb8;
+  --color-on-tertiary-fixed: #002113;
+  --color-inverse-primary: #adc6ff;
+  --color-tertiary-fixed-dim: #4edea3;
+  --color-surface-container-highest: #d3e4fe;
+  --color-outline: #727785;
+  --color-on-secondary: #ffffff;
+  --color-primary-fixed: #d8e2ff;
+  --color-on-error: #ffffff;
+  --color-on-tertiary-fixed-variant: #005236;
+  --color-on-secondary-fixed-variant: #653e00;
+  --color-surface-variant: #d3e4fe;
+  --color-surface-tint: #005ac2;
+  --color-surface: #f8f9ff;
+  --color-on-primary-fixed: #001a42;
+  --color-inverse-on-surface: #eaf1ff;
+  --color-secondary: #855300;
+  --color-secondary-container: #fea619;
+  --color-on-background: #0b1c30;
+  --color-on-primary-container: #fefcff;
+  --color-surface-container-high: #dce9ff;
+  --color-primary: #0058be;
+  --color-error: #ba1a1a;
+  --color-primary-container: #2170e4;
+  --color-on-primary: #ffffff;
+  --color-on-surface-variant: #424754;
+  --color-inverse-surface: #213145;
+  --color-tertiary: #006947;
+  --color-on-primary-fixed-variant: #004395;
+  --color-tertiary-fixed: #6ffbbe;
+
+  --font-quicksand: 'Quicksand', sans-serif;
+  --font-plus-jakarta: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Material Symbols configuration */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Scanning Animation Effect */
+.scanning-line {
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, #0058be, transparent);
+  animation: scan 3s infinite linear;
+}
+
+@keyframes scan {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+/* Glassmorphism card utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+/* Custom design system typography mapping */
+.font-body-md {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.font-display-lg-mobile {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+.font-display-lg {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 48px;
+  line-height: 56px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.font-headline-lg {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+}
+
+.font-headline-md {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+}
+
+.font-body-lg {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.font-label-md {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.01em;
+  font-weight: 600;
+}
+
+.font-label-sm {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}

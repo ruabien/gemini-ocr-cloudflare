@@ -3,19 +3,7 @@ import ApiConfig from './components/ApiConfig';
 import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
-import { 
-  Sparkles, 
-  Play, 
-  Key, 
-  ChevronDown, 
-  Shield, 
-  ArrowRight, 
-  Clock, 
-  FileText,
-  AlertCircle,
-  Zap,
-  ShieldAlert
-} from 'lucide-react';
+
 import { processOCR } from './utils/ocrService';
 
 function App() {
@@ -374,77 +362,70 @@ function App() {
   const activeFile = files.find(f => f.id === activeFileId);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900 flex flex-col scroll-smooth">
-      {/* Sticky Glassmorphism Navbar */}
-      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
-              <Sparkles size={20} />
-            </div>
-            <span className="font-extrabold text-lg text-indigo-950 tracking-tight flex items-center gap-1.5">
-              Gemini OCR <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider">1-Line</span>
-            </span>
+    <div className="min-h-screen bg-background text-on-surface font-body-md selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
+      {/* TopAppBar */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
+        <div className="flex justify-between items-center w-full px-gutter max-w-container-max mx-auto">
+          <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <span className="material-symbols-outlined text-primary text-headline-md">bubble_chart</span>
+            <span className="text-headline-md font-headline-md font-bold text-primary">ScanJoy</span>
           </div>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
-            <button onClick={() => scrollToSection('cong-cu')} className="hover:text-indigo-600 transition-colors cursor-pointer">Sử dụng</button>
-            <button onClick={() => scrollToSection('so-sanh')} className="hover:text-indigo-600 transition-colors cursor-pointer">Nỗi đau & Giải pháp</button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-indigo-600 transition-colors cursor-pointer">Hỏi đáp & Bảo mật</button>
-          </nav>
-
-          <div>
+          <nav className="hidden md:flex items-center gap-8">
             <button 
+              className="text-label-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" 
               onClick={() => scrollToSection('cong-cu')}
-              className="px-4.5 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
-              Trải nghiệm ngay
-              <ArrowRight size={14} />
+              Công cụ OCR
             </button>
+            <button 
+              className="text-label-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" 
+              onClick={() => scrollToSection('so-sanh')}
+            >
+              So sánh
+            </button>
+            <button 
+              className="text-label-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" 
+              onClick={() => scrollToSection('faq')}
+            >
+              Hỏi đáp
+            </button>
+          </nav>
+          <div className="flex items-center md:hidden">
+            <button className="material-symbols-outlined text-on-surface-variant hover:text-secondary transition-colors duration-200">menu</button>
           </div>
         </div>
       </header>
 
-      {/* Section 1: OCR Tool Workspace (At the very top) */}
-      <section id="cong-cu" className="relative overflow-hidden bg-slate-50 py-10 lg:py-16 border-b border-slate-200/60 flex-1 flex flex-col justify-start">
-        <div className="absolute top-0 left-[10%] w-96 h-96 bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 right-[10%] w-96 h-96 bg-slate-200/40 rounded-full blur-[120px] pointer-events-none"></div>
-
-        <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center mb-10 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-full text-xs font-semibold text-slate-600 mb-4 shadow-sm animate-fade-in">
-              <Sparkles size={12} className="text-indigo-600 animate-pulse" />
-              Ứng dụng Client-Side Bảo mật tuyệt đối - Không lưu trữ dữ liệu
-            </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-indigo-950 tracking-tight leading-tight mb-4">
-              Bóc Tách Văn Bản Tiếng Việt<br />
-              <span className="text-amber-600">
-                Hàng Loạt Ra 1 Dòng Duy Nhất
-              </span>
+      <main className="pt-24 pb-12 space-y-16 flex-1 flex flex-col justify-start">
+        {/* Section 1: Hero & App */}
+        <section id="cong-cu" className="max-w-container-max w-full mx-auto px-4 text-center space-y-8">
+          <div className="space-y-4 animate-fade-in">
+            <h1 className="text-display-lg-mobile md:text-display-lg font-display-lg text-primary tracking-tight">
+              Chuyển đổi Hình ảnh & PDF sang Văn bản
             </h1>
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Tự cấu hình API Key Gemini của bạn để OCR không giới hạn trang, bóc tách hàng loạt file ảnh & PDF, tự động ghép và làm sạch định dạng.
+            <p className="text-body-lg text-on-surface-variant max-w-md mx-auto">
+              Biến mọi tài liệu giấy thành văn bản số chỉ trong vài giây với công nghệ AI hiện đại.
             </p>
           </div>
 
-          <div className="mb-8 max-w-4xl mx-auto bg-white rounded-2xl p-1.5 border border-slate-200/80 shadow-sm transition-all hover:border-slate-300">
+          <div className="max-w-4xl mx-auto">
             <ApiConfig onConfigChange={handleConfigChange} />
           </div>
 
           {files.length === 0 ? (
-            <div className="max-w-3xl mx-auto bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 animate-in fade-in zoom-in duration-300">
+            <div className="max-w-md mx-auto">
               <FileDropzone onFilesSelected={handleFilesSelected} />
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] text-left animate-in fade-in slide-in-from-bottom-4 duration-300">
               
               {/* Left Column: Dropzone + Queue */}
               <div className="lg:col-span-5 flex flex-col gap-6">
-                <div className="bg-white p-2 rounded-xl border border-slate-200/80 shadow-sm">
-                   <FileDropzone onFilesSelected={handleFilesSelected} />
+                <div className="bg-surface-container-lowest p-2 rounded-xl border border-outline-variant/30 shadow-sm">
+                  <FileDropzone onFilesSelected={handleFilesSelected} />
                 </div>
                 
-                <div className="flex flex-col gap-4 bg-white p-5 rounded-xl border border-slate-200/80 flex-1 max-h-[600px] overflow-hidden shadow-sm">
+                <div className="flex flex-col gap-4 bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/30 flex-1 max-h-[600px] overflow-hidden shadow-sm">
                   <QueueList 
                     files={files} 
                     activeFileId={activeFileId} 
@@ -452,14 +433,14 @@ function App() {
                     onRemoveFile={handleRemoveFile}
                   />
                   
-                  <div className="pt-4 mt-auto border-t border-slate-100 shrink-0">
+                  <div className="pt-4 mt-auto border-t border-outline-variant/20 shrink-0">
                     <button
                       onClick={startOCR}
                       disabled={isProcessing || files.some(f => f.status === 'splitting') || !files.some(f => !f.isParentPdf && (f.status === 'waiting' || f.status === 'error'))}
-                      className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all shadow-sm active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
-                      <Play size={18} fill="white" />
-                      {isProcessing ? 'Đang xử lý...' : 'Bắt đầu OCR'}
+                      {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
+                      <span className="material-symbols-outlined">auto_fix_high</span>
                     </button>
                   </div>
                 </div>
@@ -475,166 +456,136 @@ function App() {
               </div>
             </div>
           )}
-        </div>
-      </section>
+        </section>
 
-      {/* Section 2: So sánh Nỗi đau & Giải pháp */}
-      <section id="so-sanh" className="py-20 bg-white border-b border-slate-200/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-16 max-w-3xl mx-auto">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-semibold text-indigo-600 mb-4 uppercase tracking-wider">
-              So Sánh Thực Tế
-            </span>
-            <h2 className="text-3xl font-extrabold text-indigo-950 tracking-tight mb-4 sm:text-4xl">
-              Nỗi Đau Thủ Công vs. Giải Pháp Từ Gemini OCR
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base">
-              Đặt lên bàn cân giữa phương thức xử lý văn bản truyền thống đầy bất cập và giải pháp tự động hóa thông minh tối ưu hóa năng suất của bạn.
-            </p>
+        {/* Section 2: Comparison */}
+        <section id="so-sanh" className="max-w-container-max w-full mx-auto px-4 space-y-8 pt-10">
+          <div className="text-center space-y-2">
+            <h2 className="text-headline-lg font-headline-lg text-primary">Tại sao nên chọn ScanJoy?</h2>
+            <p className="text-on-surface-variant text-body-md font-medium">So sánh sự khác biệt vượt trội</p>
           </div>
 
-          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white">
-            {/* Header row on desktop */}
-            <div className="hidden md:grid grid-cols-2 bg-slate-50/75 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
-              <div className="p-4 pl-8 border-r border-slate-200 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                Khó Khăn & Nỗi Đau (Thủ Công & Công Cụ Khác)
+          <div className="space-y-6">
+            <div className="hidden md:grid grid-cols-2 gap-0 mb-2">
+              <div className="text-center py-2 bg-error-container/10 rounded-l-xl border border-outline-variant/30">
+                <span className="text-label-md font-bold text-error uppercase tracking-widest">Cách cũ (Truyền thống)</span>
               </div>
-              <div className="p-4 pl-8 text-indigo-955 bg-indigo-50/20 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Giải Pháp Vượt Trội (Gemini OCR 1-Line)
+              <div className="text-center py-2 bg-tertiary-container/10 rounded-r-xl border border-outline-variant/30 border-l-0">
+                <span className="text-label-md font-bold text-tertiary uppercase tracking-widest">Giải pháp ScanJoy</span>
               </div>
             </div>
 
-            {/* Comparison Rows */}
-            <div className="divide-y divide-slate-200">
-              {/* Row 1 */}
-              <div>
-                {/* Row title bar */}
-                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
-                  Tối ưu quy trình xử lý
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-                  {/* Left Column (Pain) */}
-                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <Clock size={18} />
-                    </div>
+            {/* Row 1: Tối ưu quy trình xử lý */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>heart_broken</span>
                     <div>
-                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Tải & Copy thủ công từng trang</h4>
-                      <p className="text-slate-600 text-sm leading-relaxed">
-                        Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi cặm cụi copy từng đoạn thủ công cực kỳ mất thời gian.
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng chứa hình ảnh dán vào.
                       </p>
                     </div>
                   </div>
-                  {/* Right Column (Solution) */}
-                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <Zap size={18} />
-                    </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                     <div>
-                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Hàng đợi tự động xử lý hàng loạt</h4>
-                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                        Hỗ trợ OCR hàng loạt thả ga, tự động xử lý mượt mà hàng chục file ảnh/PDF cùng một lúc nhờ hệ thống hàng đợi thông minh.
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Tự động dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch ký tự rác, xuất file .txt sạch 100% để sử dụng ngay.
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Row 2 */}
-              <div>
-                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
-                  Chuẩn hóa định dạng đầu ra
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-                  {/* Left Column (Pain) */}
-                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <FileText size={18} />
-                    </div>
+            {/* Row 2: Chuẩn hóa định dạng đầu ra */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>payments</span>
                     <div>
-                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Lỗi ngắt dòng & Word giả chứa ảnh</h4>
-                      <p className="text-slate-600 text-sm leading-relaxed">
-                        Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng thực chất là chứa hình ảnh dán vào, không thể chỉnh sửa (edit) text.
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Ứng dụng nước ngoài nhận diện Tiếng Việt không chuẩn; giới hạn keo kiệt 1 - 2 trang và bắt đóng phí đắt đỏ.
                       </p>
                     </div>
                   </div>
-                  {/* Right Column (Solution) */}
-                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <Sparkles size={18} />
-                    </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>all_inclusive</span>
                     <div>
-                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Dàn phẳng 1 dòng text 100% sạch</h4>
-                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                        Tự động dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch ký tự rác, xuất file .txt chứa 100% ký tự sạch để paste thẳng vào Excel hoặc AI RAG.
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Tận dụng AI Gemini tối tân để tự sửa chính tả; áp dụng mô hình BYOK để quét vô hạn số trang hoàn toàn miễn phí.
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Row 3 */}
-              <div>
-                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
-                  Độ chính xác & Giới hạn sử dụng
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-                  {/* Left Column (Pain) */}
-                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <AlertCircle size={18} />
-                    </div>
+            {/* Row 3: Độ chính xác & Giới hạn sử dụng */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
                     <div>
-                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Sai chính tả & Phí trang đắt đỏ</h4>
-                      <p className="text-slate-600 text-sm leading-relaxed">
-                        Ứng dụng nước ngoài nhận diện Tiếng Việt không chuẩn, lỗi chính tả be bét; giới hạn keo kiệt 1 - 2 trang và bắt đóng phí bản quyền đắt đỏ.
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Tài liệu bị lưu lại trên máy chủ bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
                       </p>
                     </div>
                   </div>
-                  {/* Right Column (Solution) */}
-                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <Key size={18} />
-                    </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>shield_lock</span>
                     <div>
-                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Trí tuệ Gemini & BYOK quét vô hạn</h4>
-                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                        Tận dụng trí tuệ nhân tạo Gemini tối tân để đọc hiểu ngữ nghĩa và tự sửa chính tả; áp dụng mô hình BYOK (Tự điền Key miễn phí) để quét vô hạn số trang hoàn toàn miễn phí.
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Kiến trúc Zero-Server. Toàn bộ xử lý diễn ra trên trình duyệt, cam kết không lưu trữ bất kỳ tệp tin nào của bạn.
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Row 4 */}
-              <div>
-                <div className="bg-slate-50/50 px-6 py-3.5 border-b border-slate-200/60 text-xs font-extrabold text-indigo-950 uppercase tracking-wider">
+            {/* Row 4: Bảo mật an toàn dữ liệu */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="bg-surface-container-high px-4 py-3 border-b border-outline-variant/30">
+                <h3 className="text-label-md font-bold text-primary flex items-center gap-2">
+                  <span className="material-symbols-outlined text-body-md">security</span>
                   Bảo mật an toàn dữ liệu
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-                  {/* Left Column (Pain) */}
-                  <div className="p-6 md:p-8 bg-rose-50/20 hover:bg-rose-50/40 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <ShieldAlert size={18} />
-                    </div>
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
                     <div>
-                      <h4 className="text-sm font-bold text-rose-950 mb-1.5">Lưu trữ máy chủ & Rò rỉ dữ liệu</h4>
-                      <p className="text-slate-600 text-sm leading-relaxed">
-                        Tài liệu, hợp đồng, hồ sơ vụ án tối mật bị lưu lại trên máy chủ của bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
+                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider">Khó khăn &amp; Nỗi đau</p>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Tài liệu tối mật bị lưu lại trên máy chủ bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
                       </p>
                     </div>
                   </div>
-                  {/* Right Column (Solution) */}
-                  <div className="p-6 md:p-8 bg-emerald-50/15 hover:bg-emerald-50/25 transition-colors flex items-start gap-4">
-                    <div className="w-10 h-10 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-                      <Shield size={18} />
-                    </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                     <div>
-                      <h4 className="text-sm font-bold text-emerald-950 mb-1.5">Xử lý cục bộ bảo mật tuyệt đối</h4>
-                      <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                        Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ quá trình xử lý diễn ra trực tiếp trên trình duyệt của bạn hoặc hạ tầng Serverless Cloudflare, cam kết không lưu trữ bất kỳ tệp tin nào.
+                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider">Giải pháp từ ScanJoy</p>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ xử lý diễn ra trên trình duyệt hoặc Cloudflare, cam kết không lưu trữ bất kỳ tệp tin nào.
                       </p>
                     </div>
                   </div>
@@ -642,46 +593,30 @@ function App() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FAQ Accordion Section */}
-      <section id="faq" className="py-20 bg-white border-b border-slate-200/60">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full text-xs font-semibold text-indigo-600 mb-4">
-              <Shield size={12} />
-              Đảm bảo an toàn thông tin
-            </div>
-            <h2 className="text-3xl font-extrabold text-indigo-950 tracking-tight mb-4">
-              Hỏi Đáp & Chính Sách Bảo Mật
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base">
-              Giải đáp các thắc mắc về cơ chế hoạt động, độ tin cậy và cam kết bảo vệ dữ liệu người dùng.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-4">
+        {/* Section 3: FAQ */}
+        <section id="faq" className="max-w-container-max w-full mx-auto px-4 space-y-8 pt-10">
+          <h2 className="text-headline-lg font-headline-lg text-center text-primary">Câu hỏi thường gặp</h2>
+          <div className="space-y-4 max-w-4xl mx-auto">
             {faqItems.map((item, index) => {
               const isOpen = openFaqIndex === index;
               return (
                 <div 
                   key={index}
-                  className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden transition-all duration-300 animate-fade-in"
+                  className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 open:border-primary/30 transition-all overflow-hidden"
                 >
                   <button
                     onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                    className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-slate-800 hover:text-indigo-600 hover:bg-slate-50/50 transition-colors focus:outline-none cursor-pointer"
+                    className="flex justify-between items-center p-5 cursor-pointer text-body-lg font-bold text-on-surface hover:text-primary hover:bg-primary-container/5 transition-colors focus:outline-none w-full text-left"
                   >
-                    <span className="pr-4">{item.q}</span>
-                    <ChevronDown 
-                      size={18} 
-                      className={`text-slate-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-indigo-600' : ''}`} 
-                    />
+                    <span>{item.q}</span>
+                    <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`}>
+                      expand_more
+                    </span>
                   </button>
-                  
                   {isOpen && (
-                    <div className="px-6 pb-5 pt-4 text-slate-600 text-sm leading-relaxed bg-slate-50/50 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="px-5 pb-5 text-on-surface-variant leading-relaxed text-body-md border-t border-outline-variant/10 pt-4 animate-in fade-in slide-in-from-top-1 duration-200">
                       {item.a}
                     </div>
                   )}
@@ -689,14 +624,13 @@ function App() {
               );
             })}
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="bg-white text-slate-500 py-8 border-t border-slate-200/85 text-center text-xs">
-        <div className="max-w-7xl mx-auto px-4">
-          <p className="mb-2 text-slate-600 font-semibold">Gemini OCR Tiếng Việt Hàng Loạt Ra 1 Dòng - Phiên bản Client-Side Bảo Mật</p>
-          <p className="text-slate-400">© {new Date().getFullYear()} Công cụ phát triển mã nguồn mở. Cam kết không thu thập dữ liệu người dùng.</p>
+      <footer className="bg-surface-container-lowest dark:bg-inverse-surface py-12 border-t border-outline-variant/30">
+        <div className="max-w-container-max mx-auto px-gutter text-center">
+          <p className="text-label-md text-on-surface-variant">© 2026 Gemini OCR Tiếng Việt</p>
         </div>
       </footer>
     </div>

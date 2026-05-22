@@ -43,9 +43,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
 
   if (!file) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-300 min-h-[400px]">
-        <FileText size={48} strokeWidth={1} className="mb-4 opacity-40 text-slate-300" />
-        <p className="text-slate-500 text-sm">Chọn một file đã hoàn thành để xem kết quả</p>
+      <div className="h-full flex flex-col items-center justify-center text-on-surface-variant bg-surface rounded-xl border border-dashed border-outline-variant/60 min-h-[400px]">
+        <FileText size={48} strokeWidth={1} className="mb-4 opacity-40 text-on-surface-variant" />
+        <p className="text-on-surface-variant text-sm font-medium">Chọn một file đã hoàn thành để xem kết quả</p>
       </div>
     );
   }
@@ -126,11 +126,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+    <div className="flex flex-col h-full bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden min-h-[500px]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/30 bg-surface/50">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
-          <FileText size={16} className="text-indigo-600 shrink-0" />
-          <h3 className="font-semibold text-sm text-slate-800 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
+          <FileText size={16} className="text-primary shrink-0" />
+          <h3 className="font-semibold text-sm text-on-surface truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
             Kết quả: {file.originalFile?.name || 'Tài liệu'}
           </h3>
         </div>
@@ -138,7 +138,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           <button
             onClick={handleExportTxt}
             disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-on-primary rounded-lg hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in shadow-sm shadow-primary/10"
             title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
           >
             <Download size={14} />
@@ -148,9 +148,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 hover:text-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface hover:text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+              {copied ? <Check size={14} className="text-tertiary" /> : <Copy size={14} />}
               {copied ? 'Đã copy' : 'Copy nhanh'}
             </button>
           )}
@@ -158,32 +158,32 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
       </div>
       
       {file.status === 'error' ? (
-        <div className="flex-1 p-6 text-rose-800 bg-rose-50 border border-rose-100 overflow-auto font-sans">
+        <div className="flex-1 p-6 text-on-error-container bg-error-container/30 border border-error-container overflow-auto font-sans">
           <p className="font-bold mb-2">Đã xảy ra lỗi:</p>
           <p className="text-sm whitespace-pre-wrap font-mono">{file.error}</p>
         </div>
       ) : file.status === 'processing' ? (
-        <div className={`flex-1 flex flex-col items-center justify-center bg-slate-50/50 ${file.retryInfo ? 'text-amber-600' : 'text-indigo-600'}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center bg-surface ${file.retryInfo ? 'text-secondary' : 'text-primary'}`}>
           {file.retryInfo ? (
             <div className="flex flex-col items-center max-w-md text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-4 animate-bounce">
+              <div className="w-12 h-12 rounded-full bg-secondary-fixed/10 border border-secondary-fixed-dim/30 flex items-center justify-center text-secondary mb-4 animate-bounce">
                 <AlertCircle size={24} />
               </div>
-              <h4 className="font-bold text-base mb-2 text-slate-800">Google Gemini quá tải</h4>
-              <p className="text-xs text-amber-700 mb-4 whitespace-pre-wrap font-mono bg-amber-50 p-2.5 rounded-lg border border-amber-200 max-h-[150px] overflow-auto">
+              <h4 className="font-bold text-base mb-2 text-on-surface">Google Gemini quá tải</h4>
+              <p className="text-xs text-secondary-fixed-variant mb-4 whitespace-pre-wrap font-mono bg-secondary-fixed/5 p-2.5 rounded-lg border border-secondary-fixed-dim/20 max-h-[150px] overflow-auto">
                 {file.retryInfo.errorMsg}
               </p>
-              <div className="px-4 py-2 bg-amber-100 border border-amber-200 rounded-full text-xs font-semibold text-amber-700">
+              <div className="px-4 py-2 bg-secondary-fixed/20 border border-secondary-fixed-dim/30 rounded-full text-xs font-semibold text-secondary-fixed-variant">
                 Thử lại lần {file.retryInfo.attempt}/{file.retryInfo.maxAttempts} sau {file.retryInfo.secondsLeft}s...
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
               <div className="animate-pulse flex flex-col items-center">
-                <div className="h-2 bg-slate-200 rounded w-48 mb-4"></div>
-                <div className="h-2 bg-slate-200 rounded w-32"></div>
+                <div className="h-2 bg-outline-variant/30 rounded w-48 mb-4"></div>
+                <div className="h-2 bg-outline-variant/30 rounded w-32"></div>
               </div>
-              <p className="mt-4 text-sm font-medium animate-pulse text-slate-500">AI đang phân tích và trích xuất...</p>
+              <p className="mt-4 text-sm font-medium animate-pulse text-on-surface-variant/70">AI đang phân tích và trích xuất...</p>
             </div>
           )}
         </div>
@@ -192,7 +192,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult }) {
           value={localText}
           onChange={handleChange}
           placeholder="Chưa có dữ liệu trích xuất."
-          className="flex-1 w-full p-4 bg-white text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all border-t border-slate-100"
+          className="flex-1 w-full p-4 bg-surface-container-lowest text-on-surface placeholder-on-surface-variant/40 outline-none resize-none text-sm leading-relaxed focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-t border-outline-variant/10"
         />
       )}
     </div>
