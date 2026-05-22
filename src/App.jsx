@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import ApiConfig from './components/ApiConfig';
 import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
@@ -13,12 +13,20 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const processingRef = useRef(false);
+  const filesRef = useRef([]);
+
+  // Cập nhật filesRef để truy cập đồng bộ dữ liệu mới nhất trong vòng lặp bất đồng bộ
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
 
   const handleConfigChange = useCallback((newConfig) => {
     setConfig(newConfig);
   }, []);
 
   const handleReset = useCallback(() => {
+    processingRef.current = false;
+    setIsProcessing(false);
     setFiles([]);
     setActiveFileId(null);
   }, []);
@@ -122,24 +130,30 @@ function App() {
       return f;
     }));
 
-    // Lấy danh sách tệp cần chạy OCR thực tế một cách đồng bộ từ state files hiện tại
-    const currentWaiting = files
-      .map(f => f.status === 'error' ? { ...f, status: 'waiting', error: null } : f)
-      .filter(f => !f.isPdfPage && f.status === 'waiting');
-
-    let currentIndex = 0;
+    // Đợi 100ms để React cập nhật trạng thái lỗi về waiting và đồng bộ vào filesRef
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const processNext = async () => {
       if (!processingRef.current) return;
 
-      const fileToProcess = currentWaiting[currentIndex++];
-      if (!fileToProcess) return;
+      // Tìm tệp tiếp theo ở trạng thái 'waiting' trực tiếp từ filesRef
+      const fileToProcess = filesRef.current.find(f => !f.isPdfPage && f.status === 'waiting');
+      
+      // Nếu không còn tệp nào hoặc luồng bị hủy, kết thúc tiến trình
+      if (!fileToProcess) {
+        setIsProcessing(false);
+        processingRef.current = false;
+        return;
+      }
 
       setActiveFileId(fileToProcess.id);
 
       setFiles(prev => {
         return prev.map(f => f.id === fileToProcess.id ? { ...f, status: 'processing', progress: 0, error: null } : f);
       });
+
+      // Chờ nhẹ 50ms để trạng thái cập nhật vào filesRef
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       try {
         const textResult = await processOCR(
@@ -148,6 +162,8 @@ function App() {
           config.model,
           config.workerUrl,
           (event) => {
+            if (!processingRef.current) return; // Dừng lập tức nếu đã Reset
+
             if (event.type === 'status') {
               setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
                 ...f,
@@ -280,6 +296,8 @@ function App() {
           }
         );
 
+        if (!processingRef.current) return; // Dừng nếu đã Reset
+
         setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
           ...f,
           status: 'completed',
@@ -291,6 +309,8 @@ function App() {
         } : f));
 
       } catch (error) {
+        if (!processingRef.current) return; // Dừng nếu đã Reset
+
         console.error("Lỗi khi xử lý OCR file:", fileToProcess.name, error);
         setFiles(prev => {
           let updated = prev.map(f => f.id === fileToProcess.id ? {
@@ -303,7 +323,7 @@ function App() {
           } : f);
           
           if (fileToProcess.isParentPdf) {
-            // Set all non-completed pages to error as well
+            // Đặt tất cả các trang con chưa hoàn thành về trạng thái lỗi
             updated = updated.map(f => {
               if (f.parentPdfId === fileToProcess.id && f.status !== 'completed') {
                 return { ...f, status: 'error', error: error.message };
@@ -316,9 +336,11 @@ function App() {
         });
       }
 
-      // Khoảng trễ nhỏ giữa các file chính (ví dụ 1 giây)
-      if (currentIndex < currentWaiting.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Kiểm tra xem còn tệp nào đang chờ xử lý tiếp theo không
+      const nextWaiting = filesRef.current.find(f => !f.isPdfPage && f.status === 'waiting');
+      if (nextWaiting && processingRef.current) {
+        // Tích hợp khoảng trễ 4.5 giây giãn cách giữa các file để tránh lỗi Rate Limit 429
+        await new Promise(resolve => setTimeout(resolve, 4500));
       }
 
       await processNext();
@@ -458,7 +480,7 @@ function App() {
               </div>
 
               {/* Right Column: Result Viewer */}
-              <div className="lg:col-span-7 h-[calc(100vh-140px)] sticky top-20">
+              <div className="lg:col-span-7 h-auto lg:h-[calc(100vh-140px)] sticky top-20">
                 <ResultViewer 
                   file={activeFile} 
                   allFiles={files} 
@@ -494,9 +516,8 @@ function App() {
                   <div className="flex gap-3">
                     <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>heart_broken</span>
                     <div>
-                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
                       <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng chứa hình ảnh dán vào.
+                        Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi cặm cụi copy từng đoạn thủ công cực kỳ mất thời gian.
                       </p>
                     </div>
                   </div>
@@ -505,9 +526,8 @@ function App() {
                   <div className="flex gap-3">
                     <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                     <div>
-                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
                       <p className="text-body-md text-on-surface leading-relaxed">
-                        Tự động dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch ký tự rác, xuất file .txt sạch 100% để sử dụng ngay.
+                        Hỗ trợ OCR hàng loạt thả ga, tự động xử lý mượt mà hàng chục file ảnh/PDF cùng một lúc nhờ hệ thống hàng đợi thông minh.
                       </p>
                     </div>
                   </div>
@@ -520,22 +540,20 @@ function App() {
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>payments</span>
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
                     <div>
-                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
                       <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        Ứng dụng nước ngoài nhận diện Tiếng Việt không chuẩn; giới hạn keo kiệt 1 - 2 trang và bắt đóng phí đắt đỏ.
+                        Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng thực chất là chứa ảnh dán vào, không chỉnh sửa được.
                       </p>
                     </div>
                   </div>
                 </div>
                 <div className="p-5 bg-tertiary-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>all_inclusive</span>
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                     <div>
-                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
                       <p className="text-body-md text-on-surface leading-relaxed">
-                        Tận dụng AI Gemini tối tân để tự sửa chính tả; áp dụng mô hình BYOK để quét vô hạn số trang hoàn toàn miễn phí.
+                        Tự động dàn phẳng văn bản trên 1 dòng duy nhất (Single-line), xóa sạch ký tự rác và xuống dòng dư thừa, sẵn sàng copy-paste dùng ngay.
                       </p>
                     </div>
                   </div>
@@ -548,11 +566,36 @@ function App() {
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
                   <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>payments</span>
+                    <div>
+                      <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        Ứng dụng nước ngoài nhận diện tiếng Việt không chuẩn, lại giới hạn số trang (1-2 trang) và ép nâng cấp gói trả phí đắt đỏ.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 bg-tertiary-container/5">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>all_inclusive</span>
+                    <div>
+                      <p className="text-body-md text-on-surface leading-relaxed">
+                        Tận dụng sức mạnh AI tối tân từ Gemini để tự động sửa lỗi chính tả theo ngữ cảnh, dùng API Key cá nhân miễn phí không lo giới hạn.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 4: Bảo mật dữ liệu */}
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
+                  <div className="flex gap-3">
                     <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
                     <div>
-                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
                       <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        Tài liệu bị lưu lại trên máy chủ bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
+                        E ngại tài liệu tối mật của doanh nghiệp bị lưu trữ và rò rỉ trên máy chủ của bên thứ ba.
                       </p>
                     </div>
                   </div>
@@ -561,37 +604,8 @@ function App() {
                   <div className="flex gap-3">
                     <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>shield_lock</span>
                     <div>
-                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
                       <p className="text-body-md text-on-surface leading-relaxed">
-                        Kiến trúc Zero-Server. Toàn bộ xử lý diễn ra trên trình duyệt, cam kết không lưu trữ bất kỳ tệp tin nào của bạn.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Row 4: Bảo mật an toàn dữ liệu */}
-            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
-                    <div>
-                      <p className="text-label-sm font-bold text-error mb-1 uppercase tracking-wider md:hidden">Cách cũ</p>
-                      <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        Tài liệu tối mật bị lưu lại trên máy chủ bên thứ ba, đối mặt với nguy cơ rò rỉ và lộ thông tin bí mật nghiêm trọng.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 bg-tertiary-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    <div>
-                      <p className="text-label-sm font-bold text-tertiary mb-1 uppercase tracking-wider md:hidden">Giải pháp</p>
-                      <p className="text-body-md text-on-surface leading-relaxed">
-                        Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ xử lý diễn ra trên trình duyệt hoặc Cloudflare, cam kết không lưu trữ bất kỳ tệp tin nào.
+                        Cam kết bảo mật tuyệt đối với mô hình Zero-Server – toàn bộ file được xử lý trực tiếp trên trình duyệt, không một ai có thể đọc trộm.
                       </p>
                     </div>
                   </div>

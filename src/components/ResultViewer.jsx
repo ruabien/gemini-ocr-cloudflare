@@ -127,18 +127,18 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
 
   return (
     <div className="flex flex-col h-full bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden min-h-[500px]">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/30 bg-surface/50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 border-b border-outline-variant/30 bg-surface/50 gap-3">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
           <FileText size={16} className="text-primary shrink-0" />
           <h3 className="font-semibold text-sm text-on-surface truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
             Kết quả: {file.originalFile?.name || 'Tài liệu'}
           </h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {onReset && (
             <button
               onClick={onReset}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-[#0b1c30] border border-slate-200 rounded-xl transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-[#0b1c30] border border-slate-200 rounded-xl transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
               title="Làm mới toàn bộ hàng đợi và kết quả"
             >
               <span className="material-symbols-outlined text-[14px] font-bold">refresh</span>
@@ -148,17 +148,17 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           <button
             onClick={handleExportTxt}
             disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-on-primary rounded-lg hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in shadow-sm shadow-primary/10"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-semibold bg-primary text-on-primary rounded-xl hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in shadow-sm shadow-primary/10"
             title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
           >
             <Download size={14} />
-            Xuất file TXT {isMultiImage && "(Gộp)"}
+            Xuất file {isMultiImage && "(Gộp)"}
           </button>
           {!isMultiImage && (
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface hover:text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-medium bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface hover:text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-xl"
             >
               {copied ? <Check size={14} className="text-tertiary" /> : <Copy size={14} />}
               {copied ? 'Đã copy' : 'Copy nhanh'}
@@ -204,7 +204,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           value={localText}
           onChange={handleChange}
           placeholder="Chưa có dữ liệu trích xuất."
-          className="flex-1 w-full p-4 bg-surface-container-lowest text-on-surface placeholder-on-surface-variant/40 outline-none resize-none text-sm leading-relaxed focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-t border-outline-variant/10"
+          className="flex-1 w-full p-4 bg-surface-container-lowest text-on-surface placeholder-on-surface-variant/40 outline-none resize-none text-body-md leading-relaxed focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-t border-outline-variant/10"
         />
       )}
     </div>

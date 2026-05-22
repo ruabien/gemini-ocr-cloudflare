@@ -79,14 +79,14 @@
 }
 
 /* Custom design system typography mapping */
-.font-body-md {
+.font-body-md, .text-body-md {
   font-family: 'Quicksand', sans-serif;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 17px;
+  line-height: 26px;
   font-weight: 400;
 }
 
-.font-display-lg-mobile {
+.font-display-lg-mobile, .text-display-lg-mobile {
   font-family: 'Quicksand', sans-serif;
   font-size: 32px;
   line-height: 40px;
@@ -94,7 +94,7 @@
   font-weight: 700;
 }
 
-.font-display-lg {
+.font-display-lg, .text-display-lg {
   font-family: 'Quicksand', sans-serif;
   font-size: 48px;
   line-height: 56px;
@@ -102,28 +102,28 @@
   font-weight: 700;
 }
 
-.font-headline-lg {
+.font-headline-lg, .text-headline-lg {
   font-family: 'Quicksand', sans-serif;
   font-size: 32px;
   line-height: 40px;
   font-weight: 600;
 }
 
-.font-headline-md {
+.font-headline-md, .text-headline-md {
   font-family: 'Quicksand', sans-serif;
   font-size: 24px;
   line-height: 32px;
   font-weight: 600;
 }
 
-.font-body-lg {
+.font-body-lg, .text-body-lg {
   font-family: 'Quicksand', sans-serif;
   font-size: 18px;
   line-height: 28px;
   font-weight: 500;
 }
 
-.font-label-md {
+.font-label-md, .text-label-md {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 14px;
   line-height: 20px;
@@ -131,7 +131,7 @@
   font-weight: 600;
 }
 
-.font-label-sm {
+.font-label-sm, .text-label-sm {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
   line-height: 16px;
