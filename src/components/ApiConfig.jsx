@@ -94,17 +94,17 @@ export default function ApiConfig({ onConfigChange }) {
   };
 
   return (
-    <div className="bg-white border border-slate-200/60 w-full rounded-[24px] p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,88,190,0.04)] flex flex-col gap-3 font-sans">
+    <div className="bg-surface-container-lowest border border-outline-variant/30 w-full rounded-xl p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,88,190,0.04)] flex flex-col gap-2 font-sans">
       <div className="space-y-2 w-full">
-        <h2 className="font-display text-xl md:text-2xl font-bold text-[#0b1c30]">
+        <h2 className="font-display text-xl md:text-2xl font-bold text-on-surface">
           Điền API Key của bạn
         </h2>
         
-        <div className="flex flex-col md:flex-row gap-3 w-full items-stretch">
+        <div className="flex flex-col md:flex-row gap-2 w-full items-stretch">
           {/* API Key Input and Save Button */}
-          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <div className="flex flex-col sm:flex-row gap-2 flex-1">
             <div className="relative flex-1 group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#0058be]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary">
                 <KeyRound size={16} />
               </div>
               <input
@@ -112,13 +112,13 @@ export default function ApiConfig({ onConfigChange }) {
                 placeholder="Nhập Gemini API Key của bạn"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="w-full pl-10 pr-4 h-12 bg-white border border-[#0058be]/20 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0058be]/50 focus:border-[#0058be] transition-all"
+                className="w-full pl-10 pr-4 h-12 bg-surface-container-lowest border border-primary/20 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
               />
             </div>
             <button
               onClick={handleSaveKey}
               disabled={!apiKey}
-              className="h-12 px-6 bg-[#0058be] hover:bg-[#004395] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer text-base w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-12 px-6 bg-primary hover:bg-primary-container text-on-primary font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer text-base w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={16} />
               <span>Lưu Key</span>
@@ -126,15 +126,15 @@ export default function ApiConfig({ onConfigChange }) {
           </div>
 
           {/* Model Dropdown and Sync Button */}
-          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          <div className="flex flex-col sm:flex-row gap-2 flex-1">
             <div className="relative flex-1 group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-[#0058be]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary">
                 <Bot size={16} />
               </div>
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full pl-10 pr-10 h-12 bg-white border border-[#0058be]/20 rounded-xl text-base font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0058be]/50 focus:border-[#0058be] transition-all appearance-none cursor-pointer"
+                className="w-full pl-10 pr-10 h-12 bg-surface-container-lowest border border-primary/20 rounded-xl text-base font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all appearance-none cursor-pointer"
               >
                 {availableModels.map(m => (
                   <option key={m} value={m}>{m}</option>
@@ -147,7 +147,7 @@ export default function ApiConfig({ onConfigChange }) {
             <button
               onClick={fetchModels}
               disabled={isFetchingModels || !apiKey}
-              className="h-12 px-4 bg-white text-[#0b1c30] border border-[#0058be]/20 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-base font-bold w-full sm:w-auto"
+              className="h-12 px-4 bg-surface-container-lowest text-on-surface border border-primary/20 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-base font-bold w-full sm:w-auto"
               title="Đồng bộ danh sách Model từ Google"
             >
               <RefreshCw size={16} className={isFetchingModels ? "animate-spin" : ""} />
@@ -161,7 +161,7 @@ export default function ApiConfig({ onConfigChange }) {
               placeholder="VD: gemini-1.5-pro-latest"
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
-              className="w-full md:w-48 h-12 px-4 bg-white border border-[#0058be]/20 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0058be]/50 focus:border-[#0058be] transition-all"
+              className="w-full md:w-48 h-12 px-4 bg-surface-container-lowest border border-primary/20 rounded-xl text-base font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
             />
           )}
         </div>

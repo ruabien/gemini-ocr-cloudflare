@@ -8,7 +8,11 @@ import {
   Play, 
   ChevronDown, 
   Shield, 
-  ArrowRight
+  ArrowRight,
+  Frown,
+  XCircle,
+  Rocket,
+  CheckCircle2
 } from 'lucide-react';
 import { processOCR } from './utils/ocrService';
 
@@ -376,32 +380,32 @@ function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] font-sans selection:bg-blue-100 selection:text-blue-900 flex flex-col scroll-smooth">
+    <div className="min-h-screen bg-surface-bright text-on-surface font-sans selection:bg-primary-fixed/30 selection:text-on-primary-container flex flex-col scroll-smooth">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm select-none">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 w-full bg-surface/80 backdrop-blur-md border-b border-outline-variant/30 h-16 flex items-center select-none">
+        <div className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-8 h-8 rounded-lg bg-[#0058be]/10 flex items-center justify-center text-[#0058be]">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
               <Sparkles size={18} className="animate-pulse fill-current" />
             </div>
-            <span className="font-display font-bold text-xl md:text-2xl text-[#0058be] tracking-tight">
+            <span className="font-display font-bold text-headline-md text-primary tracking-tight">
               ScanJoy
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-bold text-[#424754]">
-            <button onClick={() => scrollToSection('workspace')} className="hover:text-[#0058be] hover:underline transition-colors cursor-pointer">Sử dụng</button>
-            <button onClick={() => scrollToSection('so-sanh')} className="hover:text-[#0058be] hover:underline transition-colors cursor-pointer">So sánh đối ứng</button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-[#0058be] hover:underline transition-colors cursor-pointer">Hỏi đáp & Bảo mật</button>
+          <nav className="hidden md:flex items-center gap-6 text-label-md text-on-surface-variant">
+            <button onClick={() => scrollToSection('workspace')} className="hover:text-primary transition-colors cursor-pointer">Sử dụng</button>
+            <button onClick={() => scrollToSection('so-sanh')} className="hover:text-primary transition-colors cursor-pointer">So sánh đối ứng</button>
+            <button onClick={() => scrollToSection('faq')} className="hover:text-primary transition-colors cursor-pointer">Hỏi đáp & Bảo mật</button>
           </nav>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold bg-[#0058be]/10 text-[#0058be] px-3 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
+            <span className="text-label-sm bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
               BYOK Client
             </span>
             <button 
               onClick={() => scrollToSection('workspace')}
-              className="px-4 h-12 text-sm font-bold bg-[#0058be] hover:bg-[#004395] text-white rounded-full transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-4 h-11 text-label-md font-bold bg-primary hover:bg-primary-container text-on-primary rounded-full transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 duration-200"
             >
               Trải nghiệm ngay
               <ArrowRight size={14} />
@@ -411,9 +415,21 @@ function App() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-grow flex flex-col gap-10 md:gap-16">
+      <main className="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex-grow flex flex-col gap-12 md:gap-16">
         
-        {/* Section 1: Workspace ở trên cùng */}
+        {/* Section 1: Hero ở trên cùng */}
+        <section className="max-w-container-max mx-auto text-center space-y-4 select-none pt-4">
+          <div className="space-y-4 animate-fade-in">
+            <h1 className="text-display-lg-mobile md:text-display-lg font-display-lg text-primary tracking-tight leading-tight">
+              Chuyển đổi Hình ảnh &amp; PDF sang Văn bản
+            </h1>
+            <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+              Biến mọi tài liệu giấy thành văn bản số chỉ trong vài giây với công nghệ AI hiện đại của ScanJoy.
+            </p>
+          </div>
+        </section>
+
+        {/* Section 1.5: Workspace */}
         <section id="workspace" className="py-2 space-y-6 w-full max-w-5xl mx-auto animate-fade-in">
           <ApiConfig onConfigChange={handleConfigChange} />
 
@@ -424,7 +440,7 @@ function App() {
               <div className="flex justify-center pt-2 select-none">
                 <button 
                   onClick={handleConvertClick}
-                  className="bg-[#0058be] hover:bg-[#004395] text-white h-12 sm:h-14 px-8 rounded-full font-display font-bold shadow-lg shadow-[#0058be]/20 active:scale-95 transition-all duration-200 w-full max-w-xs flex items-center justify-center gap-2 cursor-pointer text-base sm:text-lg"
+                  className="bg-primary hover:bg-primary-container text-on-primary h-14 px-8 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 w-full max-w-xs flex items-center justify-center gap-2 cursor-pointer text-body-lg"
                 >
                   <span>Chuyển đổi ngay</span>
                   <Sparkles size={18} className="animate-pulse" />
@@ -438,7 +454,7 @@ function App() {
                   <FileDropzone onFilesSelected={handleFilesSelected} />
                 </div>
                 
-                <div className="flex flex-col gap-4 bg-white p-5 sm:p-6 rounded-[24px] border border-slate-200/60 shadow-[0_4px_20px_rgba(0,88,190,0.04)] flex-1 max-h-[550px] overflow-hidden">
+                <div className="flex flex-col gap-4 bg-surface-container-lowest p-5 sm:p-6 rounded-xl border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,88,190,0.04)] flex-1 max-h-[550px] overflow-hidden">
                   <QueueList 
                     files={files} 
                     activeFileId={activeFileId} 
@@ -446,11 +462,11 @@ function App() {
                     onRemoveFile={handleRemoveFile}
                   />
                   
-                  <div className="pt-4 mt-auto border-t border-slate-200/80 shrink-0">
+                  <div className="pt-4 mt-auto border-t border-outline-variant/30 shrink-0">
                     <button
                       onClick={startOCR}
                       disabled={isProcessing || files.some(f => f.status === 'splitting') || !files.some(f => !f.isParentPdf && (f.status === 'waiting' || f.status === 'error'))}
-                      className="w-full h-12 px-5 bg-[#0058be] hover:bg-[#004395] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-base"
+                      className="w-full h-12 px-5 bg-primary hover:bg-primary-container text-on-primary font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-body-md"
                     >
                       <Play size={16} fill="white" stroke="white" />
                       {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
@@ -470,168 +486,96 @@ function App() {
           )}
         </section>
 
-        {/* Section 1.5: Intro Title & Hero description (Dưới Workspace) */}
-        <section className="max-w-[1280px] mx-auto text-center py-4 space-y-4 select-none">
-          <div className="space-y-3">
-            <h1 className="text-3xl md:text-5xl font-display font-bold text-[#0b1c30] tracking-tight leading-tight">
-              Chuyển đổi Hình ảnh &amp; PDF sang Văn bản
-            </h1>
-            <p className="text-base sm:text-[17px] text-[#424754] max-w-2xl mx-auto leading-relaxed font-medium">
-              Biến mọi tài liệu giấy thành văn bản số chỉ trong vài giây với công nghệ AI hiện đại của ScanJoy.
-            </p>
-          </div>
-        </section>
-
         {/* Section 2: Comparison Grid */}
-        <section id="so-sanh" className="py-2 space-y-8 w-full">
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-center text-[#0b1c30]">
+        <section id="so-sanh" className="max-w-container-max mx-auto w-full space-y-8">
+          <h2 className="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-center text-primary">
             Tại sao nên chọn ScanJoy?
           </h2>
           
-          <div className="bg-white rounded-[24px] shadow-[0_4px_20px_rgba(0,88,190,0.04)] border border-slate-200/60 overflow-hidden max-w-4xl mx-auto">
-            {/* Header Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 bg-white border-b border-slate-200/60 select-none">
-              <div className="py-4 px-5 md:py-5 md:px-6 flex items-center gap-3 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/60">
-                <span className="text-xl">😫</span>
-                <h3 className="font-display text-lg md:text-xl font-bold text-[#0b1c30]">Khó khăn & Nỗi đau của bạn</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Old Way */}
+            <div className="glass-card p-6 rounded-xl shadow-sm border border-outline-variant/30 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Frown size={60} className="text-error" />
               </div>
-              <div className="py-4 px-5 md:py-5 md:px-6 flex items-center gap-3">
-                <span className="text-xl">✨</span>
-                <h3 className="font-display text-lg md:text-xl font-bold text-[#0058be]">Giải pháp vượt trội từ App</h3>
-              </div>
+              <h3 className="text-headline-md font-headline-md text-on-surface mb-6">Cách cũ</h3>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3">
+                  <XCircle size={20} className="text-error shrink-0 fill-error/10" />
+                  <span className="text-body-md text-on-surface-variant">Gõ phím mỏi tay</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <XCircle size={20} className="text-error shrink-0 fill-error/10" />
+                  <span className="text-body-md text-on-surface-variant">Dễ sai sót</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <XCircle size={20} className="text-error shrink-0 fill-error/10" />
+                  <span className="text-body-md text-on-surface-variant">Mất hàng giờ</span>
+                </li>
+              </ul>
             </div>
-
-            {/* Row 1 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="py-4 px-5 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/60 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-[#424754] text-base md:text-[17px] leading-relaxed">
-                  Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi copy từng đoạn thủ công mất thời gian.
-                </p>
+            
+            {/* ScanJoy Way */}
+            <div className="bg-primary-container/10 p-6 rounded-xl shadow-md border border-primary/20 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Rocket size={60} className="text-primary" />
               </div>
-              <div className="py-4 px-5 md:py-5 md:px-6 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">💡</span>
-                <p className="text-[#0b1c30] text-base md:text-[17px] font-bold leading-relaxed">
-                  Hỗ trợ OCR hàng loạt thả ga, xử lý mượt mà hàng chục file ảnh cùng một lúc nhờ hàng đợi tự động thông minh.
-                </p>
+              <div className="flex items-center gap-2 mb-6">
+                <h3 className="text-headline-md font-headline-md text-primary">Cách ScanJoy</h3>
+                <span className="bg-secondary-container text-on-secondary-container text-label-sm px-2 py-0.5 rounded-full select-none animate-pulse">
+                  Khuyên dùng
+                </span>
               </div>
-            </div>
-
-            {/* Row 2 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="py-4 px-5 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/60 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-[#424754] text-base md:text-[17px] leading-relaxed">
-                  Văn bản sau khi quét bị lỗi định dạng lung tung, xuống dòng vô tội vạ, khoảng trắng thừa phải edit tay mệt mỏi.
-                </p>
-              </div>
-              <div className="py-4 px-5 md:py-5 md:px-6 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">💡</span>
-                <p className="text-[#0b1c30] text-base md:text-[17px] font-bold leading-relaxed">
-                  Tự động xử lý chuỗi và dàn phẳng văn bản trên duy nhất 1 dòng thuần túy, xóa sạch rác định dạng để paste thẳng vào Excel, AI RAG.
-                </p>
-              </div>
-            </div>
-
-            {/* Row 3 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="py-4 px-5 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/60 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-[#424754] text-base md:text-[17px] leading-relaxed">
-                  Dùng phần mềm nước ngoài thì nhận diện Tiếng Việt không chuẩn, lỗi chính tả be bét do AI không hiểu ngữ cảnh.
-                </p>
-              </div>
-              <div className="py-4 px-5 md:py-5 md:px-6 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">💡</span>
-                <p className="text-[#0b1c30] text-base md:text-[17px] font-bold leading-relaxed">
-                  Sử dụng trí tuệ nhân tạo Gemini tối tân, đọc hiểu ngữ nghĩa pháp lý để tự động sửa lỗi chính tả chính xác đến từng dấu thanh.
-                </p>
-              </div>
-            </div>
-
-            {/* Row 4 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="py-4 px-5 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/60 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-[#424754] text-base md:text-[17px] leading-relaxed">
-                  Xuất file .docx từ các web chuyển đổi trực tuyến nhưng nhận lại file Word chứa toàn hình ảnh chụp, không thể edit text.
-                </p>
-              </div>
-              <div className="py-4 px-5 md:py-5 md:px-6 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">💡</span>
-                <p className="text-[#0b1c30] text-base md:text-[17px] font-bold leading-relaxed">
-                  Xuất file định dạng .txt thuần túy, đảm bảo 100% dữ liệu là ký tự sạch, tha hồ bôi đen, chỉnh sửa và khai thác văn bản.
-                </p>
-              </div>
-            </div>
-
-            {/* Row 5 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 border-b border-slate-200/60 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="py-4 px-5 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/60 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-[#424754] text-base md:text-[17px] leading-relaxed">
-                  Các ứng dụng miễn phí bóp nghẹt tính năng, chỉ cho quét 1 - 2 trang, bắt đóng phí bản quyền đắt đỏ hàng tháng.
-                </p>
-              </div>
-              <div className="py-4 px-5 md:py-5 md:px-6 flex gap-3 items-start">
-                <span class="text-lg shrink-0 mt-0.5 select-none">💡</span>
-                <p className="text-[#0b1c30] text-base md:text-[17px] font-bold leading-relaxed">
-                  Mô hình BYOK (Tự điền API Key miễn phí): OCR vô hạn số lượng trang, sở hữu trọn vẹn băng thông của Google mà không tốn một xu.
-                </p>
-              </div>
-            </div>
-
-            {/* Row 6 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 hover:bg-[#f8f9ff] transition-colors duration-200">
-              <div className="py-4 px-5 md:py-5 md:px-6 border-b border-slate-200/60 md:border-b-0 md:border-r border-slate-200/60 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">❌</span>
-                <p className="text-[#424754] text-base md:text-[17px] leading-relaxed">
-                  Tài liệu, hợp đồng, hồ sơ vụ án tối mật bị lưu lại trên server bên thứ ba, đối mặt với nguy cơ rò rỉ thông tin bí mật.
-                </p>
-              </div>
-              <div className="py-4 px-5 md:py-5 md:px-6 flex gap-3 items-start">
-                <span className="text-lg shrink-0 mt-0.5 select-none">💡</span>
-                <p className="text-[#0b1c30] text-base md:text-[17px] font-bold leading-relaxed">
-                  Kiến trúc bảo mật Zero-Server tuyệt đối. Toàn bộ quá trình xử lý diễn ra trực tiếp trên trình duyệt của bạn, không lưu trữ bất kỳ tệp tin nào của người dùng.
-                </p>
-              </div>
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 size={20} className="text-tertiary shrink-0 fill-tertiary/10" />
+                  <span className="text-body-md font-medium text-on-surface">Xử lý trong giây lát</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 size={20} className="text-tertiary shrink-0 fill-tertiary/10" />
+                  <span className="text-body-md font-medium text-on-surface">Độ chính xác 99%</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 size={20} className="text-tertiary shrink-0 fill-tertiary/10" />
+                  <span className="text-body-md font-medium text-on-surface">Tiết kiệm thời gian tối đa</span>
+                </li>
+              </ul>
             </div>
           </div>
         </section>
 
         {/* Section 3: FAQ */}
-        <section id="faq" className="py-2 space-y-8 w-full max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-display font-bold text-center text-[#0b1c30]">
+        <section id="faq" className="max-w-container-max mx-auto w-full space-y-8">
+          <h2 className="text-headline-lg-mobile md:text-headline-lg font-headline-lg text-center text-primary">
             Câu hỏi thường gặp
           </h2>
 
-          <div className="space-y-4 w-full">
+          <div className="space-y-4 w-full max-w-3xl mx-auto">
             {faqItems.map((item, index) => {
-              const isOpen = openFaqIndex === index;
               return (
-                <div 
+                <details 
                   key={index}
-                  className={`bg-white border rounded-[24px] overflow-hidden transition-all duration-300 shadow-[0_4px_20px_rgba(0,88,190,0.04)] ${
-                    isOpen ? 'border-[#0058be]/30' : 'border-slate-200/60'
-                  }`}
+                  open={openFaqIndex === index}
+                  onToggle={(e) => {
+                    if (e.target.open) {
+                      setOpenFaqIndex(index);
+                    } else if (openFaqIndex === index) {
+                      setOpenFaqIndex(null);
+                    }
+                  }}
+                  className="group bg-surface-container-lowest rounded-xl border border-outline-variant/30 open:border-primary/30 transition-all duration-300"
                 >
-                  <button
-                     onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                     className="w-full px-5 py-4 flex items-center justify-between text-left font-bold text-base md:text-lg text-[#0b1c30] hover:bg-slate-50/50 transition-colors focus:outline-none cursor-pointer"
-                  >
-                    <span className="pr-4 leading-relaxed font-display">{item.q}</span>
+                  <summary className="flex justify-between items-center p-5 cursor-pointer list-none list-inside select-none">
+                    <span className="text-body-lg font-bold text-on-surface leading-relaxed font-display pr-4">{item.q}</span>
                     <ChevronDown 
                       size={18} 
-                      className={`text-[#424754] shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#0058be]' : ''}`} 
+                      className="text-on-surface-variant group-open:rotate-180 transition-transform duration-300 shrink-0" 
                     />
-                  </button>
-                  
-                  {isOpen && (
-                    <div className="px-5 pb-5 pt-3 text-[#424754] text-base md:text-[17px] leading-relaxed border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-250">
-                      {item.a}
-                    </div>
-                  )}
-                </div>
+                  </summary>
+                  <div className="px-5 pb-5 text-on-surface-variant leading-relaxed text-body-md">
+                    {item.a}
+                  </div>
+                </details>
               );
             })}
           </div>
@@ -640,17 +584,17 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white py-12 border-t border-slate-200/50">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-gutter max-w-container-max mx-auto select-none">
+      <footer className="bg-surface-container-lowest py-12 border-t border-outline-variant/30 select-none">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-gutter max-w-container-max mx-auto">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <span className="text-base font-bold text-[#0058be] font-display">ScanJoy</span>
-            <p className="text-sm font-bold text-[#424754]">© 2026 ScanJoy. Made with joy for efficient minds.</p>
+            <span className="text-label-md font-label-md font-bold text-secondary">ScanJoy</span>
+            <p className="text-label-sm font-label-sm text-on-surface-variant">© 2026 ScanJoy. Made with joy for efficient minds.</p>
           </div>
           <div className="flex gap-6">
-            <a className="text-sm font-bold text-[#424754] hover:text-[#0058be] transition-all" href="#workspace">Security</a>
-            <a className="text-sm font-bold text-[#424754] hover:text-[#0058be] transition-all" href="#workspace">Formats</a>
-            <a className="text-sm font-bold text-[#424754] hover:text-[#0058be] transition-all" href="#so-sanh">Pricing</a>
-            <a className="text-sm font-bold text-[#424754] hover:text-[#0058be] transition-all" href="#faq">Privacy</a>
+            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#workspace">Security</a>
+            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#workspace">Formats</a>
+            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#so-sanh">Pricing</a>
+            <a className="text-label-sm font-label-sm text-on-surface-variant hover:text-secondary-container transition-all" href="#faq">Privacy</a>
           </div>
         </div>
       </footer>

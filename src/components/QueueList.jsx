@@ -13,7 +13,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
 
   const getFileIcon = (type) => {
     if (type && type.includes('pdf')) return <FileText className="text-rose-500" size={24} strokeWidth={1.5} />;
-    return <ImageIcon className="text-[#0058be]" size={24} strokeWidth={1.5} />;
+    return <ImageIcon className="text-primary" size={24} strokeWidth={1.5} />;
   };
 
   const getStatusUI = (file) => {
@@ -30,9 +30,9 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
     }
     switch(status) {
       case 'splitting':
-        return { label: 'Đang tách trang...', icon: <Loader2 size={16} className="animate-spin text-slate-400" />, color: 'text-slate-500', bar: 'bg-[#0058be]', width: `${progress}%` };
+        return { label: 'Đang tách trang...', icon: <Loader2 size={16} className="animate-spin text-slate-400" />, color: 'text-slate-500', bar: 'bg-primary', width: `${progress}%` };
       case 'processing': 
-        return { label: 'Đang xử lý...', icon: <Loader2 size={16} className="animate-spin text-[#0058be]" />, color: 'text-[#0058be]', bar: 'bg-[#0058be]', width: `${progress}%` };
+        return { label: 'Đang xử lý...', icon: <Loader2 size={16} className="animate-spin text-primary" />, color: 'text-primary', bar: 'bg-primary', width: `${progress}%` };
       case 'completed': 
         return { label: 'Xong', icon: <CheckCircle2 size={16} className="text-emerald-500" />, color: 'text-emerald-600', bar: 'bg-emerald-500', width: '100%' };
       case 'error': 
@@ -47,9 +47,9 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
 
   return (
     <div className="w-full flex flex-col flex-1 min-h-0 font-sans">
-      <h3 className="font-display text-base font-bold text-[#0b1c30] mb-4 flex items-center gap-2 shrink-0 select-none">
+      <h3 className="font-display text-base font-bold text-on-surface mb-4 flex items-center gap-2 shrink-0 select-none">
         Hàng đợi xử lý file
-        <span className="bg-[#0058be]/10 text-[#0058be] border border-[#0058be]/20 py-0.5 px-2.5 rounded-full text-xs font-bold font-sans">
+        <span className="bg-primary/10 text-primary border border-primary/20 py-0.5 px-2.5 rounded-full text-xs font-bold font-sans">
           {mainDocuments.length}
         </span>
       </h3>
@@ -61,12 +61,12 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
           const pages = file.isParentPdf ? files.filter(p => p.parentPdfId === file.id && p.isPdfPage) : [];
           
           return (
-            <div key={file.id} className="flex flex-col gap-2 bg-[#f8f9ff]/50 p-2 sm:p-2.5 rounded-xl border border-slate-200/60">
+            <div key={file.id} className="flex flex-col gap-2 bg-surface-bright/50 p-2 sm:p-2.5 rounded-xl border border-outline-variant/30">
               {/* File Card */}
               <div 
                 onClick={() => onFileClick && onFileClick(file.id)}
-                className={`bg-white border rounded-xl p-3 shadow-sm hover:border-[#0058be] transition-all flex items-center gap-3 cursor-pointer group ${
-                  isActive ? 'border-[#0058be] bg-[#0058be]/5 ring-1 ring-[#0058be]/10' : 'border-slate-200'
+                className={`bg-surface-container-lowest border rounded-xl p-3 shadow-sm hover:border-primary transition-all flex items-center gap-3 cursor-pointer group ${
+                  isActive ? 'border-primary bg-primary/5 ring-1 ring-primary/10' : 'border-slate-200'
                 }`}
               >
                 <div className="p-2 bg-slate-50 rounded-xl border border-slate-200 shrink-0 text-slate-700">
@@ -75,7 +75,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1 gap-2">
-                    <p className={`text-[15px] font-bold truncate pr-1 ${isActive ? 'text-[#0b1c30]' : 'text-[#424754]'}`} title={file.name}>
+                    <p className={`text-[15px] font-bold truncate pr-1 ${isActive ? 'text-on-surface' : 'text-on-surface-variant'}`} title={file.name}>
                       {file.name}
                     </p>
                     <div className={`flex items-center gap-1 text-xs font-bold whitespace-nowrap shrink-0 ${statusUI.color}`}>
@@ -108,7 +108,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
 
               {/* Subpages of PDF */}
               {pages.length > 0 && (
-                <div className="pl-3.5 pr-1 flex flex-col gap-1.5 border-l-2 border-[#0058be]/30 ml-6 py-0.5">
+                <div className="pl-3.5 pr-1 flex flex-col gap-1.5 border-l-2 border-primary/30 ml-6 py-0.5">
                   {pages.map((page) => {
                     const pageStatusUI = getStatusUI(page);
                     const isPageActive = activeFileId === page.id;
@@ -119,12 +119,12 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
                         onClick={() => onFileClick && onFileClick(page.id)}
                         className={`flex items-center justify-between p-2.5 rounded-lg text-sm font-bold cursor-pointer transition-all border ${
                           isPageActive 
-                            ? 'bg-[#0058be]/5 border-[#0058be] text-[#0b1c30] shadow-sm' 
-                            : 'bg-white border-slate-200 text-[#424754] hover:bg-slate-50 hover:text-[#0b1c30]'
+                            ? 'bg-primary/5 border-primary text-on-surface shadow-sm' 
+                            : 'bg-surface-container-lowest border-slate-200 text-on-surface-variant hover:bg-slate-50 hover:text-on-surface'
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
-                           <ImageIcon size={14} className={isPageActive ? 'text-[#0058be]' : 'text-slate-400'} />
+                           <ImageIcon size={14} className={isPageActive ? 'text-primary' : 'text-slate-400'} />
                           <span className="truncate">{`Trang ${page.pageIndex + 1}`}</span>
                         </div>
                         

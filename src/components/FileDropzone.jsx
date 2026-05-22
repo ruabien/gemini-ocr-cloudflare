@@ -59,23 +59,23 @@ export default function FileDropzone({ onFilesSelected }) {
 
   return (
     <label
-      className={`w-full p-6 sm:p-10 border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 cursor-pointer min-h-[180px] sm:min-h-[220px] rounded-[24px] shadow-[0_4px_20px_rgba(0,88,190,0.04)] ${
+      className={`w-full p-6 sm:p-10 border-2 border-dashed flex flex-col items-center justify-center transition-all duration-300 cursor-pointer min-h-[180px] sm:min-h-[220px] rounded-xl shadow-[0_4px_20px_rgba(0,88,190,0.04)] ${
         isDragActive 
-          ? 'border-[#0058be] bg-[#2170e4]/5 scale-[1.01]' 
-          : 'border-[#0058be]/40 bg-white hover:border-[#0058be] hover:bg-slate-50/50'
+          ? 'border-primary bg-primary-container/5 scale-[1.01]' 
+          : 'border-primary/40 bg-surface-container-lowest hover:border-primary hover:bg-slate-50/50'
       }`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="w-16 h-16 rounded-full bg-[#0058be]/10 flex items-center justify-center text-[#0058be] mb-4 transition-transform group-hover:scale-110">
+      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 transition-transform group-hover:scale-110">
         <UploadCloud size={36} strokeWidth={1.5} />
       </div>
-      <h3 className="font-display text-lg md:text-xl font-bold text-[#0b1c30] text-center mb-1 select-none">
+      <h3 className="font-display text-lg md:text-xl font-bold text-on-surface text-center mb-1 select-none">
         {isDragActive ? 'Thả file vào đây...' : 'Kéo thả hoặc chạm để chọn file'}
       </h3>
-      <p className="font-sans text-sm font-bold text-[#424754] text-center select-none">
+      <p className="font-sans text-sm font-bold text-on-surface-variant text-center select-none">
         (PDF, JPG, PNG)
       </p>
 
