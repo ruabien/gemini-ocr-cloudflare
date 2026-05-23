@@ -17,7 +17,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
   };
 
   const getStatusUI = (file) => {
-    const { status, progress, retryInfo, lane } = file;
+    const { status, progress, retryInfo } = file;
     if (status === 'processing' && retryInfo) {
       const { attempt, secondsLeft, customMessage } = retryInfo;
       return { 
@@ -32,13 +32,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
       case 'splitting':
         return { label: 'Đang tách trang...', icon: <Loader2 size={16} className="animate-spin text-secondary-fixed-dim" />, color: 'text-secondary', bar: 'bg-secondary-container', width: `${progress}%` };
       case 'processing': 
-        return { 
-          label: lane === 'CLOUDFLARE_AI' ? `Đang chạy Cloudflare AI... (${progress}%)` : `Đang chạy Gemini... (${progress}%)`, 
-          icon: <Loader2 size={16} className="animate-spin text-primary" />, 
-          color: 'text-primary', 
-          bar: 'bg-primary', 
-          width: `${progress}%` 
-        };
+        return { label: `Đang xử lý... (${progress}%)`, icon: <Loader2 size={16} className="animate-spin text-primary" />, color: 'text-primary', bar: 'bg-primary', width: `${progress}%` };
       case 'completed': 
         return { label: 'Hoàn thành', icon: <CheckCircle2 size={16} className="text-tertiary" />, color: 'text-tertiary', bar: 'bg-tertiary', width: '100%' };
       case 'error': 
@@ -94,8 +88,6 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
                   <div className="flex justify-between items-center mb-2">
                     <p className="text-xs text-on-surface-variant/70 font-medium">
                       {formatSize(file.originalFile?.size || 0)}
-                      {file.totalPages > 0 && ` • ${file.totalPages} trang`}
-                      {file.lane && ` • ${file.lane === 'CLOUDFLARE_AI' ? 'Cloudflare AI' : 'Google Gemini'}`}
                     </p>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onRemoveFile && onRemoveFile(file.id); }}
