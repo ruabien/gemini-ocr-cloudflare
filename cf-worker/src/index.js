@@ -180,19 +180,29 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxR
       }
 
       if (response.status === 429 || response.status === 503 || response.status >= 500) {
-        const isRateLimit = response.status === 429;
-        
+        let errorMsg = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData?.error?.message || errorMsg;
+        } catch {}
+
         if (i === totalAttempts - 1) {
-          let errorMsg = `HTTP ${response.status}`;
-          try {
-            const errorData = await response.json();
-            errorMsg = errorData?.error?.message || errorMsg;
-          } catch {}
           throw new Error(`Đã thử lại ${maxRetries} lần nhưng thất bại: ${errorMsg}`);
         }
 
-        // Nghỉ hẳn 15 giây đối với lỗi 429 (Rate Limit); nếu lỗi khác dùng exponential backoff
-        const waitTime = isRateLimit ? 15000 : Math.pow(2, i) * 3000;
+        const isRateLimit = response.status === 429;
+        let waitTime = isRateLimit ? 15000 : Math.pow(2, i) * 3000;
+
+        // Thử parse thời gian chờ từ thông báo lỗi của Google
+        const retryMatch = errorMsg.match(/Please retry in ([0-9.]+)\s*s/i);
+        if (retryMatch) {
+          const seconds = parseFloat(retryMatch[1]);
+          if (!isNaN(seconds)) {
+            waitTime = Math.ceil((seconds + 2) * 1000);
+            console.log(`Phát hiện yêu cầu thử lại từ Google. Đang đợi chính xác ${waitTime / 1000}s...`);
+          }
+        }
+
         console.warn(`Lỗi Gemini (${response.status}). Thử lại lần thứ ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
         await sleep(waitTime);
         continue;
@@ -209,8 +219,18 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxR
       if (i === totalAttempts - 1) {
         throw err;
       }
-      console.warn(`Lỗi khi gọi API: ${err.message}. Thử lại lần thứ ${i + 1}/${maxRetries} sau 15s...`);
-      await sleep(15000);
+      
+      let waitTime = 15000;
+      const retryMatch = err.message.match(/Please retry in ([0-9.]+)\s*s/i);
+      if (retryMatch) {
+        const seconds = parseFloat(retryMatch[1]);
+        if (!isNaN(seconds)) {
+          waitTime = Math.ceil((seconds + 2) * 1000);
+        }
+      }
+      
+      console.warn(`Lỗi khi gọi API: ${err.message}. Thử lại lần thứ ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
+      await sleep(waitTime);
     }
   }
 }
