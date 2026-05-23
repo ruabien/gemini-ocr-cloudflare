@@ -2,20 +2,28 @@ import { useState, useEffect } from 'react';
 import { KeyRound, Bot, RefreshCw, Save } from 'lucide-react';
 
 const DEFAULT_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash-exp',
   'gemini-1.5-flash',
   'gemini-1.5-pro',
-  'gemini-2.0-flash-exp',
-  'gemini-pro-vision',
   'Khác'
 ];
 
-// Bạn có thể thay địa chỉ URL Cloudflare Worker sau khi deploy vào đây
-// để làm địa chỉ mặc định cho tất cả người dùng mà không cần họ tự nhập.
-const DEFAULT_WORKER_URL = 'https://gemini-ocr-backend.ruabien1504.workers.dev';
-
 export default function ApiConfig({ onConfigChange }) {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('ocr_api_key') || '');
-  const [workerUrl] = useState(() => localStorage.getItem('ocr_worker_url') || DEFAULT_WORKER_URL);
+  const [apiKey, setApiKey] = useState(() => {
+    const savedKeys = localStorage.getItem('ocr_api_keys');
+    if (savedKeys) {
+      try {
+        const parsed = JSON.parse(savedKeys);
+        if (Array.isArray(parsed)) {
+          return parsed.join(', ');
+        }
+      } catch (e) {
+        console.warn("Không thể parse API Keys:", e);
+      }
+    }
+    return localStorage.getItem('ocr_api_key') || '';
+  });
   const [showToast, setShowToast] = useState(false);
   
   const [availableModels, setAvailableModels] = useState(() => {
@@ -39,16 +47,16 @@ export default function ApiConfig({ onConfigChange }) {
     localStorage.setItem('ocr_model', model);
     localStorage.setItem('ocr_custom_model', customModel);
     localStorage.setItem('ocr_available_models', JSON.stringify(availableModels));
-    localStorage.setItem('ocr_worker_url', workerUrl);
     
     if (onConfigChange) {
+      const keys = apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
       onConfigChange({
         apiKey,
-        model: model === 'Khác' ? customModel : model,
-        workerUrl
+        apiKeys: keys,
+        model: model === 'Khác' ? customModel : model
       });
     }
-  }, [apiKey, model, customModel, availableModels, workerUrl, onConfigChange]);
+  }, [apiKey, model, customModel, availableModels, onConfigChange]);
 
   useEffect(() => {
     if (showToast) {
@@ -58,18 +66,22 @@ export default function ApiConfig({ onConfigChange }) {
   }, [showToast]);
 
   const handleSaveKey = () => {
+    const keys = apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
+    localStorage.setItem('ocr_api_keys', JSON.stringify(keys));
     localStorage.setItem('ocr_api_key', apiKey);
     setShowToast(true);
   };
 
   const fetchModels = async () => {
-    if (!apiKey) {
+    const keys = apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
+    const activeKey = keys[0];
+    if (!activeKey) {
       alert("Vui lòng nhập API Key trước khi đồng bộ danh sách Model.");
       return;
     }
     setIsFetchingModels(true);
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${activeKey}`);
       if (!res.ok) {
         throw new Error("Lỗi xác thực API Key hoặc quá tải kết nối. Vui lòng kiểm tra lại Key.");
       }
@@ -103,19 +115,19 @@ export default function ApiConfig({ onConfigChange }) {
           <div className="p-2 bg-surface text-primary border border-outline-variant/30 rounded-xl">
             <KeyRound size={18} />
           </div>
-          <h2 className="font-bold text-sm tracking-tight text-on-surface">Điền API Key của bạn</h2>
+          <h2 className="font-bold text-sm tracking-tight text-on-surface">Điền API Key (Xoay vòng tự động)</h2>
         </div>
 
         <div className="flex flex-1 flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:justify-end">
           
           <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
-            <div className="relative flex-1 sm:w-64 group">
+            <div className="relative flex-1 sm:w-80 lg:w-[400px] group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant/60 group-focus-within:text-primary">
                 <KeyRound size={14} />
               </div>
               <input
-                type="password"
-                placeholder="Nhập Gemini API Key"
+                type="text"
+                placeholder="Ví dụ: key1, key2, key3..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="w-full h-12 sm:h-10 pl-9 pr-3 bg-white border border-outline-variant/60 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-on-surface placeholder-on-surface-variant/50"
