@@ -57,11 +57,31 @@ export default {
             const imageBytes = new Uint8Array(arrayBuffer);
             
             // Gọi AI Cloudflare xử lý song song các trang trong cụm
-            const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
-              image: Array.from(imageBytes),
-              prompt: "Hãy OCR và bóc tách toàn bộ văn bản của trang tài liệu này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy."
-            });
-            return response.response || '';
+            try {
+              const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+                image: Array.from(imageBytes),
+                prompt: "Hãy OCR và bóc tách toàn bộ văn bản của trang tài liệu này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy."
+              });
+              return response.response || '';
+            } catch (err) {
+              // Nếu gặp lỗi bản quyền Meta chưa đồng ý, tự động gửi "agree" và thử lại
+              if (err.message && (err.message.includes('agree') || err.message.includes('5016'))) {
+                console.log("[Worker AI] Tự động đồng ý điều khoản sử dụng Llama 3.2 Vision...");
+                try {
+                  await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', { prompt: 'agree' });
+                  
+                  // Gọi lại sau khi đã đồng ý
+                  const retryResponse = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+                    image: Array.from(imageBytes),
+                    prompt: "Hãy OCR và bóc tách toàn bộ văn bản của trang tài liệu này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy."
+                  });
+                  return retryResponse.response || '';
+                } catch (retryErr) {
+                  throw new Error(`Lỗi sau khi tự động đồng ý bản quyền: ${retryErr.message}`);
+                }
+              }
+              throw err;
+            }
           });
           
           const chunkTexts = await Promise.all(chunkPromises);
