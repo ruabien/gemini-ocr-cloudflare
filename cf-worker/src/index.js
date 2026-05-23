@@ -68,7 +68,14 @@ export default {
               if (err.message && (err.message.includes('agree') || err.message.includes('5016'))) {
                 console.log("[Worker AI] Tự động đồng ý điều khoản sử dụng Llama 3.2 Vision...");
                 try {
-                  await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', { prompt: 'agree' });
+                  try {
+                    await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', { prompt: 'agree' });
+                  } catch (agreeErr) {
+                    // Nếu Cloudflare ném ra thông báo cảm ơn dưới dạng lỗi, bỏ qua nó vì đã đồng ý thành công
+                    if (!agreeErr.message || (!agreeErr.message.includes("Thank you for agreeing") && !agreeErr.message.includes("You may now use the model"))) {
+                      throw agreeErr;
+                    }
+                  }
                   
                   // Gọi lại sau khi đã đồng ý
                   const retryResponse = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
