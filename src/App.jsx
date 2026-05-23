@@ -31,43 +31,7 @@ function App() {
     setActiveFileId(null);
   }, []);
 
-  // Helper cập nhật tiến trình của PDF cha dựa trên trạng thái các trang con
-  const updateParentProgress = (currentFiles, parentId) => {
-    const siblingPages = currentFiles.filter(f => f.parentPdfId === parentId && f.isPdfPage);
-    const completedPages = siblingPages.filter(p => p.status === 'completed' || p.status === 'error').length;
-    const totalPages = siblingPages.length;
-    if (totalPages === 0) return currentFiles;
 
-    const progress = Math.round((completedPages / totalPages) * 100);
-    const processingPage = siblingPages.find(p => p.status === 'processing');
-    const processingPageIdx = processingPage ? processingPage.pageIndex + 1 : completedPages + 1;
-    const isDone = completedPages === totalPages;
-
-    return currentFiles.map(f => {
-      if (f.id === parentId) {
-        let displayName = f.originalFile.name;
-        if (!isDone) {
-          if (processingPage && processingPage.retryInfo) {
-            const { attempt, secondsLeft, customMessage } = processingPage.retryInfo;
-            if (customMessage) {
-              displayName = `${f.originalFile.name} (${customMessage})`;
-            } else {
-              displayName = `${f.originalFile.name} (Quá tải, thử lại lần ${attempt} sau ${secondsLeft}s...)`;
-            }
-          } else {
-            displayName = `${f.originalFile.name} (Đang xử lý: trang ${processingPageIdx}/${totalPages}...)`;
-          }
-        }
-        return {
-          ...f,
-          name: displayName,
-          progress: progress,
-          status: isDone ? f.status : 'processing'
-        };
-      }
-      return f;
-    });
-  };
 
   const handleFilesSelected = async (newOriginalFiles) => {
     const newItems = newOriginalFiles.map(file => {
@@ -154,7 +118,7 @@ function App() {
           status: 'processing', 
           progress: 50, 
           error: null,
-          name: `${fileToProcess.originalFile.name} (Đang xử lý tài liệu tổng thể... Vui lòng đợi trong giây lát)`
+          name: `${fileToProcess.originalFile.name} (Đang xử lý toàn bộ tài liệu... Vui lòng đợi)`
         } : f);
       });
 
