@@ -10,6 +10,8 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default {
   async fetch(request, env, ctx) {
     // Xử lý CORS Preflight
@@ -37,154 +39,84 @@ export default {
         });
       }
 
-      // Tạo ReadableStream để truyền dữ liệu thời gian thực (Server-Sent Events)
-      const { writable, readable } = new TransformStream();
-      const writer = writable.getWriter();
-      const encoder = new TextEncoder();
+      const fileName = file.name || '';
+      const fileType = file.type || '';
+      const isPdf = fileType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
 
-      const sendEvent = async (data) => {
-        await writer.write(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-      };
+      if (isPdf) {
+        // Đọc file PDF
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfBytes = new Uint8Array(arrayBuffer);
+        
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pageCount = pdfDoc.getPageCount();
+        
+        const batchSize = 5;
+        const results = [];
 
-      // Xử lý không đồng bộ trong Worker
-      ctx.waitUntil((async () => {
-        try {
-          const fileType = file.type || '';
-          
-          if (fileType.includes('pdf')) {
-            // Đọc file PDF
-            const arrayBuffer = await file.arrayBuffer();
-            const pdfBytes = new Uint8Array(arrayBuffer);
-            
-            await sendEvent({ type: 'status', message: 'Đang đọc và phân tích cấu trúc PDF...' });
-            
-            const pdfDoc = await PDFDocument.load(pdfBytes);
-            const pageCount = pdfDoc.getPageCount();
-            
-            await sendEvent({ type: 'init', totalPages: pageCount });
-
-            const results = [];
-
-            for (let i = 0; i < pageCount; i++) {
-              await sendEvent({ type: 'page_start', pageIndex: i });
-
-              try {
-                // Tạo một trang PDF đơn lẻ mới để gửi cho Gemini OCR
-                const newDoc = await PDFDocument.create();
-                const [copiedPage] = await newDoc.copyPages(pdfDoc, [i]);
-                newDoc.addPage(copiedPage);
-                const singlePageBytes = await newDoc.save();
-                const base64Pdf = Buffer.from(singlePageBytes).toString('base64');
-
-                // Gọi Gemini OCR với cơ chế Retry nâng cao
-                const textResult = await processOCRWithRetry(
-                  base64Pdf,
-                  'application/pdf',
-                  apiKey,
-                  model,
-                  async (attempt, maxAttempts, secondsLeft, errorMsg, customMessage) => {
-                    await sendEvent({
-                      type: 'page_retry',
-                      pageIndex: i,
-                      attempt,
-                      maxAttempts,
-                      secondsLeft,
-                      errorMsg,
-                      customMessage,
-                    });
-                  }
-                );
-
-                results.push({ pageIndex: i, text: textResult });
-                await sendEvent({ type: 'page_complete', pageIndex: i, text: textResult });
-
-              } catch (pageErr) {
-                console.error(`Lỗi trang ${i + 1}:`, pageErr);
-                results.push({ pageIndex: i, text: `[Lỗi OCR: ${pageErr.message}]`, error: pageErr.message });
-                await sendEvent({ type: 'page_error', pageIndex: i, error: pageErr.message });
-              }
-
-              // Khoảng trễ giãn cách giữa các trang tránh quá tải API (4.5s)
-              if (i < pageCount - 1) {
-                await new Promise((resolve) => setTimeout(resolve, 4500));
-              }
-            }
-
-            // Gộp tất cả các trang
-            const mergedText = results
-              .sort((a, b) => a.pageIndex - b.pageIndex)
-              .map(p => `--- TRANG ${p.pageIndex + 1} ---\n${p.text}`)
-              .join('\n\n');
-
-            const hasErrors = results.some(r => r.error);
-            await sendEvent({ 
-              type: 'complete', 
-              text: mergedText, 
-              status: hasErrors ? 'error' : 'completed',
-              error: hasErrors ? 'Một số trang có lỗi khi chạy OCR.' : null
-            });
-
-          } else if (fileType.startsWith('image/')) {
-            // Đọc file Ảnh
-            await sendEvent({ type: 'init', totalPages: 1 });
-            await sendEvent({ type: 'page_start', pageIndex: 0 });
-
-            const arrayBuffer = await file.arrayBuffer();
-            const imgBytes = new Uint8Array(arrayBuffer);
-            const base64Img = Buffer.from(imgBytes).toString('base64');
-
-            try {
-              const textResult = await processOCRWithRetry(
-                base64Img,
-                fileType,
-                apiKey,
-                model,
-                async (attempt, maxAttempts, secondsLeft, errorMsg, customMessage) => {
-                  await sendEvent({
-                    type: 'page_retry',
-                    pageIndex: 0,
-                    attempt,
-                    maxAttempts,
-                    secondsLeft,
-                    errorMsg,
-                    customMessage,
-                  });
-                }
-              );
-
-              await sendEvent({ type: 'page_complete', pageIndex: 0, text: textResult });
-              await sendEvent({ type: 'complete', text: textResult, status: 'completed' });
-
-            } catch (imgErr) {
-              console.error('Lỗi khi OCR ảnh:', imgErr);
-              await sendEvent({ type: 'page_error', pageIndex: 0, error: imgErr.message });
-              await sendEvent({ type: 'complete', text: `[Lỗi OCR: ${imgErr.message}]`, status: 'error', error: imgErr.message });
-            }
-
-          } else {
-            throw new Error(`Định dạng tệp không được hỗ trợ: ${fileType}`);
+        for (let i = 0; i < pageCount; i += batchSize) {
+          const batchIndices = [];
+          for (let j = i; j < Math.min(i + batchSize, pageCount); j++) {
+            batchIndices.push(j);
           }
 
-        } catch (err) {
-          console.error('Lỗi hệ thống Worker:', err);
-          await sendEvent({ type: 'error', error: err.message });
-        } finally {
-          await writer.close();
+          // Tạo file PDF mới chỉ chứa các trang trong cụm (tối đa 5 trang)
+          const batchDoc = await PDFDocument.create();
+          const copiedPages = await batchDoc.copyPages(pdfDoc, batchIndices);
+          copiedPages.forEach(page => batchDoc.addPage(page));
+          const batchBytes = await batchDoc.save();
+          const base64Pdf = Buffer.from(batchBytes).toString('base64');
+
+          // Gọi Gemini API cho cụm trang này
+          const textResult = await processOCRWithRetry(
+            base64Pdf,
+            'application/pdf',
+            apiKey,
+            model
+          );
+
+          results.push(textResult);
+
+          // Giãn cách các request cụm là 3.5 giây để tránh lỗi Rate Limit 429
+          if (i + batchSize < pageCount) {
+            await sleep(3500);
+          }
         }
-      })());
 
-      return new Response(readable, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
+        // Gộp kết quả của tất cả các cụm
+        const mergedText = results.join('\n\n');
 
-    } catch (globalErr) {
-      console.error('Lỗi chung nhận request:', globalErr);
-      return new Response(JSON.stringify({ error: globalErr.message }), {
+        return new Response(JSON.stringify({ text: mergedText }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
+      } else if (fileType.startsWith('image/')) {
+        // Đọc file Ảnh
+        const arrayBuffer = await file.arrayBuffer();
+        const imgBytes = new Uint8Array(arrayBuffer);
+        const base64Img = Buffer.from(imgBytes).toString('base64');
+
+        const textResult = await processOCRWithRetry(
+          base64Img,
+          fileType,
+          apiKey,
+          model
+        );
+
+        return new Response(JSON.stringify({ text: textResult }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
+      } else {
+        return new Response(JSON.stringify({ error: `Định dạng tệp không được hỗ trợ: ${fileType}` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+    } catch (err) {
+      console.error('Lỗi hệ thống Worker:', err);
+      return new Response(JSON.stringify({ error: err.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -193,9 +125,9 @@ export default {
 };
 
 /**
- * Gọi API Gemini với cơ chế Exponential Backoff Retry cho các mã lỗi 429, 503 hoặc các lỗi server 5xx.
+ * Gọi API Gemini với cơ chế Retry nâng cao cho các mã lỗi 429, 503 hoặc các lỗi server 5xx.
  */
-async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRetry, maxRetries = 5) {
+async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxRetries = 5) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
   const requestBody = {
@@ -236,44 +168,22 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRe
     // Bắt các lỗi tạm thời: 429 (Rate Limit / Quota Exceeded), 503 (Service Unavailable), hoặc lỗi Server >= 500
     if (response.status === 429 || response.status === 503 || response.status >= 500) {
       if (i === maxRetries - 1) {
-        // Hết số lần thử, ném lỗi ra
         let errorMsg = `HTTP ${response.status}`;
         try {
           const errorData = await response.json();
           errorMsg = errorData?.error?.message || errorMsg;
         } catch {
-          // Bỏ qua lỗi parse JSON nếu response không phải định dạng JSON hợp lệ
+          // Bỏ qua
         }
         throw new Error(`Đã thử lại ${maxRetries} lần nhưng thất bại: ${errorMsg}`);
       }
 
       const isRateLimit = response.status === 429;
-      const waitTime = isRateLimit ? 60000 : Math.pow(2, i) * 6000;
-      let errorMsg = `HTTP ${response.status}`;
-      try {
-        const errorData = await response.clone().json();
-        errorMsg = errorData?.error?.message || errorMsg;
-      } catch {
-        // Bỏ qua lỗi parse JSON khi clone response
-      }
-
-      if (isRateLimit) {
-        console.warn(`Lỗi Gemini Rate Limit (429). Đang tạm nghỉ 60s để tránh quá tải API...`);
-      } else {
-        console.warn(`Lỗi Gemini (${errorMsg}). Đang chuẩn bị thử lại lần ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
-      }
-
-      // Thực hiện đếm ngược từng giây để cập nhật trạng thái lên UI qua Callback
-      const totalSeconds = waitTime / 1000;
-      for (let seconds = totalSeconds; seconds > 0; seconds--) {
-        if (onRetry) {
-          const customMessage = isRateLimit 
-            ? `Đang tạm nghỉ ${seconds}s để tránh quá tải API...`
-            : null;
-          await onRetry(i + 1, maxRetries, seconds, errorMsg, customMessage);
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
+      // Nếu bị Rate Limit, đợi 15s trước khi thử lại; nếu lỗi khác, dùng exponential backoff
+      const waitTime = isRateLimit ? 15000 : Math.pow(2, i) * 3000;
+      
+      console.warn(`Lỗi Gemini (${response.status}). Thử lại lần ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
+      await sleep(waitTime);
       continue;
     }
 
@@ -283,8 +193,9 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, onRe
       const errorData = await response.json();
       errorMsg = errorData?.error?.message || errorMsg;
     } catch {
-      // Bỏ qua lỗi parse JSON cho response client-side
+      // Bỏ qua
     }
     throw new Error(`Lỗi API Gemini: ${errorMsg}`);
   }
 }
+

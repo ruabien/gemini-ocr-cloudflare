@@ -7,7 +7,7 @@
  * @param {Function} onEvent - Callback nhận các sự kiện stream (init, page_start, page_retry, page_complete, page_error, complete)
  * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
-export const processOCR = async (file, apiKey, modelName, workerUrl, onEvent) => {
+export const processOCR = async (file, apiKey, modelName, workerUrl) => {
   if (!workerUrl) throw new Error("Vui lòng cấu hình địa chỉ Cloudflare Worker URL ở phía trên.");
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
@@ -27,66 +27,21 @@ export const processOCR = async (file, apiKey, modelName, workerUrl, onEvent) =>
     body: formData,
   });
 
-  if (!response.ok) {
-    let errorMsg = `HTTP ${response.status}`;
-    try {
-      const errJson = await response.json();
-      errorMsg = errJson.error || errorMsg;
-    } catch {
-      // Bỏ qua lỗi parse JSON nếu response không phải JSON
-    }
-    throw new Error(errorMsg);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let finalResult = '';
-
+  let data;
   try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // Giữ lại dòng chưa hoàn chỉnh trong bộ đệm
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-
-        let dataStr = trimmed;
-        if (trimmed.startsWith('data: ')) {
-          dataStr = trimmed.slice(6);
-        }
-
-        try {
-          const event = JSON.parse(dataStr);
-          if (onEvent) {
-            onEvent(event);
-          }
-          if (event.type === 'complete') {
-            finalResult = event.text;
-            if (event.status === 'error') {
-              throw new Error(event.error || 'Một số trang có lỗi khi chạy OCR.');
-            }
-          }
-          if (event.type === 'error') {
-            throw new Error(event.error || 'Lỗi xử lý hệ thống Worker.');
-          }
-        } catch (e) {
-          if (e instanceof SyntaxError) {
-            console.error("Lỗi parse JSON dòng dữ liệu stream:", dataStr, e);
-          } else {
-            throw e;
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
+    data = await response.json();
+  } catch (e) {
+    throw new Error(`Phản hồi từ Worker không hợp lệ hoặc không phải JSON (HTTP ${response.status}).`);
   }
 
-  return finalResult;
+  if (!response.ok) {
+    throw new Error(data.error || `Lỗi hệ thống Worker (HTTP ${response.status}).`);
+  }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data.text || '';
 };
+
