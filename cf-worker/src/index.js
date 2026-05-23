@@ -35,7 +35,7 @@ export default {
       }
 
       if (lane === 'CLOUDFLARE_AI') {
-        const results = [];
+        let fullExtractedText = "";
         
         // Băm file thành từng cụm 3 trang ảnh, xử lý tuần tự từng cụm
         for (let i = 0; i < files.length; i += 3) {
@@ -53,12 +53,13 @@ export default {
           });
           
           const chunkTexts = await Promise.all(chunkPromises);
-          results.push(...chunkTexts);
+          const resultTextFromAI = chunkTexts.filter(Boolean).join('\n\n');
+          if (resultTextFromAI) {
+            fullExtractedText += resultTextFromAI + "\n\n";
+          }
         }
 
-        const combinedText = results.filter(Boolean).join('\n\n');
-
-        return new Response(JSON.stringify({ text: combinedText }), {
+        return new Response(JSON.stringify({ text: fullExtractedText.trim() }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
