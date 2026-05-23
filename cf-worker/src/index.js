@@ -1,7 +1,6 @@
-import { PDFDocument } from 'pdf-lib';
 import { Buffer } from 'node:buffer';
 
-const SYSTEM_PROMPT = "Bạn là một chuyên gia OCR tài liệu tiếng Việt chất lượng cao. Hãy trích xuất toàn bộ văn bản có trong tài liệu này. Giữ nguyên định dạng gốc, các đoạn xuống dòng, tiêu đề và cấu trúc bảng biểu nếu có. Tuyệt đối không tự bịa thông tin, không thêm lời giải thích hay bình luận, chỉ trả về văn bản được trích xuất.";
+const SYSTEM_PROMPT = "Hãy OCR và bóc tách toàn bộ văn bản của file PDF này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy.";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +13,6 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default {
   async fetch(request, env, ctx) {
-    // Xử lý CORS Preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
@@ -40,89 +38,38 @@ export default {
       }
 
       const fileName = file.name || '';
-      const fileType = file.type || '';
-      const isPdf = fileType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
-
-      if (isPdf) {
-        // Đọc file PDF
-        const arrayBuffer = await file.arrayBuffer();
-        const pdfBytes = new Uint8Array(arrayBuffer);
-        
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        const pageCount = pdfDoc.getPageCount();
-        
-        const batchSize = 5;
-        const results = [];
-
-        // Tạo danh sách các cụm trang (batches) trước
-        const batches = [];
-        for (let i = 0; i < pageCount; i += batchSize) {
-          const batchIndices = [];
-          for (let j = i; j < Math.min(i + batchSize, pageCount); j++) {
-            batchIndices.push(j);
-          }
-          batches.push(batchIndices);
+      let fileType = file.type || '';
+      
+      // Tự động nhận diện mimeType dựa trên đuôi file nếu thiếu
+      if (!fileType) {
+        if (fileName.toLowerCase().endsWith('.pdf')) {
+          fileType = 'application/pdf';
+        } else if (fileName.toLowerCase().endsWith('.png')) {
+          fileType = 'image/png';
+        } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+          fileType = 'image/jpeg';
+        } else {
+          fileType = 'application/octet-stream';
         }
-
-        // Chạy tuần tự qua từng cụm sử dụng vòng lặp for...of để tránh gọi đồng thời
-        let idx = 0;
-        for (const batch of batches) {
-          // Tạo file PDF mới chỉ chứa các trang trong cụm (tối đa 5 trang)
-          const batchDoc = await PDFDocument.create();
-          const copiedPages = await batchDoc.copyPages(pdfDoc, batch);
-          copiedPages.forEach(page => batchDoc.addPage(page));
-          const batchBytes = await batchDoc.save();
-          const base64Pdf = Buffer.from(batchBytes).toString('base64');
-
-          // Gọi Gemini API cho cụm trang này
-          const textResult = await processOCRWithRetry(
-            base64Pdf,
-            'application/pdf',
-            apiKey,
-            model,
-            3 // Tối đa 3 lần thử lại
-          );
-
-          results.push(textResult);
-
-          // Cài đặt hàm đóng băng thời gian (Await Sleep) nghỉ bắt buộc 4 giây trước cụm tiếp theo
-          if (idx < batches.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 4000));
-          }
-          idx++;
-        }
-
-        // Gộp kết quả của tất cả các cụm
-        const mergedText = results.join('\n\n');
-
-        return new Response(JSON.stringify({ text: mergedText }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-
-      } else if (fileType.startsWith('image/')) {
-        // Đọc file Ảnh
-        const arrayBuffer = await file.arrayBuffer();
-        const imgBytes = new Uint8Array(arrayBuffer);
-        const base64Img = Buffer.from(imgBytes).toString('base64');
-
-        const textResult = await processOCRWithRetry(
-          base64Img,
-          fileType,
-          apiKey,
-          model,
-          3 // Tối đa 3 lần thử lại
-        );
-
-        return new Response(JSON.stringify({ text: textResult }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-
-      } else {
-        return new Response(JSON.stringify({ error: `Định dạng tệp không được hỗ trợ: ${fileType}` }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
       }
+
+      // Đọc toàn bộ nội dung nhị phân (Binary/Blob) của file
+      const arrayBuffer = await file.arrayBuffer();
+      const fileBytes = new Uint8Array(arrayBuffer);
+      const base64Data = Buffer.from(fileBytes).toString('base64');
+
+      // Gửi đúng 1 request duy nhất sang Gemini API
+      const textResult = await processOCRWithRetry(
+        base64Data,
+        fileType,
+        apiKey,
+        model,
+        3 // Tối đa 3 lần thử lại
+      );
+
+      return new Response(JSON.stringify({ text: textResult }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
 
     } catch (err) {
       console.error('Lỗi hệ thống Worker:', err);
@@ -135,8 +82,7 @@ export default {
 };
 
 /**
- * Gọi API Gemini với cơ chế Retry nâng cao cho các mã lỗi 429, 503 hoặc các lỗi server 5xx.
- * Nếu bị lỗi 429, luồng nghỉ hẳn 15 giây rồi thực hiện gọi lại chính cụm lỗi đó (tối đa 3 lần thử lại).
+ * Gọi API Gemini với cơ chế Retry thích ứng động khi gặp lỗi Quota/Rate Limit.
  */
 async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxRetries = 3) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
@@ -193,13 +139,12 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxR
         const isRateLimit = response.status === 429;
         let waitTime = isRateLimit ? 15000 : Math.pow(2, i) * 3000;
 
-        // Thử parse thời gian chờ từ thông báo lỗi của Google
+        // Tự động nhận diện thời gian chờ yêu cầu từ Google
         const retryMatch = errorMsg.match(/Please retry in ([0-9.]+)\s*s/i);
         if (retryMatch) {
           const seconds = parseFloat(retryMatch[1]);
           if (!isNaN(seconds)) {
             waitTime = Math.ceil((seconds + 2) * 1000);
-            console.log(`Phát hiện yêu cầu thử lại từ Google. Đang đợi chính xác ${waitTime / 1000}s...`);
           }
         }
 
@@ -229,9 +174,8 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxR
         }
       }
       
-      console.warn(`Lỗi khi gọi API: ${err.message}. Thử lại lần thứ ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
+      console.warn(`Lỗi kết nối hoặc xử lý API: ${err.message}. Thử lại lần thứ ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
       await sleep(waitTime);
     }
   }
 }
-

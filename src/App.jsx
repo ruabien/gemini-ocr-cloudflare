@@ -149,7 +149,13 @@ function App() {
       setActiveFileId(fileToProcess.id);
 
       setFiles(prev => {
-        return prev.map(f => f.id === fileToProcess.id ? { ...f, status: 'processing', progress: 50, error: null } : f);
+        return prev.map(f => f.id === fileToProcess.id ? { 
+          ...f, 
+          status: 'processing', 
+          progress: 50, 
+          error: null,
+          name: `${fileToProcess.originalFile.name} (Đang xử lý tài liệu tổng thể... Vui lòng đợi trong giây lát)`
+        } : f);
       });
 
       // Chờ nhẹ 50ms để trạng thái cập nhật vào filesRef
