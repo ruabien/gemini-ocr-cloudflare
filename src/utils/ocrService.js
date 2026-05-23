@@ -1,67 +1,47 @@
 /**
- * Hàm gọi trực tiếp API Google Gemini từ Frontend để chạy OCR
- * @param {File} file - File ảnh thô
+ * Hàm gọi Cloudflare Worker để chạy OCR với cơ chế stream nhận dữ liệu thời gian thực
+ * @param {File} file - File ảnh hoặc PDF thô
  * @param {string} apiKey - API Key Gemini của người dùng
- * @param {string} modelName - Tên Model (ví dụ: gemini-2.5-flash)
- * @returns {Promise<string>} Kết quả OCR văn bản sạch
+ * @param {string} modelName - Tên Model (ví dụ: gemini-1.5-flash)
+ * @param {string} workerUrl - URL của Cloudflare Worker Backend
+ * @param {Function} onEvent - Callback nhận các sự kiện stream (init, page_start, page_retry, page_complete, page_error, complete)
+ * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
-export const processOCR = async (file, apiKey, modelName) => {
+export const processOCR = async (file, apiKey, modelName, workerUrl) => {
+  if (!workerUrl) throw new Error("Vui lòng cấu hình địa chỉ Cloudflare Worker URL ở phía trên.");
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
-  const fileType = file.type || 'image/jpeg';
-  
-  // Đọc nội dung file thành Base64
-  const base64Data = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = (e) => reject(e);
-    reader.readAsDataURL(file);
-  });
+  // Chuẩn hoá URL của Worker
+  let targetUrl = workerUrl.trim();
+  if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    targetUrl = 'https://' + targetUrl;
+  }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('apiKey', apiKey);
+  formData.append('model', modelName);
 
-  const response = await fetch(url, {
+  const response = await fetch(targetUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: "Hãy OCR và bóc tách toàn bộ văn bản của hình ảnh/trang tài liệu này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy." },
-          {
-            inlineData: {
-              mimeType: fileType,
-              data: base64Data
-            }
-          }
-        ]
-      }]
-    })
+    body: formData,
   });
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    throw new Error(`Phản hồi từ Worker không hợp lệ hoặc không phải JSON (HTTP ${response.status}).`);
+  }
 
   if (!response.ok) {
-    let errorMsg = `HTTP ${response.status}`;
-    try {
-      const errData = await response.json();
-      errorMsg = errData?.error?.message || errorMsg;
-    } catch (e) {
-      console.warn("Không thể parse JSON lỗi:", e);
-    }
-    const err = new Error(errorMsg);
-    err.status = response.status;
-    throw err;
+    throw new Error(data.error || `Lỗi hệ thống Worker (HTTP ${response.status}).`);
   }
 
-  const data = await response.json();
-  const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (textResult === undefined || textResult === null) {
-    throw new Error('API không trả về kết quả văn bản hợp lệ.');
+  if (data.error) {
+    throw new Error(data.error);
   }
 
-  return textResult;
+  return data.text || '';
 };
 

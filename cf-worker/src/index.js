@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 export default {
-  async fetch(request) {
+  async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
@@ -77,9 +77,7 @@ export default {
         try {
           const errData = await response.json();
           errorMsg = errData?.error?.message || errorMsg;
-        } catch (e) {
-          console.warn("Could not parse error response JSON:", e);
-        }
+        } catch {}
         throw new Error(errorMsg);
       }
 
