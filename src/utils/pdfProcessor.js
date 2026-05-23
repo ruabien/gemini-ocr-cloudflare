@@ -35,18 +35,21 @@ export const splitPdfToImages = async (pdfFile, onProgress) => {
   const arrayBuffer = await pdfFile.arrayBuffer();
   
   // Nạp tài liệu PDF
-  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-  const pdf = await loadingTask.promise;
-  const numPages = pdf.numPages;
+  console.log(`[PDF Split] Đang nạp file PDF: ${pdfFile.name}`);
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const totalPages = pdf.numPages;
+  console.log(`[PDF Split] [Page Count] Tổng số trang nhận diện được: ${totalPages}`);
+  
   const imageFiles = [];
-
   const baseName = pdfFile.name.replace(/\.[^/.]+$/, "");
 
-  for (let i = 1; i <= numPages; i++) {
+  for (let i = 1; i <= totalPages; i++) {
     if (onProgress) {
-      onProgress(i, numPages);
+      onProgress(i, totalPages);
     }
+    console.log(`[PDF Split] Đang render trang số ${i}/${totalPages}...`);
 
+    // Sửa lại để lấy chính xác trang i thay vì bị cố định trang đầu tiên
     const page = await pdf.getPage(i);
     
     // Sử dụng tỉ lệ scale = 2.0 để ảnh xuất ra có độ nét cao, hỗ trợ OCR tốt hơn
@@ -75,5 +78,6 @@ export const splitPdfToImages = async (pdfFile, onProgress) => {
     imageFiles.push(pageFile);
   }
 
+  console.log(`[PDF Split] Đã chuyển đổi thành công ${imageFiles.length} trang ảnh từ file PDF.`);
   return imageFiles;
 };

@@ -11,9 +11,11 @@ const countPdfPages = async (file) => {
   try {
     const pdfjsLib = await loadPdfJs();
     const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-    const pdf = await loadingTask.promise;
-    return pdf.numPages;
+    console.log(`[Page Count App] Đang kiểm tra số trang file: ${file.name}`);
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const totalPages = pdf.numPages;
+    console.log(`[Page Count App] File: ${file.name} - Tổng số trang nhận diện: ${totalPages}`);
+    return totalPages;
   } catch (error) {
     console.error("Lỗi khi đếm số trang PDF:", error);
     return 0;
