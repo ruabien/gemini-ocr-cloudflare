@@ -54,15 +54,22 @@ export default {
         const batchSize = 5;
         const results = [];
 
+        // Tạo danh sách các cụm trang (batches) trước
+        const batches = [];
         for (let i = 0; i < pageCount; i += batchSize) {
           const batchIndices = [];
           for (let j = i; j < Math.min(i + batchSize, pageCount); j++) {
             batchIndices.push(j);
           }
+          batches.push(batchIndices);
+        }
 
+        // Chạy tuần tự qua từng cụm sử dụng vòng lặp for...of để tránh gọi đồng thời
+        let idx = 0;
+        for (const batch of batches) {
           // Tạo file PDF mới chỉ chứa các trang trong cụm (tối đa 5 trang)
           const batchDoc = await PDFDocument.create();
-          const copiedPages = await batchDoc.copyPages(pdfDoc, batchIndices);
+          const copiedPages = await batchDoc.copyPages(pdfDoc, batch);
           copiedPages.forEach(page => batchDoc.addPage(page));
           const batchBytes = await batchDoc.save();
           const base64Pdf = Buffer.from(batchBytes).toString('base64');
@@ -72,15 +79,17 @@ export default {
             base64Pdf,
             'application/pdf',
             apiKey,
-            model
+            model,
+            3 // Tối đa 3 lần thử lại
           );
 
           results.push(textResult);
 
-          // Giãn cách các request cụm là 3.5 giây để tránh lỗi Rate Limit 429
-          if (i + batchSize < pageCount) {
-            await sleep(3500);
+          // Cài đặt hàm đóng băng thời gian (Await Sleep) nghỉ bắt buộc 4 giây trước cụm tiếp theo
+          if (idx < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 4000));
           }
+          idx++;
         }
 
         // Gộp kết quả của tất cả các cụm
@@ -100,7 +109,8 @@ export default {
           base64Img,
           fileType,
           apiKey,
-          model
+          model,
+          3 // Tối đa 3 lần thử lại
         );
 
         return new Response(JSON.stringify({ text: textResult }), {
@@ -126,8 +136,9 @@ export default {
 
 /**
  * Gọi API Gemini với cơ chế Retry nâng cao cho các mã lỗi 429, 503 hoặc các lỗi server 5xx.
+ * Nếu bị lỗi 429, luồng nghỉ hẳn 15 giây rồi thực hiện gọi lại chính cụm lỗi đó (tối đa 3 lần thử lại).
  */
-async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxRetries = 5) {
+async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxRetries = 3) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
   const requestBody = {
@@ -147,55 +158,60 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxR
     ],
   };
 
-  for (let i = 0; i < maxRetries; i++) {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
+  const totalAttempts = maxRetries + 1;
 
-    if (response.ok) {
-      const data = await response.json();
-      const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (textResult === undefined || textResult === null) {
-        throw new Error('API không trả về kết quả văn bản hợp lệ.');
-      }
-      return textResult;
-    }
-
-    // Bắt các lỗi tạm thời: 429 (Rate Limit / Quota Exceeded), 503 (Service Unavailable), hoặc lỗi Server >= 500
-    if (response.status === 429 || response.status === 503 || response.status >= 500) {
-      if (i === maxRetries - 1) {
-        let errorMsg = `HTTP ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData?.error?.message || errorMsg;
-        } catch {
-          // Bỏ qua
-        }
-        throw new Error(`Đã thử lại ${maxRetries} lần nhưng thất bại: ${errorMsg}`);
-      }
-
-      const isRateLimit = response.status === 429;
-      // Nếu bị Rate Limit, đợi 60s để đảm bảo reset cửa sổ quota của Gemini; nếu lỗi khác, dùng exponential backoff
-      const waitTime = isRateLimit ? 60000 : Math.pow(2, i) * 3000;
-      
-      console.warn(`Lỗi Gemini (${response.status}). Thử lại lần ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
-      await sleep(waitTime);
-      continue;
-    }
-
-    // Nếu gặp các lỗi client-side khác (ví dụ: 400, 403 - Invalid Key), báo lỗi ngay lập tức
-    let errorMsg = `HTTP ${response.status}`;
+  for (let i = 0; i < totalAttempts; i++) {
     try {
-      const errorData = await response.json();
-      errorMsg = errorData?.error?.message || errorMsg;
-    } catch {
-      // Bỏ qua
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (textResult === undefined || textResult === null) {
+          throw new Error('API không trả về kết quả văn bản hợp lệ.');
+        }
+        return textResult;
+      }
+
+      if (response.status === 429 || response.status === 503 || response.status >= 500) {
+        const isRateLimit = response.status === 429;
+        
+        if (i === totalAttempts - 1) {
+          let errorMsg = `HTTP ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData?.error?.message || errorMsg;
+          } catch {}
+          throw new Error(`Đã thử lại ${maxRetries} lần nhưng thất bại: ${errorMsg}`);
+        }
+
+        // Nghỉ hẳn 15 giây đối với lỗi 429 (Rate Limit); nếu lỗi khác dùng exponential backoff
+        const waitTime = isRateLimit ? 15000 : Math.pow(2, i) * 3000;
+        console.warn(`Lỗi Gemini (${response.status}). Thử lại lần thứ ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
+        await sleep(waitTime);
+        continue;
+      }
+
+      let errorMsg = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData?.error?.message || errorMsg;
+      } catch {}
+      throw new Error(`Lỗi API Gemini: ${errorMsg}`);
+
+    } catch (err) {
+      if (i === totalAttempts - 1) {
+        throw err;
+      }
+      console.warn(`Lỗi khi gọi API: ${err.message}. Thử lại lần thứ ${i + 1}/${maxRetries} sau 15s...`);
+      await sleep(15000);
     }
-    throw new Error(`Lỗi API Gemini: ${errorMsg}`);
   }
 }
 
