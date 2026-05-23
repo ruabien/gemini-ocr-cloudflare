@@ -60,7 +60,7 @@ export default {
             try {
               const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
                 image: Array.from(imageBytes),
-                prompt: "Hãy OCR và bóc tách toàn bộ văn bản của trang tài liệu này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy."
+                prompt: "You are a strict, high-precision OCR Machine. Your ONLY task is to look at the provided image and extract every single visible Vietnamese text/character exactly as it appears. \n\nCRITICAL RULES:\n1. DO NOT explain, DO NOT introduce, DO NOT guide the user on how to do OCR.\n2. DO NOT write tutorial steps like \"Step 1\", \"Step 2\".\n3. Transcribe the text from the image directly, word by word, line by line.\n4. Fix minor word-sticking or broken lines automatically to ensure a clean text output.\n5. If the image contains legal documents, tables, or official reports, output them cleanly.\n6. ONLY return the extracted text. Nothing else."
               });
               return response.response || '';
             } catch (err) {
@@ -80,7 +80,7 @@ export default {
                   // Gọi lại sau khi đã đồng ý
                   const retryResponse = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
                     image: Array.from(imageBytes),
-                    prompt: "Hãy OCR và bóc tách toàn bộ văn bản của trang tài liệu này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy."
+                    prompt: "You are a strict, high-precision OCR Machine. Your ONLY task is to look at the provided image and extract every single visible Vietnamese text/character exactly as it appears. \n\nCRITICAL RULES:\n1. DO NOT explain, DO NOT introduce, DO NOT guide the user on how to do OCR.\n2. DO NOT write tutorial steps like \"Step 1\", \"Step 2\".\n3. Transcribe the text from the image directly, word by word, line by line.\n4. Fix minor word-sticking or broken lines automatically to ensure a clean text output.\n5. If the image contains legal documents, tables, or official reports, output them cleanly.\n6. ONLY return the extracted text. Nothing else."
                   });
                   return retryResponse.response || '';
                 } catch (retryErr) {
