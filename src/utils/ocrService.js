@@ -32,9 +32,10 @@ export const processOCR = async (file, apiKey, modelName, workerUrl, lane = 'GOO
     if (images.length === 0) {
       throw new Error("Không thể tách trang từ file PDF này.");
     }
-    for (const img of images) {
-      formData.append('file', img);
-    }
+    formData.append('fileCount', images.length);
+    images.forEach((img, idx) => {
+      formData.append(`file_${idx}`, img);
+    });
   } else {
     formData.append('file', file);
   }

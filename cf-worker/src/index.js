@@ -22,7 +22,19 @@ export default {
 
     try {
       const formData = await request.formData();
-      const files = formData.getAll('file');
+      let files = [];
+      const fileCountStr = formData.get('fileCount');
+      if (fileCountStr) {
+        const fileCount = parseInt(fileCountStr, 10);
+        for (let idx = 0; idx < fileCount; idx++) {
+          const f = formData.get(`file_${idx}`);
+          if (f) files.push(f);
+        }
+      } else {
+        const f = formData.get('file');
+        if (f) files.push(f);
+      }
+      
       const apiKey = formData.get('apiKey');
       const model = formData.get('model') || 'gemini-2.5-flash';
       const lane = formData.get('lane') || 'GOOGLE_GEMINI';
