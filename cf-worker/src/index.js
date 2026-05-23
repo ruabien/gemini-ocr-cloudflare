@@ -52,17 +52,25 @@ export default {
         // Băm file thành từng cụm 3 trang ảnh, xử lý tuần tự từng cụm
         for (let i = 0; i < files.length; i += 3) {
           const chunk = files.slice(i, i + 3);
-          const chunkPromises = chunk.map(async (fileItem) => {
-            const arrayBuffer = await fileItem.arrayBuffer();
-            const imageBytes = new Uint8Array(arrayBuffer);
+          let chunkText = "";
+          
+          // Xử lý tuần tự từng trang trong cụm để đảm bảo không rò rỉ trạng thái / context leak giữa các request
+          for (const fileItem of chunk) {
+            let currentArrayBuffer = await fileItem.arrayBuffer();
+            let currentImageBytes = new Uint8Array(currentArrayBuffer);
+            const currentImageArray = Array.from(currentImageBytes);
             
-            // Gọi AI Cloudflare xử lý song song các trang trong cụm
+            // Giải phóng dữ liệu cũ để tránh tràn bộ nhớ
+            currentArrayBuffer = null;
+            currentImageBytes = null;
+
+            let pageText = "";
             try {
               const response = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
-                image: Array.from(imageBytes),
+                image: currentImageArray,
                 prompt: "You are a strict, high-precision OCR Machine. Your ONLY task is to look at the provided image and extract every single visible Vietnamese text/character exactly as it appears. \n\nCRITICAL RULES:\n1. DO NOT explain, DO NOT introduce, DO NOT guide the user on how to do OCR.\n2. DO NOT write tutorial steps like \"Step 1\", \"Step 2\".\n3. Transcribe the text from the image directly, word by word, line by line.\n4. Fix minor word-sticking or broken lines automatically to ensure a clean text output.\n5. If the image contains legal documents, tables, or official reports, output them cleanly.\n6. ONLY return the extracted text. Nothing else."
               });
-              return response.response || '';
+              pageText = response.response || '';
             } catch (err) {
               // Nếu gặp lỗi bản quyền Meta chưa đồng ý, tự động gửi "agree" và thử lại
               if (err.message && (err.message.includes('agree') || err.message.includes('5016'))) {
@@ -79,7 +87,7 @@ export default {
                   
                   // Gọi lại sau khi đã đồng ý
                   const retryResponse = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
-                    image: Array.from(imageBytes),
+                    image: currentImageArray,
                     prompt: "You are a strict, high-precision OCR Machine. Your ONLY task is to look at the provided image and extract every single visible Vietnamese text/character exactly as it appears. \n\nCRITICAL RULES:\n1. DO NOT explain, DO NOT introduce, DO NOT guide the user on how to do OCR.\n2. DO NOT write tutorial steps like \"Step 1\", \"Step 2\".\n3. Transcribe the text from the image directly, word by word, line by line.\n4. Fix minor word-sticking or broken lines automatically to ensure a clean text output.\n5. If the image contains legal documents, tables, or official reports, output them cleanly.\n6. ONLY return the extracted text. Nothing else."
                   });
                   return retryResponse.response || '';
@@ -89,12 +97,20 @@ export default {
               }
               throw err;
             }
-          });
+            
+            if (pageText) {
+              if (chunkText) {
+                chunkText += "\n\n";
+              }
+              chunkText += pageText.trim();
+            }
+          }
           
-          const chunkTexts = await Promise.all(chunkPromises);
-          const resultTextFromAI = chunkTexts.filter(Boolean).join('\n\n');
-          if (resultTextFromAI) {
-            fullExtractedText += resultTextFromAI + "\n\n";
+          if (chunkText) {
+            if (fullExtractedText !== "") {
+              fullExtractedText += "\n\n--- [KẾT QUẢ CỤM TIẾP THEO] ---\n\n";
+            }
+            fullExtractedText += chunkText;
           }
         }
 
