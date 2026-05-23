@@ -179,8 +179,8 @@ async function processOCRWithRetry(base64Data, mimeType, apiKey, modelName, maxR
       }
 
       const isRateLimit = response.status === 429;
-      // Nếu bị Rate Limit, đợi 15s trước khi thử lại; nếu lỗi khác, dùng exponential backoff
-      const waitTime = isRateLimit ? 15000 : Math.pow(2, i) * 3000;
+      // Nếu bị Rate Limit, đợi 60s để đảm bảo reset cửa sổ quota của Gemini; nếu lỗi khác, dùng exponential backoff
+      const waitTime = isRateLimit ? 60000 : Math.pow(2, i) * 3000;
       
       console.warn(`Lỗi Gemini (${response.status}). Thử lại lần ${i + 1}/${maxRetries} sau ${waitTime / 1000}s...`);
       await sleep(waitTime);
