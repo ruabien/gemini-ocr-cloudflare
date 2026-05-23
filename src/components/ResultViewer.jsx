@@ -195,7 +195,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
                 <div className="h-2 bg-outline-variant/30 rounded w-48 mb-4"></div>
                 <div className="h-2 bg-outline-variant/30 rounded w-32"></div>
               </div>
-              <p className="mt-4 text-sm font-medium animate-pulse text-on-surface-variant/70">Đang xử lý tài liệu tổng thể... (Vui lòng đợi trong giây lát)</p>
+              <p className="mt-4 text-sm font-medium animate-pulse text-on-surface-variant/70">
+                {file.lane === 'CLOUDFLARE_AI' 
+                  ? 'Đang xử lý bảo mật bằng đám mây Cloudflare...' 
+                  : 'Đang tối ưu bằng bộ não Gemini...'}
+              </p>
             </div>
           )}
         </div>

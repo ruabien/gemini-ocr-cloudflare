@@ -5,6 +5,20 @@ import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
 
 import { processOCR } from './utils/ocrService';
+import { loadPdfJs } from './utils/pdfProcessor';
+
+const countPdfPages = async (file) => {
+  try {
+    const pdfjsLib = await loadPdfJs();
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+    return pdf.numPages;
+  } catch (error) {
+    console.error("Lỗi khi đếm số trang PDF:", error);
+    return 0;
+  }
+};
 
 function App() {
   const [config, setConfig] = useState(null);
@@ -34,9 +48,24 @@ function App() {
 
 
   const handleFilesSelected = async (newOriginalFiles) => {
-    const newItems = newOriginalFiles.map(file => {
+    const newItems = await Promise.all(newOriginalFiles.map(async (file) => {
       const id = Math.random().toString(36).substring(2, 9);
-      const isPdf = file.type === 'application/pdf';
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      let totalPages = 0;
+      let lane = 'GOOGLE_GEMINI';
+
+      if (isPdf) {
+        try {
+          totalPages = await countPdfPages(file);
+          lane = totalPages >= 3 ? 'CLOUDFLARE_AI' : 'GOOGLE_GEMINI';
+        } catch (e) {
+          console.error("Không thể đếm số trang cho file:", file.name, e);
+        }
+      } else {
+        totalPages = 1;
+        lane = 'GOOGLE_GEMINI';
+      }
+
       return {
         id: id,
         name: file.name,
@@ -46,9 +75,10 @@ function App() {
         result: '',
         error: null,
         isParentPdf: isPdf,
-        totalPages: 0
+        totalPages: totalPages,
+        lane: lane
       };
-    });
+    }));
     setFiles(prev => [...prev, ...newItems]);
     if (newItems.length > 0) {
       setActiveFileId(prev => prev || newItems[0].id);
@@ -74,11 +104,12 @@ function App() {
   };
 
   const startOCR = async () => {
-    if (!config || !config.apiKey) {
+    const hasGeminiWaiting = filesRef.current.some(f => !f.isPdfPage && f.status === 'waiting' && f.lane === 'GOOGLE_GEMINI');
+    if (hasGeminiWaiting && (!config || !config.apiKey)) {
       alert("Vui lòng cấu hình API Key ở phía trên cùng trước khi bắt đầu.");
       return;
     }
-    if (!config.workerUrl) {
+    if (!config || !config.workerUrl) {
       alert("Vui lòng cấu hình Cloudflare Worker URL ở phía trên cùng trước khi bắt đầu.");
       return;
     }
@@ -130,7 +161,8 @@ function App() {
           fileToProcess.originalFile,
           config.apiKey,
           config.model,
-          config.workerUrl
+          config.workerUrl,
+          fileToProcess.lane
         );
 
         if (!processingRef.current) return; // Dừng nếu đã Reset
