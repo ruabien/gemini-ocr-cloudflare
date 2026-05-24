@@ -83,8 +83,26 @@ export default {
 
       const data = await response.json();
       const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
       if (textResult === undefined || textResult === null) {
-        throw new Error('API không trả về kết quả văn bản hợp lệ.');
+        const finishReason = data.candidates?.[0]?.finishReason;
+        const blockReason = data.promptFeedback?.blockReason;
+        const safetyRatings = data.candidates?.[0]?.safetyRatings;
+        
+        let detailedError = 'Google API không trả về kết quả văn bản.';
+        if (finishReason) {
+          detailedError += ` (FinishReason: ${finishReason})`;
+        }
+        if (blockReason) {
+          detailedError += ` (BlockReason: ${blockReason})`;
+        }
+        if (safetyRatings) {
+          const blockedRatings = safetyRatings.filter(r => r.probability && r.probability !== 'NEGLIGIBLE');
+          if (blockedRatings.length > 0) {
+            detailedError += ` (SafetyRatings: ${blockedRatings.map(r => `${r.category}:${r.probability}`).join(', ')})`;
+          }
+        }
+        throw new Error(detailedError);
       }
 
       return new Response(JSON.stringify({ text: textResult }), {

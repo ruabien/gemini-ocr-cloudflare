@@ -209,9 +209,16 @@ function App() {
     // Chọn danh sách ID được phép xử lý
     let allowedIds = [];
     if (activeParentPdf) {
-      // Chế độ PDF: Chỉ lấy các trang của activeParentPdf nằm trong khoảng [fromPage, toPage]
-      const pdfPages = filesRef.current.filter(f => f.isPdfPage && f.parentPdfId === activeParentPdf.id);
-      const targetPages = pdfPages.filter(p => (p.pageIndex + 1) >= fromPage && (p.pageIndex + 1) <= toPage);
+      // Chế độ PDF: Lấy các trang của activeParentPdf, sắp xếp tăng dần theo pageIndex để tránh lệch chỉ số
+      const pdfPages = filesRef.current
+        .filter(f => f.isPdfPage && f.parentPdfId === activeParentPdf.id)
+        .sort((a, b) => a.pageIndex - b.pageIndex);
+      
+      const targetPages = pdfPages.filter(p => {
+        const pageNum = p.pageIndex + 1; // 1-based page number
+        // Kiểm tra tính hợp lệ của phần tử, đảm bảo có file nhị phân và chỉ số trong phạm vi dải trang
+        return p.originalFile && pageNum >= fromPage && pageNum <= toPage;
+      });
       allowedIds = targetPages.map(p => p.id);
     } else {
       // Chế độ ảnh độc lập
