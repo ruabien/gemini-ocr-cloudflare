@@ -214,11 +214,21 @@ function App() {
         .filter(f => f.isPdfPage && f.parentPdfId === activeParentPdf.id)
         .sort((a, b) => a.pageIndex - b.pageIndex);
       
-      const targetPages = pdfPages.filter(p => {
-        const pageNum = p.pageIndex + 1; // 1-based page number
-        // Kiểm tra tính hợp lệ của phần tử, đảm bảo có file nhị phân và chỉ số trong phạm vi dải trang
-        return p.originalFile && pageNum >= fromPage && pageNum <= toPage;
-      });
+      const totalSubPages = pdfPages.length;
+      const startIndex = Math.max(0, parseInt(fromPage) - 1);
+      const endIndex = Math.min(totalSubPages - 1, parseInt(toPage) - 1);
+
+      const pageArray = pdfPages;
+      const targetPages = [];
+
+      for (let currentIndex = startIndex; currentIndex <= endIndex; currentIndex++) {
+        // Bảo vệ an toàn dữ liệu đầu vào (Guard Clause)
+        if (!pageArray[currentIndex] || !pageArray[currentIndex].originalFile) {
+          continue;
+        }
+        targetPages.push(pageArray[currentIndex]);
+      }
+
       allowedIds = targetPages.map(p => p.id);
     } else {
       // Chế độ ảnh độc lập
