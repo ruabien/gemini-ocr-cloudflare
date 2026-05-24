@@ -23,23 +23,6 @@ export const loadPdfJs = () => {
 };
 
 /**
- * Lấy số lượng trang của tệp PDF một cách nhanh chóng từ Client-Side
- * @param {File} pdfFile - Đối tượng File PDF
- * @returns {Promise<number>} Số lượng trang
- */
-export const getPdfPageCount = async (pdfFile) => {
-  const pdfjsLib = await loadPdfJs();
-  
-  // Đọc file thành ArrayBuffer để PDF.js xử lý trực tiếp
-  const arrayBuffer = await pdfFile.arrayBuffer();
-  
-  // Nạp tài liệu PDF
-  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-  const pdf = await loadingTask.promise;
-  return pdf.numPages;
-};
-
-/**
  * Bóc tách tệp PDF thành danh sách các tệp ảnh JPEG độc lập ngay trên trình duyệt
  * @param {File} pdfFile - Đối tượng File PDF
  * @param {Function} onProgress - Callback báo cáo tiến trình (currentPage, totalPages)

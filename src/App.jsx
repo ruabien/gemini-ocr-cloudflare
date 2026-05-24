@@ -4,8 +4,7 @@ import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
 
-import { processGeminiOCR, processOpenSourceOCR } from './utils/ocrService';
-import { splitPdfToImages, getPdfPageCount } from './utils/pdfProcessor';
+import { processOCR } from './utils/ocrService';
 
 function App() {
   const [config, setConfig] = useState(null);
@@ -32,106 +31,27 @@ function App() {
     setActiveFileId(null);
   }, []);
 
+
+
   const handleFilesSelected = async (newOriginalFiles) => {
-    for (const file of newOriginalFiles) {
+    const newItems = newOriginalFiles.map(file => {
       const id = Math.random().toString(36).substring(2, 9);
       const isPdf = file.type === 'application/pdf';
-
-      if (isPdf) {
-        // Thêm file PDF vào hàng đợi với trạng thái tạm thời để phân loại
-        const parentItem = {
-          id: id,
-          name: file.name,
-          originalFile: file,
-          status: 'splitting',
-          progress: 5,
-          result: '',
-          error: null,
-          isParentPdf: true,
-          totalPages: 0,
-          lane: 'pending'
-        };
-
-        setFiles(prev => [...prev, parentItem]);
-        setActiveFileId(prev => prev || id);
-
-        try {
-          const pageCount = await getPdfPageCount(file);
-          const lane = pageCount >= 3 ? 'open-source' : 'gemini';
-
-          // Cập nhật số trang và làn đường xử lý
-          setFiles(prev => prev.map(f => f.id === id ? { 
-            ...f, 
-            totalPages: pageCount, 
-            lane: lane,
-            name: `${file.name} (${lane === 'gemini' ? 'Làn Gemini' : 'Làn Open-Source'})`
-          } : f));
-
-          if (lane === 'open-source') {
-            // Tách trang PDF thành ảnh
-            const pageImages = await splitPdfToImages(file, (current, total) => {
-              const percentage = Math.round((current / total) * 100);
-              setFiles(prev => prev.map(f => f.id === id ? { ...f, progress: percentage } : f));
-            });
-
-            const subPageItems = pageImages.map((imgFile, idx) => ({
-              id: Math.random().toString(36).substring(2, 9),
-              parentPdfId: id,
-              isPdfPage: true,
-              pageIndex: idx,
-              name: imgFile.name,
-              originalFile: imgFile,
-              status: 'waiting',
-              progress: 0,
-              result: '',
-              error: null,
-              lane: 'open-source'
-            }));
-
-            setFiles(prev => {
-              const updated = prev.map(f => f.id === id ? { 
-                ...f, 
-                status: 'waiting', 
-                progress: 0,
-                name: file.name // Reset tên gốc sau khi tách trang xong
-              } : f);
-              return [...updated, ...subPageItems];
-            });
-          } else {
-            // PDF <= 2 trang -> xử lý nguyên file bằng Gemini
-            setFiles(prev => prev.map(f => f.id === id ? { 
-              ...f, 
-              status: 'waiting', 
-              progress: 0,
-              name: file.name
-            } : f));
-          }
-        } catch (err) {
-          console.error("Lỗi khi xử lý file PDF:", err);
-          setFiles(prev => prev.map(f => f.id === id ? { 
-            ...f, 
-            status: 'error', 
-            error: `Lỗi đọc file PDF: ${err.message}`,
-            name: file.name
-          } : f));
-        }
-      } else {
-        // File ảnh thông thường -> Chạy làn Gemini
-        const item = {
-          id: id,
-          name: file.name,
-          originalFile: file,
-          status: 'waiting',
-          progress: 0,
-          result: '',
-          error: null,
-          isParentPdf: false,
-          totalPages: 1,
-          lane: 'gemini'
-        };
-        setFiles(prev => [...prev, item]);
-        setActiveFileId(prev => prev || id);
-      }
+      return {
+        id: id,
+        name: file.name,
+        originalFile: file,
+        status: 'waiting',
+        progress: 0,
+        result: '',
+        error: null,
+        isParentPdf: isPdf,
+        totalPages: 0
+      };
+    });
+    setFiles(prev => [...prev, ...newItems]);
+    if (newItems.length > 0) {
+      setActiveFileId(prev => prev || newItems[0].id);
     }
   };
 
@@ -154,15 +74,12 @@ function App() {
   };
 
   const startOCR = async () => {
-    const hasGeminiFiles = filesRef.current.some(f => f.lane === 'gemini' && f.status === 'waiting');
-    const hasHfFiles = filesRef.current.some(f => f.lane === 'open-source' && f.status === 'waiting');
-
-    if (hasGeminiFiles && (!config || !config.apiKey)) {
-      alert("Vui lòng cấu hình Google API Key ở phía trên cùng trước khi bắt đầu.");
+    if (!config || !config.apiKey) {
+      alert("Vui lòng cấu hình API Key ở phía trên cùng trước khi bắt đầu.");
       return;
     }
-    if (hasHfFiles && (!config || !config.hfEndpoint)) {
-      alert("Vui lòng cấu hình Hugging Face Endpoint URL ở phía trên cùng trước khi bắt đầu.");
+    if (!config.workerUrl) {
+      alert("Vui lòng cấu hình Cloudflare Worker URL ở phía trên cùng trước khi bắt đầu.");
       return;
     }
 
@@ -183,24 +100,25 @@ function App() {
     const processNext = async () => {
       if (!processingRef.current) return;
 
-      // Tìm tệp tiếp theo ở trạng thái 'waiting' trực tiếp từ filesRef (bỏ qua trang PDF con)
-      const docToProcess = filesRef.current.find(f => !f.isPdfPage && f.status === 'waiting');
+      // Tìm tệp tiếp theo ở trạng thái 'waiting' trực tiếp từ filesRef
+      const fileToProcess = filesRef.current.find(f => !f.isPdfPage && f.status === 'waiting');
       
       // Nếu không còn tệp nào hoặc luồng bị hủy, kết thúc tiến trình
-      if (!docToProcess) {
+      if (!fileToProcess) {
         setIsProcessing(false);
         processingRef.current = false;
         return;
       }
 
-      setActiveFileId(docToProcess.id);
+      setActiveFileId(fileToProcess.id);
 
       setFiles(prev => {
-        return prev.map(f => f.id === docToProcess.id ? { 
+        return prev.map(f => f.id === fileToProcess.id ? { 
           ...f, 
           status: 'processing', 
-          progress: 10, 
-          error: null
+          progress: 50, 
+          error: null,
+          name: `${fileToProcess.originalFile.name} (Đang xử lý toàn bộ tài liệu... Vui lòng đợi)`
         } : f);
       });
 
@@ -208,118 +126,44 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       try {
-        if (docToProcess.lane === 'gemini') {
-          // LÀN ĐƯỜNG GEMINI (File <= 2 trang hoặc Ảnh)
-          const textResult = await processGeminiOCR(
-            docToProcess.originalFile,
-            config.apiKey,
-            config.model
-          );
+        const textResult = await processOCR(
+          fileToProcess.originalFile,
+          config.apiKey,
+          config.model,
+          config.workerUrl
+        );
 
-          if (!processingRef.current) return; // Dừng nếu đã Reset
+        if (!processingRef.current) return; // Dừng nếu đã Reset
 
-          setFiles(prev => prev.map(f => f.id === docToProcess.id ? {
-            ...f,
-            status: 'completed',
-            progress: 100,
-            result: textResult,
-            error: null
-          } : f));
-
-        } else if (docToProcess.lane === 'open-source') {
-          // LÀN ĐƯỜNG OPEN-SOURCE (File >= 3 trang)
-          const parentId = docToProcess.id;
-          const subPages = filesRef.current.filter(p => p.parentPdfId === parentId && p.isPdfPage);
-
-          if (subPages.length === 0) {
-            throw new Error("Không tìm thấy dữ liệu trang ảnh của tệp PDF này.");
-          }
-
-          // Xử lý tuần tự từng trang con
-          for (let i = 0; i < subPages.length; i++) {
-            if (!processingRef.current) return;
-            const page = subPages[i];
-
-            // Cập nhật trạng thái trang con đang xử lý
-            setFiles(prev => prev.map(f => f.id === page.id ? {
-              ...f,
-              status: 'processing',
-              progress: 50,
-              error: null
-            } : f));
-
-            // Cập nhật thanh tiến trình của PDF cha
-            const currentProgress = Math.round((i / subPages.length) * 100);
-            setFiles(prev => prev.map(f => f.id === parentId ? {
-              ...f,
-              progress: currentProgress
-            } : f));
-
-            try {
-              const pageText = await processOpenSourceOCR(
-                page.originalFile,
-                config.hfEndpoint
-              );
-
-              if (!processingRef.current) return;
-
-              // Đánh dấu hoàn thành trang con
-              setFiles(prev => prev.map(f => f.id === page.id ? {
-                ...f,
-                status: 'completed',
-                progress: 100,
-                result: pageText,
-                error: null
-              } : f));
-
-            } catch (err) {
-              if (!processingRef.current) return;
-              setFiles(prev => prev.map(f => f.id === page.id ? {
-                ...f,
-                status: 'error',
-                error: err.message
-              } : f));
-              throw new Error(`Lỗi xử lý tại Trang ${i + 1}: ${err.message}`);
-            }
-
-            // Khoảng nghỉ nhỏ giữa các trang để tránh spam API
-            if (i < subPages.length - 1 && processingRef.current) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          }
-
-          if (!processingRef.current) return;
-
-          // Gộp kết quả của toàn bộ các trang con vào file cha
-          const freshPages = filesRef.current.filter(p => p.parentPdfId === parentId && p.isPdfPage);
-          const mergedText = freshPages.map(p => p.result).join('\n\n');
-
-          setFiles(prev => prev.map(f => f.id === parentId ? {
-            ...f,
-            status: 'completed',
-            progress: 100,
-            result: mergedText,
-            error: null
-          } : f));
-        }
+        setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+          ...f,
+          status: 'completed',
+          progress: 100,
+          result: textResult,
+          name: fileToProcess.originalFile.name,
+          retryInfo: null,
+          error: null
+        } : f));
 
       } catch (error) {
         if (!processingRef.current) return; // Dừng nếu đã Reset
 
-        console.error("Lỗi khi xử lý OCR file:", docToProcess.name, error);
-        setFiles(prev => prev.map(f => f.id === docToProcess.id ? {
+        console.error("Lỗi khi xử lý OCR file:", fileToProcess.name, error);
+        setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
           ...f,
           status: 'error',
           progress: 0,
-          error: error.message
+          error: error.message,
+          name: fileToProcess.originalFile.name,
+          retryInfo: null
         } : f));
       }
 
       // Kiểm tra xem còn tệp nào đang chờ xử lý tiếp theo không
       const nextWaiting = filesRef.current.find(f => !f.isPdfPage && f.status === 'waiting');
       if (nextWaiting && processingRef.current) {
-        // Tích hợp khoảng trễ 1.5 giây giãn cách giữa các file
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Tích hợp khoảng trễ 4.5 giây giãn cách giữa các file để tránh lỗi Rate Limit 429
+        await new Promise(resolve => setTimeout(resolve, 4500));
       }
 
       await processNext();
@@ -343,21 +187,21 @@ function App() {
   const faqItems = [
     {
       q: "Ứng dụng này có an toàn và bảo mật thông tin không?",
-      a: "Hoàn toàn bảo mật! Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tất cả tệp hình ảnh, tài liệu PDF và nội dung trích xuất đều được xử lý cục bộ và gửi trực tiếp tới API của Google/Hugging Face qua HTTPS. Chúng tôi không sử dụng máy chủ trung gian và không lưu trữ bất kỳ dữ liệu nào của bạn."
+      a: "Hoàn toàn bảo mật! Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tất cả tệp hình ảnh, tài liệu PDF và nội dung trích xuất đều được xử lý cục bộ và gửi trực tiếp tới API của Google qua HTTPS. Chúng tôi không sử dụng máy chủ trung gian và không lưu trữ bất kỳ dữ liệu nào của bạn."
     },
     {
       q: "API Key của tôi được lưu trữ ở đâu?",
-      a: "API Key được lưu trữ trực tiếp trong localStorage trên trình duyệt cá nhân của bạn. Dữ liệu này được lưu cục bộ bởi trình duyệt và không bao giờ bị gửi ra ngoài ngoại trừ việc xác thực trực tiếp với máy chủ API."
+      a: "API Key được lưu trữ trực tiếp trong localStorage trên trình duyệt cá nhân của bạn. Dữ liệu này được lưu cục bộ bởi trình duyệt và không bao giờ bị gửi ra ngoài ngoại trừ việc xác thực trực tiếp với máy chủ Google Gemini."
     },
     {
       q: "Tại sao ứng dụng lại tự động ghép kết quả thành một hàng ngang?",
-      a: "Đây là tính năng tối ưu đặc biệt được thiết kế cho các tác vụ tự động hóa và nhập liệu nhanh (ví dụ: dán dữ liệu vào Word, Excel hoặc AI). Việc ghép văn bản thành một dòng giúp loại bỏ các ký tự xuống dòng phức tạp gây lỗi định dạng bảng biểu."
+      a: "Đây là tính năng tối ưu đặc biệt được thiết kế cho các tác vụ tự động hóa và nhập liệu nhanh (ví dụ: dán dữ liệu vào Word, Excel hoặc Ai). Việc ghép văn bản thành một dòng giúp loại bỏ các ký tự xuống dòng phức tạp gây lỗi định dạng bảng biểu."
     },
     {
       q: "Làm thế nào để lấy Gemini API Key miễn phí?",
       a: (
         <span>
-          Bạn có thể truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google của bạn và nhấn nút \"Get API key\" để tạo một mã khóa mới hoàn toàn miễn phí.{" "}
+          Bạn có thể truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google của bạn và nhấn nút "Get API key" để tạo một mã khóa mới hoàn toàn miễn phí.{" "}
           <a
             href="https://www.youtube.com/watch?v=ag0bHshpQ4U"
             target="_blank"
@@ -413,10 +257,10 @@ function App() {
         <section id="cong-cu" className="w-full text-center space-y-8">
           <div className="space-y-4 animate-fade-in">
             <h1 className="text-display-lg-mobile md:text-display-lg font-display-lg text-primary tracking-tight">
-              Smart Router OCR - Chuyển đổi Hình ảnh & PDF
+              Chuyển đổi Hình ảnh & PDF sang Văn bản
             </h1>
-            <p className="text-body-lg text-on-surface-variant max-w-xl mx-auto">
-              Tự động điều phối: File ngắn gửi trực tiếp sang Gemini, file dài băm trang xử lý bằng hệ thống mã nguồn mở để tối ưu tài nguyên.
+            <p className="text-body-lg text-on-surface-variant max-w-md mx-auto">
+              Biến mọi tài liệu giấy thành văn bản số chỉ trong vài giây với công nghệ AI hiện đại.
             </p>
           </div>
 
@@ -506,7 +350,7 @@ function App() {
                     <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                     <div>
                       <p className="text-body-md text-on-surface leading-relaxed">
-                        Tự động điều hướng thông minh theo độ dài tài liệu để tối ưu hóa chi phí và tốc độ xử lý nhanh nhất.
+                        Hỗ trợ OCR hàng loạt thả ga, tự động xử lý mượt mà hàng chục file ảnh/PDF cùng một lúc nhờ hệ thống hàng đợi thông minh.
                       </p>
                     </div>
                   </div>
@@ -558,7 +402,7 @@ function App() {
                     <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>all_inclusive</span>
                     <div>
                       <p className="text-body-md text-on-surface leading-relaxed">
-                        Tích hợp mô hình sửa lỗi chính tả chuyên sâu cho tài liệu pháp lý tiếng Việt (nano-protonx-legal-tc) tăng độ chính xác vượt trội.
+                        Tận dụng sức mạnh AI tối tân từ Gemini để tự động sửa lỗi chính tả theo ngữ cảnh, dùng API Key cá nhân miễn phí không lo giới hạn.
                       </p>
                     </div>
                   </div>
