@@ -6,6 +6,7 @@ import ResultViewer from './components/ResultViewer';
 
 import { processOCR } from './utils/ocrService';
 import { splitPdfToImages } from './utils/pdfProcessor';
+import { compressImageIfNeeded } from './utils/imageCompressor';
 
 function App() {
   const [config, setConfig] = useState(null);
@@ -94,7 +95,19 @@ function App() {
   };
 
   const handleFilesSelected = async (newOriginalFiles) => {
-    const newItems = newOriginalFiles.map(file => {
+    // 1. Thực hiện nén các ảnh trực tiếp nếu dung lượng > 1.5MB trước khi cho vào hàng đợi
+    const processedFiles = await Promise.all(
+      newOriginalFiles.map(async (file) => {
+        try {
+          return await compressImageIfNeeded(file);
+        } catch (err) {
+          console.error("Lỗi khi nén ảnh nạp vào:", file.name, err);
+          return file; // Fallback
+        }
+      })
+    );
+
+    const newItems = processedFiles.map(file => {
       const id = Math.random().toString(36).substring(2, 9);
       const isPdf = file.type === 'application/pdf';
       return {
@@ -127,7 +140,19 @@ function App() {
               } : f));
             });
 
-            const pageItems = pageImages.map((imgFile, index) => {
+            // 2. Thực hiện nén các trang ảnh PDF được tách ra nếu dung lượng > 1.5MB
+            const compressedPages = await Promise.all(
+              pageImages.map(async (pageImg) => {
+                try {
+                  return await compressImageIfNeeded(pageImg);
+                } catch (err) {
+                  console.error("Lỗi khi nén trang PDF:", pageImg.name, err);
+                  return pageImg; // Fallback
+                }
+              })
+            );
+
+            const pageItems = compressedPages.map((imgFile, index) => {
               return {
                 id: Math.random().toString(36).substring(2, 9),
                 name: imgFile.name,
