@@ -225,13 +225,10 @@ export default function ApiConfig({ onConfigChange }) {
       {/* Header Accordion Bar */}
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="relative flex items-center justify-between px-4 py-3 bg-surface/40 border-b border-outline-variant/20 cursor-pointer select-none hover:bg-surface transition-colors"
+        className="relative flex items-center justify-end px-4 py-3 bg-surface/40 border-b border-outline-variant/20 cursor-pointer select-none hover:bg-surface transition-colors"
       >
-        <div className="flex items-center">
-          <KeyRound size={16} className="text-primary" />
-        </div>
-
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-2">
+          <KeyRound size={16} className="text-primary shrink-0" />
           <span className="text-xs sm:text-sm font-bold text-on-surface whitespace-nowrap">Cấu hình API & Mô hình AI</span>
           {isSaved ? (
             <span className="text-[9px] sm:text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">Đã cấu hình</span>
