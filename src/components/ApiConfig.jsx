@@ -167,11 +167,15 @@ export default function ApiConfig({ onConfigChange }) {
           }
         }
       } catch (err) {
+        let displayError = err.message;
+        if (err.message === 'Load failed' || err.name === 'TypeError') {
+          displayError = 'Lỗi kết nối mạng (CORS hoặc thiết bị không có internet).';
+        }
         results.push({
           key,
           masked,
           status: 'error',
-          message: `Lỗi kết nối mạng: ${err.message}`
+          message: `Lỗi kết nối mạng: ${displayError}`
         });
       }
       setValidationResults([...results]);

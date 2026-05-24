@@ -338,6 +338,11 @@ function App() {
 
           console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}):`, error);
 
+          let displayError = error.message;
+          if (error.message === 'Load failed' || error.name === 'TypeError') {
+            displayError = 'Lỗi kết nối máy chủ (CORS/Network Error trên Mobile). Hãy kiểm tra lại cấu hình phản hồi của Cloudflare Worker.';
+          }
+
           // Bắt lỗi 429 / 403 / Hạn mức / Quá giới hạn
           const isRateLimitOrPermission = error.status === 429 || error.status === 403 || 
             /429|403|limit|quota|exhausted|forbidden|permission/i.test(error.message || '');
@@ -349,7 +354,7 @@ function App() {
                 ...f,
                 status: 'error',
                 progress: 0,
-                error: `Đã thử lại xoay vòng tất cả Key dự phòng nhưng vẫn gặp lỗi giới hạn: ${error.message}`,
+                error: `Đã thử lại xoay vòng tất cả Key dự phòng nhưng vẫn gặp lỗi giới hạn: ${displayError}`,
                 retryInfo: null
               } : f));
               break;
@@ -366,7 +371,7 @@ function App() {
                 status: 'processing',
                 retryInfo: {
                   customMessage: `${customMessage} (Thử lại sau ${sec}s)`,
-                  errorMsg: error.message,
+                  errorMsg: displayError,
                   attempt: attemptCount,
                   maxAttempts: maxAttempts,
                   secondsLeft: sec
@@ -380,7 +385,7 @@ function App() {
               ...f,
               status: 'error',
               progress: 0,
-              error: error.message,
+              error: displayError,
               retryInfo: null
             } : f));
             break;
