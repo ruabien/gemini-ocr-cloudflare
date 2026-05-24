@@ -274,7 +274,7 @@ function App() {
           const textResult = await processOCR(
             fileToProcess.originalFile,
             activeKey,
-            'gemini-2.5-flash',
+            config.model || 'gemini-2.5-flash',
             config.workerUrl
           );
 
