@@ -1,21 +1,28 @@
 import { Buffer } from 'node:buffer';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "*", // Hoặc điền chính xác tên miền https://text24.pages.dev của bạn
   "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400", // Cho phép trình duyệt lưu bộ nhớ đệm CORS trong 24 giờ
 };
 
 export default {
   async fetch(request, env, ctx) {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders
+      });
     }
 
     if (request.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Chỉ chấp nhận phương thức POST.' }), {
         status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
       });
     }
 
@@ -28,7 +35,10 @@ export default {
       if (!file || !apiKey) {
         return new Response(JSON.stringify({ error: 'Thiếu file hoặc API Key.' }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
         });
       }
 
@@ -105,14 +115,21 @@ export default {
       }
 
       return new Response(JSON.stringify({ text: textResult }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
       });
 
     } catch (err) {
       console.error('Lỗi hệ thống Worker:', err);
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
       });
     }
   },
