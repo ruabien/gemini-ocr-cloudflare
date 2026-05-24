@@ -744,7 +744,7 @@ function App() {
       {/* Footer */}
       <footer className="bg-surface-container-lowest dark:bg-inverse-surface py-12 border-t border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 text-center">
-          <p className="text-label-md text-on-surface-variant">© 2026 Text24 - Gemini OCR Tiếng Việt</p>
+          <p className="text-label-md text-on-surface-variant">© 2026 Text24 - OCR Tiếng Việt Miễn Phí</p>
         </div>
       </footer>
     </div>
