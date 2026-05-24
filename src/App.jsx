@@ -450,6 +450,12 @@ function App() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <div className="flex items-center gap-2 cursor-pointer select-none" onClick={handleReset}>
+            <img 
+              src="/logo.svg" 
+              alt="Text24 Logo" 
+              className="h-8 w-auto object-contain transition-all duration-300 hover:scale-105" 
+              onError={(e) => { e.target.style.display = 'none'; }} 
+            />
             <span className="text-headline-md font-headline-md font-bold text-primary">Text24</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
