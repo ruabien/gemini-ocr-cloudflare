@@ -450,7 +450,7 @@ function App() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <img 
-            src="/Logo_Doc.svg" 
+            src="/logo.svg" 
             alt="DOC Logo" 
             onClick={handleReset}
             className="h-8 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 select-none" 
@@ -486,10 +486,10 @@ function App() {
         <section id="cong-cu" className="w-full text-center space-y-8">
           <div className="space-y-4 animate-fade-in">
             <h1 className="text-display-lg-mobile md:text-display-lg font-display-lg text-primary tracking-tight">
-              Chuyển đổi Hình ảnh & PDF sang Văn bản
+              Chuyển đổi PDF & Hình ảnh sang Văn bản
             </h1>
             <p className="text-body-lg text-on-surface-variant max-w-md mx-auto">
-              Biến mọi tài liệu giấy thành văn bản số chỉ trong vài giây với công nghệ AI hiện đại.
+              Biến mọi tài liệu giấy thành văn bản soạn thảo chỉ trong vài giây với công nghệ AI hiện đại.
             </p>
           </div>
 
