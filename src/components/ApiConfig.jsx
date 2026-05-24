@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { KeyRound, Save, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
 
 const DEFAULT_WORKER_URL = 'https://gemini-ocr-backend.ruabien1504.workers.dev';
@@ -19,8 +19,21 @@ export default function ApiConfig({ onConfigChange }) {
   const [validationResults, setValidationResults] = useState([]);
   const [validationMessage, setValidationMessage] = useState("");
 
+  // States cho bộ đếm tự động thu gọn và hiệu ứng mờ dần (UX)
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const dismissTimerRef = useRef(null);
+
+  // Dọn dẹp timer khi component bị hủy (unmount) tránh rò rỉ bộ nhớ
   useEffect(() => {
-    // Chỉ kích hoạt callback cấu hình khi API Key và Model đã khớp với dữ liệu đã lưu
+    return () => {
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Chỉ kích hoạt callback cấu hình khi API Key và Model khớp dữ liệu đã lưu
     const savedKey = localStorage.getItem('ocr_api_key') || '';
     const savedModel = localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
     if (apiKey === savedKey && modelName === savedModel && onConfigChange) {
@@ -47,6 +60,12 @@ export default function ApiConfig({ onConfigChange }) {
     } else {
       setIsValidated(false);
     }
+
+    // Đặt lại trạng thái mờ dần và tắt bộ đếm ngay khi có thay đổi nhập liệu
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+    }
+    setIsFadingOut(false);
     setValidationResults([]);
     setValidationMessage("");
   };
@@ -55,9 +74,15 @@ export default function ApiConfig({ onConfigChange }) {
     setModelName(val);
     const saved = localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
     if (val.trim() === saved.trim()) {
-      // Giữ nguyên trạng thái validate cũ nếu trùng model đã lưu
+      // Giữ nguyên
     } else {
       setIsValidated(false);
+
+      // Đặt lại trạng thái mờ dần và tắt bộ đếm ngay khi mô hình thay đổi
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+      }
+      setIsFadingOut(false);
       setValidationResults([]);
       setValidationMessage("");
     }
@@ -70,6 +95,12 @@ export default function ApiConfig({ onConfigChange }) {
       alert("Vui lòng nhập API Key trước khi kiểm tra.");
       return;
     }
+
+    // Tắt hiệu ứng mờ dần và hủy timer cũ trước lượt kiểm tra mới
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+    }
+    setIsFadingOut(false);
 
     setIsChecking(true);
     setValidationResults([]);
@@ -114,7 +145,7 @@ export default function ApiConfig({ onConfigChange }) {
               key,
               masked,
               status: 'error',
-              message: 'Lỗi (Sai key, không hỗ trợ model này hoặc bị khóa)'
+              message: 'Lỗi (Sai key, không hỗ trợ mô hình này hoặc bị khóa)'
             });
           }
         }
@@ -133,6 +164,14 @@ export default function ApiConfig({ onConfigChange }) {
     if (validCount > 0) {
       setIsValidated(true);
       setValidationMessage(`🎉 Đã xác thực thành công ${validCount} key hoạt động tốt. Bạn có thể lưu cấu hình để bắt đầu sử dụng.`);
+      
+      // Kích hoạt Timer biến mất sau 7 giây nếu xác thực thành công ít nhất 1 Key
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+      }
+      dismissTimerRef.current = setTimeout(() => {
+        setIsFadingOut(true);
+      }, 7000);
     } else {
       setIsValidated(false);
       setValidationMessage(`❌ Tất cả các API Key đều bị lỗi hoặc không hỗ trợ mô hình '${currentModel}'. Vui lòng kiểm tra lại.`);
@@ -234,10 +273,17 @@ export default function ApiConfig({ onConfigChange }) {
         </div>
       </div>
 
-      {/* Validation results view */}
+      {/* Panel kết quả kiểm tra hỗ trợ hiệu ứng thu gọn và mờ dần */}
       {validationResults.length > 0 && (
-        <div className="px-4 pb-4 pt-3 border-t border-outline-variant/20 bg-slate-50/50 space-y-3 text-left">
-          <div className="text-on-surface-variant/70 text-[10px] uppercase font-bold tracking-wider font-sans">Trạng thái xác thực các Key:</div>
+        <div 
+          className={`transition-all duration-500 ease-in-out px-4 border-t border-outline-variant/20 bg-slate-50/50 text-left ${
+            isFadingOut 
+              ? 'opacity-0 max-h-0 py-0 border-t-0 pointer-events-none' 
+              : 'opacity-100 max-h-[600px] py-4'
+          }`}
+          style={{ overflow: 'hidden' }}
+        >
+          <div className="text-on-surface-variant/70 text-[10px] uppercase font-bold tracking-wider font-sans mb-3">Trạng thái xác thực các Key:</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {validationResults.map((res, index) => (
               <div 
@@ -254,13 +300,14 @@ export default function ApiConfig({ onConfigChange }) {
                 {res.status === 'rate_limit' && <AlertTriangle size={14} className="shrink-0 text-amber-600" />}
                 {res.status === 'error' && <XCircle size={14} className="shrink-0 text-rose-600" />}
                 
+                <span className="font-sans">Key {index + 1} - </span>
                 <span className="font-mono">{res.masked}</span>
                 <span className="text-[11px] font-medium text-on-surface">: {res.message}</span>
               </div>
             ))}
           </div>
           {validationMessage && (
-            <p className={`text-xs mt-2 font-bold ${isValidated ? 'text-emerald-700' : 'text-rose-700'}`}>
+            <p className={`text-xs mt-2.5 font-bold ${isValidated ? 'text-emerald-700' : 'text-rose-700'}`}>
               {validationMessage}
             </p>
           )}
