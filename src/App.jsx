@@ -5,12 +5,17 @@ import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
 
 import { processOCR } from './utils/ocrService';
+import { splitPdfToImages } from './utils/pdfProcessor';
 
 function App() {
   const [config, setConfig] = useState(null);
   const [files, setFiles] = useState([]);
   const [activeFileId, setActiveFileId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Bộ chọn dải trang
+  const [fromPage, setFromPage] = useState(1);
+  const [toPage, setToPage] = useState(1);
 
   const processingRef = useRef(false);
   const filesRef = useRef([]);
@@ -19,6 +24,23 @@ function App() {
   useEffect(() => {
     filesRef.current = files;
   }, [files]);
+
+  // Tìm parent PDF của file đang hoạt động nếu có
+  const activeFile = files.find(f => f.id === activeFileId);
+  const activeParentPdf = activeFile
+    ? (activeFile.isParentPdf ? activeFile : files.find(f => f.id === activeFile.parentPdfId))
+    : null;
+
+  // Tự động thiết lập mặc định cho bộ chọn dải trang khi thay đổi file PDF hoạt động
+  useEffect(() => {
+    if (activeParentPdf) {
+      setFromPage(1);
+      setToPage(activeParentPdf.totalPages || 1);
+    } else {
+      setFromPage(1);
+      setToPage(1);
+    }
+  }, [activeParentPdf?.id, activeParentPdf?.totalPages]);
 
   const handleConfigChange = useCallback((newConfig) => {
     setConfig(newConfig);
@@ -31,7 +53,45 @@ function App() {
     setActiveFileId(null);
   }, []);
 
+  // Xử lý thay đổi ô nhập dải trang
+  const handleFromPageChange = (val) => {
+    const num = parseInt(val, 10);
+    if (isNaN(num)) {
+      setFromPage('');
+      return;
+    }
+    const maxPages = activeParentPdf ? activeParentPdf.totalPages : 1;
+    const clamped = Math.max(1, Math.min(num, maxPages));
+    setFromPage(clamped);
+  };
 
+  const handleToPageChange = (val) => {
+    const num = parseInt(val, 10);
+    if (isNaN(num)) {
+      setToPage('');
+      return;
+    }
+    const maxPages = activeParentPdf ? activeParentPdf.totalPages : 1;
+    const clamped = Math.max(1, Math.min(num, maxPages));
+    setToPage(clamped);
+  };
+
+  const handleFromPageBlur = () => {
+    if (fromPage === '' || fromPage < 1) {
+      setFromPage(1);
+    } else if (fromPage > toPage) {
+      setFromPage(toPage);
+    }
+  };
+
+  const handleToPageBlur = () => {
+    const maxPages = activeParentPdf ? activeParentPdf.totalPages : 1;
+    if (toPage === '' || toPage > maxPages) {
+      setToPage(maxPages);
+    } else if (toPage < fromPage) {
+      setToPage(fromPage);
+    }
+  };
 
   const handleFilesSelected = async (newOriginalFiles) => {
     const newItems = newOriginalFiles.map(file => {
@@ -41,7 +101,7 @@ function App() {
         id: id,
         name: file.name,
         originalFile: file,
-        status: 'waiting',
+        status: isPdf ? 'splitting' : 'waiting',
         progress: 0,
         result: '',
         error: null,
@@ -49,9 +109,64 @@ function App() {
         totalPages: 0
       };
     });
+
     setFiles(prev => [...prev, ...newItems]);
     if (newItems.length > 0) {
       setActiveFileId(prev => prev || newItems[0].id);
+    }
+
+    // Kích hoạt tách trang ngay cho các file PDF được chọn
+    for (const item of newItems) {
+      if (item.isParentPdf) {
+        (async () => {
+          try {
+            const pageImages = await splitPdfToImages(item.originalFile, (current, total) => {
+              setFiles(prev => prev.map(f => f.id === item.id ? { 
+                ...f, 
+                progress: Math.round((current / total) * 100) 
+              } : f));
+            });
+
+            const pageItems = pageImages.map((imgFile, index) => {
+              return {
+                id: Math.random().toString(36).substring(2, 9),
+                name: imgFile.name,
+                originalFile: imgFile,
+                status: 'waiting',
+                progress: 0,
+                result: '',
+                error: null,
+                isPdfPage: true,
+                parentPdfId: item.id,
+                pageIndex: index
+              };
+            });
+
+            setFiles(prev => {
+              const parentIdx = prev.findIndex(f => f.id === item.id);
+              if (parentIdx === -1) return prev;
+
+              const updatedPrev = prev.map(f => f.id === item.id ? {
+                ...f,
+                status: 'waiting',
+                progress: 0,
+                totalPages: pageImages.length
+              } : f);
+
+              const newFiles = [...updatedPrev];
+              newFiles.splice(parentIdx + 1, 0, ...pageItems);
+              return newFiles;
+            });
+          } catch (err) {
+            console.error("Lỗi phân tách trang PDF:", err);
+            setFiles(prev => prev.map(f => f.id === item.id ? { 
+              ...f, 
+              status: 'error', 
+              error: `Lỗi phân tách trang: ${err.message}` 
+            } : f));
+          }
+        })();
+      }
     }
   };
 
@@ -59,7 +174,6 @@ function App() {
     setFiles(prev => {
       const item = prev.find(f => f.id === id);
       if (item && item.isParentPdf) {
-        // Xóa PDF cha -> Xóa toàn bộ các trang con tương ứng
         return prev.filter(f => f.id !== id && f.parentPdfId !== id);
       }
       return prev.filter(f => f.id !== id);
@@ -73,7 +187,7 @@ function App() {
     setFiles(prev => prev.map(f => f.id === id ? { ...f, result: newText } : f));
   };
 
-  const startOCR = async () => {
+  const startOcrProcessing = async () => {
     if (!config || !config.apiKey) {
       alert("Vui lòng cấu hình API Key ở phía trên cùng trước khi bắt đầu.");
       return;
@@ -83,27 +197,50 @@ function App() {
       return;
     }
 
+    const keysArray = config.apiKey.split(',').map(k => k.trim()).filter(Boolean);
+    if (keysArray.length === 0) {
+      alert("Vui lòng nhập cấu hình API Key hợp lệ.");
+      return;
+    }
+
     setIsProcessing(true);
     processingRef.current = true;
 
-    // Reset trạng thái lỗi của các tệp (cả trang con và ảnh độc lập)
+    // Chọn danh sách ID được phép xử lý
+    let allowedIds = [];
+    if (activeParentPdf) {
+      // Chế độ PDF: Chỉ lấy các trang của activeParentPdf nằm trong khoảng [fromPage, toPage]
+      const pdfPages = filesRef.current.filter(f => f.isPdfPage && f.parentPdfId === activeParentPdf.id);
+      const targetPages = pdfPages.filter(p => (p.pageIndex + 1) >= fromPage && (p.pageIndex + 1) <= toPage);
+      allowedIds = targetPages.map(p => p.id);
+    } else {
+      // Chế độ ảnh độc lập
+      allowedIds = filesRef.current.filter(f => !f.isPdfPage && !f.isParentPdf).map(f => f.id);
+    }
+
+    if (allowedIds.length === 0) {
+      alert("Không tìm thấy trang hoặc tệp ảnh nào cần xử lý trong phạm vi dải trang đã chọn.");
+      setIsProcessing(false);
+      processingRef.current = false;
+      return;
+    }
+
+    // Reset trạng thái cho các trang trong dải trang được chọn. Các trang ngoài dải trang giữ nguyên trạng thái.
     setFiles(prev => prev.map(f => {
-      if (f.status === 'error') {
-        return { ...f, status: 'waiting', error: null };
+      if (allowedIds.includes(f.id)) {
+        return { ...f, status: 'waiting', progress: 0, error: null, retryInfo: null };
       }
       return f;
     }));
 
-    // Đợi 100ms để React cập nhật trạng thái lỗi về waiting và đồng bộ vào filesRef
     await new Promise(resolve => setTimeout(resolve, 100));
+
+    let currentKeyIndex = 0;
 
     const processNext = async () => {
       if (!processingRef.current) return;
 
-      // Tìm tệp tiếp theo ở trạng thái 'waiting' trực tiếp từ filesRef
-      const fileToProcess = filesRef.current.find(f => !f.isPdfPage && f.status === 'waiting');
-      
-      // Nếu không còn tệp nào hoặc luồng bị hủy, kết thúc tiến trình
+      const fileToProcess = filesRef.current.find(f => allowedIds.includes(f.id) && f.status === 'waiting');
       if (!fileToProcess) {
         setIsProcessing(false);
         processingRef.current = false;
@@ -112,61 +249,108 @@ function App() {
 
       setActiveFileId(fileToProcess.id);
 
-      setFiles(prev => {
-        return prev.map(f => f.id === fileToProcess.id ? { 
-          ...f, 
-          status: 'processing', 
-          progress: 50, 
-          error: null,
-          name: `${fileToProcess.originalFile.name} (Đang xử lý toàn bộ tài liệu... Vui lòng đợi)`
-        } : f);
-      });
+      setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
+        ...f, 
+        status: 'processing', 
+        progress: 20, 
+        error: null,
+        retryInfo: null
+      } : f));
 
-      // Chờ nhẹ 50ms để trạng thái cập nhật vào filesRef
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      try {
-        const textResult = await processOCR(
-          fileToProcess.originalFile,
-          config.apiKey,
-          config.model,
-          config.workerUrl
-        );
+      let success = false;
+      let attemptCount = 0;
+      const maxAttempts = keysArray.length * 3;
 
-        if (!processingRef.current) return; // Dừng nếu đã Reset
+      while (!success && processingRef.current) {
+        const activeKey = keysArray[currentKeyIndex];
+        try {
+          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
+            ...f, 
+            progress: Math.min(90, 20 + attemptCount * 10) 
+          } : f));
 
-        setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-          ...f,
-          status: 'completed',
-          progress: 100,
-          result: textResult,
-          name: fileToProcess.originalFile.name,
-          retryInfo: null,
-          error: null
-        } : f));
+          const textResult = await processOCR(
+            fileToProcess.originalFile,
+            activeKey,
+            'gemini-2.5-flash',
+            config.workerUrl
+          );
 
-      } catch (error) {
-        if (!processingRef.current) return; // Dừng nếu đã Reset
+          if (!processingRef.current) return;
 
-        console.error("Lỗi khi xử lý OCR file:", fileToProcess.name, error);
-        setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-          ...f,
-          status: 'error',
-          progress: 0,
-          error: error.message,
-          name: fileToProcess.originalFile.name,
-          retryInfo: null
-        } : f));
+          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+            ...f,
+            status: 'completed',
+            progress: 100,
+            result: textResult,
+            retryInfo: null,
+            error: null
+          } : f));
+
+          success = true;
+
+        } catch (error) {
+          if (!processingRef.current) return;
+
+          console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}):`, error);
+
+          // Bắt lỗi 429 / 403 / Hạn mức / Quá giới hạn
+          const isRateLimitOrPermission = error.status === 429 || error.status === 403 || 
+            /429|403|limit|quota|exhausted|forbidden|permission/i.test(error.message || '');
+
+          if (isRateLimitOrPermission) {
+            attemptCount++;
+            if (attemptCount >= maxAttempts) {
+              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                ...f,
+                status: 'error',
+                progress: 0,
+                error: `Đã thử lại xoay vòng tất cả Key dự phòng nhưng vẫn gặp lỗi giới hạn: ${error.message}`,
+                retryInfo: null
+              } : f));
+              break;
+            }
+
+            // Xoay Key tiếp theo
+            currentKeyIndex = (currentKeyIndex + 1) % keysArray.length;
+            const customMessage = keysArray.length > 1 ? 'Đang chuyển sang Key dự phòng...' : 'Đang tự động thử lại...';
+
+            for (let sec = 2; sec > 0; sec--) {
+              if (!processingRef.current) return;
+              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                ...f,
+                status: 'processing',
+                retryInfo: {
+                  customMessage: `${customMessage} (Thử lại sau ${sec}s)`,
+                  errorMsg: error.message,
+                  attempt: attemptCount,
+                  maxAttempts: maxAttempts,
+                  secondsLeft: sec
+                }
+              } : f));
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } else {
+            // Lỗi thông thường khác, không xoay key mà báo lỗi luôn
+            setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+              ...f,
+              status: 'error',
+              progress: 0,
+              error: error.message,
+              retryInfo: null
+            } : f));
+            break;
+          }
+        }
       }
 
-      // Kiểm tra xem còn tệp nào đang chờ xử lý tiếp theo không
-      const nextWaiting = filesRef.current.find(f => !f.isPdfPage && f.status === 'waiting');
-      if (nextWaiting && processingRef.current) {
-        // Tích hợp khoảng trễ 4.5 giây giãn cách giữa các file để tránh lỗi Rate Limit 429
-        await new Promise(resolve => setTimeout(resolve, 4500));
+      if (processingRef.current) {
+        // Nghỉ nhẹ giữa các trang để an toàn
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        await processNext();
       }
-
-      await processNext();
     };
 
     await processNext();
@@ -214,8 +398,6 @@ function App() {
       )
     }
   ];
-
-  const activeFile = files.find(f => f.id === activeFileId);
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
@@ -289,10 +471,47 @@ function App() {
                     onRemoveFile={handleRemoveFile}
                   />
                   
-                  <div className="pt-4 mt-auto border-t border-outline-variant/20 shrink-0">
+                  <div className="pt-4 mt-auto border-t border-outline-variant/20 shrink-0 space-y-4">
+                    {/* Page Range Selector */}
+                    {activeParentPdf && (
+                      <div className="bg-surface border border-outline-variant/40 rounded-xl p-3 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 text-on-surface select-none">
+                          <span className="material-symbols-outlined text-primary text-body-lg">menu_book</span>
+                          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Chọn dải trang</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5 text-xs font-medium">
+                            <span className="text-on-surface-variant">Từ trang:</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={activeParentPdf.totalPages || 1}
+                              value={fromPage}
+                              onChange={(e) => handleFromPageChange(e.target.value)}
+                              onBlur={handleFromPageBlur}
+                              disabled={isProcessing || activeParentPdf.status === 'splitting'}
+                              className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs font-medium">
+                            <span className="text-on-surface-variant">Đến:</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={activeParentPdf.totalPages || 1}
+                              value={toPage}
+                              onChange={(e) => handleToPageChange(e.target.value)}
+                              onBlur={handleToPageBlur}
+                              disabled={isProcessing || activeParentPdf.status === 'splitting'}
+                              className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <button
-                      onClick={startOCR}
-                      disabled={isProcessing || files.length === 0}
+                      onClick={startOcrProcessing}
+                      disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
                       className="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}

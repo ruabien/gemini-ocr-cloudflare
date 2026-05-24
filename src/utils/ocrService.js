@@ -31,15 +31,16 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
   try {
     data = await response.json();
   } catch (e) {
-    throw new Error(`Phản hồi từ Worker không hợp lệ hoặc không phải JSON (HTTP ${response.status}).`);
+    const err = new Error(`Phản hồi từ Worker không hợp lệ hoặc không phải JSON (HTTP ${response.status}).`);
+    err.status = response.status;
+    throw err;
   }
 
-  if (!response.ok) {
-    throw new Error(data.error || `Lỗi hệ thống Worker (HTTP ${response.status}).`);
-  }
-
-  if (data.error) {
-    throw new Error(data.error);
+  if (!response.ok || (data && data.error)) {
+    const errMsg = (data && data.error) || `Lỗi hệ thống Worker (HTTP ${response.status}).`;
+    const err = new Error(errMsg);
+    err.status = response.status;
+    throw err;
   }
 
   return data.text || '';

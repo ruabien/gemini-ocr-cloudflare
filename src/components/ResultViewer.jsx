@@ -5,13 +5,12 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalText(file?.result || "");
-  }, [file?.id, file?.result]);
-
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
   const isMultiImage = imageFiles.length > 1;
+
+  const parentPdf = file?.isParentPdf ? file : (allFiles && file?.parentPdfId ? allFiles.find(f => f.id === file.parentPdfId) : null);
+  const pdfPages = parentPdf ? allFiles.filter(f => f.isPdfPage && f.parentPdfId === parentPdf.id) : [];
+  const hasPdfResult = pdfPages.some(p => p.result && p.result.trim());
 
   const getCleanLine = (text) => {
     if (!text) return "";
@@ -23,23 +22,41 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   };
 
   const getMergedNormalizedText = () => {
-    // Sắp xếp và nối toàn bộ văn bản của các file ảnh theo đúng thứ tự tên file ảnh đầu vào trong hàng đợi
     const rawMerged = imageFiles
       .map(d => d.result || '')
       .filter(Boolean)
       .join(' ');
     
-    // Chuẩn hóa chuỗi về 1 dòng duy nhất theo đúng yêu cầu:
-    // Loại bỏ ký tự Markdown *, #, -
-    // Thay thế tất cả dấu xuống dòng bằng khoảng trắng
-    // Thu gọn nhiều khoảng trắng liên tiếp thành 1 khoảng trắng duy nhất bằng Regex .replace(/\s+/g, ' ')
-    // và .trim() khoảng trắng ở đầu/cuối
     return rawMerged
-      .replace(/[*#-]/g, '')
+      .replace(/[*#_-]/g, '')
       .replace(/[\n\r]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   };
+
+  const getPdfMergedNormalizedText = () => {
+    if (!parentPdf) return "";
+    const sortedPages = [...pdfPages].sort((a, b) => a.pageIndex - b.pageIndex);
+    const rawMerged = sortedPages
+      .map(p => p.result || '')
+      .filter(Boolean)
+      .join(' ');
+      
+    return rawMerged
+      .replace(/[*#_-]/g, '')
+      .replace(/[\n\r]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  useEffect(() => {
+    if (file?.isParentPdf) {
+      const merged = getPdfMergedNormalizedText();
+      setLocalText(merged);
+    } else {
+      setLocalText(file?.result || "");
+    }
+  }, [file?.id, file?.result, allFiles, file?.isParentPdf]);
 
   if (!file) {
     return (
@@ -51,7 +68,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   }
 
   const handleCopy = async () => {
-    if (isMultiImage) return; // Bỏ qua copy nhanh khi ocr nhiều ảnh hàng loạt
+    if (isMultiImage || file.isParentPdf) return;
     if (!localText) return;
     try {
       await navigator.clipboard.writeText(localText);
@@ -71,12 +88,34 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     }
   };
 
+  const downloadTxtFile = (text, fileName) => {
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportTxt = () => {
-    if (isMultiImage) {
+    if (parentPdf) {
+      const processedText = getPdfMergedNormalizedText();
+      if (!processedText) return;
+      
+      const originalName = parentPdf.originalFile?.name || parentPdf.name || 'tailieu_ocr.pdf';
+      const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+      const fileName = `${baseName}_gop.txt`;
+      
+      downloadTxtFile(processedText, fileName);
+    } else if (isMultiImage) {
       const processedText = getMergedNormalizedText();
       if (!processedText) return;
       
-      // Lấy tên của file ảnh đầu tiên trong danh sách và thêm hậu tố _gop_all.txt
       const firstImageFile = imageFiles[0];
       let fileName = "gop_all.txt";
       if (firstImageFile) {
@@ -85,17 +124,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
         fileName = `${baseName}_gop_all.txt`;
       }
       
-      const blob = new Blob([processedText], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadTxtFile(processedText, fileName);
     } else {
       if (!localText) return;
       
@@ -104,21 +133,12 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
       const fileName = `${baseName}.txt`;
       
-      const blob = new Blob([processedText], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadTxtFile(processedText, fileName);
     }
   };
 
   const handleChange = (e) => {
+    if (file.isParentPdf) return;
     setLocalText(e.target.value);
     if (onUpdateResult) {
       onUpdateResult(file.id, e.target.value);
@@ -131,7 +151,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
         <div className="flex items-center gap-2 overflow-hidden pr-2">
           <FileText size={16} className="text-primary shrink-0" />
           <h3 className="font-semibold text-sm text-on-surface truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
-            Kết quả: {file.originalFile?.name || 'Tài liệu'}
+            Kết quả: {file.originalFile?.name || file.name || 'Tài liệu'}
           </h3>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -147,14 +167,22 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           )}
           <button
             onClick={handleExportTxt}
-            disabled={isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error')}
+            disabled={
+              parentPdf
+                ? !hasPdfResult
+                : (isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error'))
+            }
             className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-semibold bg-primary text-on-primary rounded-xl hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in shadow-sm shadow-primary/10"
-            title={isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng"}
+            title={
+              parentPdf
+                ? "Xuất file TXT gộp các trang đã hoàn thành"
+                : (isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng")
+            }
           >
             <Download size={14} />
-            Xuất file {isMultiImage && "(Gộp)"}
+            Xuất file {(isMultiImage || parentPdf) && "(Gộp)"}
           </button>
-          {!isMultiImage && (
+          {!isMultiImage && !file.isParentPdf && (
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
@@ -180,13 +208,13 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
                 <AlertCircle size={24} />
               </div>
               <h4 className="font-bold text-base mb-2 text-on-surface">
-                {file.retryInfo.customMessage ? "Hệ thống đang tạm nghỉ" : "Google Gemini quá tải"}
+                {file.retryInfo.customMessage ? "Hệ thống đang chuyển Key" : "Google Gemini gặp lỗi"}
               </h4>
               <p className="text-xs text-secondary-fixed-variant mb-4 whitespace-pre-wrap font-mono bg-secondary-fixed/5 p-2.5 rounded-lg border border-secondary-fixed-dim/20 max-h-[150px] overflow-auto">
                 {file.retryInfo.errorMsg}
               </p>
               <div className="px-4 py-2 bg-secondary-fixed/20 border border-secondary-fixed-dim/30 rounded-full text-xs font-semibold text-secondary-fixed-variant">
-                {file.retryInfo.customMessage || `Thử lại lần ${file.retryInfo.attempt}/${file.retryInfo.maxAttempts} sau ${file.retryInfo.secondsLeft}s...`}
+                {file.retryInfo.customMessage || `Thử lại sau ${file.retryInfo.secondsLeft}s...`}
               </div>
             </div>
           ) : (
@@ -203,8 +231,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
         <textarea
           value={localText}
           onChange={handleChange}
-          placeholder="Chưa có dữ liệu trích xuất."
-          className="flex-1 w-full p-4 bg-surface-container-lowest text-on-surface placeholder-on-surface-variant/40 outline-none resize-none text-body-md leading-relaxed focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-t border-outline-variant/10"
+          readOnly={file.isParentPdf}
+          placeholder={file.isParentPdf ? "Chưa có trang nào hoàn thành OCR để hiển thị văn bản gộp." : "Chưa có dữ liệu trích xuất."}
+          className={`flex-1 w-full p-4 bg-surface-container-lowest text-on-surface placeholder-on-surface-variant/40 outline-none resize-none text-body-md leading-relaxed focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-t border-outline-variant/10 ${file.isParentPdf ? 'bg-slate-50 cursor-not-allowed' : ''}`}
         />
       )}
     </div>
