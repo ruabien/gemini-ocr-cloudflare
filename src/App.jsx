@@ -448,7 +448,7 @@ function App() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <span className="text-headline-md font-headline-md font-bold text-primary">ScanJoy</span>
+            <span className="text-headline-md font-headline-md font-bold text-primary">Text24</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
             <button 
@@ -488,88 +488,94 @@ function App() {
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto">
-            <ApiConfig onConfigChange={handleConfigChange} />
-          </div>
-
           {files.length === 0 ? (
-            <div className="max-w-md mx-auto">
-              <FileDropzone onFilesSelected={handleFilesSelected} />
+            <div className="flex flex-col gap-8">
+              <div className="max-w-md mx-auto w-full">
+                <FileDropzone onFilesSelected={handleFilesSelected} />
+              </div>
+              <div className="max-w-4xl mx-auto w-full">
+                <ApiConfig onConfigChange={handleConfigChange} />
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] text-left animate-in fade-in slide-in-from-bottom-4 duration-300">
-              
-              {/* Left Column: Dropzone + Queue */}
-              <div className="lg:col-span-5 flex flex-col gap-6">
-                <div className="bg-surface-container-lowest p-2 rounded-xl border border-outline-variant/30 shadow-sm">
-                  <FileDropzone onFilesSelected={handleFilesSelected} />
-                </div>
+            <div className="flex flex-col gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] text-left animate-in fade-in slide-in-from-bottom-4 duration-300">
                 
-                <div className="flex flex-col gap-4 bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/30 flex-1 max-h-[600px] overflow-hidden shadow-sm">
-                  <QueueList 
-                    files={files} 
-                    activeFileId={activeFileId} 
-                    onFileClick={setActiveFileId}
-                    onRemoveFile={handleRemoveFile}
-                  />
+                {/* Left Column: Dropzone + Queue */}
+                <div className="lg:col-span-5 flex flex-col gap-6">
+                  <div className="bg-surface-container-lowest p-2 rounded-xl border border-outline-variant/30 shadow-sm">
+                    <FileDropzone onFilesSelected={handleFilesSelected} />
+                  </div>
                   
-                  <div className="pt-4 mt-auto border-t border-outline-variant/20 shrink-0 space-y-4">
-                    {/* Page Range Selector */}
-                    {activeParentPdf && (
-                      <div className="bg-surface border border-outline-variant/40 rounded-xl p-3 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 text-on-surface select-none">
-                          <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Chọn dải trang</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5 text-xs font-medium">
-                            <span className="text-on-surface-variant">Từ trang:</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={activeParentPdf.totalPages || 1}
-                              value={fromPage}
-                              onChange={(e) => handleFromPageChange(e.target.value)}
-                              onBlur={handleFromPageBlur}
-                              disabled={isProcessing || activeParentPdf.status === 'splitting'}
-                              className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
-                            />
+                  <div className="flex flex-col gap-4 bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/30 flex-1 max-h-[600px] overflow-hidden shadow-sm">
+                    <QueueList 
+                      files={files} 
+                      activeFileId={activeFileId} 
+                      onFileClick={setActiveFileId}
+                      onRemoveFile={handleRemoveFile}
+                    />
+                    
+                    <div className="pt-4 mt-auto border-t border-outline-variant/20 shrink-0 space-y-4">
+                      {/* Page Range Selector */}
+                      {activeParentPdf && (
+                        <div className="bg-surface border border-outline-variant/40 rounded-xl p-3 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-2 text-on-surface select-none">
+                            <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Chọn dải trang</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs font-medium">
-                            <span className="text-on-surface-variant">Đến:</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={activeParentPdf.totalPages || 1}
-                              value={toPage}
-                              onChange={(e) => handleToPageChange(e.target.value)}
-                              onBlur={handleToPageBlur}
-                              disabled={isProcessing || activeParentPdf.status === 'splitting'}
-                              className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
-                            />
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 text-xs font-medium">
+                              <span className="text-on-surface-variant">Từ trang:</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={activeParentPdf.totalPages || 1}
+                                value={fromPage}
+                                onChange={(e) => handleFromPageChange(e.target.value)}
+                                onBlur={handleFromPageBlur}
+                                disabled={isProcessing || activeParentPdf.status === 'splitting'}
+                                className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs font-medium">
+                              <span className="text-on-surface-variant">Đến:</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={activeParentPdf.totalPages || 1}
+                                value={toPage}
+                                onChange={(e) => handleToPageChange(e.target.value)}
+                                onBlur={handleToPageBlur}
+                                disabled={isProcessing || activeParentPdf.status === 'splitting'}
+                                className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                    <button
-                      onClick={startOcrProcessing}
-                      disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
-                      className="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
-                      <span className="material-icons">auto_fix_high</span>
-                    </button>
+                      )}
+                      <button
+                        onClick={startOcrProcessing}
+                        disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
+                        className="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
+                        <span className="material-icons">auto_fix_high</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column: Result Viewer */}
-              <div className="lg:col-span-7 h-auto lg:h-[calc(100vh-140px)] sticky top-20">
-                <ResultViewer 
-                  file={activeFile} 
-                  allFiles={files} 
-                  onUpdateResult={handleUpdateResult} 
-                  onReset={handleReset}
-                />
+                {/* Right Column: Result Viewer */}
+                <div className="lg:col-span-7 h-auto lg:h-[calc(100vh-140px)] sticky top-20">
+                  <ResultViewer 
+                    file={activeFile} 
+                    allFiles={files} 
+                    onUpdateResult={handleUpdateResult} 
+                    onReset={handleReset}
+                  />
+                </div>
+              </div>
+              <div className="max-w-4xl mx-auto w-full">
+                <ApiConfig onConfigChange={handleConfigChange} />
               </div>
             </div>
           )}
@@ -578,7 +584,7 @@ function App() {
         {/* Section 2: Comparison */}
         <section id="so-sanh" className="w-full space-y-8 pt-10">
           <div className="text-center space-y-2">
-            <h2 className="text-headline-lg font-headline-lg text-primary">Tại sao nên chọn ScanJoy?</h2>
+            <h2 className="text-headline-lg font-headline-lg text-primary">Tại sao nên chọn Text24?</h2>
             <p className="text-on-surface-variant text-body-md font-medium">So sánh sự khác biệt vượt trội</p>
           </div>
 
@@ -588,7 +594,7 @@ function App() {
                 <span className="text-label-md font-bold text-error uppercase tracking-widest">Cách cũ (Truyền thống)</span>
               </div>
               <div className="text-center py-2 bg-tertiary-container/10 rounded-r-xl border border-outline-variant/30 border-l-0">
-                <span className="text-label-md font-bold text-tertiary uppercase tracking-widest">Giải pháp ScanJoy</span>
+                <span className="text-label-md font-bold text-tertiary uppercase tracking-widest">Giải pháp Text24</span>
               </div>
             </div>
 
@@ -733,7 +739,7 @@ function App() {
       {/* Footer */}
       <footer className="bg-surface-container-lowest dark:bg-inverse-surface py-12 border-t border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 text-center">
-          <p className="text-label-md text-on-surface-variant">© 2026 Gemini OCR Tiếng Việt</p>
+          <p className="text-label-md text-on-surface-variant">© 2026 Text24 - Gemini OCR Tiếng Việt</p>
         </div>
       </footer>
     </div>
