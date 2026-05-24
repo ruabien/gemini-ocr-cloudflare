@@ -239,7 +239,7 @@ export default function ApiConfig({ onConfigChange }) {
             <label className="text-xs font-bold text-on-surface-variant">Mô hình AI sử dụng:</label>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant/60 group-focus-within:text-primary">
-                <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+                <span className="material-icons text-[16px]">smart_toy</span>
               </div>
               <input
                 type="text"

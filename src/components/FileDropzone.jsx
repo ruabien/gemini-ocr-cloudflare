@@ -77,7 +77,7 @@ export default function FileDropzone({ onFilesSelected }) {
       
       <div className="flex flex-col items-center space-y-4">
         <div className="w-16 h-16 rounded-full bg-primary-container/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-          <span className="material-symbols-outlined text-4xl">cloud_upload</span>
+          <span className="material-icons text-4xl">cloud_upload</span>
         </div>
         <div className="space-y-1">
           <p className="font-headline-md text-headline-md text-on-surface">

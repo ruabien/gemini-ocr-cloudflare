@@ -161,7 +161,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-[#0b1c30] border border-slate-200 rounded-xl transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
               title="Làm mới toàn bộ hàng đợi và kết quả"
             >
-              <span className="material-symbols-outlined text-[14px] font-bold">refresh</span>
+              <span className="material-icons text-[14px] font-bold">refresh</span>
               <span>Làm mới</span>
             </button>
           )}

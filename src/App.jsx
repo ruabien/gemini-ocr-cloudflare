@@ -422,7 +422,6 @@ function App() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <span className="material-symbols-outlined text-primary text-headline-md">bubble_chart</span>
             <span className="text-headline-md font-headline-md font-bold text-primary">ScanJoy</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
@@ -446,7 +445,7 @@ function App() {
             </button>
           </nav>
           <div className="flex items-center md:hidden">
-            <button className="material-symbols-outlined text-on-surface-variant hover:text-secondary transition-colors duration-200">menu</button>
+            <button className="material-icons text-on-surface-variant hover:text-secondary transition-colors duration-200">menu</button>
           </div>
         </div>
       </header>
@@ -493,7 +492,6 @@ function App() {
                     {activeParentPdf && (
                       <div className="bg-surface border border-outline-variant/40 rounded-xl p-3 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2 text-on-surface select-none">
-                          <span className="material-symbols-outlined text-primary text-body-lg">menu_book</span>
                           <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Chọn dải trang</span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -532,7 +530,7 @@ function App() {
                       className="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
-                      <span className="material-symbols-outlined">auto_fix_high</span>
+                      <span className="material-icons">auto_fix_high</span>
                     </button>
                   </div>
                 </div>
@@ -573,7 +571,7 @@ function App() {
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>heart_broken</span>
+                    <span className="material-icons text-error shrink-0">heart_broken</span>
                     <div>
                       <p className="text-body-md text-on-surface-variant leading-relaxed">
                         Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi cặm cụi copy từng đoạn thủ công cực kỳ mất thời gian.
@@ -583,7 +581,7 @@ function App() {
                 </div>
                 <div className="p-5 bg-tertiary-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                    <span className="material-icons text-tertiary shrink-0">verified</span>
                     <div>
                       <p className="text-body-md text-on-surface leading-relaxed">
                         Hỗ trợ OCR hàng loạt thả ga, tự động xử lý mượt mà hàng chục file ảnh/PDF cùng một lúc nhờ hệ thống hàng đợi thông minh.
@@ -599,7 +597,7 @@ function App() {
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
+                    <span className="material-icons text-error shrink-0">cancel</span>
                     <div>
                       <p className="text-body-md text-on-surface-variant leading-relaxed">
                         Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng thực chất là chứa ảnh dán vào, không chỉnh sửa được.
@@ -609,7 +607,7 @@ function App() {
                 </div>
                 <div className="p-5 bg-tertiary-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <span className="material-icons text-tertiary shrink-0">check_circle</span>
                     <div>
                       <p className="text-body-md text-on-surface leading-relaxed">
                         Tự động dàn phẳng văn bản trên 1 dòng duy nhất (Single-line), xóa sạch ký tự rác và xuống dòng dư thừa, sẵn sàng copy-paste dùng ngay.
@@ -625,7 +623,7 @@ function App() {
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>payments</span>
+                    <span className="material-icons text-error shrink-0">payments</span>
                     <div>
                       <p className="text-body-md text-on-surface-variant leading-relaxed">
                         Ứng dụng nước ngoài nhận diện tiếng Việt không chuẩn, lại giới hạn số trang (1-2 trang) và ép nâng cấp gói trả phí đắt đỏ.
@@ -635,7 +633,7 @@ function App() {
                 </div>
                 <div className="p-5 bg-tertiary-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>all_inclusive</span>
+                    <span className="material-icons text-tertiary shrink-0">all_inclusive</span>
                     <div>
                       <p className="text-body-md text-on-surface leading-relaxed">
                         Tận dụng sức mạnh AI tối tân từ Gemini để tự động sửa lỗi chính tả theo ngữ cảnh, dùng API Key cá nhân miễn phí không lo giới hạn.
@@ -651,7 +649,7 @@ function App() {
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-error shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                    <span className="material-icons text-error shrink-0">warning</span>
                     <div>
                       <p className="text-body-md text-on-surface-variant leading-relaxed">
                         E ngại tài liệu tối mật của doanh nghiệp bị lưu trữ và rò rỉ trên máy chủ của bên thứ ba.
@@ -661,7 +659,7 @@ function App() {
                 </div>
                 <div className="p-5 bg-tertiary-container/5">
                   <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-tertiary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>shield_lock</span>
+                    <span className="material-icons text-tertiary shrink-0">security</span>
                     <div>
                       <p className="text-body-md text-on-surface leading-relaxed">
                         Cam kết bảo mật tuyệt đối với mô hình Zero-Server – toàn bộ file được xử lý trực tiếp trên trình duyệt, không một ai có thể đọc trộm.
@@ -690,7 +688,7 @@ function App() {
                     className="flex justify-between items-center p-5 cursor-pointer text-body-lg font-bold text-on-surface hover:text-primary hover:bg-primary-container/5 transition-colors focus:outline-none w-full text-left"
                   >
                     <span>{item.q}</span>
-                    <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`}>
+                    <span className={`material-icons transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`}>
                       expand_more
                     </span>
                   </button>
