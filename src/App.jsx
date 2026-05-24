@@ -450,8 +450,8 @@ function App() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <img 
-            src="/logo.svg" 
-            alt="Text24 Logo" 
+            src="/Logo_Doc.svg" 
+            alt="DOC Logo" 
             onClick={handleReset}
             className="h-8 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 select-none" 
           />
@@ -589,7 +589,7 @@ function App() {
         {/* Section 2: Comparison */}
         <section id="so-sanh" className="w-full space-y-8 pt-10">
           <div className="text-center space-y-2">
-            <h2 className="text-headline-lg font-headline-lg text-primary">Tại sao nên chọn Text24?</h2>
+            <h2 className="text-headline-lg font-headline-lg text-primary">Tại sao nên chọn DOC?</h2>
             <p className="text-on-surface-variant text-body-md font-medium">So sánh sự khác biệt vượt trội</p>
           </div>
 
@@ -599,7 +599,7 @@ function App() {
                 <span className="text-label-md font-bold text-error uppercase tracking-widest">Cách cũ (Truyền thống)</span>
               </div>
               <div className="text-center py-2 bg-tertiary-container/10 rounded-r-xl border border-outline-variant/30 border-l-0">
-                <span className="text-label-md font-bold text-tertiary uppercase tracking-widest">Giải pháp Text24</span>
+                <span className="text-label-md font-bold text-tertiary uppercase tracking-widest">Giải pháp DOC</span>
               </div>
             </div>
 
@@ -744,7 +744,7 @@ function App() {
       {/* Footer */}
       <footer className="bg-surface-container-lowest dark:bg-inverse-surface py-12 border-t border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 text-center">
-          <p className="text-label-md text-on-surface-variant">© 2026 Text24 - OCR Tiếng Việt Miễn Phí</p>
+          <p className="text-label-md text-on-surface-variant">© 2026 DOC. All rights reserved.</p>
         </div>
       </footer>
     </div>
