@@ -447,7 +447,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
       {/* TopAppBar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-outline-variant/30">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-[60px] flex items-center border-b border-outline-variant/30">
         <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <img 
             src="/logo.svg" 
@@ -481,7 +481,7 @@ function App() {
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-24 pb-12 space-y-16 flex-1 flex flex-col justify-start w-full">
+      <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-20 pb-12 space-y-16 flex-1 flex flex-col justify-start w-full">
         {/* Section 1: Hero & App */}
         <section id="cong-cu" className="w-full text-center space-y-8">
           <div className="space-y-4 animate-fade-in">
