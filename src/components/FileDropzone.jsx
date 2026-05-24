@@ -27,23 +27,39 @@ export default function FileDropzone({ onFilesSelected }) {
     setIsDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(e.dataTransfer.files);
+      const droppedFiles = e.dataTransfer.files;
+      // Dùng setTimeout giải phóng luồng chính lập tức
+      setTimeout(() => {
+        handleFiles(droppedFiles);
+      }, 0);
     }
   };
 
   const handleChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      handleFiles(e.target.files);
+      const selectedFiles = e.target.files;
+      // Dùng setTimeout để hộp thoại đóng ngay lập tức, không gây treo luồng vẽ chính
+      setTimeout(() => {
+        handleFiles(selectedFiles);
+      }, 0);
     }
   };
 
   const handleFiles = (fileList) => {
     const filesArray = Array.from(fileList);
-    const validFiles = filesArray.filter(file => 
-      file.type === 'image/jpeg' || 
-      file.type === 'image/png' || 
-      file.type === 'application/pdf'
-    );
+    const validFiles = filesArray.filter(file => {
+      const type = file.type || '';
+      const name = (file.name || '').toLowerCase();
+      return (
+        type === 'image/jpeg' || 
+        type === 'image/png' || 
+        type === 'application/pdf' ||
+        name.endsWith('.jpg') ||
+        name.endsWith('.jpeg') ||
+        name.endsWith('.png') ||
+        name.endsWith('.pdf')
+      );
+    });
     
     if (validFiles.length > 0 && onFilesSelected) {
       onFilesSelected(validFiles);
@@ -91,7 +107,7 @@ export default function FileDropzone({ onFilesSelected }) {
         type="file"
         ref={fileInputRef}
         onChange={handleChange}
-        accept=".jpg,.jpeg,.png,.pdf"
+        accept=".pdf, .jpg, .jpeg, .png"
         multiple
         className="hidden"
       />
