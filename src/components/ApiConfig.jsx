@@ -23,6 +23,13 @@ export default function ApiConfig({ onConfigChange }) {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const dismissTimerRef = useRef(null);
 
+  // UX & Bảo mật: Kiểm tra trạng thái đã Lưu và trạng thái Focus của ô nhập
+  const [isSaved, setIsSaved] = useState(() => {
+    const saved = localStorage.getItem('ocr_api_key') || '';
+    return saved !== '';
+  });
+  const [isFocused, setIsFocused] = useState(false);
+
   // Dọn dẹp timer khi component bị hủy (unmount) tránh rò rỉ bộ nhớ
   useEffect(() => {
     return () => {
@@ -33,7 +40,6 @@ export default function ApiConfig({ onConfigChange }) {
   }, []);
 
   useEffect(() => {
-    // Chỉ kích hoạt callback cấu hình khi API Key và Model khớp dữ liệu đã lưu
     const savedKey = localStorage.getItem('ocr_api_key') || '';
     const savedModel = localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
     if (apiKey === savedKey && modelName === savedModel && onConfigChange) {
@@ -52,8 +58,23 @@ export default function ApiConfig({ onConfigChange }) {
     }
   }, [showToast]);
 
+  // Tạo mặt nạ che giấu Key nhạy cảm
+  const getMaskedKeyString = (rawKeys) => {
+    if (!rawKeys) return '';
+    return rawKeys
+      .split(',')
+      .map(k => {
+        const trimmed = k.trim();
+        if (trimmed.length === 0) return '';
+        if (trimmed.length <= 8) return '*'.repeat(trimmed.length);
+        return `${trimmed.substring(0, 6)}${'*'.repeat(trimmed.length - 10)}${trimmed.substring(trimmed.length - 4)}`;
+      })
+      .join(', ');
+  };
+
   const handleKeyChange = (val) => {
     setApiKey(val);
+    setIsSaved(false); // Đánh dấu là chưa lưu khi người dùng chỉnh sửa
     const saved = localStorage.getItem('ocr_api_key') || '';
     if (val.trim() === saved.trim() && saved.trim() !== '') {
       setIsValidated(true);
@@ -61,7 +82,6 @@ export default function ApiConfig({ onConfigChange }) {
       setIsValidated(false);
     }
 
-    // Đặt lại trạng thái mờ dần và tắt bộ đếm ngay khi có thay đổi nhập liệu
     if (dismissTimerRef.current) {
       clearTimeout(dismissTimerRef.current);
     }
@@ -77,8 +97,6 @@ export default function ApiConfig({ onConfigChange }) {
       // Giữ nguyên
     } else {
       setIsValidated(false);
-
-      // Đặt lại trạng thái mờ dần và tắt bộ đếm ngay khi mô hình thay đổi
       if (dismissTimerRef.current) {
         clearTimeout(dismissTimerRef.current);
       }
@@ -96,7 +114,6 @@ export default function ApiConfig({ onConfigChange }) {
       return;
     }
 
-    // Tắt hiệu ứng mờ dần và hủy timer cũ trước lượt kiểm tra mới
     if (dismissTimerRef.current) {
       clearTimeout(dismissTimerRef.current);
     }
@@ -165,7 +182,6 @@ export default function ApiConfig({ onConfigChange }) {
       setIsValidated(true);
       setValidationMessage(`🎉 Đã xác thực thành công ${validCount} key hoạt động tốt. Bạn có thể lưu cấu hình để bắt đầu sử dụng.`);
       
-      // Kích hoạt Timer biến mất sau 7 giây nếu xác thực thành công ít nhất 1 Key
       if (dismissTimerRef.current) {
         clearTimeout(dismissTimerRef.current);
       }
@@ -181,6 +197,7 @@ export default function ApiConfig({ onConfigChange }) {
   const handleSaveKey = () => {
     localStorage.setItem('ocr_api_key', apiKey);
     localStorage.setItem('ocr_model', modelName);
+    setIsSaved(true); // Đánh dấu đã lưu thành công
     setIsValidated(true);
     setShowToast(true);
     if (onConfigChange) {
@@ -194,18 +211,7 @@ export default function ApiConfig({ onConfigChange }) {
 
   return (
     <div className="bg-surface-container-lowest border border-outline-variant/30 w-full rounded-xl shadow-[0_4px_20px_rgba(0,88,190,0.02)] overflow-hidden">
-      <div className="p-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-2 text-on-surface select-none">
-          <div className="p-2 bg-surface text-primary border border-outline-variant/30 rounded-xl">
-            <KeyRound size={18} />
-          </div>
-          <div className="text-left">
-            <h2 className="font-bold text-sm tracking-tight text-on-surface">Cấu hình API & Mô hình AI</h2>
-            <p className="text-[10px] text-on-surface-variant/70 font-medium">Nhập danh sách API Key và tên mô hình AI Google để xử lý OCR</p>
-          </div>
-        </div>
-
+      <div className="p-4">
         {/* Inputs & Buttons Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
           {/* API Key list field */}
@@ -218,8 +224,10 @@ export default function ApiConfig({ onConfigChange }) {
               <input
                 type="text"
                 placeholder="Nhập các key cách nhau bằng dấu phẩy"
-                value={apiKey}
+                value={isFocused ? apiKey : (isSaved ? getMaskedKeyString(apiKey) : apiKey)}
                 onChange={(e) => handleKeyChange(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
                 disabled={isChecking}
                 className="w-full h-10 pl-9 pr-3 bg-white border border-outline-variant/60 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-on-surface placeholder-on-surface-variant/50 disabled:opacity-50"
               />
