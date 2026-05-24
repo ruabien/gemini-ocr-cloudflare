@@ -217,10 +217,6 @@ function App() {
       alert("Vui lòng cấu hình API Key ở phía trên cùng trước khi bắt đầu.");
       return;
     }
-    if (!config.workerUrl) {
-      alert("Vui lòng cấu hình Cloudflare Worker URL ở phía trên cùng trước khi bắt đầu.");
-      return;
-    }
 
     const keysArray = config.apiKey.split(',').map(k => k.trim()).filter(Boolean);
     if (keysArray.length === 0) {
@@ -340,7 +336,7 @@ function App() {
 
           let displayError = error.message;
           if (error.message === 'Load failed' || error.name === 'TypeError') {
-            displayError = 'Lỗi kết nối máy chủ (CORS/Network Error trên Mobile). Hãy kiểm tra lại cấu hình phản hồi của Cloudflare Worker.';
+            displayError = 'Lỗi kết nối trực tiếp máy chủ Google (CORS/Network Error trên Mobile). Hãy kiểm tra kết nối mạng và tính hợp lệ của API Key.';
           }
 
           // Bắt lỗi 429 / 403 / Hạn mức / Quá giới hạn

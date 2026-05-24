@@ -1,48 +1,123 @@
 /**
- * Hàm gọi Cloudflare Worker để chạy OCR với cơ chế stream nhận dữ liệu thời gian thực
+ * Helper to convert file to base64 string
+ * @param {File} file 
+ * @returns {Promise<string>}
+ */
+const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
+/**
+ * Hàm gọi trực tiếp API Google Gemini từ Client để chạy OCR (Direct Client-Side Fetch)
+ * Giúp giải phóng hoàn toàn gánh nặng CORS và hạn mức payload trên Cloudflare Worker.
  * @param {File} file - File ảnh hoặc PDF thô
  * @param {string} apiKey - API Key Gemini của người dùng
- * @param {string} modelName - Tên Model (ví dụ: gemini-1.5-flash)
- * @param {string} workerUrl - URL của Cloudflare Worker Backend
- * @param {Function} onEvent - Callback nhận các sự kiện stream (init, page_start, page_retry, page_complete, page_error, complete)
+ * @param {string} modelName - Tên Model (ví dụ: gemini-2.5-flash)
+ * @param {string} workerUrl - (Bỏ qua/Không dùng)
  * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
 export const processOCR = async (file, apiKey, modelName, workerUrl) => {
-  if (!workerUrl) throw new Error("Vui lòng cấu hình địa chỉ Cloudflare Worker URL ở phía trên.");
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
-  // Chuẩn hoá URL của Worker
-  let targetUrl = workerUrl.trim();
-  if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-    targetUrl = 'https://' + targetUrl;
+  const fileName = file.name || '';
+  let fileType = file.type || '';
+  
+  if (!fileType) {
+    if (fileName.toLowerCase().endsWith('.pdf')) {
+      fileType = 'application/pdf';
+    } else if (fileName.toLowerCase().endsWith('.png')) {
+      fileType = 'image/png';
+    } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+      fileType = 'image/jpeg';
+    } else {
+      fileType = 'application/octet-stream';
+    }
   }
 
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('apiKey', apiKey);
-  formData.append('model', modelName);
+  // Chuyển file sang Base64
+  const base64Data = await fileToBase64(file);
 
-  const response = await fetch(targetUrl, {
+  // Gọi trực tiếp đến Google Gemini API
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: "Hãy OCR và bóc tách toàn bộ văn bản của file PDF này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy." },
+          {
+            inlineData: {
+              mimeType: fileType,
+              data: base64Data
+            }
+          }
+        ]
+      }],
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_NONE"
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_NONE"
+        }
+      ]
+    })
   });
 
-  let data;
-  try {
-    data = await response.json();
-  } catch (e) {
-    const err = new Error(`Phản hồi từ Worker không hợp lệ hoặc không phải JSON (HTTP ${response.status}).`);
+  if (!response.ok) {
+    let errorMsg = `HTTP ${response.status}`;
+    try {
+      const errData = await response.json();
+      errorMsg = errData?.error?.message || errorMsg;
+    } catch {}
+    const err = new Error(errorMsg);
     err.status = response.status;
     throw err;
   }
 
-  if (!response.ok || (data && data.error)) {
-    const errMsg = (data && data.error) || `Lỗi hệ thống Worker (HTTP ${response.status}).`;
-    const err = new Error(errMsg);
-    err.status = response.status;
+  const data = await response.json();
+  const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  
+  if (textResult === undefined || textResult === null) {
+    const finishReason = data.candidates?.[0]?.finishReason;
+    const blockReason = data.promptFeedback?.blockReason;
+    const safetyRatings = data.candidates?.[0]?.safetyRatings;
+    
+    let detailedError = 'Google API không trả về kết quả văn bản.';
+    if (finishReason) {
+      detailedError += ` (FinishReason: ${finishReason})`;
+    }
+    if (blockReason) {
+      detailedError += ` (BlockReason: ${blockReason})`;
+    }
+    if (safetyRatings) {
+      const blockedRatings = safetyRatings.filter(r => r.probability && r.probability !== 'NEGLIGIBLE');
+      if (blockedRatings.length > 0) {
+        detailedError += ` (SafetyRatings: ${blockedRatings.map(r => `${r.category}:${r.probability}`).join(', ')})`;
+      }
+    }
+    const err = new Error(detailedError);
+    err.status = 400;
     throw err;
   }
 
-  return data.text || '';
+  return textResult;
 };
-
