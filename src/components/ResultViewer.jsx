@@ -14,28 +14,19 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
 
   const getCleanLine = (text) => {
     if (!text) return "";
-    return text
-      .replace(/[*#_-]/g, '') // Loại bỏ markdown *, #, -, _
-      .replace(/[\n\r]+/g, ' ') // Thay dấu xuống dòng bằng khoảng trắng
-      .replace(/\s+/g, ' ') // Thu gọn nhiều khoảng trắng liên tiếp
-      .trim();
+    return text.trim();
   };
 
   const getMergedNormalizedText = () => {
     return imageFiles
       .map(d => {
         if (d.status === 'error') {
-          return `\n\n--- [CẢNH BÁO: File ${d.name} bị lỗi OCR, không có dữ liệu văn bản] ---\n\n`;
+          return `--- [CẢNH BÁO: File ${d.name} bị lỗi OCR, không có dữ liệu văn bản] ---`;
         }
-        const text = d.result || '';
-        return text
-          .replace(/[*#_-]/g, '')
-          .replace(/[\n\r]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
+        return (d.result || '').trim();
       })
       .filter(Boolean)
-      .join(' ');
+      .join('\n\n');
   };
 
   const getPdfMergedNormalizedText = () => {
@@ -44,17 +35,12 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     return sortedPages
       .map(p => {
         if (p.status === 'error') {
-          return `\n\n--- [CẢNH BÁO: File ${p.name} bị lỗi OCR, không có dữ liệu văn bản] ---\n\n`;
+          return `--- [CẢNH BÁO: File ${p.name} bị lỗi OCR, không có dữ liệu văn bản] ---`;
         }
-        const text = p.result || '';
-        return text
-          .replace(/[*#_-]/g, '')
-          .replace(/[\n\r]+/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
+        return (p.result || '').trim();
       })
       .filter(Boolean)
-      .join(' ');
+      .join('\n\n');
   };
 
   useEffect(() => {

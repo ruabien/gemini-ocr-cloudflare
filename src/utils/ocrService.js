@@ -52,7 +52,7 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
     body: JSON.stringify({
       contents: [{
         parts: [
-          { text: "Hãy OCR và bóc tách toàn bộ văn bản của file PDF này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy." },
+          { text: "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. Keep the exact layout, paragraphs, and original content." },
           {
             inlineData: {
               mimeType: fileType,
@@ -61,6 +61,11 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
           }
         ]
       }],
+      systemInstruction: {
+        parts: [
+          { text: "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. Keep the exact layout, paragraphs, and original content." }
+        ]
+      },
       safetySettings: [
         {
           category: "HARM_CATEGORY_HARASSMENT",
