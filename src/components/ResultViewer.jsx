@@ -22,31 +22,39 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   };
 
   const getMergedNormalizedText = () => {
-    const rawMerged = imageFiles
-      .map(d => d.result || '')
+    return imageFiles
+      .map(d => {
+        if (d.status === 'error') {
+          return `\n\n--- [CẢNH BÁO: File ${d.name} bị lỗi OCR, không có dữ liệu văn bản] ---\n\n`;
+        }
+        const text = d.result || '';
+        return text
+          .replace(/[*#_-]/g, '')
+          .replace(/[\n\r]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      })
       .filter(Boolean)
       .join(' ');
-    
-    return rawMerged
-      .replace(/[*#_-]/g, '')
-      .replace(/[\n\r]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
   };
 
   const getPdfMergedNormalizedText = () => {
     if (!parentPdf) return "";
     const sortedPages = [...pdfPages].sort((a, b) => a.pageIndex - b.pageIndex);
-    const rawMerged = sortedPages
-      .map(p => p.result || '')
+    return sortedPages
+      .map(p => {
+        if (p.status === 'error') {
+          return `\n\n--- [CẢNH BÁO: File ${p.name} bị lỗi OCR, không có dữ liệu văn bản] ---\n\n`;
+        }
+        const text = p.result || '';
+        return text
+          .replace(/[*#_-]/g, '')
+          .replace(/[\n\r]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      })
       .filter(Boolean)
       .join(' ');
-      
-    return rawMerged
-      .replace(/[*#_-]/g, '')
-      .replace(/[\n\r]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
   };
 
   useEffect(() => {
