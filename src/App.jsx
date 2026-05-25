@@ -300,85 +300,114 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       let success = false;
-      let attemptCount = 0;
-      const maxRetries = 3;
+      let keysTriedForThisFile = 0;
+      const maxRetriesPerKey = 3;
 
-      while (!success && attemptCount <= maxRetries && processingRef.current) {
+      while (!success && keysTriedForThisFile < keysArray.length && processingRef.current) {
         const activeKey = keysArray[currentKeyIndex];
-        try {
-          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
-            ...f, 
-            progress: Math.min(90, 20 + attemptCount * 20) 
-          } : f));
+        let attemptCount = 0;
 
-          const textResult = await processOCR(
-            fileToProcess.originalFile,
-            activeKey,
-            config.model || 'gemini-2.5-flash',
-            config.workerUrl
-          );
+        while (!success && attemptCount <= maxRetriesPerKey && processingRef.current) {
+          try {
+            setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
+              ...f, 
+              progress: Math.min(90, 20 + attemptCount * 20) 
+            } : f));
 
-          if (!processingRef.current) return;
+            const textResult = await processOCR(
+              fileToProcess.originalFile,
+              activeKey,
+              config.model || 'gemini-2.5-flash',
+              config.workerUrl
+            );
 
-          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-            ...f,
-            status: 'completed',
-            progress: 100,
-            result: textResult,
-            retryInfo: null,
-            error: null
-          } : f));
+            if (!processingRef.current) return;
 
-          success = true;
-
-        } catch (error) {
-          if (!processingRef.current) return;
-
-          console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}, Lần thử: ${attemptCount + 1}):`, error);
-
-          let displayError = error.message;
-          if (error.message === 'Load failed' || error.name === 'TypeError') {
-            displayError = 'Lỗi kết nối trực tiếp máy chủ Google (CORS/Network Error trên Mobile). Hãy kiểm tra kết nối mạng và tính hợp lệ của API Key.';
-          }
-
-          attemptCount++;
-
-          if (attemptCount > maxRetries) {
-            // Đã hết 3 lần tự động thử lại, chuyển sang trạng thái lỗi chính thức
             setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
               ...f,
-              status: 'error',
-              progress: 0,
-              error: `Đã tự động thử lại ${maxRetries} lần nhưng vẫn thất bại: ${displayError}`,
-              retryInfo: null
+              status: 'completed',
+              progress: 100,
+              result: textResult,
+              retryInfo: null,
+              error: null
             } : f));
-            break;
-          }
 
-          // Xoay Key tiếp theo nếu có nhiều key để chia sẻ tải trọng
+            success = true;
+
+          } catch (error) {
+            if (!processingRef.current) return;
+
+            console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}, Lần thử: ${attemptCount + 1}):`, error);
+
+            let displayError = error.message;
+            if (error.message === 'Load failed' || error.name === 'TypeError') {
+              displayError = 'Lỗi kết nối trực tiếp máy chủ Google (CORS/Network Error trên Mobile). Hãy kiểm tra kết nối mạng và tính hợp lệ của API Key.';
+            }
+
+            attemptCount++;
+
+            if (attemptCount > maxRetriesPerKey) {
+              // Hết số lần thử với Key này
+              break;
+            }
+
+            // Trì hoãn tăng dần: Lần 1 = 2s, Lần 2 = 4s, Lần 3 = 6s
+            const delaySeconds = attemptCount * 2;
+            const customMessage = `Lỗi xảy ra. Đang tự động thử lại lần ${attemptCount}/${maxRetriesPerKey} với Key hiện tại...`;
+
+            for (let sec = delaySeconds; sec > 0; sec--) {
+              if (!processingRef.current) return;
+              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                ...f,
+                status: 'processing',
+                retryInfo: {
+                  customMessage: customMessage,
+                  errorMsg: displayError,
+                  attempt: attemptCount,
+                  maxAttempts: maxRetriesPerKey,
+                  secondsLeft: sec
+                }
+              } : f));
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+
+        if (success) {
+          break;
+        }
+
+        keysTriedForThisFile++;
+
+        if (keysTriedForThisFile < keysArray.length) {
+          // Còn Key dự phòng, xoay sang Key tiếp theo và thử lại ngay lập tức
+          const oldKeyIndex = currentKeyIndex;
           currentKeyIndex = (currentKeyIndex + 1) % keysArray.length;
           
-          // Trì hoãn tăng dần: Lần 1 = 2s, Lần 2 = 4s, Lần 3 = 6s
-          const delaySeconds = attemptCount * 2;
-          const customMessage = keysArray.length > 1 
-            ? `Lỗi xảy ra. Đang chuyển sang Key dự phòng và thử lại lần ${attemptCount}/${maxRetries}...`
-            : `Lỗi xảy ra. Đang tự động thử lại lần ${attemptCount}/${maxRetries}...`;
-
-          for (let sec = delaySeconds; sec > 0; sec--) {
-            if (!processingRef.current) return;
-            setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-              ...f,
-              status: 'processing',
-              retryInfo: {
-                customMessage: customMessage,
-                errorMsg: displayError,
-                attempt: attemptCount,
-                maxAttempts: maxRetries,
-                secondsLeft: sec
-              }
-            } : f));
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+          console.warn(`Key Index ${oldKeyIndex} thất bại. Chuyển sang Key Index ${currentKeyIndex} dự phòng...`);
+          
+          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+            ...f,
+            status: 'processing',
+            retryInfo: {
+              customMessage: `Key lỗi. Đang đổi sang Key dự phòng (${keysTriedForThisFile + 1}/${keysArray.length})...`,
+              errorMsg: `Chuyển khóa tự động không trì hoãn.`,
+              attempt: 0,
+              maxAttempts: maxRetriesPerKey,
+              secondsLeft: 1
+            }
+          } : f));
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+          // Thử hết tất cả các Key và đều thất bại
+          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+            ...f,
+            status: 'error',
+            progress: 0,
+            error: `Đã thử hết cả ${keysArray.length} Keys nhưng đều thất bại. Hãy kiểm tra kết nối mạng hoặc tính hợp lệ của API Keys.`,
+            retryInfo: null
+          } : f));
         }
       }
 
