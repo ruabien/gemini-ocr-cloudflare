@@ -216,7 +216,7 @@ function App() {
 
   const startOcrProcessing = async () => {
     if (!config || !config.apiKey) {
-      alert("Vui lòng cấu hình API Key ở phía trên cùng trước khi bắt đầu.");
+      alert("Vui lòng cấu hình API Key ở phía dưới trước khi bắt đầu.");
       return;
     }
 
