@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && npm run build --prefix faq",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
