@@ -507,7 +507,7 @@ function App() {
             className="h-8 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 select-none" 
           />
           <a
-            href="https://doc.hotro.online/faq"
+            href="/faq"
             className="flex items-center gap-1.5 px-4 py-2 text-xs md:text-sm font-bold bg-primary text-on-primary rounded-full hover:bg-primary-container transition-all duration-300 shadow-md shadow-primary/10 active:scale-95 select-none"
           >
             <span>📑 Xem cách hoạt động</span>

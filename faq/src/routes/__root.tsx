@@ -72,14 +72,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "DOC — Số hóa tài liệu PDF & Ảnh bằng AI trong 3 giây" },
+      { name: "description", content: "DOC dùng OCR AI Gemini để biến PDF, ảnh chụp, hóa đơn, hồ sơ pháp lý thành văn bản số chỉnh sửa được, chính xác 99%, miễn phí trọn đời." },
+      { name: "author", content: "DOC" },
+      { property: "og:title", content: "DOC — Số hóa tài liệu PDF & Ảnh bằng AI" },
+      { property: "og:description", content: "Số hóa tài liệu chính xác 99% bằng OCR AI. Miễn phí trọn đời. Bảo mật tuyệt đối." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
