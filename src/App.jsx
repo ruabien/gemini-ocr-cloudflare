@@ -10,6 +10,18 @@ import { compressImageIfNeeded } from './utils/imageCompressor';
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
+const getFallbackModel = (currentModel) => {
+  if (!currentModel) return 'gemini-2.5-flash';
+  const modelLower = currentModel.toLowerCase();
+  if (modelLower.includes('pro')) {
+    return currentModel.replace(/pro/i, 'flash');
+  }
+  if (modelLower.includes('1.5')) {
+    return 'gemini-1.5-flash';
+  }
+  return 'gemini-2.5-flash';
+};
+
 function App() {
   const [config, setConfig] = useState(null);
   const [files, setFiles] = useState([]);
@@ -304,6 +316,7 @@ function App() {
       let success = false;
       let keysTriedForThisFile = 0;
       const maxRetriesPerKey = 3;
+      let currentModel = config.model || 'gemini-2.5-flash';
 
       while (!success && keysTriedForThisFile < keysArray.length && processingRef.current) {
         const activeKey = keysArray[currentKeyIndex];
@@ -319,7 +332,7 @@ function App() {
             const textResult = await processOCR(
               fileToProcess.originalFile,
               activeKey,
-              config.model || 'gemini-2.5-flash',
+              currentModel,
               config.workerUrl
             );
 
@@ -340,6 +353,25 @@ function App() {
             if (!processingRef.current) return;
 
             console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}, Lần thử: ${attemptCount + 1}):`, error);
+
+            if (error.finishReason === 'RECITATION' || error.message === 'RECITATION') {
+              const fallbackModel = getFallbackModel(currentModel);
+              if (fallbackModel !== currentModel) {
+                console.warn(`Phát hiện lỗi bộ lọc RECITATION. Tự động hạ cấp mô hình từ ${currentModel} sang ${fallbackModel} và thử lại ngay lập tức.`);
+                currentModel = fallbackModel;
+                continue;
+              } else {
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  status: 'error',
+                  progress: 0,
+                  error: `Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google Gemini chặn tài liệu này.`,
+                  retryInfo: null
+                } : f));
+                keysTriedForThisFile = keysArray.length;
+                break;
+              }
+            }
 
             let displayError = error.message;
             if (error.message === 'Load failed' || error.name === 'TypeError') {
