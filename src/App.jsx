@@ -8,6 +8,8 @@ import { processOCR } from './utils/ocrService';
 import { splitPdfToImages } from './utils/pdfProcessor';
 import { compressImageIfNeeded } from './utils/imageCompressor';
 
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 function App() {
   const [config, setConfig] = useState(null);
   const [files, setFiles] = useState([]);
@@ -273,7 +275,7 @@ function App() {
       return f;
     }));
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await delay(100);
 
     let currentKeyIndex = 0;
 
@@ -297,7 +299,7 @@ function App() {
         retryInfo: null
       } : f));
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await delay(50);
 
       let success = false;
       let keysTriedForThisFile = 0;
@@ -368,7 +370,7 @@ function App() {
                   secondsLeft: sec
                 }
               } : f));
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await delay(1000);
             }
           }
         }
@@ -398,7 +400,7 @@ function App() {
             }
           } : f));
           
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await delay(500);
         } else {
           // Thử hết tất cả các Key và đều thất bại
           setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
@@ -413,7 +415,7 @@ function App() {
 
       if (processingRef.current) {
         // Nghỉ nhẹ giữa các trang để an toàn
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await delay(1500);
         await processNext();
       }
     };
