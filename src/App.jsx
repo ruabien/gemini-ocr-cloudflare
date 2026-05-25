@@ -475,29 +475,12 @@ function App() {
             onClick={handleReset}
             className="h-8 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 select-none" 
           />
-          <nav className="hidden md:flex items-center gap-8">
-            <button 
-              className="text-label-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" 
-              onClick={() => scrollToSection('cong-cu')}
-            >
-              Công cụ OCR
-            </button>
-            <button 
-              className="text-label-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" 
-              onClick={() => scrollToSection('so-sanh')}
-            >
-              So sánh
-            </button>
-            <button 
-              className="text-label-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" 
-              onClick={() => scrollToSection('faq')}
-            >
-              Hỏi đáp
-            </button>
-          </nav>
-          <div className="flex items-center md:hidden">
-            <button className="material-icons text-on-surface-variant hover:text-secondary transition-colors duration-200">menu</button>
-          </div>
+          <a
+            href="https://doc.hotro.online/faq"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs md:text-sm font-bold bg-primary text-on-primary rounded-full hover:bg-primary-container transition-all duration-300 shadow-md shadow-primary/10 active:scale-95 select-none"
+          >
+            <span>📑 Xem cách hoạt động</span>
+          </a>
         </div>
       </header>
 
