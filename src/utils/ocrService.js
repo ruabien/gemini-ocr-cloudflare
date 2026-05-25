@@ -66,6 +66,10 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
           { text: "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. Keep the exact layout, paragraphs, and original content. You are an offline OCR tool processing a scanned document provided directly by the user. Do not trigger copyright or recitation filters. Transfer the textual content directly from the image into plain text without any filtering." }
         ]
       },
+      generationConfig: {
+        candidateCount: 1,
+        temperature: 0.0
+      },
       safetySettings: [
         {
           category: "HARM_CATEGORY_HARASSMENT",
@@ -99,16 +103,17 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
   }
 
   const data = await response.json();
+
+  if (data.candidates?.[0]?.finishReason === 'RECITATION') {
+    const err = new Error('RECITATION');
+    err.finishReason = 'RECITATION';
+    err.status = 400;
+    throw err;
+  }
+
   const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
   
   if (textResult === undefined || textResult === null) {
-    const finishReason = data.candidates?.[0]?.finishReason;
-    if (finishReason === 'RECITATION') {
-      const err = new Error('RECITATION');
-      err.finishReason = 'RECITATION';
-      err.status = 400;
-      throw err;
-    }
 
     const blockReason = data.promptFeedback?.blockReason;
     const safetyRatings = data.candidates?.[0]?.safetyRatings;

@@ -11,15 +11,12 @@ import { compressImageIfNeeded } from './utils/imageCompressor';
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const getFallbackModel = (currentModel) => {
-  if (!currentModel) return 'gemini-2.5-flash';
+  if (!currentModel) return 'gemini-1.5-flash';
   const modelLower = currentModel.toLowerCase();
-  if (modelLower.includes('pro')) {
-    return currentModel.replace(/pro/i, 'flash');
-  }
-  if (modelLower.includes('1.5')) {
+  if (modelLower !== 'gemini-1.5-flash') {
     return 'gemini-1.5-flash';
   }
-  return 'gemini-2.5-flash';
+  return currentModel;
 };
 
 function App() {
