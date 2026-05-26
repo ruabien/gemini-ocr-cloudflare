@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="vi" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>DOC — Số hóa tài liệu PDF & Ảnh bằng AI trong 3 giây</title>
+  <meta name="description" content="DOC dùng OCR AI Gemini để biến PDF, ảnh chụp, hóa đơn, hồ sơ pháp lý thành văn bản số chỉnh sửa được, chính xác 99%, miễn phí trọn đời.">
+  
+  <!-- Tailwind CSS & FontAwesome CDNs -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            border: 'var(--border)',
+            input: 'var(--input)',
+            ring: 'var(--ring)',
+            background: 'var(--background)',
+            foreground: 'var(--foreground)',
+            primary: {
+              DEFAULT: 'var(--primary)',
+              foreground: 'var(--primary-foreground)',
+            },
+            secondary: {
+              DEFAULT: 'var(--secondary)',
+              foreground: 'var(--secondary-foreground)',
+            },
+            destructive: {
+              DEFAULT: 'var(--destructive)',
+              foreground: 'var(--destructive-foreground)',
+            },
+            muted: {
+              DEFAULT: 'var(--muted)',
+              foreground: 'var(--muted-foreground)',
+            },
+            accent: {
+              DEFAULT: 'var(--accent)',
+              foreground: 'var(--accent-foreground)',
+            },
+            popover: {
+              DEFAULT: 'var(--popover)',
+              foreground: 'var(--popover-foreground)',
+            },
+            card: {
+              DEFAULT: 'var(--card)',
+              foreground: 'var(--card-foreground)',
+            },
+            success: {
+              DEFAULT: 'var(--success)',
+              foreground: 'var(--success-foreground)',
+            },
+            surface: 'var(--surface)',
+          },
+          borderRadius: {
+            lg: 'var(--radius)',
+            md: 'calc(var(--radius) - 2px)',
+            sm: 'calc(var(--radius) - 4px)',
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --radius: 0.75rem;
+
+      --background: oklch(0.985 0.005 250);
+      --surface: oklch(0.975 0.008 250);
+      --foreground: oklch(0.22 0.04 255);
+
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.22 0.04 255);
+      --popover: oklch(1 0 0);
+      --popover-foreground: oklch(0.22 0.04 255);
+
+      --primary: oklch(0.52 0.18 258);
+      --primary-foreground: oklch(0.99 0 0);
+      --primary-soft: oklch(0.95 0.04 258);
+
+      --secondary: oklch(0.96 0.01 255);
+      --secondary-foreground: oklch(0.25 0.04 255);
+
+      --muted: oklch(0.96 0.008 255);
+      --muted-foreground: oklch(0.5 0.03 255);
+
+      --accent: oklch(0.95 0.04 258);
+      --accent-foreground: oklch(0.35 0.15 258);
+
+      --success: oklch(0.68 0.18 152);
+      --success-foreground: oklch(0.99 0 0);
+      --success-soft: oklch(0.94 0.07 152);
+
+      --destructive: oklch(0.58 0.22 27);
+      --destructive-foreground: oklch(0.99 0 0);
+
+      --border: oklch(0.92 0.01 255);
+      --input: oklch(0.92 0.01 255);
+      --ring: oklch(0.52 0.18 258);
+    }
+
+    * {
+      border-color: var(--border);
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% {
+        box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 55%, transparent);
+      }
+      50% {
+        box-shadow: 0 0 0 14px color-mix(in oklab, var(--primary) 0%, transparent);
+      }
+    }
+    @keyframes float-soft {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-pulse-glow { animation: pulse-glow 2s ease-out infinite; }
+    .animate-float { animation: float-soft 4s ease-in-out infinite; }
+    .animate-fade-up { animation: fade-up 0.7s ease-out both; }
+
+    .bg-grid {
+      background-image:
+        linear-gradient(to right, color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px),
+        linear-gradient(to bottom, color-mix(in oklab, var(--primary) 8%, transparent) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
+    }
+
+    /* shadow effects */
+    .shadow-elegant {
+      box-shadow: 0 20px 50px -20px color-mix(in oklab, var(--primary) 25%, transparent);
+    }
+    .shadow-soft {
+      box-shadow: 0 8px 24px -12px color-mix(in oklab, var(--primary) 18%, transparent);
+    }
+
+    /* Hide Lovable badge / logo completely */
+    #lovable-badge,
+    .lovable-badge,
+    [id*="lovable-badge"],
+    [class*="lovable-badge"],
+    iframe[src*="lovable.dev"],
+    a[href*="lovable.dev"] {
+      display: none !important;
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    
+    /* Native Accordion style adjustments */
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    details summary {
+      list-style: none;
+    }
+    details[open] .fa-chevron-down {
+      transform: rotate(180deg);
+    }
+    .fa-chevron-down {
+      transition: transform 0.2s ease;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-background">
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/60">
+    <div class="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-soft">
+          <i class="fa-solid fa-file-lines text-base"></i>
+        </span>
+        <span class="font-bold text-xl tracking-tight text-primary">DOC</span>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+        <a href="#features" class="hover:text-primary transition-colors">Tính năng</a>
+        <a href="#tutorial" class="hover:text-primary transition-colors">Hướng dẫn</a>
+        <a href="#security" class="hover:text-primary transition-colors">Bảo mật</a>
+      </nav>
+
+      <a
+        href="/"
+        class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90 transition"
+      >
+        Sử dụng miễn phí
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero / Pain Points -->
+    <section id="pain" class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-grid pointer-events-none"></div>
+      <div class="relative mx-auto max-w-5xl px-6 pt-20 pb-24">
+        <div class="text-center animate-fade-up">
+          <span class="inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive">
+            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+            Nỗi đau thầm lặng của dân văn phòng
+          </span>
+
+          <h1 class="mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.1]">
+            Bạn đang lãng phí <span class="text-primary">hàng giờ đồng hồ</span> để gõ lại tài liệu bằng tay?
+          </h1>
+
+          <p class="mt-6 text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+            Mỗi sáng, hàng nghìn thư ký pháp lý, kế toán viên và nhân viên hành chính lại ngồi trước màn hình,
+            căng mắt gõ lại từng dòng từ những bản án mờ nhòe, file PDF scan lệch khung, hay xấp giấy tờ
+            dày cộp vừa nhận từ khách hàng. Một công việc lặp đi lặp lại, bào mòn năng suất và cả thị lực.
+          </p>
+        </div>
+
+        <div class="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-up" style="animation-delay: 120ms;">
+          <!-- Card 1 -->
+          <div class="rounded-2xl border border-border p-6 bg-card transition hover:-translate-y-1 hover:shadow-elegant">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <i class="fa-regular fa-clock text-lg"></i>
+            </span>
+            <h3 class="mt-4 text-base font-bold text-foreground">Gõ tay chậm như rùa bò</h3>
+            <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+              Trung bình 15–20 phút để gõ lại 1 trang A4 dày chữ. Một bộ hồ sơ 50 trang có thể ngốn trọn cả ngày làm việc.
+            </p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="rounded-2xl border border-border p-6 bg-card transition hover:-translate-y-1 hover:shadow-elegant">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <i class="fa-regular fa-eye text-lg"></i>
+            </span>
+            <h3 class="mt-4 text-base font-bold text-foreground">Mỏi mắt, đau cổ, tụt năng suất</h3>
+            <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+              Liếc qua liếc lại giữa giấy và màn hình suốt 8 tiếng khiến mắt khô rát, vai gáy nhức mỏi, hiệu suất giảm trầm trọng.
+            </p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="rounded-2xl border border-border p-6 bg-card transition hover:-translate-y-1 hover:shadow-elegant">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <i class="fa-solid fa-font text-lg"></i>
+            </span>
+            <h3 class="mt-4 text-base font-bold text-foreground">OCR miễn phí phá nát font tiếng Việt</h3>
+            <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+              Google Drive, app free thường biến 'Nguyễn' thành 'Nguyen', làm vỡ dấu thanh và xóa sạch định dạng đoạn.
+            </p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="rounded-2xl border border-border p-6 bg-card transition hover:-translate-y-1 hover:shadow-elegant">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <i class="fa-solid fa-hashtag text-lg"></i>
+            </span>
+            <h3 class="mt-4 text-base font-bold text-foreground">Nuốt mất con số — tử huyệt kế toán</h3>
+            <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+              Một chữ số bị bỏ sót trong báo cáo tài chính hay hợp đồng có thể khiến bạn mất việc, mất khách hàng, mất uy tín.
+            </p>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="rounded-2xl border border-border p-6 bg-card transition hover:-translate-y-1 hover:shadow-elegant">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <i class="fa-solid fa-file-circle-exclamation text-lg"></i>
+            </span>
+            <h3 class="mt-4 text-base font-bold text-foreground">Mất định dạng — phải dàn trang lại từ đầu</h3>
+            <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+              Bảng biểu, danh sách đánh số, đề mục bị bóc thành một khối chữ hỗn loạn. Công sức gõ lại đổ sông đổ biển.
+            </p>
+          </div>
+
+          <!-- Card 6 (Highlight) -->
+          <div class="rounded-2xl border p-6 bg-card transition hover:-translate-y-1 hover:shadow-elegant border-destructive/40 bg-destructive/[0.03]">
+            <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+              <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+            </span>
+            <h3 class="mt-4 text-base font-bold text-foreground">Rủi ro pháp lý nghiêm trọng</h3>
+            <p class="mt-2 text-sm text-muted-foreground leading-relaxed">
+              Với bản án, hợp đồng, hồ sơ tố tụng — chỉ một lỗi chính tả nhỏ cũng có thể làm sai lệch toàn bộ ý chí pháp lý.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-14 text-center">
+          <p class="text-base sm:text-lg text-foreground/80 font-medium">
+            Đã đến lúc bạn cần một giải pháp xứng đáng với chuyên môn của mình.
+          </p>
+          <div class="mt-2 inline-block h-1 w-16 rounded-full bg-primary/60"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison -->
+    <section id="features" class="py-24 bg-surface">
+      <div class="mx-auto max-w-7xl px-6">
+        <div class="text-center max-w-3xl mx-auto">
+          <span class="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary">
+            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+            Kỷ nguyên AI mới
+          </span>
+          <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+            DOC — Kỷ nguyên số hóa tài liệu <span class="text-primary">sạch</span> bằng AI
+          </h2>
+          <p class="mt-5 text-lg text-muted-foreground leading-relaxed">
+            Không chỉ là bóc chữ — DOC trả về <strong class="text-foreground">văn bản số nguyên bản,
+            chuẩn ngữ cảnh</strong>, sẵn sàng đưa vào hợp đồng, báo cáo hay hồ sơ tố tụng mà không cần chỉnh sửa lại.
+          </p>
+        </div>
+
+        <div class="mt-16 grid lg:grid-cols-2 gap-6">
+          <!-- Lối mòn cũ -->
+          <div class="rounded-2xl border border-border bg-card p-8">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                <i class="fa-solid fa-xmark text-base"></i>
+              </span>
+              <h3 class="text-xl font-bold text-foreground">Lối mòn cũ</h3>
+            </div>
+            <p class="text-sm text-muted-foreground mb-6 ml-11">Gõ tay, Google Drive, app OCR free</p>
+            <ul class="space-y-6">
+              <li class="flex gap-4">
+                <i class="fa-solid fa-bolt text-muted-foreground shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Tốc độ xử lý</p>
+                  <p class="text-sm text-muted-foreground mt-1 leading-relaxed">15–20 phút mỗi trang gõ tay, mệt nhoài cả buổi sáng cho 1 bộ hồ sơ.</p>
+                </div>
+              </li>
+              <li class="flex gap-4">
+                <i class="fa-solid fa-bullseye text-muted-foreground shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Độ chính xác</p>
+                  <p class="text-sm text-muted-foreground mt-1 leading-relaxed">Sai chính tả, mất dấu thanh, đặc biệt nguy hiểm với thuật ngữ pháp lý chuyên ngành.</p>
+                </div>
+              </li>
+              <li class="flex gap-4">
+                <i class="fa-solid fa-layer-group text-muted-foreground shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Năng lực xử lý</p>
+                  <p class="text-sm text-muted-foreground mt-1 leading-relaxed">Tải lên từng file một, hay treo trình duyệt khi file ảnh quá nặng.</p>
+                </div>
+              </li>
+              <li class="flex gap-4">
+                <i class="fa-solid fa-shield-halved text-muted-foreground shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Bảo mật & Riêng tư</p>
+                  <p class="text-sm text-muted-foreground mt-1 leading-relaxed">Tài liệu mật của khách hàng đi qua máy chủ trung gian không rõ nguồn gốc.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Giải pháp với DOC -->
+          <div class="relative rounded-2xl border-2 border-primary/40 bg-card p-8 shadow-elegant">
+            <span class="absolute -top-3 right-6 rounded-full bg-success px-3 py-1 text-[10px] font-bold text-success-foreground uppercase tracking-wide">
+              Khuyên dùng
+            </span>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <i class="fa-solid fa-check text-base"></i>
+              </span>
+              <h3 class="text-xl font-bold text-primary">Giải pháp với DOC</h3>
+            </div>
+            <p class="text-sm text-muted-foreground mb-6 ml-11">Gemini AI + Direct Fetch</p>
+            <ul class="space-y-6">
+              <li class="flex gap-4">
+                <i class="fa-solid fa-bolt text-primary shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Tốc độ xử lý</p>
+                  <p class="text-sm text-foreground/80 mt-1 leading-relaxed">Chỉ 3 giây mỗi trang nhờ động cơ Gemini AI thế hệ mới nhất của Google.</p>
+                </div>
+              </li>
+              <li class="flex gap-4">
+                <i class="fa-solid fa-bullseye text-primary shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Độ chính xác</p>
+                  <p class="text-sm text-foreground/80 mt-1 leading-relaxed">Chính xác 99% — giữ nguyên thuật ngữ pháp lý, bố cục hành chính và số liệu dày đặc.</p>
+                </div>
+              </li>
+              <li class="flex gap-4">
+                <i class="fa-solid fa-layer-group text-primary shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Năng lực xử lý</p>
+                  <p class="text-sm text-foreground/80 mt-1 leading-relaxed">Xử lý hàng loạt (batch) hàng chục ảnh và PDF nặng cùng lúc, mượt mà không gián đoạn.</p>
+                </div>
+              </li>
+              <li class="flex gap-4">
+                <i class="fa-solid fa-shield-halved text-primary shrink-0 mt-1 text-base"></i>
+                <div>
+                  <p class="font-semibold text-foreground">Bảo mật & Riêng tư</p>
+                  <p class="text-sm text-foreground/80 mt-1 leading-relaxed">Direct Fetch ngay tại trình duyệt — tệp chạy thẳng tới Google qua Key cá nhân, DOC không ghi log.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Steps -->
+    <section id="tutorial" class="py-24">
+      <div class="mx-auto max-w-7xl px-6">
+        <div class="text-center max-w-3xl mx-auto">
+          <span class="inline-block rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success">
+            Mỳ ăn liền — Ai cũng dùng được
+          </span>
+          <h2 class="mt-4 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+            Sử dụng <span class="text-primary">miễn phí trọn đời</span> chỉ sau 3 bước đơn giản
+          </h2>
+          <p class="mt-4 text-muted-foreground">
+            Không rành công nghệ? Không sao cả. Xem video 30 giây ở bên phải là bạn làm chủ ngay.
+          </p>
+        </div>
+
+        <div class="mt-16 grid lg:grid-cols-2 gap-12 items-start">
+          <!-- Left: 3-step timeline -->
+          <ol class="relative space-y-8">
+            <span aria-hidden="true" class="absolute left-[27px] top-3 bottom-3 w-px bg-gradient-to-b from-primary via-primary/40 to-transparent"></span>
+            
+            <!-- Step 1 -->
+            <li class="relative flex gap-5">
+              <span class="relative z-10 inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-elegant">
+                <i class="fa-solid fa-key text-xl"></i>
+              </span>
+              <div class="pt-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-primary">Bước 1</p>
+                <h3 class="mt-1 text-lg font-bold text-foreground">Tạo mã API Key miễn phí</h3>
+                <p class="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md">
+                  Lấy API Key cá nhân hoàn toàn miễn phí từ Google AI Studio chỉ trong 30 giây. Không cần thẻ tín dụng, không ràng buộc.
+                </p>
+              </div>
+            </li>
+
+            <!-- Step 2 -->
+            <li class="relative flex gap-5">
+              <span class="relative z-10 inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-elegant">
+                <i class="fa-solid fa-sliders text-xl"></i>
+              </span>
+              <div class="pt-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-primary">Bước 2</p>
+                <h3 class="mt-1 text-lg font-bold text-foreground">Dán Key vào ô cấu hình bảo mật</h3>
+                <p class="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md">
+                  Mở ứng dụng DOC, dán đoạn mã API Key vào ô cấu hình bảo mật phía dưới. Key được lưu cục bộ ngay trên trình duyệt của bạn.
+                </p>
+              </div>
+            </li>
+
+            <!-- Step 3 -->
+            <li class="relative flex gap-5">
+              <span class="relative z-10 inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-elegant">
+                <i class="fa-solid fa-file-export text-xl"></i>
+              </span>
+              <div class="pt-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-primary">Bước 3</p>
+                <h3 class="mt-1 text-lg font-bold text-foreground">Kéo thả & sao chép kết quả</h3>
+                <p class="mt-2 text-sm text-muted-foreground leading-relaxed max-w-md">
+                  Kéo thả tệp ảnh hoặc PDF vào khung, chờ 3 giây và sao chép văn bản số sạch thuần túy — sẵn sàng dán vào Word, Excel.
+                </p>
+              </div>
+            </li>
+          </ol>
+
+          <!-- Right: video placeholder -->
+          <div class="relative">
+            <div class="absolute -inset-4 bg-gradient-to-tr from-primary/20 via-primary/5 to-success/20 blur-3xl rounded-full"></div>
+            <a
+              href="https://doc.hotro.online"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="relative block aspect-video rounded-2xl border border-border bg-gradient-to-br from-[oklch(0.22_0.04_255)] to-primary overflow-hidden shadow-elegant group"
+            >
+              <div class="absolute inset-0 bg-grid opacity-30"></div>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-primary-foreground">
+                <span class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/15 backdrop-blur border border-white/30 group-hover:scale-110 transition animate-pulse-glow">
+                  <i class="fa-solid fa-play text-2xl ml-1 text-white"></i>
+                </span>
+                <p class="mt-5 text-base sm:text-lg font-bold">Video hướng dẫn thực tế 30 giây</p>
+                <p class="mt-1 text-xs sm:text-sm text-primary-foreground/80 text-center px-6">
+                  Học nhanh cách lấy API Key cho người không rành công nghệ
+                </p>
+                <span class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur px-3 py-1 text-[11px] font-medium">
+                  <i class="fa-regular fa-clock text-xs"></i> 0:30
+                </span>
+              </div>
+            </a>
+            <p class="mt-4 text-center text-xs text-muted-foreground">
+              Bấm để mở ứng dụng và làm theo từng bước
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security Guarantee & FAQs -->
+    <section id="security" class="py-24 bg-surface">
+      <div class="mx-auto max-w-5xl px-6">
+        <div class="text-center max-w-3xl mx-auto">
+          <span class="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary">
+            <i class="fa-solid fa-shield-halved text-xs"></i>
+            Cam kết minh bạch
+          </span>
+          <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+            Câu hỏi thường gặp & <span class="text-primary">Cam kết bảo mật</span>
+          </h2>
+          <p class="mt-4 text-muted-foreground">
+            Mọi băn khoăn của bạn về quyền riêng tư và cách hoạt động của DOC đều được trả lời tại đây.
+          </p>
+        </div>
+
+        <div class="mt-14 rounded-2xl border border-border bg-card p-4 sm:p-8 shadow-soft">
+          <div class="divide-y divide-border">
+            <!-- Accordion Item 1 -->
+            <details class="group border-0 px-2 sm:px-4" open>
+              <summary class="flex items-center justify-between py-5 cursor-pointer text-left text-base sm:text-lg font-semibold text-foreground hover:text-primary list-none">
+                <span class="flex items-start gap-3">
+                  <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                    <i class="fa-solid fa-key text-sm"></i>
+                  </span>
+                  <span class="pt-1.5">API Key là gì? Tại sao tôi phải tự điền vào ứng dụng?</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs ml-auto text-muted-foreground"></i>
+              </summary>
+              <div class="pl-12 pr-2 pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                API Key giống như chiếc chìa khóa cá nhân do chính Google cấp để bạn sử dụng trực tiếp tài nguyên AI của họ miễn phí. Nhờ dán Key riêng, bạn được sở hữu toàn bộ hạn mức xử lý ký tự khổng lồ của Google mà không bị bóp băng thông hay bắt nạp tiền như các app thương mại khác.
+              </div>
+            </details>
+
+            <!-- Accordion Item 2 -->
+            <details class="group border-0 px-2 sm:px-4">
+              <summary class="flex items-center justify-between py-5 cursor-pointer text-left text-base sm:text-lg font-semibold text-foreground hover:text-primary list-none">
+                <span class="flex items-start gap-3">
+                  <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                    <i class="fa-solid fa-lock text-sm"></i>
+                  </span>
+                  <span class="pt-1.5">Tài liệu pháp lý và hồ sơ doanh nghiệp của tôi có bị đọc trộm hay lưu lại không?</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs ml-auto text-muted-foreground"></i>
+              </summary>
+              <div class="pl-12 pr-2 pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Tuyệt đối KHÔNG. DOC hoạt động theo mô hình xử lý tại thiết bị (Direct Fetch). Dữ liệu mã hóa chạy thẳng từ trình duyệt của bạn lên máy chủ an toàn của Google. Đội ngũ phát triển DOC không sở hữu máy chủ trung gian lưu trữ và hoàn toàn không thể tiếp cận tệp tin của bạn. Dữ liệu của bạn là tài sản tối mật của riêng bạn.
+              </div>
+            </details>
+
+            <!-- Accordion Item 3 -->
+            <details class="group border-0 px-2 sm:px-4">
+              <summary class="flex items-center justify-between py-5 cursor-pointer text-left text-base sm:text-lg font-semibold text-foreground hover:text-primary list-none">
+                <span class="flex items-start gap-3">
+                  <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                    <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                  </span>
+                  <span class="pt-1.5">Tại sao đôi khi đang chạy hàng loạt ứng dụng lại báo "Đang đổi Key"?</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-xs ml-auto text-muted-foreground"></i>
+              </summary>
+              <div class="pl-12 pr-2 pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Đây là tính năng thông minh độc quyền của DOC. Khi một chiếc Key chạm ngưỡng giới hạn yêu cầu theo phút của Google, hệ thống sẽ tự động kích hoạt xoay vòng sang chiếc Key tiếp theo trong danh sách dự phòng của bạn để đảm bảo tiến trình bóc tách hàng trăm trang tài liệu diễn ra liên tục, không bị ngắt quãng.
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="mt-8 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary to-[oklch(0.38_0.18_258)] p-6 sm:p-8 text-primary-foreground flex flex-col sm:flex-row items-start sm:items-center gap-5">
+          <span class="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+            <i class="fa-solid fa-shield-halved text-2xl"></i>
+          </span>
+          <div>
+            <p class="text-base sm:text-lg font-bold">DOC không bao giờ chạm vào tệp tin của bạn.</p>
+            <p class="mt-1 text-sm text-primary-foreground/85 leading-relaxed">
+              Toàn bộ tài liệu — hợp đồng, bản án, hóa đơn, hồ sơ khách hàng — đi thẳng từ trình duyệt
+              của bạn đến máy chủ Google qua kết nối mã hóa. Không log, không lưu, không trung gian.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-border bg-background">
+    <div class="mx-auto max-w-7xl px-6 py-20">
+      <div class="text-center max-w-3xl mx-auto">
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+          Sẵn sàng giải phóng đôi tay và <span class="text-primary">tối ưu hóa thời gian</span>?
+        </h2>
+        <p class="mt-5 text-lg text-muted-foreground">
+          Hàng nghìn luật sư, kế toán và nhân viên hành chính đã bỏ thói quen gõ tay. Đến lượt bạn.
+        </p>
+        <a
+          href="/"
+          class="mt-8 inline-flex items-center justify-center rounded-xl bg-primary px-8 py-4 text-base font-semibold text-primary-foreground shadow-elegant animate-pulse-glow hover:scale-[1.02] transition"
+        >
+          Trải nghiệm ứng dụng DOC ngay
+          <i class="fa-solid fa-arrow-right ml-2 text-lg"></i>
+        </a>
+      </div>
+
+      <div class="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <i class="fa-solid fa-file-lines text-sm"></i>
+          </span>
+          <span class="font-bold text-primary">DOC</span>
+        </div>
+
+        <nav class="flex items-center gap-6 text-sm text-muted-foreground">
+          <a href="#tutorial" class="hover:text-primary transition-colors">Tài liệu</a>
+          <a href="#features" class="hover:text-primary transition-colors">Tính năng</a>
+          <a href="#security" class="hover:text-primary transition-colors">Bảo mật</a>
+        </nav>
+
+        <p class="text-xs text-muted-foreground">
+          © 2026 DOC. Phát triển trên nền tảng Cloudflare Pages.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
