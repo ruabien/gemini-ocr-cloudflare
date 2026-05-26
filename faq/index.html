@@ -189,11 +189,12 @@
   <!-- Navbar -->
   <header class="sticky top-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/60">
     <div class="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
-      <a href="#" class="flex items-center gap-2">
-        <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-soft">
-          <i class="fa-solid fa-file-lines text-base"></i>
-        </span>
-        <span class="font-bold text-xl tracking-tight text-primary">DOC</span>
+      <a href="/" class="flex items-center">
+        <img 
+          src="/logo.svg" 
+          alt="DOC Logo" 
+          class="h-8 w-auto object-contain transition-all duration-300 hover:scale-105 select-none" 
+        />
       </a>
 
       <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
@@ -595,42 +596,9 @@
   </main>
 
   <!-- Footer -->
-  <footer class="border-t border-border bg-background">
-    <div class="mx-auto max-w-7xl px-6 py-20">
-      <div class="text-center max-w-3xl mx-auto">
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-          Sẵn sàng giải phóng đôi tay và <span class="text-primary">tối ưu hóa thời gian</span>?
-        </h2>
-        <p class="mt-5 text-lg text-muted-foreground">
-          Hàng nghìn luật sư, kế toán và nhân viên hành chính đã bỏ thói quen gõ tay. Đến lượt bạn.
-        </p>
-        <a
-          href="/"
-          class="mt-8 inline-flex items-center justify-center rounded-xl bg-primary px-8 py-4 text-base font-semibold text-primary-foreground shadow-elegant animate-pulse-glow hover:scale-[1.02] transition"
-        >
-          Trải nghiệm ứng dụng DOC ngay
-          <i class="fa-solid fa-arrow-right ml-2 text-lg"></i>
-        </a>
-      </div>
-
-      <div class="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <i class="fa-solid fa-file-lines text-sm"></i>
-          </span>
-          <span class="font-bold text-primary">DOC</span>
-        </div>
-
-        <nav class="flex items-center gap-6 text-sm text-muted-foreground">
-          <a href="#tutorial" class="hover:text-primary transition-colors">Tài liệu</a>
-          <a href="#features" class="hover:text-primary transition-colors">Tính năng</a>
-          <a href="#security" class="hover:text-primary transition-colors">Bảo mật</a>
-        </nav>
-
-        <p class="text-xs text-muted-foreground">
-          © 2026 DOC. Phát triển trên nền tảng Cloudflare Pages.
-        </p>
-      </div>
+  <footer class="border-t border-border bg-card py-12">
+    <div class="mx-auto max-w-7xl px-6 text-center">
+      <p class="text-sm text-muted-foreground font-medium">© 2026 DOC. All rights reserved.</p>
     </div>
   </footer>
 
