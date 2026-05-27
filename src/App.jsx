@@ -4,13 +4,6 @@ import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
 
-import { Navbar as LandingNavbar } from './components/landing/Navbar';
-import { Hero as LandingHero } from './components/landing/Hero';
-import { Comparison as LandingComparison } from './components/landing/Comparison';
-import { Steps as LandingSteps } from './components/landing/Steps';
-import { Security as LandingSecurity } from './components/landing/Security';
-import { Footer as LandingFooter } from './components/landing/Footer';
-
 import { processOCR } from './utils/ocrService';
 import { splitPdfToImages } from './utils/pdfProcessor';
 import { compressImageIfNeeded } from './utils/imageCompressor';
@@ -27,50 +20,6 @@ const getFallbackModel = (currentModel) => {
 };
 
 function App() {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  useEffect(() => {
-    const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    window.addEventListener('popstate', handleLocationChange);
-    window.addEventListener('pushstate', handleLocationChange);
-    window.addEventListener('replacestate', handleLocationChange);
-    return () => {
-      window.removeEventListener('popstate', handleLocationChange);
-      window.removeEventListener('pushstate', handleLocationChange);
-      window.removeEventListener('replacestate', handleLocationChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleGlobalClick = (e) => {
-      const target = e.target.closest('a');
-      if (target && target.href) {
-        try {
-          const url = new URL(target.href);
-          if (url.origin === window.location.origin) {
-            const path = url.pathname;
-            if (!target.getAttribute('target') && !target.getAttribute('download') && !target.hash) {
-              e.preventDefault();
-              navigateTo(path);
-            }
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    };
-    document.addEventListener('click', handleGlobalClick);
-    return () => document.removeEventListener('click', handleGlobalClick);
-  }, []);
-
-  const navigateTo = (path) => {
-    window.history.pushState({}, '', path);
-    window.dispatchEvent(new Event('pushstate'));
-    window.scrollTo(0, 0);
-  };
-
   const [config, setConfig] = useState(null);
   const [files, setFiles] = useState([]);
   const [activeFileId, setActiveFileId] = useState(null);
@@ -110,8 +59,6 @@ function App() {
   }, []);
 
   const handleReset = useCallback(() => {
-    window.history.pushState({}, '', '/');
-    window.dispatchEvent(new Event('pushstate'));
     processingRef.current = false;
     setIsProcessing(false);
     setFiles([]);
@@ -548,21 +495,6 @@ function App() {
     }
   ];
 
-  if (currentPath === '/faq' || currentPath.startsWith('/faq/')) {
-    return (
-      <div className="faq-landing-container">
-        <LandingNavbar />
-        <main>
-          <LandingHero />
-          <LandingComparison />
-          <LandingSteps />
-          <LandingSecurity />
-        </main>
-        <LandingFooter />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
       {/* TopAppBar */}
@@ -575,7 +507,7 @@ function App() {
             className="h-8 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 select-none" 
           />
           <a
-            href="/faq"
+            href="https://doc.hotro.online/faq"
             className="flex items-center gap-1.5 px-4 py-2 text-xs md:text-sm font-bold bg-primary text-on-primary rounded-full hover:bg-primary-container transition-all duration-300 shadow-md shadow-primary/10 active:scale-95 select-none"
           >
             <span>📑 Xem cách hoạt động</span>

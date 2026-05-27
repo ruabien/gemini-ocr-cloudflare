@@ -12,7 +12,9 @@ export function Footer() {
             Hàng nghìn luật sư, kế toán và nhân viên hành chính đã bỏ thói quen gõ tay. Đến lượt bạn.
           </p>
           <a
-            href="/"
+            href="https://doc.hotro.online"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-semibold text-primary-foreground shadow-elegant animate-pulse-glow hover:scale-[1.02] transition"
           >
             Trải nghiệm ứng dụng DOC ngay

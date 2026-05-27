@@ -123,16 +123,3 @@
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
 }
-
-/* Hide Lovable badge / logo completely */
-#lovable-badge,
-.lovable-badge,
-[id*="lovable-badge"],
-[class*="lovable-badge"],
-iframe[src*="lovable.dev"],
-a[href*="lovable.dev"] {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}

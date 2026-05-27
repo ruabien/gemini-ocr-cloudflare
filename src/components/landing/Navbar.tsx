@@ -18,7 +18,9 @@ export function Navbar() {
         </nav>
 
         <a
-          href="/"
+          href="https://doc.hotro.online"
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-90 transition"
         >
           Sử dụng miễn phí
