@@ -7,6 +7,7 @@ import ResultViewer from './components/ResultViewer';
 import { processOCR } from './utils/ocrService';
 import { splitPdfToImages } from './utils/pdfProcessor';
 import { compressImageIfNeeded } from './utils/imageCompressor';
+import { normalizeOcrText } from './utils/textNormalizer';
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -339,7 +340,7 @@ function App() {
               ...f,
               status: 'completed',
               progress: 100,
-              result: textResult,
+              result: normalizeOcrText(textResult),
               retryInfo: null,
               error: null
             } : f));

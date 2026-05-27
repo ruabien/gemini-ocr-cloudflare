@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Copy, Check, FileText, Download, AlertCircle } from 'lucide-react';
+import { normalizeOcrText } from '../utils/textNormalizer';
 
 export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }) {
   const [copied, setCopied] = useState(false);
@@ -18,7 +19,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   };
 
   const getMergedNormalizedText = () => {
-    return imageFiles
+    const merged = imageFiles
       .map(d => {
         if (d.status === 'error') {
           return `--- [CẢNH BÁO: File ${d.name} bị lỗi OCR, không có dữ liệu văn bản] ---`;
@@ -27,12 +28,13 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       })
       .filter(Boolean)
       .join('\n\n');
+    return normalizeOcrText(merged);
   };
 
   const getPdfMergedNormalizedText = () => {
     if (!parentPdf) return "";
     const sortedPages = [...pdfPages].sort((a, b) => a.pageIndex - b.pageIndex);
-    return sortedPages
+    const merged = sortedPages
       .map(p => {
         if (p.status === 'error') {
           return `--- [CẢNH BÁO: File ${p.name} bị lỗi OCR, không có dữ liệu văn bản] ---`;
@@ -41,6 +43,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       })
       .filter(Boolean)
       .join('\n\n');
+    return normalizeOcrText(merged);
   };
 
   useEffect(() => {
@@ -64,15 +67,16 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   const handleCopy = async () => {
     if (isMultiImage || file.isParentPdf) return;
     if (!localText) return;
+    const cleanText = normalizeOcrText(localText);
     try {
-      await navigator.clipboard.writeText(localText);
+      await navigator.clipboard.writeText(cleanText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
       // Fallback
       const textSub = document.createElement("textarea");
-      textSub.value = localText;
+      textSub.value = cleanText;
       document.body.appendChild(textSub);
       textSub.select();
       document.execCommand("Copy");
@@ -122,7 +126,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     } else {
       if (!localText) return;
       
-      let processedText = getCleanLine(localText);
+      let processedText = normalizeOcrText(localText);
       const originalName = file.originalFile?.name || 'tailieu_ocr.txt';
       const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
       const fileName = `${baseName}.txt`;
