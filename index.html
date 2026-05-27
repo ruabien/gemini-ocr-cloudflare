@@ -23,7 +23,7 @@
 
     <!-- Video Modal -->
     <div id="video-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-      <div class="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200 animate-out fade-out zoom-out-95">
+      <div class="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200 animate-out fade-out zoom-out-95">
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
           <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -34,50 +34,20 @@
           </button>
         </div>
         <!-- Body -->
-        <div class="p-6 space-y-6 max-h-[calc(100vh-160px)] overflow-y-auto">
-          <!-- Video Frame -->
-          <div class="w-full aspect-video rounded-xl overflow-hidden shadow-inner bg-slate-100 dark:bg-slate-950 border border-slate-200/30">
-            <iframe 
-              id="youtube-iframe"
-              class="w-full h-full"
-              src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
-              title="YouTube video player" 
-              frameborder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-              referrerpolicy="strict-origin-when-cross-origin"
-              allowfullscreen>
-            </iframe>
-          </div>
-          <!-- Sender.net Form -->
-          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3 flex flex-col items-center justify-center text-center">
-            <p class="text-sm sm:text-base font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center justify-center gap-1.5 text-center w-full px-2">
-              <span>🎁 Đăng ký nhận Ebook ứng dụng AI tự động hóa hồ sơ tài liệu văn phòng miễn phí!</span>
-            </p>
-            <div style="text-align: center; margin: 0 auto;" class="sender-form-field w-full" data-sender-form-id="egJO93"></div>
-          </div>
+        <div class="w-full aspect-video bg-black">
+          <iframe 
+            id="youtube-iframe"
+            class="w-full h-full"
+            src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
+            title="YouTube video player" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen>
+          </iframe>
         </div>
       </div>
     </div>
-
-    <!-- Sender.net Universal Script -->
-    <script>
-      (function (s, e, n, d, er) {
-        s['Sender'] = er;
-        s[er] = s[er] || function () {
-          (s[er].q = s[er].q || []).push(arguments)
-        }, s[er].l = 1 * new Date();
-        s[er].on = function(event, callback) {
-          s[er].listeners = s[er].listeners || {};
-          (s[er].listeners[event] = s[er].listeners[event] || []).push(callback);
-        };
-        var a = e.createElement(n),
-            m = e.getElementsByTagName(n)[0];
-        a.async = 1;
-        a.src = d;
-        m.parentNode.insertBefore(a, m)
-      })(window, document, 'script', 'https://cdn.sender.net/accounts_resources/universal.js', 'sender');
-      sender('6e4abb40df8002')
-    </script>
 
     <!-- Modal Helper Script -->
     <script>
