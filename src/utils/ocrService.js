@@ -27,6 +27,13 @@ const fileToBase64 = (file) => {
 export const processOCR = async (file, apiKey, modelName, workerUrl) => {
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
+  let normalizedModel = modelName || 'gemini-2.5-flash';
+  if (normalizedModel === 'gemini-1.5-flash') {
+    normalizedModel = 'gemini-1.5-flash-latest';
+  } else if (normalizedModel === 'gemini-1.5-pro') {
+    normalizedModel = 'gemini-1.5-pro-latest';
+  }
+
   const fileName = file.name || '';
   let fileType = file.type || '';
   
@@ -46,7 +53,7 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
   const base64Data = await fileToBase64(file);
 
   // Gọi trực tiếp đến Google Gemini API
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
