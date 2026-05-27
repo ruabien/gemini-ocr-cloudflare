@@ -507,12 +507,12 @@ function App() {
             onClick={handleReset}
             className="h-8 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 select-none" 
           />
-          <a
-            href="https://doc.hotro.online/faq"
-            className="flex items-center gap-1.5 px-4 py-2 text-xs md:text-sm font-bold bg-primary text-on-primary rounded-full hover:bg-primary-container transition-all duration-300 shadow-md shadow-primary/10 active:scale-95 select-none"
+          <button
+            onClick={() => window.openVideoModal && window.openVideoModal()}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs md:text-sm font-bold bg-primary text-on-primary rounded-full hover:bg-primary-container transition-all duration-300 shadow-md shadow-primary/10 active:scale-95 select-none cursor-pointer"
           >
-            <span>📑 Xem cách hoạt động</span>
-          </a>
+            <span>🎥 Xem cách hoạt động</span>
+          </button>
         </div>
       </header>
 

@@ -7,7 +7,7 @@
     <title>DOC - Chuyển đổi PDF & Hình ảnh sang Văn bản trực tuyến</title>
     <meta name="description" content="Công cụ DOC giúp bóc tách chữ (OCR) từ file ảnh, tài liệu PDF sang văn bản soạn thảo hoàn toàn miễn phí, chính xác, bảo mật và siêu tốc bằng công nghệ AI." />
     <meta name="keywords" content="ocr, chuyển ảnh thành văn bản, ocr pdf, bóc chữ dữ liệu, doc hotro, số hóa tài liệu" />
-    <meta name="google-site-verification" content="dz4ncEb0JYZqzRJZ9vM6xuJi-cBl0TlFDdEcCyrC4ug" />
+    <meta name="google-site-verification" content="dz4ncEb0JJZqzRJZ9vM6xuJi-cBl0TlFDdEcCyrC4ug" />
     <!-- Open Graph / Facebook / Zalo -->
     <meta property="og:title" content="DOC - Chuyển đổi PDF & Hình ảnh sang Văn bản trực tuyến" />
     <meta property="og:description" content="Bóc tách chữ (OCR) từ tài liệu giấy và PDF sang văn bản số chỉ trong vài giây với công nghệ AI hiện đại." />
@@ -20,6 +20,104 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Video Modal -->
+    <div id="video-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+      <div class="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200 animate-out fade-out zoom-out-95">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
+          </h3>
+          <button onclick="window.closeVideoModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+            <span class="text-xl font-semibold leading-none">&times;</span>
+          </button>
+        </div>
+        <!-- Body -->
+        <div class="p-6 space-y-6 max-h-[calc(100vh-160px)] overflow-y-auto">
+          <!-- Video Frame -->
+          <div class="w-full aspect-video rounded-xl overflow-hidden shadow-inner bg-slate-100 dark:bg-slate-950 border border-slate-200/30">
+            <iframe 
+              id="youtube-iframe"
+              class="w-full h-full"
+              src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
+              title="YouTube video player" 
+              frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen>
+            </iframe>
+          </div>
+          <!-- Sender.net Form -->
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <p class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <span>🎁 Đăng ký nhận Ebook ứng dụng AI tự động hóa hồ sơ tài liệu văn phòng miễn phí!</span>
+            </p>
+            <div class="sender-form-field" data-sender-form-id="egJO93"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sender.net Universal Script -->
+    <script>
+      (function (s, e, n, d, er) {
+        s['Sender'] = er;
+        s[er] = s[er] || function () {
+          (s[er].q = s[er].q || []).push(arguments)
+        }, s[er].l = 1 * new Date();
+        s[er].on = function(event, callback) {
+          s[er].listeners = s[er].listeners || {};
+          (s[er].listeners[event] = s[er].listeners[event] || []).push(callback);
+        };
+        var a = e.createElement(n),
+            m = e.getElementsByTagName(n)[0];
+        a.async = 1;
+        a.src = d;
+        m.parentNode.insertBefore(a, m)
+      })(window, document, 'script', 'https://cdn.sender.net/accounts_resources/universal.js', 'sender');
+      sender('6e4abb40df8002')
+    </script>
+
+    <!-- Modal Helper Script -->
+    <script>
+      window.openVideoModal = function() {
+        const modal = document.getElementById('video-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          const iframe = document.getElementById('youtube-iframe');
+          if (iframe) {
+            // Auto play on open
+            iframe.src = "https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1&autoplay=1";
+          }
+        }
+      };
+      
+      window.closeVideoModal = function() {
+        const modal = document.getElementById('video-modal');
+        if (modal) {
+          modal.classList.add('hidden');
+          const iframe = document.getElementById('youtube-iframe');
+          if (iframe) {
+            // Reset src to stop audio from playing in the background
+            iframe.src = "https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1";
+          }
+        }
+      };
+      
+      // Close when clicking outside
+      document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('video-modal');
+        if (modal) {
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+              window.closeVideoModal();
+            }
+          });
+        }
+      });
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
