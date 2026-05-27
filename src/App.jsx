@@ -3,6 +3,8 @@ import ApiConfig from './components/ApiConfig';
 import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
+import LandingPage from './components/LandingPage';
+import { Sparkles, Settings } from 'lucide-react';
 
 import { processOCR } from './utils/ocrService';
 import { splitPdfToImages } from './utils/pdfProcessor';
@@ -25,6 +27,7 @@ function App() {
   const [files, setFiles] = useState([]);
   const [activeFileId, setActiveFileId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Bộ chọn dải trang
   const [fromPage, setFromPage] = useState(1);
@@ -456,332 +459,223 @@ function App() {
     processingRef.current = false;
   };
 
-  const [openFaqIndex, setOpenFaqIndex] = useState(null);
-
-  const scrollToSection = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const faqItems = [
-    {
-      q: "Ứng dụng này có an toàn và bảo mật thông tin không?",
-      a: "Hoàn toàn bảo mật! Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tất cả tệp hình ảnh, tài liệu PDF và nội dung trích xuất đều được xử lý cục bộ và gửi trực tiếp tới API của Google qua HTTPS. Chúng tôi không sử dụng máy chủ trung gian và không lưu trữ bất kỳ dữ liệu nào của bạn."
-    },
-    {
-      q: "API Key của tôi được lưu trữ ở đâu?",
-      a: "API Key được lưu trữ trực tiếp trong localStorage trên trình duyệt cá nhân của bạn. Dữ liệu này được lưu cục bộ bởi trình duyệt và không bao giờ bị gửi ra ngoài ngoại trừ việc xác thực trực tiếp với máy chủ Google Gemini."
-    },
-    {
-      q: "Tại sao ứng dụng lại tự động ghép kết quả thành một hàng ngang?",
-      a: "Đây là tính năng tối ưu đặc biệt được thiết kế cho các tác vụ tự động hóa và nhập liệu nhanh (ví dụ: dán dữ liệu vào Word, Excel hoặc Ai). Việc ghép văn bản thành một dòng giúp loại bỏ các ký tự xuống dòng phức tạp gây lỗi định dạng bảng biểu."
-    },
-    {
-      q: "Làm thế nào để lấy Gemini API Key miễn phí?",
-      a: (
-        <span>
-          Bạn có thể truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google của bạn và nhấn nút "Get API key" để tạo một mã khóa mới hoàn toàn miễn phí.{" "}
-          <a
-            href="https://www.youtube.com/watch?v=ag0bHshpQ4U"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-500 font-semibold underline inline-flex items-center gap-0.5"
-          >
-            Xem Video hướng dẫn
-          </a>
-        </span>
-      )
-    }
-  ];
+  if (files.length === 0) {
+    return (
+      <>
+        <LandingPage 
+          onFilesSelected={handleFilesSelected} 
+          onOpenSettings={() => setIsSettingsOpen(true)} 
+        />
+        
+        {/* Settings Modal (Global) */}
+        {isSettingsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                  <span className="material-icons text-primary text-[18px]">settings</span>
+                  <span>Cấu hình API & Mô hình AI</span>
+                </h3>
+                <button 
+                  onClick={() => setIsSettingsOpen(false)} 
+                  className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer font-bold"
+                >
+                  <span className="text-xl font-semibold leading-none">&times;</span>
+                </button>
+              </div>
+              <div className="p-6">
+                <ApiConfig onConfigChange={handleConfigChange} />
+                <p className="text-xs text-on-surface-variant/70 mt-4 leading-relaxed">
+                  * API Key của bạn được lưu cục bộ trong trình duyệt và không bao giờ chuyển đến bất kỳ máy chủ bên thứ ba nào ngoại trừ việc xác thực trực tiếp với Google Gemini API.
+                </p>
+              </div>
+              <div className="flex justify-end px-6 py-4 bg-slate-50 border-t border-slate-100">
+                <button 
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer"
+                >
+                  Hoàn tất
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background text-on-surface font-body-md selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
-      {/* TopAppBar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-[60px] flex items-center border-b border-outline-variant/30">
-        <div className="max-w-[1200px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
-          <img 
-            src="/logo.svg" 
-            alt="DOC Logo" 
-            onClick={handleReset}
-            className="h-8 w-auto object-contain cursor-pointer transition-all duration-300 hover:scale-105 select-none" 
-          />
-          <button
-            onClick={() => window.openVideoModal && window.openVideoModal()}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs md:text-sm font-bold bg-primary text-on-primary rounded-full hover:bg-primary-container transition-all duration-300 shadow-md shadow-primary/10 active:scale-95 select-none cursor-pointer"
-          >
-            <span>🎥 Xem cách hoạt động</span>
-          </button>
+    <div className="min-h-screen bg-slate-50 text-on-surface font-sans selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
+      {/* Sticky Header for Workspace Mode */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md h-16 flex items-center border-b border-slate-200/60">
+        <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
+          <div className="flex items-center gap-3">
+            <div 
+              onClick={handleReset}
+              className="flex items-center gap-2 group cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-ai-accent flex items-center justify-center text-white shadow-sm">
+                <Sparkles size={16} />
+              </div>
+              <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">
+                DOC
+              </span>
+            </div>
+            <span className="h-4 w-px bg-slate-200 hidden sm:block" />
+            <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider hidden sm:inline-block">
+              Workspace
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.openVideoModal && window.openVideoModal()}
+              className="hidden md:flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-on-surface rounded-xl transition-all active:scale-95 cursor-pointer"
+            >
+              <span>🎥 Hướng dẫn API Key</span>
+            </button>
+            
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-slate-200 hover:border-slate-300 text-on-surface rounded-xl transition-all cursor-pointer"
+            >
+              <Settings size={14} />
+              <span>Cấu hình API</span>
+            </button>
+            
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              <span>Trở về Trang chủ</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-[1200px] mx-auto px-4 md:px-8 pt-20 pb-12 space-y-16 flex-1 flex flex-col justify-start w-full">
-        {/* Section 1: Hero & App */}
-        <section id="cong-cu" className="w-full text-center space-y-8">
-          <div className="space-y-4 animate-fade-in">
-            <h1 className="text-display-lg-mobile md:text-display-lg font-display-lg text-primary tracking-tight">
-              Chuyển đổi PDF & Hình ảnh sang Văn bản
-            </h1>
-            <p className="text-body-lg text-on-surface-variant max-w-md mx-auto">
-              Biến mọi tài liệu giấy thành văn bản soạn thảo chỉ trong vài giây với công nghệ AI hiện đại.
-            </p>
-          </div>
-
-          {files.length === 0 ? (
-            <div className="flex flex-col gap-8">
-              <div className="max-w-md mx-auto w-full">
-                <FileDropzone onFilesSelected={handleFilesSelected} />
-              </div>
-              <div className="max-w-4xl mx-auto w-full">
-                <ApiConfig onConfigChange={handleConfigChange} />
-              </div>
+      {/* Main Workspace Layout */}
+      <main className="max-w-[1400px] mx-auto px-4 md:px-8 pt-24 pb-12 flex-1 flex flex-col justify-start w-full min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
+          
+          {/* Left Column: Dropzone + Queue */}
+          <div className="lg:col-span-5 flex flex-col gap-6 w-full lg:sticky lg:top-24 max-h-[calc(100vh-120px)]">
+            
+            {/* Compact Drag & Drop upload */}
+            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+              <FileDropzone onFilesSelected={handleFilesSelected} isCompact={true} />
             </div>
-          ) : (
-            <div className="flex flex-col gap-8">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[600px] text-left animate-in fade-in slide-in-from-bottom-4 duration-300">
+            
+            {/* Queue List card */}
+            <div className="flex flex-col gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 min-h-[300px] max-h-[500px]">
+              <QueueList 
+                files={files} 
+                activeFileId={activeFileId} 
+                onFileClick={setActiveFileId}
+                onRemoveFile={handleRemoveFile}
+              />
+              
+              <div className="pt-4 mt-auto border-t border-slate-100 shrink-0 space-y-4">
+                {/* Page Range Selector */}
+                {activeParentPdf && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 text-on-surface select-none">
+                      <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Chọn dải trang</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <span className="text-on-surface-variant">Từ trang:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={activeParentPdf.totalPages || 1}
+                          value={fromPage}
+                          onChange={(e) => handleFromPageChange(e.target.value)}
+                          onBlur={handleFromPageBlur}
+                          disabled={isProcessing || activeParentPdf.status === 'splitting'}
+                          className="w-12 h-8 text-center bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <span className="text-on-surface-variant">Đến:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={activeParentPdf.totalPages || 1}
+                          value={toPage}
+                          onChange={(e) => handleToPageChange(e.target.value)}
+                          onBlur={handleToPageBlur}
+                          disabled={isProcessing || activeParentPdf.status === 'splitting'}
+                          className="w-12 h-8 text-center bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
-                {/* Left Column: Dropzone + Queue */}
-                <div className="lg:col-span-5 flex flex-col gap-6">
-                  <div className="bg-surface-container-lowest p-2 rounded-xl border border-outline-variant/30 shadow-sm">
-                    <FileDropzone onFilesSelected={handleFilesSelected} />
-                  </div>
-                  
-                  <div className="flex flex-col gap-4 bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/30 flex-1 max-h-[600px] overflow-hidden shadow-sm">
-                    <QueueList 
-                      files={files} 
-                      activeFileId={activeFileId} 
-                      onFileClick={setActiveFileId}
-                      onRemoveFile={handleRemoveFile}
-                    />
-                    
-                    <div className="pt-4 mt-auto border-t border-outline-variant/20 shrink-0 space-y-4">
-                      {/* Page Range Selector */}
-                      {activeParentPdf && (
-                        <div className="bg-surface border border-outline-variant/40 rounded-xl p-3 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-2 text-on-surface select-none">
-                            <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Chọn dải trang</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1.5 text-xs font-medium">
-                              <span className="text-on-surface-variant">Từ trang:</span>
-                              <input
-                                type="number"
-                                min={1}
-                                max={activeParentPdf.totalPages || 1}
-                                value={fromPage}
-                                onChange={(e) => handleFromPageChange(e.target.value)}
-                                onBlur={handleFromPageBlur}
-                                disabled={isProcessing || activeParentPdf.status === 'splitting'}
-                                className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
-                              />
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs font-medium">
-                              <span className="text-on-surface-variant">Đến:</span>
-                              <input
-                                type="number"
-                                min={1}
-                                max={activeParentPdf.totalPages || 1}
-                                value={toPage}
-                                onChange={(e) => handleToPageChange(e.target.value)}
-                                onBlur={handleToPageBlur}
-                                disabled={isProcessing || activeParentPdf.status === 'splitting'}
-                                className="w-12 h-8 text-center bg-white border border-outline-variant/60 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      <button
-                        onClick={startOcrProcessing}
-                        disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
-                        className="w-full bg-primary hover:bg-primary-container text-on-primary py-3.5 px-4 rounded-full font-headline-md shadow-lg shadow-primary/20 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                      >
-                        {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
-                        <span className="material-icons">auto_fix_high</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Result Viewer */}
-                <div className="lg:col-span-7 h-auto lg:h-[calc(100vh-140px)] sticky top-20">
-                  <ResultViewer 
-                    file={activeFile} 
-                    allFiles={files} 
-                    onUpdateResult={handleUpdateResult} 
-                    onReset={handleReset}
-                  />
-                </div>
-              </div>
-              <div className="max-w-4xl mx-auto w-full">
-                <ApiConfig onConfigChange={handleConfigChange} />
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Section 2: Comparison */}
-        <section id="so-sanh" className="w-full space-y-8 pt-10">
-          <div className="text-center space-y-2">
-            <h2 className="text-headline-lg font-headline-lg text-primary">Tại sao nên chọn DOC?</h2>
-            <p className="text-on-surface-variant text-body-md font-medium">So sánh sự khác biệt vượt trội</p>
-          </div>
-
-          <div className="space-y-6">
-            <div className="hidden md:grid grid-cols-2 gap-0 mb-2">
-              <div className="text-center py-2 bg-error-container/10 rounded-l-xl border border-outline-variant/30">
-                <span className="text-label-md font-bold text-error uppercase tracking-widest">Cách cũ (Truyền thống)</span>
-              </div>
-              <div className="text-center py-2 bg-tertiary-container/10 rounded-r-xl border border-outline-variant/30 border-l-0">
-                <span className="text-label-md font-bold text-tertiary uppercase tracking-widest">Giải pháp DOC</span>
-              </div>
-            </div>
-
-            {/* Row 1: Tối ưu quy trình xử lý */}
-            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-error shrink-0">heart_broken</span>
-                    <div>
-                      <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        Phải upload từng trang tài liệu lên Google Drive, chờ đợi bóc tách rồi cặm cụi copy từng đoạn thủ công cực kỳ mất thời gian.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 bg-tertiary-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-tertiary shrink-0">verified</span>
-                    <div>
-                      <p className="text-body-md text-on-surface leading-relaxed">
-                        Hỗ trợ OCR hàng loạt thả ga, tự động xử lý mượt mà hàng chục file ảnh/PDF cùng một lúc nhờ hệ thống hàng đợi thông minh.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Row 2: Chuẩn hóa định dạng đầu ra */}
-            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-error shrink-0">cancel</span>
-                    <div>
-                      <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        Văn bản bị lỗi dính chữ, dính khoảng trắng, xuống dòng vô tội vạ; xuất file .docx trực tuyến nhưng thực chất là chứa ảnh dán vào, không chỉnh sửa được.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 bg-tertiary-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-tertiary shrink-0">check_circle</span>
-                    <div>
-                      <p className="text-body-md text-on-surface leading-relaxed">
-                        Tự động dàn phẳng văn bản trên 1 dòng duy nhất (Single-line), xóa sạch ký tự rác và xuống dòng dư thừa, sẵn sàng copy-paste dùng ngay.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Row 3: Độ chính xác & Giới hạn sử dụng */}
-            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-error shrink-0">payments</span>
-                    <div>
-                      <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        Ứng dụng nước ngoài nhận diện tiếng Việt không chuẩn, lại giới hạn số trang (1-2 trang) và ép nâng cấp gói trả phí đắt đỏ.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 bg-tertiary-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-tertiary shrink-0">all_inclusive</span>
-                    <div>
-                      <p className="text-body-md text-on-surface leading-relaxed">
-                        Tận dụng sức mạnh AI tối tân từ Gemini để tự động sửa lỗi chính tả theo ngữ cảnh, dùng API Key cá nhân miễn phí không lo giới hạn.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Row 4: Bảo mật dữ liệu */}
-            <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/30 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="p-5 border-b md:border-b-0 md:border-r border-outline-variant/20 bg-error-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-error shrink-0">warning</span>
-                    <div>
-                      <p className="text-body-md text-on-surface-variant leading-relaxed">
-                        E ngại tài liệu tối mật của doanh nghiệp bị lưu trữ và rò rỉ trên máy chủ của bên thứ ba.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 bg-tertiary-container/5">
-                  <div className="flex gap-3">
-                    <span className="material-icons text-tertiary shrink-0">security</span>
-                    <div>
-                      <p className="text-body-md text-on-surface leading-relaxed">
-                        Cam kết bảo mật tuyệt đối với mô hình Zero-Server – toàn bộ file được xử lý trực tiếp trên trình duyệt, không một ai có thể đọc trộm.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: FAQ */}
-        <section id="faq" className="w-full space-y-8 pt-10">
-          <h2 className="text-headline-lg font-headline-lg text-center text-primary">Câu hỏi thường gặp</h2>
-          <div className="space-y-4 max-w-4xl mx-auto">
-            {faqItems.map((item, index) => {
-              const isOpen = openFaqIndex === index;
-              return (
-                <div 
-                  key={index}
-                  className="bg-surface-container-lowest rounded-xl border border-outline-variant/30 open:border-primary/30 transition-all overflow-hidden"
+                <button
+                  onClick={startOcrProcessing}
+                  disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
+                  className="w-full btn-premium-primary text-white py-3.5 px-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
                 >
-                  <button
-                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                    className="flex justify-between items-center p-5 cursor-pointer text-body-lg font-bold text-on-surface hover:text-primary hover:bg-primary-container/5 transition-colors focus:outline-none w-full text-left"
-                  >
-                    <span>{item.q}</span>
-                    <span className={`material-icons transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`}>
-                      expand_more
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <div className="px-5 pb-5 text-on-surface-variant leading-relaxed text-body-md border-t border-outline-variant/10 pt-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                      {item.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
+                  <span className="material-icons text-[18px]">auto_fix_high</span>
+                </button>
+              </div>
+            </div>
+            
           </div>
-        </section>
+
+          {/* Right Column: Result Viewer */}
+          <div className="lg:col-span-7 h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 w-full">
+            <ResultViewer 
+              file={activeFile} 
+              allFiles={files} 
+              onUpdateResult={handleUpdateResult} 
+              onReset={handleReset}
+            />
+            
+            {/* ApiConfig Collapsible in Workspace */}
+            <div className="mt-6">
+              <ApiConfig onConfigChange={handleConfigChange} />
+            </div>
+          </div>
+          
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-surface-container-lowest dark:bg-inverse-surface py-12 border-t border-outline-variant/30">
-        <div className="max-w-[1200px] mx-auto px-4 md:px-8 text-center">
-          <p className="text-label-md text-on-surface-variant">© 2026 DOC. All rights reserved.</p>
+      {/* Settings Modal inside Workspace Mode */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+                <span className="material-icons text-primary text-[18px]">settings</span>
+                <span>Cấu hình API & Mô hình AI</span>
+              </h3>
+              <button 
+                onClick={() => setIsSettingsOpen(false)} 
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer font-bold"
+              >
+                <span className="text-xl font-semibold leading-none">&times;</span>
+              </button>
+            </div>
+            <div className="p-6">
+              <ApiConfig onConfigChange={handleConfigChange} />
+              <p className="text-xs text-on-surface-variant/70 mt-4 leading-relaxed">
+                * API Key của bạn được lưu cục bộ trong trình duyệt và không bao giờ chuyển đến bất kỳ máy chủ bên thứ ba nào ngoại trừ việc xác thực trực tiếp với Google Gemini API.
+              </p>
+            </div>
+            <div className="flex justify-end px-6 py-4 bg-slate-50 border-t border-slate-100">
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer"
+              >
+                Hoàn tất
+              </button>
+            </div>
+          </div>
         </div>
-      </footer>
+      )}
     </div>
   );
 }

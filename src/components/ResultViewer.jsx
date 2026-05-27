@@ -144,19 +144,19 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   };
 
   return (
-    <div className="flex flex-col h-full bg-surface-container-lowest rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden min-h-[500px]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 border-b border-outline-variant/30 bg-surface/50 gap-3">
+    <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3.5 border-b border-slate-200/80 bg-slate-50/75 gap-3">
         <div className="flex items-center gap-2 overflow-hidden pr-2">
-          <FileText size={16} className="text-primary shrink-0" />
-          <h3 className="font-semibold text-sm text-on-surface truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
-            Kết quả: {file.originalFile?.name || file.name || 'Tài liệu'}
+          <FileText size={16} className="text-primary shrink-0 animate-pulse" />
+          <h3 className="font-bold text-xs sm:text-sm text-slate-800 truncate" title={file.originalFile?.name || 'Kết quả OCR'}>
+            {file.originalFile?.name || file.name || 'Tài liệu'}
           </h3>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {onReset && (
             <button
               onClick={onReset}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-[#0b1c30] border border-slate-200 rounded-xl transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl transition-all duration-300 cursor-pointer shadow-sm active:scale-95"
               title="Làm mới toàn bộ hàng đợi và kết quả"
             >
               <span className="material-icons text-[14px] font-bold">refresh</span>
@@ -170,7 +170,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
                 ? !hasPdfResult
                 : (isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error'))
             }
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-semibold bg-primary text-on-primary rounded-xl hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in shadow-sm shadow-primary/10"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold btn-premium-primary text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
             title={
               parentPdf
                 ? "Xuất file TXT gộp các trang đã hoàn thành"
@@ -178,50 +178,50 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
             }
           >
             <Download size={14} />
-            Xuất file {(isMultiImage || parentPdf) && "(Gộp)"}
+            <span>Xuất file {(isMultiImage || parentPdf) && "(Gộp)"}</span>
           </button>
           {!isMultiImage && !file.isParentPdf && (
             <button
               onClick={handleCopy}
               disabled={!localText && file.status !== 'error'}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-12 sm:h-10 px-3 text-xs font-medium bg-surface-container-lowest border border-outline-variant/60 text-on-surface hover:bg-surface hover:text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-xl"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-xl"
             >
-              {copied ? <Check size={14} className="text-tertiary" /> : <Copy size={14} />}
-              {copied ? 'Đã copy' : 'Copy nhanh'}
+              {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+              <span>{copied ? 'Đã copy' : 'Copy nhanh'}</span>
             </button>
           )}
         </div>
       </div>
       
       {file.status === 'error' ? (
-        <div className="flex-1 p-6 text-on-error-container bg-error-container/30 border border-error-container overflow-auto font-sans">
+        <div className="flex-1 p-6 text-red-800 bg-red-50/50 border-t border-slate-100 overflow-auto font-sans">
           <p className="font-bold mb-2">Đã xảy ra lỗi:</p>
-          <p className="text-sm whitespace-pre-wrap font-mono">{file.error}</p>
+          <p className="text-xs sm:text-sm whitespace-pre-wrap font-mono bg-red-100/30 p-4 rounded-xl border border-red-200/50">{file.error}</p>
         </div>
       ) : file.status === 'processing' ? (
-        <div className={`flex-1 flex flex-col items-center justify-center bg-surface ${file.retryInfo ? 'text-secondary' : 'text-primary'}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center bg-white ${file.retryInfo ? 'text-amber-600' : 'text-primary'}`}>
           {file.retryInfo ? (
             <div className="flex flex-col items-center max-w-md text-center px-6">
-              <div className="w-12 h-12 rounded-full bg-secondary-fixed/10 border border-secondary-fixed-dim/30 flex items-center justify-center text-secondary mb-4 animate-bounce">
+              <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-4 animate-bounce">
                 <AlertCircle size={24} />
               </div>
-              <h4 className="font-bold text-base mb-2 text-on-surface">
+              <h4 className="font-bold text-base mb-2 text-slate-800">
                 {file.retryInfo.customMessage ? "Hệ thống đang chuyển Key" : "Google Gemini gặp lỗi"}
               </h4>
-              <p className="text-xs text-secondary-fixed-variant mb-4 whitespace-pre-wrap font-mono bg-secondary-fixed/5 p-2.5 rounded-lg border border-secondary-fixed-dim/20 max-h-[150px] overflow-auto">
+              <p className="text-xs text-slate-500 mb-4 whitespace-pre-wrap font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-200 max-h-[150px] overflow-auto">
                 {file.retryInfo.errorMsg}
               </p>
-              <div className="px-4 py-2 bg-secondary-fixed/20 border border-secondary-fixed-dim/30 rounded-full text-xs font-semibold text-secondary-fixed-variant">
+              <div className="px-4 py-2 bg-amber-50 border border-amber-200 rounded-full text-xs font-semibold text-amber-800">
                 {file.retryInfo.customMessage || `Thử lại sau ${file.retryInfo.secondsLeft}s...`}
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
               <div className="animate-pulse flex flex-col items-center">
-                <div className="h-2 bg-outline-variant/30 rounded w-48 mb-4"></div>
-                <div className="h-2 bg-outline-variant/30 rounded w-32"></div>
+                <div className="h-2 bg-slate-200 rounded w-48 mb-4"></div>
+                <div className="h-2 bg-slate-200 rounded w-32"></div>
               </div>
-              <p className="mt-4 text-sm font-medium animate-pulse text-on-surface-variant/70">Đang xử lý tài liệu tổng thể... (Vui lòng đợi trong giây lát)</p>
+              <p className="mt-4 text-xs font-bold animate-pulse text-slate-400">Đang xử lý tài liệu tổng thể... (Vui lòng đợi trong giây lát)</p>
             </div>
           )}
         </div>
@@ -231,7 +231,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           onChange={handleChange}
           readOnly={file.isParentPdf}
           placeholder={file.isParentPdf ? "Chưa có trang nào hoàn thành OCR để hiển thị văn bản gộp." : "Chưa có dữ liệu trích xuất."}
-          className={`flex-1 w-full p-4 bg-surface-container-lowest text-on-surface placeholder-on-surface-variant/40 outline-none resize-none text-body-md leading-relaxed focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-t border-outline-variant/10 ${file.isParentPdf ? 'bg-slate-50 cursor-not-allowed' : ''}`}
+          className={`flex-1 w-full p-5 bg-white text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed focus:ring-1 focus:ring-primary focus:border-primary transition-all border-0 ${file.isParentPdf ? 'bg-slate-50/50 cursor-not-allowed text-slate-500 font-medium' : 'font-mono'}`}
         />
       )}
     </div>
