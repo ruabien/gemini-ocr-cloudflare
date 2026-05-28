@@ -11,6 +11,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
   const [matchIndices, setMatchIndices] = useState([]);
   const textareaRef = useRef(null);
+  const [detectedCaseNum, setDetectedCaseNum] = useState(null);
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
   const isMultiImage = imageFiles.length > 1;
@@ -145,6 +146,65 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       textSub.remove();
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleNormalizeLegalText = () => {
+    if (!localText) return;
+    
+    let text = localText;
+    // 1. Chuẩn hóa tiêu đề quốc gia
+    text = text.replace(/cộng\s*hòa\s*xã\s*hội\s*chủ\s*nghĩa\s*việt\s*nam/gi, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM");
+    text = text.replace(/độc\s*lập\s*-\s*tự\s*do\s*-\s*hạnh\s*phúc/gi, "Độc lập - Tự do - Hạnh phúc");
+    
+    // 2. Sửa lỗi dấu nháy kép, dấu nháy đơn tiếng Việt cong vẹo
+    text = text.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+    
+    // 3. Chuẩn hóa khoảng trắng trước/sau dấu câu
+    text = text.replace(/\s+([.,;:!?])/g, '$1'); // Xóa khoảng trắng trước dấu câu
+    text = text.replace(/([.,;:!?])(?=[a-zA-Z\d])/g, '$1 '); // Thêm khoảng trắng sau dấu câu nếu thiếu
+    
+    // 4. Chuẩn hóa khoảng trắng thừa
+    text = text.replace(/[ \t]+/g, ' '); // Gộp nhiều dấu cách liên tiếp
+    
+    // 5. Chuẩn hóa các đề mục viết hoa phổ biến (ví dụ: ĐIỀU, KHOẢN, CHƯƠNG)
+    text = text.replace(/\n\s*(điều|khoản|chương)\s+(\d+)/gi, (match, p1, p2) => {
+      return `\n${p1.toUpperCase()} ${p2}`;
+    });
+    
+    setLocalText(text);
+    if (onUpdateResult) {
+      onUpdateResult(file.id, text);
+    }
+    alert("Đã hoàn tất chuẩn hóa văn bản theo định dạng pháp lý chuẩn.");
+  };
+
+  const handleDetectCaseNumber = () => {
+    if (!localText) {
+      alert("Chưa có văn bản kết quả để nhận diện.");
+      return;
+    }
+    
+    // Regex cho các định dạng số bản án, quyết định, văn bản hành chính Việt Nam phổ biến
+    const regexList = [
+      /(?:số|bản án số|quyết định số)[:\s]*([0-9a-zđ-]+\/[0-9a-zđ/-]+)/i,
+      /số[:\s]*([0-9]+(?:\/[a-z0-9đ-]+)+)/i,
+      /(?:số|quyết định)[:\s]*([0-9]+\/[a-z0-9đ-]+)/i
+    ];
+    
+    let found = null;
+    for (const regex of regexList) {
+      const match = localText.match(regex);
+      if (match && match[1]) {
+        found = match[1].trim();
+        break;
+      }
+    }
+    
+    if (found) {
+      setDetectedCaseNum(found);
+    } else {
+      alert("Không tìm thấy số văn bản/số bản án nào khớp với cấu trúc pháp lý thông thường.");
     }
   };
 
@@ -352,6 +412,44 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           </div>
         </div>
       )}
+
+      {/* Judicial Utility Bar */}
+      {localText && (
+        <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-slate-200/60 bg-slate-50/20">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 select-none mr-2">Tiện ích tư pháp:</span>
+          
+          {!file.isParentPdf && (
+            <>
+              <button
+                onClick={handleDetectCaseNumber}
+                className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:border-primary hover:text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95"
+                title="Quét tìm Số bản án/Số quyết định trong kết quả"
+              >
+                <span className="material-icons text-[14px] text-slate-500">gavel</span>
+                <span>Nhận diện số văn bản</span>
+              </button>
+              
+              <button
+                onClick={handleNormalizeLegalText}
+                className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:border-primary hover:text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95"
+                title="Chuẩn hóa chính tả Quốc hiệu, tiêu ngữ và khoảng trắng văn bản tố tụng"
+              >
+                <span className="material-icons text-[14px] text-slate-500">check_circle</span>
+                <span>Chuẩn hóa văn bản</span>
+              </button>
+            </>
+          )}
+          
+          <button
+            onClick={() => handleExport('docx')}
+            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:border-primary hover:text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95"
+            title="Xuất trực tiếp sang Microsoft Word (.docx)"
+          >
+            <span className="material-icons text-[14px] text-slate-500">file_download</span>
+            <span>Xuất bản DOCX</span>
+          </button>
+        </div>
+      )}
       
       {file.status === 'error' ? (
         <div className="flex-1 p-6 text-red-800 bg-red-50/50 border-t border-slate-100 overflow-auto font-sans">
@@ -396,11 +494,33 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
             className={`flex-1 w-full p-6 bg-slate-50/20 text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed tracking-wide font-mono focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-0 ${file.isParentPdf ? 'bg-slate-50/50 cursor-not-allowed text-slate-500 font-medium' : 'font-medium'}`}
           />
           {localText && (
-            <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-500 select-none">
-              <div className="flex items-center gap-1.5">
-                <span className="material-icons text-[14px] text-slate-400">format_align_left</span>
-                <span>Số ký tự: {localText.length.toLocaleString()}</span>
+            <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-y-2 text-[11px] font-bold text-slate-500 select-none">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="material-icons text-[14px] text-slate-400">format_align_left</span>
+                  <span>Ký tự: {localText.length.toLocaleString()}</span>
+                </div>
+                {file.metadata && (
+                  <>
+                    <span className="text-slate-300">|</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-icons text-[14px] text-slate-400">timer</span>
+                      <span>Thời gian: {file.metadata.duration}s</span>
+                    </div>
+                    <span className="text-slate-300">|</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-icons text-[14px] text-slate-400">memory</span>
+                      <span>Engine: {file.metadata.engine}</span>
+                    </div>
+                    <span className="text-slate-300">|</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-icons text-[14px] text-slate-400">settings</span>
+                      <span className="truncate max-w-[200px]" title={file.metadata.ocrMode}>Chế độ: {file.metadata.ocrMode}</span>
+                    </div>
+                  </>
+                )}
               </div>
+              
               {file.isParentPdf && pdfPages.length > 0 && (
                 <div className="flex items-center gap-1.5 text-primary">
                   <span className="material-icons text-[14px]">library_books</span>
@@ -409,6 +529,40 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
               )}
             </div>
           )}
+        </div>
+      )}
+      {/* Case Number Detection Modal */}
+      {detectedCaseNum && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm bg-white rounded-xl shadow-2xl border border-slate-200 p-5 mx-4 text-left animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="material-icons text-primary text-[20px]">gavel</span>
+              <h4 className="font-bold text-sm text-slate-800">Nhận diện số văn bản</h4>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Đã phát hiện ký hiệu/số văn bản tố tụng sau trong tài liệu:
+            </p>
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center font-mono font-bold text-sm text-primary select-all">
+              {detectedCaseNum}
+            </div>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(detectedCaseNum);
+                  alert("Đã sao chép số văn bản!");
+                }}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                Sao chép
+              </button>
+              <button
+                onClick={() => setDetectedCaseNum(null)}
+                className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
