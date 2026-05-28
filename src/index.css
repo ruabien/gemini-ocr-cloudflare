@@ -1,27 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #1B365D; /* Navy Blue - nghiêm túc, tin cậy */
-  --color-primary-hover: #11223F; /* Deep Navy */
-  --color-ai-accent: #334155; /* Slate Gray - chuyên nghiệp */
-  --color-ai-accent-hover: #1E293B; /* Slate Dark */
+  --color-primary: #163A70; /* Primary Navy - uy nghiêm, tin cậy */
+  --color-primary-hover: #0F2952;
+  --color-secondary: #2F5FA7; /* Secondary Blue - chuyên nghiệp, hiện đại */
+  --color-secondary-hover: #224883;
+  --color-accent: #C62828; /* Accent Red - đỏ tiết chế cho pháp lý */
+  --color-accent-hover: #A11F1F;
+  --color-success: #1E8E5A; /* Success Green - xanh lục nghiệp vụ */
+  --color-success-hover: #166B43;
   
-  /* Cập nhật bảng màu mặc định sang Slate nhẹ nhàng và cao cấp */
   --color-background: #F8FAFC;
   --color-surface: #FFFFFF;
-  --color-on-surface: #0F172A;
-  --color-on-surface-variant: #475569;
+  --color-border: #D9E2EC;
+  
+  /* Text colors */
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #4B5563;
+  
+  /* Backward compatibility variables */
+  --color-on-surface: #1F2937;
+  --color-on-surface-variant: #4B5563;
   
   --color-surface-container-lowest: #FFFFFF;
-  --color-surface-container-low: #F1F5F9;
-  --color-surface-container: #E2E8F0;
+  --color-surface-container-low: #F0F4F8;
+  --color-surface-container: #D9E2EC;
   --color-surface-container-high: #F8FAFC;
-  --color-surface-container-highest: #E2E8F0;
+  --color-surface-container-highest: #D9E2EC;
   
-  --color-outline-variant: #E2E8F0;
-  --color-outline: #94A3B8;
-  --color-primary-container: #F1F5F9;
-  --on-primary-container: #1B365D;
+  --color-outline-variant: #D9E2EC;
+  --color-outline: #BCCCDC;
+  
+  /* Tints of blue for containers */
+  --color-primary-container: #F0F4F8;
+  --on-primary-container: #163A70;
+  
+  /* Redirect old ai-accent to secondary blue */
+  --color-ai-accent: #2F5FA7;
+  --color-ai-accent-hover: #224883;
   
   --font-sans: 'Inter', 'Be Vietnam Pro', sans-serif;
   --font-inter: 'Inter', sans-serif;
@@ -32,7 +48,7 @@
 body {
   font-family: 'Inter', 'Be Vietnam Pro', sans-serif;
   background-color: #F8FAFC;
-  color: #0F172A;
+  color: #1F2937;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -57,8 +73,8 @@ body {
 .bg-grid {
   background-size: 50px 50px;
   background-image: 
-    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
   mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 60%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 60%, transparent 100%);
 }
@@ -70,7 +86,7 @@ body {
   width: 100%;
   background: linear-gradient(90deg, transparent, var(--color-primary), var(--color-primary), transparent);
   animation: scan 4s infinite linear; /* Chậm lại */
-  box-shadow: 0 0 6px rgba(27, 54, 93, 0.3);
+  box-shadow: 0 0 6px rgba(22, 58, 112, 0.2);
 }
 
 @keyframes scan {
@@ -82,15 +98,15 @@ body {
 
 /* Glow Effect - Tối giản sang viền Navy tinh tế, giảm dịch chuyển */
 .hover-glow-card {
-  transition: all 0.3s ease;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
 }
 
 .hover-glow-card:hover {
-  transform: translateY(-2px); /* Giảm nhấp nhô */
-  box-shadow: 0 10px 20px rgba(27, 54, 93, 0.04);
-  border-color: rgba(27, 54, 93, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(22, 58, 112, 0.04);
+  border-color: var(--color-secondary);
 }
 
 /* Custom premium buttons - Đổi sang phong cách Navy chính quy, giảm bóng đổ lòe loẹt */
@@ -99,28 +115,38 @@ body {
   border: 1px solid var(--color-primary-hover);
   color: #FFFFFF;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 .btn-premium-primary:hover {
   background-color: var(--color-primary-hover);
-  box-shadow: 0 3px 6px rgba(27, 54, 93, 0.15);
-  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(22, 58, 112, 0.12);
 }
 .btn-premium-primary:active {
   transform: translateY(0);
 }
 
 .btn-premium-secondary {
-  background-color: #FFFFFF;
-  border: 1px solid #D1D5DB;
-  color: #374151;
-  transition: all 0.2s ease;
+  background-color: transparent;
+  border: 1.5px solid var(--color-secondary);
+  color: var(--color-secondary);
+  transition: all 0.15s ease;
 }
 .btn-premium-secondary:hover {
-  background-color: #F9FAFB;
-  border-color: #9CA3AF;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  transform: translateY(-1px);
+  background-color: var(--color-primary-container);
+  border-color: var(--color-secondary-hover);
+  color: var(--color-secondary-hover);
+  box-shadow: 0 2px 4px rgba(47, 95, 167, 0.08);
+}
+
+.btn-premium-danger {
+  background-color: var(--color-accent);
+  border: 1px solid var(--color-accent-hover);
+  color: #FFFFFF;
+  transition: all 0.15s ease;
+}
+.btn-premium-danger:hover {
+  background-color: var(--color-accent-hover);
+  box-shadow: 0 2px 4px rgba(198, 40, 40, 0.1);
 }
 
 /* Gradient AI Text - Thay thế dải màu neon bằng Navy chuyên nghiệp */
@@ -131,14 +157,14 @@ body {
 
 /* Glassmorphism card utilities */
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .glass-card-dark {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -157,21 +183,21 @@ body {
   font-size: 32px;
   line-height: 40px;
   letter-spacing: -0.02em;
-  font-weight: 800;
+  font-weight: 700; /* Giảm nhẹ font-weight từ 800 để trang trọng hơn */
 }
 
 .font-display-lg, .text-display-lg {
   font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 48px;
-  line-height: 56px;
-  letter-spacing: -0.03em;
-  font-weight: 800;
+  font-size: 44px; /* Giảm nhẹ từ 48px */
+  line-height: 52px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .font-headline-lg, .text-headline-lg {
   font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 32px;
-  line-height: 40px;
+  font-size: 30px;
+  line-height: 38px;
   letter-spacing: -0.01em;
   font-weight: 700;
 }
@@ -180,7 +206,7 @@ body {
   font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 20px;
   line-height: 28px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .font-body-lg, .text-body-lg {
@@ -201,16 +227,16 @@ body {
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   line-height: 16px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* Animations */
 .animate-fade-in {
-  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; /* Nhanh và tinh tế hơn */
 }
 
 .animate-fade-up {
-  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fadeIn {
@@ -219,7 +245,7 @@ body {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -231,5 +257,5 @@ body {
 
 @keyframes blink {
   from, to { color: transparent; }
-  50% { color: #7C3AED; }
+  50% { color: var(--color-secondary); }
 }

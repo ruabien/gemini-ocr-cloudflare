@@ -4,7 +4,7 @@ import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
 import LandingPage from './components/LandingPage';
-import { Sparkles, Settings } from 'lucide-react';
+import { Settings, Scale } from 'lucide-react';
 
 import { processOCR } from './utils/ocrService';
 import { splitPdfToImages } from './utils/pdfProcessor';
@@ -590,10 +590,10 @@ function App() {
               onClick={handleReset}
               className="flex items-center gap-2 group cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-ai-accent flex items-center justify-center text-white shadow-sm">
-                <Sparkles size={16} />
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-sm">
+                <Scale size={16} />
               </div>
-              <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">
+              <span className="font-bold text-xl tracking-tight text-primary">
                 DOC
               </span>
             </div>
@@ -621,7 +621,7 @@ function App() {
             
             <button
               onClick={handleReset}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-primary hover:bg-primary-hover text-white rounded-xl transition-all cursor-pointer shadow-sm"
             >
               <span>Trở về Trang chủ</span>
             </button>
@@ -715,7 +715,7 @@ function App() {
                     <span>Chế độ nghiệp vụ tư pháp</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.layoutPreserve} 
@@ -724,7 +724,7 @@ function App() {
                       />
                       <span className="text-[11px] font-bold text-slate-700 leading-tight">Giữ nguyên bố cục</span>
                     </label>
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.precisionMode} 
@@ -733,7 +733,7 @@ function App() {
                       />
                       <span className="text-[11px] font-bold text-slate-700 leading-tight">Ưu tiên độ chính xác</span>
                     </label>
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.normalizeLines} 
@@ -742,7 +742,7 @@ function App() {
                       />
                       <span className="text-[11px] font-bold text-slate-700 leading-tight">Chuẩn hóa xuống dòng</span>
                     </label>
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.legalOptimize} 

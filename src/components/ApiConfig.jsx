@@ -230,24 +230,24 @@ export default function ApiConfig({ onConfigChange }) {
   };
 
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant/30 w-full rounded-xl shadow-[0_4px_20px_rgba(0,88,190,0.02)] overflow-hidden">
+    <div className="bg-surface border border-border w-full rounded-xl shadow-[0_4px_20px_rgba(22,58,112,0.02)] overflow-hidden">
       {/* Header Accordion Bar */}
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="relative flex items-center justify-end px-4 py-3 bg-surface/40 border-b border-outline-variant/20 cursor-pointer select-none hover:bg-surface transition-colors"
+        className="relative flex items-center justify-end px-4 py-3 bg-surface/40 border-b border-border/60 cursor-pointer select-none hover:bg-surface transition-colors"
       >
         <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-2">
           <KeyRound size={16} className="text-primary shrink-0" />
-          <span className="text-xs sm:text-sm font-bold text-on-surface whitespace-nowrap">Cấu hình API & Mô hình AI</span>
+          <span className="text-xs sm:text-sm font-bold text-text-primary whitespace-nowrap">Cấu hình API & Mô hình AI</span>
           {isSaved ? (
-            <span className="text-[9px] sm:text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">Đã cấu hình</span>
+            <span className="text-[9px] sm:text-[10px] bg-success/10 text-success px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">Đã cấu hình</span>
           ) : (
-            <span className="text-[9px] sm:text-[10px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">Chưa lưu cấu hình</span>
+            <span className="text-[9px] sm:text-[10px] bg-accent/10 text-accent px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap">Chưa lưu cấu hình</span>
           )}
         </div>
 
         <button 
-          className="text-on-surface-variant hover:text-primary transition-colors focus:outline-none flex items-center justify-center p-1 rounded-full hover:bg-slate-100"
+          className="text-text-secondary hover:text-primary transition-colors focus:outline-none flex items-center justify-center p-1 rounded-full hover:bg-background"
           title={isExpanded ? "Thu gọn" : "Mở rộng"}
         >
           <span className="material-icons text-[18px] transition-transform duration-300 transform" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
@@ -269,9 +269,9 @@ export default function ApiConfig({ onConfigChange }) {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             {/* API Key list field */}
             <div className="md:col-span-5 flex flex-col gap-1.5 text-left">
-              <label className="text-xs font-bold text-on-surface-variant">Danh sách Gemini API Keys:</label>
+              <label className="text-xs font-bold text-text-secondary">Danh sách Gemini API Keys:</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant/60 group-focus-within:text-primary">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary/60 group-focus-within:text-primary">
                   <KeyRound size={14} />
                 </div>
                 <input
@@ -280,12 +280,12 @@ export default function ApiConfig({ onConfigChange }) {
                   value={apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
                   disabled={isChecking}
-                  className="w-full h-10 pl-9 pr-10 bg-white border border-outline-variant/60 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-on-surface placeholder-on-surface-variant/50 disabled:opacity-50"
+                  className="w-full h-10 pl-9 pr-10 bg-surface border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-text-primary placeholder-text-secondary/40 disabled:opacity-50"
                 />
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary/60 hover:text-text-primary transition-colors"
                   title={showKey ? "Ẩn Key" : "Hiện Key"}
                 >
                   {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -295,9 +295,9 @@ export default function ApiConfig({ onConfigChange }) {
 
             {/* AI Model name field */}
             <div className="md:col-span-3 flex flex-col gap-1.5 text-left">
-              <label className="text-xs font-bold text-on-surface-variant">Mô hình AI sử dụng:</label>
+              <label className="text-xs font-bold text-text-secondary">Mô hình AI sử dụng:</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant/60 group-focus-within:text-primary">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary/60 group-focus-within:text-primary">
                   <span className="material-icons text-[16px]">smart_toy</span>
                 </div>
                 <input
@@ -306,7 +306,7 @@ export default function ApiConfig({ onConfigChange }) {
                   value={modelName}
                   onChange={(e) => handleModelChange(e.target.value)}
                   disabled={isChecking}
-                  className="w-full h-10 pl-9 pr-3 bg-white border border-outline-variant/60 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-on-surface placeholder-on-surface-variant/50 disabled:opacity-50"
+                  className="w-full h-10 pl-9 pr-3 bg-surface border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-text-primary placeholder-text-secondary/40 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -316,7 +316,7 @@ export default function ApiConfig({ onConfigChange }) {
               <button
                 onClick={validateGeminiKeys}
                 disabled={isChecking || !apiKey.trim() || !modelName.trim()}
-                className="flex-1 h-10 px-2 bg-slate-100 hover:bg-slate-200 text-on-surface border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="flex-1 h-10 px-2 bg-background hover:bg-border/60 text-text-primary border border-border rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Kiểm tra tính hợp lệ của các API Key với mô hình đã nhập"
               >
                 {isChecking ? (
@@ -340,7 +340,7 @@ export default function ApiConfig({ onConfigChange }) {
               <button
                 onClick={handleClearConfig}
                 disabled={isChecking || (!apiKey.trim() && !localStorage.getItem('ocr_api_key'))}
-                className="flex-1 h-10 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="flex-1 h-10 px-2 btn-premium-danger rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Xóa cấu hình API Key khỏi trình duyệt này"
               >
                 <Trash2 size={12} />
@@ -350,10 +350,10 @@ export default function ApiConfig({ onConfigChange }) {
           </div>
 
           {/* Warning notice */}
-          <div className="mt-3 flex items-start gap-1.5 text-[10px] text-amber-700 bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/40 text-left">
-            <AlertTriangle size={12} className="shrink-0 text-amber-600 mt-0.5" />
+          <div className="mt-3 flex items-start gap-1.5 text-[10px] text-accent bg-accent/5 p-2.5 rounded-xl border border-accent/20 text-left">
+            <AlertTriangle size={12} className="shrink-0 text-accent mt-0.5" />
             <p className="leading-normal">
-              <strong>Lưu ý bảo mật:</strong> API Key được lưu trực tiếp dưới dạng thuần túy trong bộ nhớ <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[9px]">localStorage</code> của trình duyệt này để tự động nạp cho các phiên làm việc sau. Vui lòng bấm nút <strong>"Xóa"</strong> ở trên trước khi rời khỏi thiết bị công cộng hoặc thiết bị dùng chung.
+              <strong>Lưu ý bảo mật:</strong> API Key được lưu trực tiếp dưới dạng thuần túy trong bộ nhớ <code className="bg-accent/10 px-1 py-0.5 rounded font-mono text-[9px]">localStorage</code> của trình duyệt này để tự động nạp cho các phiên làm việc sau. Vui lòng bấm nút <strong>"Xóa"</strong> ở trên trước khi rời khỏi thiết bị công cộng hoặc thiết bị dùng chung.
             </p>
           </div>
         </div>
@@ -361,38 +361,38 @@ export default function ApiConfig({ onConfigChange }) {
         {/* Panel kết quả kiểm tra hỗ trợ hiệu ứng thu gọn và mờ dần */}
         {validationResults.length > 0 && (
           <div 
-            className={`transition-all duration-500 ease-in-out px-4 border-t border-outline-variant/20 bg-slate-50/50 text-left ${
+            className={`transition-all duration-500 ease-in-out px-4 border-t border-border/60 bg-background/50 text-left ${
               isFadingOut 
                 ? 'opacity-0 max-h-0 py-0 border-t-0 pointer-events-none' 
                 : 'opacity-100 max-h-[600px] py-4'
             }`}
             style={{ overflow: 'hidden' }}
           >
-            <div className="text-on-surface-variant/70 text-[10px] uppercase font-bold tracking-wider font-sans mb-3">Trạng thái xác thực các Key:</div>
+            <div className="text-text-secondary/70 text-[10px] uppercase font-bold tracking-wider font-sans mb-3">Trạng thái xác thực các Key:</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {validationResults.map((res, index) => (
                 <div 
                   key={index} 
                   className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs font-semibold ${
                     res.status === 'success' 
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                      ? 'bg-success/10 border-success/20 text-success' 
                       : res.status === 'rate_limit'
-                      ? 'bg-amber-50 border-amber-200 text-amber-800'
-                      : 'bg-rose-50 border-rose-200 text-rose-800'
+                      ? 'bg-accent/10 border-accent/20 text-accent'
+                      : 'bg-accent/15 border-accent/30 text-accent'
                   }`}
                 >
-                  {res.status === 'success' && <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />}
-                  {res.status === 'rate_limit' && <AlertTriangle size={14} className="shrink-0 text-amber-600" />}
-                  {res.status === 'error' && <XCircle size={14} className="shrink-0 text-rose-600" />}
+                  {res.status === 'success' && <CheckCircle2 size={14} className="shrink-0 text-success" />}
+                  {res.status === 'rate_limit' && <AlertTriangle size={14} className="shrink-0 text-accent" />}
+                  {res.status === 'error' && <XCircle size={14} className="shrink-0 text-accent" />}
                   
                   <span className="font-sans">Key {index + 1} - </span>
                   <span className="font-mono">{res.masked}</span>
-                  <span className="text-[11px] font-medium text-on-surface">: {res.message}</span>
+                  <span className="text-[11px] font-medium text-text-primary">: {res.message}</span>
                 </div>
               ))}
             </div>
             {validationMessage && (
-              <p className={`text-xs mt-2.5 font-bold ${isValidated ? 'text-emerald-700' : 'text-rose-700'}`}>
+              <p className={`text-xs mt-2.5 font-bold ${isValidated ? 'text-success' : 'text-accent'}`}>
                 {validationMessage}
               </p>
             )}
@@ -401,8 +401,8 @@ export default function ApiConfig({ onConfigChange }) {
       </div>
 
       {showToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-surface-container-lowest border border-tertiary-container/30 text-tertiary px-4 py-3 rounded-xl shadow-lg shadow-on-surface/5 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="w-2 h-2 bg-tertiary rounded-full animate-ping" />
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-surface border border-success/30 text-success px-4 py-3 rounded-xl shadow-lg shadow-primary/5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="w-2 h-2 bg-success rounded-full animate-ping" />
           <span className="text-sm font-semibold">✨ Đã lưu cấu hình API Keys an toàn!</span>
         </div>
       )}
