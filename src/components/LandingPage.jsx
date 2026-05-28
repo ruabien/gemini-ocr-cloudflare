@@ -67,28 +67,28 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
   const faqItems = [
     {
-      q: "DOC có đảm bảo an toàn bí mật hồ sơ vụ án không?",
-      a: "Tuyệt đối an toàn. Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tất cả dữ liệu hồ sơ vụ án, chứng cứ chụp thực địa đều được xử lý cục bộ và chuyển thẳng tới máy chủ bảo mật của Google qua kết nối HTTPS mã hóa, không qua bất kỳ máy chủ trung gian nào của DOC. Thiết kế này đáp ứng các tiêu chuẩn bảo mật nghiêm ngặt của Luật Bảo vệ bí mật nhà nước."
+      q: "Công cụ này dành cho ai?",
+      a: "DOC được thiết kế chuyên biệt phục vụ các cán bộ nghiệp vụ và chuyên gia trong khối tư pháp Việt Nam, bao gồm: Kiểm sát viên, Thẩm phán, Luật sư, Điều tra viên và Chấp hành viên có nhu cầu số hóa, xử lý văn bản từ hồ sơ tài liệu nghiệp vụ nhanh chóng."
     },
     {
-      q: "API Key Gemini được quản lý như thế nào để tránh lộ thông tin?",
-      a: "Gemini API Key cá nhân của bạn được lưu trữ cục bộ tại bộ nhớ trình duyệt (localStorage) của bạn. Hệ thống hoạt động phi trạng thái (stateless), không ghi nhật ký lịch sử tài liệu tố tụng hay lưu trữ khóa của bạn trên đám mây. Bạn có thể xóa cấu hình này bất cứ lúc nào."
+      q: "Có thể xử lý loại tài liệu nào?",
+      a: "Hệ thống hỗ trợ xử lý hầu hết các loại hình ảnh chụp tài liệu chứng cứ (định dạng JPG, PNG, WEBP) và các tệp văn bản PDF scan tài liệu nghiệp vụ nhiều trang với dung lượng tối đa lên tới 100MB cho mỗi tệp."
     },
     {
-      q: "Có bóc tách được các bản scan tài liệu chứng cứ cũ, mờ hoặc chữ viết tay không?",
-      a: "Nhờ sức mạnh của trí tuệ nhân tạo Google Gemini AI thế hệ mới, ứng dụng tự động nhận diện ngữ cảnh tiếng Việt pháp lý để khôi phục và sửa các chữ bị mờ, mất nét, dính chữ do chất lượng quét ảnh kém từ hồ sơ cũ hoặc ảnh chụp thực địa."
+      q: "Có dùng được cho hồ sơ tư pháp không?",
+      a: "Có. DOC tối ưu hóa sâu cho ngữ cảnh và thuật ngữ nghiệp vụ tư pháp tại Việt Nam (như bản án, quyết định tố tụng, biên bản hỏi cung, hợp đồng, đơn từ). Trí tuệ nhân tạo Gemini AI giúp tự động sửa lỗi chính tả và khôi phục các phần chữ bị mờ, mất nét do chất lượng quét tài liệu cũ kém."
     },
     {
-      q: "Hệ thống hỗ trợ xuất những định dạng tài liệu nào phục vụ xây dựng hồ sơ án?",
-      a: "Bạn có thể xuất văn bản bóc tách sang định dạng tài liệu Word (.docx), Markdown (.md) hoặc tệp văn bản thuần (.txt) được chuẩn hóa, giúp dễ dàng sao chép trực tiếp vào các mẫu văn bản tố tụng, cáo trạng hoặc bản án mà không lo lỗi định dạng."
+      q: "Có nên tải tài liệu mật lên không?",
+      a: "Tuyệt đối KHÔNG. Mặc dù dữ liệu được truyền tải qua HTTPS mã hóa trực tiếp đến Gemini API và không lưu lại bất kỳ máy chủ nào của DOC, người dùng tuyệt đối không được tải lên hoặc xử lý các tài liệu thuộc danh mục bí mật nhà nước (tài liệu mật, tối mật, tuyệt mật) theo quy định của Luật Bảo vệ bí mật nhà nước hiện hành."
     },
     {
-      q: "Có giới hạn số lượng trang tài liệu scan hoặc dung lượng file không?",
-      a: "DOC hỗ trợ tải lên nhiều hình ảnh chứng cứ cùng lúc và các tệp hồ sơ PDF scan dung lượng tối đa lên đến 100MB. Hệ thống tự động phân tách trang PDF và xử lý song song trên hàng đợi để hoàn thành việc bóc tách tài liệu số lượng lớn trong thời gian ngắn nhất."
+      q: "Kết quả OCR có thể dùng thay bản gốc không?",
+      a: "Không. Kết quả nhận dạng từ AI chỉ mang tính chất tham khảo chuyên môn và đóng vai trò trợ lý số hóa bóc tách văn bản thô để tiết kiệm thời gian soạn thảo. Người dùng bắt buộc phải đối chiếu, rà soát thủ công kết quả với tài liệu gốc trước khi đưa vào hồ sơ vụ án hoặc văn bản tố tụng chính thức."
     },
     {
-      q: "Làm thế nào để lấy Gemini API Key miễn phí?",
-      a: "Bạn chỉ cần truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google bất kỳ, click vào nút 'Get API Key' và tạo một khoá trong 10 giây. Bạn có thể click vào nút 'Xem cách hoạt động' ở góc trên để xem video hướng dẫn chi tiết."
+      q: "API key Gemini được xử lý như thế nào?",
+      a: "API Key cá nhân của bạn được mã hóa và lưu trữ cục bộ ngay tại bộ nhớ trình duyệt (localStorage) trên thiết bị của riêng bạn. Hệ thống hoạt động phi trạng thái (stateless), không ghi nhật ký lịch sử tài liệu nghiệp vụ hay lưu trữ khóa của bạn trên đám mây. Bạn có toàn quyền xóa cấu hình khóa này khỏi thiết bị bất cứ lúc nào."
     }
   ];
 
