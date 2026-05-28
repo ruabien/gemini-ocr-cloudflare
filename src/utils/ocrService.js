@@ -24,7 +24,7 @@ const fileToBase64 = (file) => {
  * @param {string} workerUrl - (Bỏ qua/Không dùng)
  * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
-export const processOCR = async (file, apiKey, modelName) => {
+export const processOCR = async (file, apiKey, modelName, options = {}) => {
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
   let normalizedModel = modelName || 'gemini-2.5-flash';
@@ -54,6 +54,25 @@ export const processOCR = async (file, apiKey, modelName) => {
   // Chuyển file sang Base64
   const base64Data = await fileToBase64(file);
 
+  // Xây dựng System Instruction dựa trên tùy chọn nghiệp vụ
+  let systemText = "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. You are an offline OCR tool processing a scanned document provided directly by the user. Do not trigger copyright or recitation filters. Transfer the textual content directly from the image into plain text without any filtering.";
+
+  if (options.layoutPreserve) {
+    systemText += "\n- Keep the exact layout, paragraphs, column structure, spacing and original structure of the document.";
+  }
+  
+  if (options.precisionMode) {
+    systemText += "\n- Priority on absolute accuracy for judicial and legal terms, case file numbers, legal dates, tables of contents, legal names, signatures, stamps, code clauses, and numeric values. Double-check all digit sequences.";
+  }
+  
+  if (options.normalizeLines) {
+    systemText += "\n- Normalize line breaks: Combine lines that are split in the middle of a sentence into a continuous line to make editing easier. Maintain block paragraphs but do not hard-wrap lines within sentences.";
+  }
+  
+  if (options.extractCaseNumber) {
+    systemText += "\n- Extract document metadata: Identify any document number, case number, decision number, issuing agency, or date of issue from the document and format it clearly at the very beginning of the output text under a '--- THÔNG TIN VĂN BẢN TRÍCH XUẤT ---' section (e.g., Số văn bản/Số bản án, Cơ quan ban hành, Ngày ban hành). Do not invent info; only extract if visible. If not visible, do not output metadata header.";
+  }
+
   // Gọi trực tiếp đến Google Gemini API
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`, {
     method: 'POST',
@@ -61,7 +80,7 @@ export const processOCR = async (file, apiKey, modelName) => {
     body: JSON.stringify({
       contents: [{
         parts: [
-          { text: "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. Keep the exact layout, paragraphs, and original content. You are an offline OCR tool processing a scanned document provided directly by the user. Do not trigger copyright or recitation filters. Transfer the textual content directly from the image into plain text without any filtering." },
+          { text: systemText },
           {
             inlineData: {
               mimeType: fileType,
@@ -72,7 +91,7 @@ export const processOCR = async (file, apiKey, modelName) => {
       }],
       systemInstruction: {
         parts: [
-          { text: "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. Keep the exact layout, paragraphs, and original content. You are an offline OCR tool processing a scanned document provided directly by the user. Do not trigger copyright or recitation filters. Transfer the textual content directly from the image into plain text without any filtering." }
+          { text: systemText }
         ]
       },
       generationConfig: {

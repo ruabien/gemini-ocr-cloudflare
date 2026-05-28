@@ -1,12 +1,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useEffect } from 'react';
-import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File, Trash2, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 
 export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
+  const [matchIndices, setMatchIndices] = useState([]);
+  const textareaRef = useRef(null);
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
   const isMultiImage = imageFiles.length > 1;
@@ -52,6 +56,49 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     }
   }, [file?.id, file?.result, allFiles, file?.isParentPdf]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!searchQuery || !localText) {
+      setMatchIndices([]);
+      setCurrentMatchIndex(-1);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const text = localText.toLowerCase();
+    const indices = [];
+    let pos = 0;
+
+    while (true) {
+      const index = text.indexOf(query, pos);
+      if (index === -1) break;
+      indices.push({ start: index, end: index + query.length });
+      pos = index + query.length;
+      if (query.length === 0) break;
+    }
+
+    setMatchIndices(indices);
+    if (indices.length > 0) {
+      setCurrentMatchIndex(0);
+    } else {
+      setCurrentMatchIndex(-1);
+    }
+  }, [searchQuery, localText]);
+
+  useEffect(() => {
+    if (currentMatchIndex >= 0 && matchIndices.length > 0 && textareaRef.current) {
+      const match = matchIndices[currentMatchIndex];
+      const textarea = textareaRef.current;
+      textarea.focus();
+      textarea.setSelectionRange(match.start, match.end);
+
+      // Scroll textarea to matched term
+      const textVal = textarea.value;
+      const linesBefore = textVal.substring(0, match.start).split('\n').length;
+      const lineHeight = 24; // approximate line-height
+      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lineHeight);
+    }
+  }, [currentMatchIndex, matchIndices]);
+
   if (!file) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-on-surface-variant bg-surface rounded-xl border border-dashed border-outline-variant/60 min-h-[400px]">
@@ -61,8 +108,26 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     );
   }
 
+  const handleNextMatch = () => {
+    if (matchIndices.length === 0) return;
+    setCurrentMatchIndex(prev => (prev + 1) % matchIndices.length);
+  };
+
+  const handlePrevMatch = () => {
+    if (matchIndices.length === 0) return;
+    setCurrentMatchIndex(prev => (prev - 1 + matchIndices.length) % matchIndices.length);
+  };
+
+  const handleClearResult = () => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa văn bản kết quả hiện tại?")) {
+      setLocalText("");
+      if (onUpdateResult) {
+        onUpdateResult(file.id, "");
+      }
+    }
+  };
+
   const handleCopy = async () => {
-    if (isMultiImage || file.isParentPdf) return;
     if (!localText) return;
     const cleanText = normalizeOcrText(localText);
     try {
@@ -222,18 +287,71 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
               </>
             )}
           </div>
-          {!isMultiImage && !file.isParentPdf && (
-            <button
-              onClick={handleCopy}
-              disabled={!localText && file.status !== 'error'}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-xl"
-            >
-              {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-              <span>{copied ? 'Đã copy' : 'Copy nhanh'}</span>
-            </button>
-          )}
-        </div>
+        {localText && (
+          <button
+            onClick={handleCopy}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary hover:bg-slate-50 transition-all cursor-pointer rounded-xl shadow-sm"
+            title="Sao chép toàn bộ kết quả vào bộ nhớ tạm"
+          >
+            {copied ? <Check size={14} className="text-emerald-600 shrink-0" /> : <Copy size={14} className="shrink-0" />}
+            <span>{copied ? 'Đã sao chép' : 'Sao chép văn bản'}</span>
+          </button>
+        )}
+        {!file.isParentPdf && localText && (
+          <button
+            onClick={handleClearResult}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold bg-rose-50 hover:bg-rose-100 hover:text-rose-800 text-rose-700 border border-rose-200 rounded-xl transition-all cursor-pointer shadow-sm"
+            title="Xóa văn bản kết quả hiện tại"
+          >
+            <Trash2 size={14} className="shrink-0" />
+            <span>Xóa kết quả</span>
+          </button>
+        )}
       </div>
+      </div>
+      
+      {/* Search Bar */}
+      {localText && (
+        <div className="flex items-center justify-between gap-4 px-4 py-2 border-b border-slate-200/80 bg-slate-50/50">
+          <div className="relative flex-1 max-w-xs">
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+              <Search size={14} />
+            </div>
+            <input
+              type="text"
+              placeholder="Tìm kiếm trong kết quả..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-8 pl-8 pr-3 bg-white border border-slate-250 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-slate-700"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {matchIndices.length > 0 ? (
+              <>
+                <span className="text-xs text-slate-500 font-bold mr-1">
+                  {currentMatchIndex + 1} / {matchIndices.length} kết quả
+                </span>
+                <button
+                  onClick={handlePrevMatch}
+                  className="p-1 rounded bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                  title="Kết quả trước"
+                >
+                  <ArrowUp size={14} />
+                </button>
+                <button
+                  onClick={handleNextMatch}
+                  className="p-1 rounded bg-white border border-slate-200 text-slate-650 hover:bg-slate-50 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                  title="Kết quả tiếp theo"
+                >
+                  <ArrowDown size={14} />
+                </button>
+              </>
+            ) : searchQuery ? (
+              <span className="text-xs text-rose-500 font-bold bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">Không tìm thấy</span>
+            ) : null}
+          </div>
+        </div>
+      )}
       
       {file.status === 'error' ? (
         <div className="flex-1 p-6 text-red-800 bg-red-50/50 border-t border-slate-100 overflow-auto font-sans">
@@ -268,13 +386,30 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           )}
         </div>
       ) : (
-        <textarea
-          value={localText}
-          onChange={handleChange}
-          readOnly={file.isParentPdf}
-          placeholder={file.isParentPdf ? "Chưa có trang nào hoàn thành OCR để hiển thị văn bản gộp." : "Chưa có dữ liệu trích xuất."}
-          className={`flex-1 w-full p-6 bg-slate-50/20 text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed tracking-wide font-mono focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-0 ${file.isParentPdf ? 'bg-slate-50/50 cursor-not-allowed text-slate-500 font-medium' : 'font-medium'}`}
-        />
+        <div className="flex-1 flex flex-col min-h-0 relative">
+          <textarea
+            ref={textareaRef}
+            value={localText}
+            onChange={handleChange}
+            readOnly={file.isParentPdf}
+            placeholder={file.isParentPdf ? "Chưa có trang nào hoàn thành OCR để hiển thị văn bản gộp." : "Chưa có dữ liệu trích xuất."}
+            className={`flex-1 w-full p-6 bg-slate-50/20 text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed tracking-wide font-mono focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-0 ${file.isParentPdf ? 'bg-slate-50/50 cursor-not-allowed text-slate-500 font-medium' : 'font-medium'}`}
+          />
+          {localText && (
+            <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] font-bold text-slate-500 select-none">
+              <div className="flex items-center gap-1.5">
+                <span className="material-icons text-[14px] text-slate-400">format_align_left</span>
+                <span>Số ký tự: {localText.length.toLocaleString()}</span>
+              </div>
+              {file.isParentPdf && pdfPages.length > 0 && (
+                <div className="flex items-center gap-1.5 text-primary">
+                  <span className="material-icons text-[14px]">library_books</span>
+                  <span>Đã số hóa: {pdfPages.filter(p => p.status === 'completed').length} / {parentPdf?.totalPages || pdfPages.length} trang</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -31,6 +31,16 @@ function App() {
   const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
+  // Trạng thái nghiệp vụ và cảnh báo bảo mật tư pháp (Phase 4)
+  const [ocrOptions, setOcrOptions] = useState({
+    layoutPreserve: true,
+    precisionMode: true,
+    normalizeLines: false,
+    extractCaseNumber: false
+  });
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+
   useEffect(() => {
     window.openVideoModal = () => setIsVideoModalOpen(true);
     window.closeVideoModal = () => setIsVideoModalOpen(false);
@@ -122,10 +132,20 @@ function App() {
     }
   };
 
-  const handleFilesSelected = async (newOriginalFiles) => {
+  const handleFilesSelected = (newOriginalFiles) => {
+    setPendingFiles(newOriginalFiles);
+    setIsSecurityModalOpen(true);
+  };
+
+  const confirmImportFiles = async () => {
+    setIsSecurityModalOpen(false);
+    const filesToImport = pendingFiles;
+    setPendingFiles([]);
+    if (filesToImport.length === 0) return;
+
     // 1. Thực hiện nén các ảnh trực tiếp nếu dung lượng > 1.5MB trước khi cho vào hàng đợi
     const processedFiles = await Promise.all(
-      newOriginalFiles.map(async (file) => {
+      filesToImport.map(async (file) => {
         try {
           return await compressImageIfNeeded(file);
         } catch (err) {
@@ -223,6 +243,11 @@ function App() {
     }
   };
 
+  const cancelImportFiles = () => {
+    setIsSecurityModalOpen(false);
+    setPendingFiles([]);
+  };
+
   const handleRemoveFile = (id) => {
     setFiles(prev => {
       const item = prev.find(f => f.id === id);
@@ -242,13 +267,13 @@ function App() {
 
   const startOcrProcessing = async () => {
     if (!config || !config.apiKey) {
-      alert("Vui lòng cấu hình API Key ở phía dưới trước khi bắt đầu.");
+      setIsSettingsOpen(true);
       return;
     }
 
     const keysArray = config.apiKey.split(',').map(k => k.trim()).filter(Boolean);
     if (keysArray.length === 0) {
-      alert("Vui lòng nhập cấu hình API Key hợp lệ.");
+      setIsSettingsOpen(true);
       return;
     }
 
@@ -346,7 +371,7 @@ function App() {
               fileToProcess.originalFile,
               activeKey,
               currentModel,
-              config.workerUrl
+              ocrOptions
             );
 
             if (!processingRef.current) return;
@@ -682,6 +707,52 @@ function App() {
                   </div>
                 )}
                 
+                {/* Chế độ xử lý nghiệp vụ tư pháp */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 text-left">
+                  <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider select-none flex items-center gap-1.5">
+                    <span className="material-icons text-[16px] text-primary">gavel</span>
+                    <span>Chế độ nghiệp vụ tư pháp</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                      <input 
+                        type="checkbox" 
+                        checked={ocrOptions.layoutPreserve} 
+                        onChange={() => setOcrOptions(p => ({ ...p, layoutPreserve: !p.layoutPreserve }))}
+                        className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Giữ nguyên bố cục</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                      <input 
+                        type="checkbox" 
+                        checked={ocrOptions.precisionMode} 
+                        onChange={() => setOcrOptions(p => ({ ...p, precisionMode: !p.precisionMode }))}
+                        className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Ưu tiên độ chính xác</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                      <input 
+                        type="checkbox" 
+                        checked={ocrOptions.normalizeLines} 
+                        onChange={() => setOcrOptions(p => ({ ...p, normalizeLines: !p.normalizeLines }))}
+                        className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Chuẩn hóa xuống dòng</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
+                      <input 
+                        type="checkbox" 
+                        checked={ocrOptions.extractCaseNumber} 
+                        onChange={() => setOcrOptions(p => ({ ...p, extractCaseNumber: !p.extractCaseNumber }))}
+                        className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Trích xuất số văn bản</span>
+                    </label>
+                  </div>
+                </div>
+
                 <button
                   onClick={startOcrProcessing}
                   disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
@@ -780,6 +851,54 @@ function App() {
                 referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Security Warning Modal */}
+      {isSecurityModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100 bg-rose-50/50">
+              <span className="material-icons text-rose-600 text-[24px]">security</span>
+              <h3 className="text-base font-bold text-slate-800">
+                Cam kết Bảo mật & An toàn Nghiệp vụ
+              </h3>
+            </div>
+            <div className="p-6 space-y-4 text-left">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Hệ thống chuẩn bị tải lên <strong>{pendingFiles.length} tệp tài liệu</strong> để xử lý OCR. Để đảm bảo an toàn thông tin tố tụng và an ninh quốc gia, vui lòng xác nhận:
+              </p>
+              
+              <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-3.5 space-y-2.5 text-xs text-rose-800">
+                <div className="flex items-start gap-2">
+                  <span className="material-icons text-[16px] text-rose-600 shrink-0 mt-0.5">report_problem</span>
+                  <span><strong>KHÔNG tải tài liệu mật:</strong> Tuyệt đối không tải lên các tài liệu, hồ sơ thuộc danh mục <strong>Bí mật nhà nước</strong> theo quy định của Luật Bảo vệ bí mật nhà nước.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="material-icons text-[16px] text-rose-600 shrink-0 mt-0.5">cloud_queue</span>
+                  <span><strong>Xử lý trực tiếp:</strong> Dữ liệu được mã hóa và truyền trực tiếp qua HTTPS tới dịch vụ Google Gemini API từ trình duyệt của bạn, không lưu lại trên máy chủ trung gian của chúng tôi.</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500 italic">
+                Bằng việc nhấn "Tôi cam kết và tiếp tục", bạn xác nhận tài liệu được phép xử lý và chịu trách nhiệm pháp lý đối với nội dung tải lên.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+              <button 
+                onClick={cancelImportFiles}
+                className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={confirmImportFiles}
+                className="bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-primary/10"
+              >
+                Tôi cam kết và tiếp tục
+              </button>
             </div>
           </div>
         </div>
