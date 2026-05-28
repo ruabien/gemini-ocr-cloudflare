@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   Sparkles, ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
   HelpCircle, ChevronDown, Check, ArrowRight, Upload, Play,
-  Lock, Eye, ServerOff, Cpu, FileText, Printer, Camera, Gavel, AlertTriangle
+  Lock, Eye, ServerOff, Cpu, FileText, Camera, Gavel, AlertTriangle,
+  Shield, BookOpen, Search, ClipboardCheck
 } from 'lucide-react';
 import FileDropzone from './FileDropzone';
 
@@ -158,12 +159,12 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
-              Số hóa hồ sơ vụ án <br />
-              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2">Bóc tách chứng cứ & tài liệu tư pháp bằng AI</span>
+              Trợ lý số hóa <br />
+              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2">Hồ sơ tư pháp bằng AI</span>
             </h1>
             
             <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-xl">
-              Giải pháp số hóa tài liệu nghiệp vụ an toàn cao dành riêng cho Kiểm sát viên, Thẩm phán, Điều tra viên, Chấp hành viên và Luật sư tại Việt Nam. Chuyển đổi siêu tốc các tệp ảnh chứng cứ chụp, PDF scan cũ hỏng sang dạng Word (.docx) sạch với độ chính xác tối đa.
+              Chuyển PDF scan, ảnh chụp hồ sơ, bản án, quyết định, hợp đồng và tài liệu nghiệp vụ thành văn bản có thể sao chép, tra cứu và xử lý.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -172,16 +173,16 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                 className="btn-premium-primary text-white font-bold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 text-sm sm:text-base group"
               >
                 <Upload size={18} />
-                <span>Tải hồ sơ / chứng cứ lên</span>
+                <span>Bắt đầu OCR tài liệu</span>
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
               
               <button 
-                onClick={() => scrollToSection('demo')}
+                onClick={() => scrollToSection('security')}
                 className="btn-premium-secondary text-on-surface font-semibold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base"
               >
-                <Play size={16} className="text-primary fill-primary" />
-                <span>Xem mẫu số hóa</span>
+                <Lock size={16} className="text-primary" />
+                <span>Xem cam kết bảo mật</span>
               </button>
             </div>
             
@@ -238,6 +239,89 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="space-y-1">
               <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">10x</div>
               <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Tiết kiệm thời gian lập hồ sơ</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION: DÀNH CHO AI */}
+      <section id="targets" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
+        <div className="text-center space-y-4 mb-16">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
+            <Gavel size={12} />
+            <span>Đối tượng phục vụ</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
+            Dành cho ai?
+          </h2>
+          <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
+            Giải pháp chuyên dụng hỗ trợ đắc lực cho cán bộ nghiệp vụ và chuyên gia trong khối tư pháp.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+          {/* Card 1 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <Shield size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base">Kiểm sát viên</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Số hóa nhanh hồ sơ vụ án, biên bản lấy lời khai phục vụ lập cáo trạng và xây dựng hồ sơ kiểm sát.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <Gavel size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base">Thẩm phán</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Trích xuất nội dung chứng cứ, hồ sơ kiện tụng, bản án lịch sử phục vụ công tác nghiên cứu nghiệp vụ.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                <BookOpen size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base">Luật sư</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Số hóa nhanh chóng tài liệu do khách hàng cung cấp và hồ sơ tố tụng phục vụ nghiên cứu phương án bào chữa.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                <Search size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base">Điều tra viên</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Chuyển đổi các biên bản hỏi cung viết tay, biên bản khám nghiệm hiện trường thành văn bản số hóa lưu trữ.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 5 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                <ClipboardCheck size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base">Chấp hành viên</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Số hóa nhanh các quyết định thi hành án, biên bản kê biên tài sản phục vụ đôn đốc và theo dõi hồ sơ.
+              </p>
             </div>
           </div>
         </div>
@@ -413,61 +497,91 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="text-center space-y-4 mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
             <FileText size={12} />
-            <span>Nghiệp vụ áp dụng</span>
+            <span>Ứng dụng nghiệp vụ</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
-            Số hóa hồ sơ chuyên dụng cho khối tư pháp
+            Ứng dụng trong nghiệp vụ
           </h2>
           <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
-            Tăng cường hiệu quả nghiên cứu án, soạn thảo văn bản tố tụng và lập hồ sơ kiểm sát, xét xử.
+            Hỗ trợ toàn diện các hoạt động chuyên môn tố tụng và xử lý tài liệu pháp lý hàng ngày.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
-            <div>
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-                <Gavel size={20} />
-              </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Hồ sơ vụ án & Chứng cứ</h3>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                Bóc tách văn bản cực kỳ nhanh từ các tài liệu chứng cứ cũ, mờ, chụp nghiêng từ thực địa hoặc tài liệu do các đương sự nộp.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {/* Use Case 1 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div>
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
                 <FileText size={20} />
               </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Biên bản nghiệp vụ & Lời khai</h3>
+              <h3 className="font-bold text-on-surface text-base mb-2">Số hóa hồ sơ vụ án scan</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Chuyển nhanh các biên bản lấy lời khai viết tay/scan, biên bản hỏi cung điều tra thành định dạng văn bản soạn thảo phục vụ lập hồ sơ kiểm sát/xét xử.
+                Chuyển đổi toàn diện tập hồ sơ PDF scan nhiều trang thành định dạng văn bản sạch để chỉnh sửa, lưu trữ.
               </p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
+          {/* Use Case 2 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+                <Gavel size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base mb-2">Bóc tách nội dung bản án, quyết định</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Trích xuất chính xác thông tin pháp lý, các quyết định tố tụng, án lệ phục vụ nghiên cứu nghiệp vụ.
+              </p>
+            </div>
+          </div>
+
+          {/* Use Case 3 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div>
               <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
-                <Printer size={20} />
+                <Camera size={20} />
               </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Bản án & Quyết định tố tụng</h3>
+              <h3 className="font-bold text-on-surface text-base mb-2">Chuyển ảnh chụp tài liệu thành văn bản</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Trích xuất nội dung các bản án lịch sử, quyết định giải quyết khiếu nại tố cáo phức tạp để tra cứu án lệ và phục vụ công tác chuyên môn.
+                Nhận diện chữ tiếng Việt từ ảnh chụp bằng điện thoại di động tại thực địa hoặc trong phòng hồ sơ.
               </p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
+          {/* Use Case 4 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div>
               <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
-                <Camera size={20} />
+                <FileOutput size={20} />
               </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Văn bản pháp lý & Hợp đồng</h3>
+              <h3 className="font-bold text-on-surface text-base mb-2">Trích xuất nội dung hợp đồng, đơn từ, biên bản</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Số hóa toàn diện các điều khoản trong hợp đồng kinh tế, tài liệu doanh nghiệp hỗ trợ công tác bào chữa và tư vấn pháp lý chuyên sâu.
+                Hỗ trợ bóc tách các điều khoản cam kết, lời khai viết tay hay đánh máy một cách nhanh chóng.
+              </p>
+            </div>
+          </div>
+
+          {/* Use Case 5 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+                <Search size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base mb-2">Hỗ trợ tra cứu nhanh trong tài liệu dài</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Dễ dàng tìm kiếm thông tin pháp lý, định vị nội dung quan trọng trong hồ sơ dài hàng trăm trang.
+              </p>
+            </div>
+          </div>
+
+          {/* Use Case 6 */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+                <Cpu size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base mb-2">Chuẩn bị dữ liệu để tóm tắt, phân tích hoặc soạn thảo</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Cung cấp dữ liệu văn bản sạch để tóm tắt thông tin vụ án, phân tích hoặc đưa vào các mẫu báo cáo nghiệp vụ.
               </p>
             </div>
           </div>
@@ -482,7 +596,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <span>Quy trình sử dụng</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
-            Số hóa tài liệu vụ án qua 3 bước
+            Quy trình 3 bước
           </h2>
           <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
             Tối giản, bảo mật và tương thích với nghiệp vụ tư pháp hàng ngày của bạn.
@@ -502,7 +616,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <Upload size={28} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">Tải hồ sơ lên</h3>
+            <h3 className="text-lg font-bold text-on-surface">Tải PDF hoặc hình ảnh</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
               Tải hình ảnh chứng cứ (.jpg, .png, .webp) hoặc tài liệu scan hồ sơ (.pdf) lên hệ thống.
             </p>
@@ -516,9 +630,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <Cpu size={28} className="animate-spin-[duration:10s]" />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">AI xử lý số hóa</h3>
+            <h3 className="text-lg font-bold text-on-surface">OCR bằng AI</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
-              Mô hình Gemini AI tiến hành phân tích hình ảnh chứng cứ và tái tạo văn bản, tự động khôi phục chữ mờ theo ngữ cảnh tố tụng.
+              Mô hình Gemini AI tiến hành phân tích hình ảnh và tái tạo văn bản, tự động khôi phục chữ mờ theo ngữ cảnh tố tụng.
             </p>
           </div>
 
@@ -530,7 +644,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <FileOutput size={28} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">Báo cáo / Kết xuất</h3>
+            <h3 className="text-lg font-bold text-on-surface">Sao chép hoặc tải kết quả</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
               Sao chép văn bản số hóa sạch bằng 1-click hoặc kết xuất sang file Microsoft Word (.docx) để hoàn tất hồ sơ.
             </p>
