@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Sparkles, ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
+  ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
   HelpCircle, ChevronDown, Check, ArrowRight, Upload, Play,
   Lock, Cpu, FileText, Camera, Gavel,
   Shield, BookOpen, Search, ClipboardCheck, ShieldAlert, Scale
@@ -112,10 +112,10 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <a href="#" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-ai-accent flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300">
-                <Sparkles size={18} className="animate-pulse" />
+              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white shadow-sm">
+                <Scale size={18} />
               </div>
-              <span className="font-bold text-2xl tracking-tight bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">
+              <span className="font-bold text-2xl tracking-tight text-primary">
                 DOC
               </span>
             </a>
@@ -211,9 +211,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
           {/* Hero Right Visual: Premium Dropzone */}
           <div className="lg:col-span-6 animate-fade-up [animation-delay:150ms]">
-            <div className="relative p-2 rounded-3xl bg-gradient-to-tr from-primary/10 via-transparent to-ai-accent/15 border border-outline-variant/40 shadow-2xl glass-card">
-              <div className="absolute -top-6 -left-6 w-32 h-32 bg-primary/10 rounded-full blur-3xl -z-10" />
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-ai-accent/10 rounded-full blur-3xl -z-10" />
+            <div className="relative p-2 rounded-2xl bg-white border border-border shadow-md">
               
               <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
                 <FileDropzone onFilesSelected={onFilesSelected} />
@@ -229,15 +227,15 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="space-y-1">
-              <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">50.000+</div>
+              <div className="text-4xl sm:text-5xl font-extrabold text-primary">50.000+</div>
               <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Hồ sơ tư pháp được số hóa</p>
             </div>
             <div className="space-y-1 border-y md:border-y-0 md:border-x border-outline-variant/40 py-6 md:py-0">
-              <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">98%</div>
+              <div className="text-4xl sm:text-5xl font-extrabold text-primary">98%</div>
               <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Chính xác thuật ngữ pháp lý</p>
             </div>
             <div className="space-y-1">
-              <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">10x</div>
+              <div className="text-4xl sm:text-5xl font-extrabold text-primary">10x</div>
               <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Tiết kiệm thời gian lập hồ sơ</p>
             </div>
           </div>
@@ -289,7 +287,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Card 3 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                 <BookOpen size={20} />
               </div>
               <h3 className="font-bold text-on-surface text-base">Luật sư</h3>
@@ -302,7 +300,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Card 4 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                 <Search size={20} />
               </div>
               <h3 className="font-bold text-on-surface text-base">Điều tra viên</h3>
@@ -315,7 +313,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Card 5 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                 <ClipboardCheck size={20} />
               </div>
               <h3 className="font-bold text-on-surface text-base">Chấp hành viên</h3>
@@ -330,8 +328,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
       {/* LIVE OCR DEMO (BEFORE/AFTER) */}
       <section id="demo" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10">
         <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ai-accent/10 border border-ai-accent/20 text-ai-accent text-xs font-bold">
-            <Sparkles size={12} />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-xs font-bold">
+            <Cpu size={12} />
             <span>Trải nghiệm số hóa</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
@@ -380,15 +378,15 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Right Column: AI Processed Text Result */}
           <div className="rounded-2xl border border-primary/20 bg-white shadow-lg shadow-primary/5 p-6 flex flex-col justify-between relative overflow-hidden">
             {/* Visual border glow for AI theme */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-ai-accent/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
             
             <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
               <span className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-primary" />
                 Văn bản số hóa bởi DOC AI
               </span>
               <span className="text-xs bg-primary-container text-primary px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
-                <Sparkles size={10} />
+                <Cpu size={10} />
                 AI Nghiệp Vụ
               </span>
             </div>
@@ -440,8 +438,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           </div>
 
           <div className="hover-glow-card rounded-2xl bg-white p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-ai-accent/10 flex items-center justify-center text-ai-accent mb-5">
-              <Sparkles size={22} />
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
+              <Scale size={22} />
             </div>
             <h3 className="text-lg font-bold text-on-surface mb-2">Tối ưu tiếng Việt tư pháp</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
@@ -450,7 +448,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           </div>
 
           <div className="hover-glow-card rounded-2xl bg-white p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-5">
+            <div className="w-12 h-12 rounded-xl bg-success/10 text-success flex items-center justify-center mb-5">
               <ShieldCheck size={22} />
             </div>
             <h3 className="text-lg font-bold text-on-surface mb-2">Bảo mật tài liệu tuyệt đối</h3>
@@ -460,7 +458,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           </div>
 
           <div className="hover-glow-card rounded-2xl bg-white p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-5">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
               <Layers size={22} />
             </div>
             <h3 className="text-lg font-bold text-on-surface mb-2">Bảo toàn cấu trúc văn bản</h3>
@@ -470,7 +468,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           </div>
 
           <div className="hover-glow-card rounded-2xl bg-white p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-5">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
               <RefreshCw size={22} />
             </div>
             <h3 className="text-lg font-bold text-on-surface mb-2">Xử lý hồ sơ vụ án lớn</h3>
@@ -480,8 +478,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           </div>
 
           <div className="hover-glow-card rounded-2xl bg-white p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mb-5">
-              <Sparkles size={22} className="text-rose-500" />
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
+              <Cpu size={22} />
             </div>
             <h3 className="text-lg font-bold text-on-surface mb-2">AI phục hồi chữ mờ, hỏng</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
@@ -550,7 +548,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Use Case 4 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <FileOutput size={20} />
               </div>
               <h3 className="font-bold text-on-surface text-base mb-2">Trích xuất nội dung hợp đồng, đơn từ, biên bản</h3>
@@ -563,7 +561,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Use Case 5 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <Search size={20} />
               </div>
               <h3 className="font-bold text-on-surface text-base mb-2">Hỗ trợ tra cứu nhanh trong tài liệu dài</h3>
@@ -576,7 +574,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Use Case 6 */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left flex flex-col justify-between">
             <div>
-              <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <Cpu size={20} />
               </div>
               <h3 className="font-bold text-on-surface text-base mb-2">Chuẩn bị dữ liệu để tóm tắt, phân tích hoặc soạn thảo</h3>
@@ -606,11 +604,11 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         {/* Steps Timeline UI */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-4xl mx-auto">
           {/* Decorative connector line on desktop */}
-          <div className="hidden md:block absolute top-[2.5rem] left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-primary/30 to-ai-accent/30 -z-10" />
+          <div className="hidden md:block absolute top-[2.5rem] left-[15%] right-[15%] h-0.5 bg-slate-200 -z-10" />
           
           {/* Step 1 */}
           <div className="text-center space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-white border border-outline-variant/50 shadow-md flex items-center justify-center mx-auto text-primary font-bold text-lg relative">
+            <div className="w-20 h-20 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center mx-auto text-primary font-bold text-lg relative">
               <div className="w-8 h-8 rounded-full bg-primary text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
                 1
               </div>
@@ -624,11 +622,11 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
           {/* Step 2 */}
           <div className="text-center space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-white border border-outline-variant/50 shadow-md flex items-center justify-center mx-auto text-ai-accent font-bold text-lg relative">
-              <div className="w-8 h-8 rounded-full bg-ai-accent text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
+            <div className="w-20 h-20 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center mx-auto text-secondary font-bold text-lg relative">
+              <div className="w-8 h-8 rounded-full bg-secondary text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
                 2
               </div>
-              <Cpu size={28} className="animate-spin-[duration:10s]" />
+              <Cpu size={28} />
             </div>
             <h3 className="text-lg font-bold text-on-surface">OCR bằng AI</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
@@ -638,8 +636,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
           {/* Step 3 */}
           <div className="text-center space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-white border border-outline-variant/50 shadow-md flex items-center justify-center mx-auto text-emerald-500 font-bold text-lg relative">
-              <div className="w-8 h-8 rounded-full bg-emerald-500 text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
+            <div className="w-20 h-20 rounded-2xl bg-white border border-border shadow-sm flex items-center justify-center mx-auto text-success font-bold text-lg relative">
+              <div className="w-8 h-8 rounded-full bg-success text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
                 3
               </div>
               <FileOutput size={28} />
@@ -805,11 +803,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
       {/* CALL TO ACTION SECTION */}
       <section className="max-w-7xl mx-auto w-full px-6 pb-20 relative z-10">
-        <div className="relative rounded-3xl overflow-hidden py-16 px-8 md:p-20 text-center bg-gradient-to-tr from-primary to-ai-accent text-white shadow-xl shadow-primary/10">
+        <div className="relative rounded-2xl overflow-hidden py-16 px-8 md:p-20 text-center bg-gradient-to-tr from-primary to-secondary text-white shadow-lg">
           {/* Ambient visuals */}
           <div className="absolute inset-0 bg-grid opacity-10 pointer-events-none" />
-          <div className="absolute -top-32 -left-32 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
 
           <div className="relative max-w-2xl mx-auto space-y-8">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
@@ -820,7 +816,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </p>
             <button 
               onClick={triggerGlobalUpload}
-              className="bg-white hover:bg-slate-100 text-primary font-bold text-sm sm:text-base px-8 py-4 rounded-xl shadow-lg active:scale-95 transition-all duration-200 inline-flex items-center gap-2 cursor-pointer mx-auto"
+              className="bg-white hover:bg-slate-100 text-primary font-bold text-sm sm:text-base px-8 py-4 rounded-xl shadow-md transition-all duration-200 inline-flex items-center gap-2 cursor-pointer mx-auto"
             >
               <Upload size={18} />
               <span>Tải hồ sơ lên ngay</span>
@@ -838,7 +834,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-sm">
                 <span className="material-icons text-[16px]">gavel</span>
               </div>
-              <span className="font-bold text-xl tracking-tight text-on-surface">DOC</span>
+              <span className="font-bold text-xl tracking-tight text-primary">DOC</span>
             </a>
             <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm">
               Hệ thống số hóa hồ sơ vụ án và tài liệu tư pháp chuyên dụng bằng Trí tuệ Nhân tạo. Giải pháp nhận dạng và chuẩn hóa văn bản tố tụng bảo mật tối đa cho khối cơ quan tư pháp và văn phòng luật.
