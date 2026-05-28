@@ -13,7 +13,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
   
   // Live Demo Typing State
   const [demoText, setDemoText] = useState('');
-  const demoTextTarget = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc\n\nĐƠN KHỞI KIỆN\n\nKính gửi: Tòa án nhân dân quận Hoàn Kiếm, thành phố Hà Nội.\n\nTôi tên là: Nguyễn Văn A, sinh năm 1985.\nCăn cước công dân số: 001085000123 cấp ngày 15/10/2021 tại Cục Cảnh sát Quản lý hành chính về trật tự xã hội.";
+  const demoTextTarget = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc\n\nĐƠN KHỞI KIỆN\n\nKính gửi: Tòa án nhân dân quận Hoàn Kiếm, thành phố Hà Nội.\n\nTôi tên là: Nguyễn Văn A, sinh năm 1985.\nCăn cước công dân số: 001085000123 cấp ngày 15/10/2021";
   
   // Typing Effect for Live Demo
   useEffect(() => {
