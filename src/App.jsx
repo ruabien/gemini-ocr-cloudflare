@@ -507,16 +507,16 @@ function App() {
         
         {/* Settings Modal (Global) */}
         {isSettingsOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-text-primary/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50">
+                <h3 className="text-sm sm:text-base font-bold text-text-primary flex items-center gap-2">
                   <span className="material-icons text-primary text-[18px]">settings</span>
                   <span>Cấu hình API & Mô hình AI</span>
                 </h3>
                 <button 
                   onClick={() => setIsSettingsOpen(false)} 
-                  className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer font-bold"
+                  className="text-text-secondary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background cursor-pointer font-bold"
                 >
                   <span className="text-xl font-semibold leading-none">&times;</span>
                 </button>
@@ -527,7 +527,7 @@ function App() {
                   * API Key của bạn được lưu cục bộ trong trình duyệt và không bao giờ chuyển đến bất kỳ máy chủ bên thứ ba nào ngoại trừ việc xác thực trực tiếp với Google Gemini API.
                 </p>
               </div>
-              <div className="flex justify-end px-6 py-4 bg-slate-50 border-t border-slate-100">
+              <div className="flex justify-end px-6 py-4 bg-background border-t border-border">
                 <button 
                   onClick={() => setIsSettingsOpen(false)}
                   className="bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer"
@@ -547,15 +547,15 @@ function App() {
             }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           >
-            <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-3xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
                   <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
                 </h3>
                 <button 
                   onClick={() => setIsVideoModalOpen(false)} 
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer font-bold"
+                  className="text-text-secondary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background cursor-pointer font-bold"
                 >
                   <span className="text-xl font-semibold leading-none">&times;</span>
                 </button>
@@ -581,9 +581,9 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-on-surface font-sans selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
+    <div className="min-h-screen bg-background text-on-surface font-sans selection:bg-primary-container/10 selection:text-primary flex flex-col scroll-smooth">
       {/* Sticky Header for Workspace Mode */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md h-16 flex items-center border-b border-slate-200/60">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md h-16 flex items-center border-b border-border">
         <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <div className="flex items-center gap-3">
             <div 
@@ -597,8 +597,8 @@ function App() {
                 DOC
               </span>
             </div>
-            <span className="h-4 w-px bg-slate-200 hidden sm:block" />
-            <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider hidden sm:inline-block">
+            <span className="h-4 w-px bg-border hidden sm:block" />
+            <span className="text-xs bg-background text-text-secondary px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider hidden sm:inline-block">
               Workspace
             </span>
           </div>
@@ -606,14 +606,14 @@ function App() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.openVideoModal && window.openVideoModal()}
-              className="flex items-center gap-1 px-3 py-2 text-[10px] sm:text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-on-surface rounded-xl transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-2 text-[10px] sm:text-xs font-semibold bg-background hover:bg-border text-on-surface rounded-xl transition-all active:scale-95 cursor-pointer"
             >
               <span>🎥 Hướng dẫn</span>
             </button>
             
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-slate-200 hover:border-slate-300 text-on-surface rounded-xl transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border border-border hover:border-secondary/30 text-on-surface rounded-xl transition-all cursor-pointer"
             >
               <Settings size={14} />
               <span>Cấu hình API</span>
@@ -633,16 +633,16 @@ function App() {
       <main className="max-w-[1400px] mx-auto px-4 md:px-8 pt-24 pb-12 flex-1 flex flex-col justify-start w-full min-h-0">
         
         {/* Mobile Tabs Switcher */}
-        <div className="flex lg:hidden bg-slate-100 p-1 rounded-2xl mb-6 self-center w-full max-w-md border border-slate-200 shadow-sm">
+        <div className="flex lg:hidden bg-background p-1 rounded-2xl mb-6 self-center w-full max-w-md border border-border shadow-sm">
           <button
             onClick={() => setMobileTab('queue')}
-            className={`flex-1 text-center py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${mobileTab === 'queue' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`flex-1 text-center py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${mobileTab === 'queue' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
           >
             Hàng đợi ({files.filter(f => !f.isPdfPage).length})
           </button>
           <button
             onClick={() => setMobileTab('result')}
-            className={`flex-1 text-center py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${mobileTab === 'result' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`flex-1 text-center py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${mobileTab === 'result' ? 'bg-surface text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
           >
             Kết quả OCR
           </button>
@@ -654,12 +654,12 @@ function App() {
           <div className={`lg:col-span-5 flex-col gap-6 w-full lg:sticky lg:top-24 max-h-[calc(100vh-120px)] ${mobileTab === 'queue' ? 'flex' : 'hidden lg:flex'}`}>
             
             {/* Compact Drag & Drop upload */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-surface p-3 rounded-2xl border border-border shadow-sm">
               <FileDropzone onFilesSelected={handleFilesSelected} isCompact={true} />
             </div>
             
             {/* Queue List card */}
-            <div className="flex flex-col gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 min-h-[300px] max-h-[500px]">
+            <div className="flex flex-col gap-4 bg-surface p-5 rounded-2xl border border-border shadow-sm overflow-hidden flex-1 min-h-[300px] max-h-[500px]">
               <QueueList 
                 files={files} 
                 activeFileId={activeFileId} 
@@ -670,16 +670,16 @@ function App() {
                 onRemoveFile={handleRemoveFile}
               />
               
-              <div className="pt-4 mt-auto border-t border-slate-100 shrink-0 space-y-4">
+              <div className="pt-4 mt-auto border-t border-border shrink-0 space-y-4">
                 {/* Page Range Selector */}
                 {activeParentPdf && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-4">
+                  <div className="bg-background border border-border rounded-xl p-3 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-2 text-on-surface select-none">
-                      <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Chọn dải trang</span>
+                      <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">Chọn dải trang</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5 text-xs font-medium">
-                        <span className="text-on-surface-variant">Từ trang:</span>
+                        <span className="text-text-secondary">Từ trang:</span>
                         <input
                           type="number"
                           min={1}
@@ -688,11 +688,11 @@ function App() {
                           onChange={(e) => handleFromPageChange(e.target.value)}
                           onBlur={handleFromPageBlur}
                           disabled={isProcessing || activeParentPdf.status === 'splitting'}
-                          className="w-12 h-8 text-center bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                          className="w-12 h-8 text-center bg-surface border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-text-primary"
                         />
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-medium">
-                        <span className="text-on-surface-variant">Đến:</span>
+                        <span className="text-text-secondary">Đến:</span>
                         <input
                           type="number"
                           min={1}
@@ -701,7 +701,7 @@ function App() {
                           onChange={(e) => handleToPageChange(e.target.value)}
                           onBlur={handleToPageBlur}
                           disabled={isProcessing || activeParentPdf.status === 'splitting'}
-                          className="w-12 h-8 text-center bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-on-surface"
+                          className="w-12 h-8 text-center bg-surface border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-bold text-text-primary"
                         />
                       </div>
                     </div>
@@ -709,47 +709,47 @@ function App() {
                 )}
                 
                 {/* Chế độ xử lý nghiệp vụ tư pháp */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 text-left">
-                  <div className="text-xs font-bold text-on-surface-variant uppercase tracking-wider select-none flex items-center gap-1.5">
+                <div className="bg-background border border-border rounded-xl p-3 space-y-2 text-left">
+                  <div className="text-xs font-bold text-text-secondary uppercase tracking-wider select-none flex items-center gap-1.5">
                     <span className="material-icons text-[16px] text-primary">gavel</span>
                     <span>Chế độ nghiệp vụ tư pháp</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.layoutPreserve} 
                         onChange={() => setOcrOptions(p => ({ ...p, layoutPreserve: !p.layoutPreserve }))}
                         className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                       />
-                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Giữ nguyên bố cục</span>
+                      <span className="text-[11px] font-bold text-text-secondary leading-tight">Giữ nguyên bố cục</span>
                     </label>
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.precisionMode} 
                         onChange={() => setOcrOptions(p => ({ ...p, precisionMode: !p.precisionMode }))}
                         className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                       />
-                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Ưu tiên độ chính xác</span>
+                      <span className="text-[11px] font-bold text-text-secondary leading-tight">Ưu tiên độ chính xác</span>
                     </label>
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.normalizeLines} 
                         onChange={() => setOcrOptions(p => ({ ...p, normalizeLines: !p.normalizeLines }))}
                         className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                       />
-                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Chuẩn hóa xuống dòng</span>
+                      <span className="text-[11px] font-bold text-text-secondary leading-tight">Chuẩn hóa xuống dòng</span>
                     </label>
-                    <label className="flex items-center gap-2 p-1.5 bg-white border border-border rounded-lg hover:bg-slate-50 cursor-pointer select-none text-left">
+                    <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
                         checked={ocrOptions.legalOptimize} 
                         onChange={() => setOcrOptions(p => ({ ...p, legalOptimize: !p.legalOptimize }))}
                         className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                       />
-                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Tối ưu văn bản pháp lý</span>
+                      <span className="text-[11px] font-bold text-text-secondary leading-tight">Tối ưu văn bản pháp lý</span>
                     </label>
                   </div>
                 </div>
@@ -787,16 +787,16 @@ function App() {
 
       {/* Settings Modal inside Workspace Mode */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-text-primary/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50">
+              <h3 className="text-sm sm:text-base font-bold text-text-primary flex items-center gap-2">
                 <span className="material-icons text-primary text-[18px]">settings</span>
                 <span>Cấu hình API & Mô hình AI</span>
               </h3>
               <button 
                 onClick={() => setIsSettingsOpen(false)} 
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer font-bold"
+                className="text-text-secondary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background cursor-pointer font-bold"
               >
                 <span className="text-xl font-semibold leading-none">&times;</span>
               </button>
@@ -807,7 +807,7 @@ function App() {
                 * API Key của bạn được lưu cục bộ trong trình duyệt và không bao giờ chuyển đến bất kỳ máy chủ bên thứ ba nào ngoại trừ việc xác thực trực tiếp với Google Gemini API.
               </p>
             </div>
-            <div className="flex justify-end px-6 py-4 bg-slate-50 border-t border-slate-100">
+            <div className="flex justify-end px-6 py-4 bg-background border-t border-border">
               <button 
                 onClick={() => setIsSettingsOpen(false)}
                 className="bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer"
@@ -827,15 +827,15 @@ function App() {
           }}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
         >
-          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-3xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
                 <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
               </h3>
               <button 
                 onClick={() => setIsVideoModalOpen(false)} 
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer font-bold"
+                className="text-text-secondary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background cursor-pointer font-bold"
               >
                 <span className="text-xl font-semibold leading-none">&times;</span>
               </button>

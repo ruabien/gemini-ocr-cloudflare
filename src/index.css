@@ -69,14 +69,31 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Grid background overlay (Linear/Vercel style) */
+/* Grid background overlay (Linear/Vercel style) - Navy Tinted */
 .bg-grid {
   background-size: 50px 50px;
   background-image: 
-    linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    linear-gradient(to right, rgba(22, 58, 112, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(22, 58, 112, 0.04) 1px, transparent 1px);
   mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 60%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 60%, transparent 100%);
+}
+
+/* Legal divider decoration line */
+.legal-divider {
+  display: flex;
+  width: 60px;
+  height: 3px;
+  margin-top: 12px;
+  margin-bottom: 24px;
+}
+.legal-divider-primary {
+  width: 70%;
+  background-color: var(--color-primary);
+}
+.legal-divider-accent {
+  width: 30%;
+  background-color: var(--color-accent);
 }
 
 /* Scanning Animation Effect */
