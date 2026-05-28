@@ -108,69 +108,252 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="relative min-h-screen bg-background text-on-surface flex flex-col font-sans">
+        <div class="absolute inset-0 bg-grid pointer-events-none z-0"></div>
 
-    <!-- Video Modal -->
-    <div id="video-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-      <div class="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200 animate-out fade-out zoom-out-95">
-        <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
-          </h3>
-          <button onclick="window.closeVideoModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
-            <span class="text-xl font-semibold leading-none">&times;</span>
-          </button>
-        </div>
-        <!-- Body -->
-        <div class="w-full aspect-video bg-black">
-          <iframe 
-            id="youtube-iframe"
-            class="w-full h-full"
-            src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
-            title="YouTube video player" 
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-            referrerpolicy="strict-origin-when-cross-origin"
-            allowfullscreen>
-          </iframe>
-        </div>
+        <!-- HEADER -->
+        <header class="sticky top-0 z-50 w-full glass-card border-b border-outline-variant/40 transition-all duration-300">
+          <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+              <a href="#" class="flex items-center gap-2 group">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-ai-accent flex items-center justify-center text-white shadow-md">
+                  <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                </div>
+                <span class="font-bold text-2xl tracking-tight bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">DOC</span>
+              </a>
+              <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-on-surface-variant">
+                <a href="#features" class="hover:text-primary transition-colors">Tính năng</a>
+                <a href="#demo" class="hover:text-primary transition-colors">Live Demo</a>
+                <a href="#how-it-works" class="hover:text-primary transition-colors">Cách hoạt động</a>
+                <a href="#security" class="hover:text-primary transition-colors">Bảo mật</a>
+                <a href="#faq" class="hover:text-primary transition-colors">Câu hỏi</a>
+              </nav>
+            </div>
+            <div class="flex items-center gap-3">
+              <button class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary-container/20 transition-all flex items-center gap-1.5 cursor-pointer">
+                <span class="material-icons text-[18px]">settings</span>
+                <span>Cấu hình API</span>
+              </button>
+              <button class="btn-premium-primary text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                <span>Dùng miễn phí</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- HERO SECTION -->
+        <section class="relative max-w-7xl mx-auto w-full px-6 pt-16 pb-20 md:pt-24 md:pb-28 z-10">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            <div class="lg:col-span-6 space-y-8 text-left">
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-container border border-primary/20 text-primary text-xs font-bold shadow-sm">
+                <span class="uppercase tracking-wider">OCR Tiếng Việt bằng AI thế hệ mới</span>
+              </div>
+              <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
+                OCR tiếng Việt miễn phí <br />
+                <span class="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2">Chuyển PDF, hình ảnh sang văn bản</span>
+              </h1>
+              <p class="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-xl">
+                Công cụ số hóa tài liệu trực tuyến miễn phí sử dụng trí tuệ nhân tạo Gemini AI. Chuyển đổi nhanh chóng mọi tệp PDF scan, ảnh chụp giấy tờ thành văn bản sạch có thể chỉnh sửa ngay lập tức.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-4">
+                <button class="btn-premium-primary text-white font-bold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 text-sm sm:text-base">
+                  <span>Tải tài liệu lên</span>
+                </button>
+                <a href="#demo" class="btn-premium-secondary text-on-surface font-semibold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base">
+                  <span>Xem Demo trước/sau</span>
+                </a>
+              </div>
+              <div class="pt-6 border-t border-outline-variant/60">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-semibold text-on-surface-variant">
+                  <div class="flex items-center gap-1.5"><span>🛡️ Không lưu dữ liệu</span></div>
+                  <div class="flex items-center gap-1.5"><span>📚 OCR hàng loạt</span></div>
+                  <div class="flex items-center gap-1.5"><span>💾 Xuất Word / Text</span></div>
+                  <div class="flex items-center gap-1.5"><span>🔒 Bảo mật tuyệt đối</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="lg:col-span-6">
+              <div class="relative p-2 rounded-3xl bg-gradient-to-tr from-primary/10 via-transparent to-ai-accent/15 border border-outline-variant/40 shadow-2xl glass-card">
+                <div class="p-8 bg-white rounded-2xl border border-slate-100 shadow-sm text-center min-h-[300px] flex flex-col justify-center items-center">
+                  <div class="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+                    <span class="material-icons text-3xl">cloud_upload</span>
+                  </div>
+                  <h3 class="font-bold text-slate-800 text-lg mb-2">Tải tài liệu của bạn lên</h3>
+                  <p class="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed">Kéo và thả tệp tài liệu PDF hoặc hình ảnh (PNG, JPG, JPEG, WEBP) tại đây, hoặc bấm để duyệt tệp từ máy tính.</p>
+                  <span class="text-[10px] text-slate-400 bg-slate-50 border border-slate-200/60 px-3 py-1 rounded-full font-semibold">Tối đa 100MB mỗi tệp</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FEATURES SECTION -->
+        <section id="features" class="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
+          <div class="text-center space-y-4 mb-16">
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">Tại sao DOC mang lại hiệu quả vượt trội?</h2>
+            <p class="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">Thiết kế riêng cho các biểu mẫu và tài liệu hành chính tiếng Việt phức tạp nhất.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="hover-glow-card rounded-2xl bg-white p-6 text-left">
+              <h3 class="text-lg font-bold text-on-surface mb-2">⚡ OCR siêu nhanh</h3>
+              <p class="text-sm text-on-surface-variant leading-relaxed">Xử lý tài liệu tức thì chỉ trong vài giây mỗi trang. Tách luồng xử lý song song để tiết kiệm tối đa thời gian chờ đợi.</p>
+            </div>
+            <div class="hover-glow-card rounded-2xl bg-white p-6 text-left">
+              <h3 class="text-lg font-bold text-on-surface mb-2">🇻🇳 Tối ưu tiếng Việt</h3>
+              <p class="text-sm text-on-surface-variant leading-relaxed">Được huấn luyện đặc biệt để nhận dạng chuẩn xác 100% hệ thống dấu tiếng Việt, từ vựng pháp lý, hành chính.</p>
+            </div>
+            <div class="hover-glow-card rounded-2xl bg-white p-6 text-left">
+              <h3 class="text-lg font-bold text-on-surface mb-2">🛡️ Bảo mật tuyệt đối</h3>
+              <p class="text-sm text-on-surface-variant leading-relaxed">Mô hình Zero-Server xử lý trực tiếp trên trình duyệt. Dữ liệu của bạn được bảo mật hoàn toàn và không lưu trữ trên máy chủ nào.</p>
+            </div>
+            <div class="hover-glow-card rounded-2xl bg-white p-6 text-left">
+              <h3 class="text-lg font-bold text-on-surface mb-2">📐 Giữ nguyên bố cục</h3>
+              <p class="text-sm text-on-surface-variant leading-relaxed">Nhận diện phân vùng bảng biểu, danh sách liệt kê, và các đoạn văn để dàn dựng lại đúng nguyên bản tài liệu.</p>
+            </div>
+            <div class="hover-glow-card rounded-2xl bg-white p-6 text-left">
+              <h3 class="text-lg font-bold text-on-surface mb-2">📦 OCR hàng loạt</h3>
+              <p class="text-sm text-on-surface-variant leading-relaxed">Thả hàng chục tệp ảnh hoặc PDF nhiều trang cùng lúc. Hệ thống hàng đợi tự động chạy tuần tự và gộp file kết quả tiện lợi.</p>
+            </div>
+            <div class="hover-glow-card rounded-2xl bg-white p-6 text-left">
+              <h3 class="text-lg font-bold text-on-surface mb-2">✍️ AI sửa lỗi chính tả</h3>
+              <p class="text-sm text-on-surface-variant leading-relaxed">Tự động phân tích ngữ cảnh của văn bản để phát hiện và khôi phục các ký tự bị mất dấu, dính chữ do chất lượng quét ảnh kém.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- USE CASES SECTION -->
+        <section id="use-cases" class="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
+          <div class="text-center space-y-4 mb-16">
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">Giải pháp số hóa tài liệu cho mọi nhu cầu</h2>
+            <p class="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">Tối ưu hóa năng suất xử lý dữ liệu chữ viết cho nhiều loại tài liệu khác nhau.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left">
+              <h3 class="font-bold text-on-surface text-base mb-2">⚖️ Hợp đồng & Thỏa thuận</h3>
+              <p class="text-xs text-on-surface-variant leading-relaxed">Trích xuất chính xác các điều khoản, thông tin đối tác và số liệu từ các bản scan PDF hoặc ảnh chụp hợp đồng thương mại.</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left">
+              <h3 class="font-bold text-on-surface text-base mb-2">📂 Hồ sơ hành chính</h3>
+              <p class="text-xs text-on-surface-variant leading-relaxed">Số hóa nhanh các đơn từ, giấy tờ, quyết định hành chính nhà nước có kết cấu văn bản phức tạp mà không lo lỗi font tiếng Việt.</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left">
+              <h3 class="font-bold text-on-surface text-base mb-2">📜 Tài liệu scan cũ</h3>
+              <p class="text-xs text-on-surface-variant leading-relaxed">Nhận diện hiệu quả sách báo, tài liệu scan mờ nhòe hoặc mất nét nhờ cơ chế tự phân tích ngữ cảnh để khôi phục chữ viết của Gemini AI.</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 hover-glow-card text-left">
+              <h3 class="font-bold text-on-surface text-base mb-2">📷 Ảnh chụp văn bản</h3>
+              <p class="text-xs text-on-surface-variant leading-relaxed">Xử lý ảnh chụp biên lai, hóa đơn, giấy tờ tùy thân từ camera điện thoại, tự động làm sạch và chuyển thành dữ liệu văn bản.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- HOW IT WORKS -->
+        <section id="how-it-works" class="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
+          <div class="text-center space-y-4 mb-16">
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">Chuyển đổi văn bản trong 3 bước</h2>
+            <p class="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">Đơn giản, trực quan và tối ưu hóa thời gian thực hiện của bạn.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto text-center">
+            <div class="space-y-3">
+              <div class="w-16 h-16 rounded-2xl bg-white border border-outline-variant/50 shadow-md flex items-center justify-center mx-auto text-primary text-xl font-bold">1</div>
+              <h3 class="text-lg font-bold text-on-surface">Bước 1: Tải file lên</h3>
+              <p class="text-sm text-on-surface-variant max-w-xs mx-auto">Tải hình ảnh (.jpg, .png, .webp) hoặc tệp tài liệu .pdf cần bóc tách chữ lên hệ thống.</p>
+            </div>
+            <div class="space-y-3">
+              <div class="w-16 h-16 rounded-2xl bg-white border border-outline-variant/50 shadow-md flex items-center justify-center mx-auto text-ai-accent text-xl font-bold">2</div>
+              <h3 class="text-lg font-bold text-on-surface">Bước 2: AI xử lý OCR</h3>
+              <p class="text-sm text-on-surface-variant max-w-xs mx-auto">Mô hình Gemini AI tiến hành quét chữ và tự động sửa các lỗi chính tả dính chữ theo ngữ cảnh.</p>
+            </div>
+            <div class="space-y-3">
+              <div class="w-16 h-16 rounded-2xl bg-white border border-outline-variant/50 shadow-md flex items-center justify-center mx-auto text-emerald-500 text-xl font-bold">3</div>
+              <h3 class="text-lg font-bold text-on-surface">Bước 3: Sao chép / Tải xuống</h3>
+              <p class="text-sm text-on-surface-variant max-w-xs mx-auto">Sao chép nhanh văn bản kết quả chỉ bằng 1-click hoặc tải xuống file .txt, .md, .docx đã được chuẩn hóa.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECURITY & PRIVACY -->
+        <section id="security" class="bg-slate-950 text-slate-100 py-20 relative overflow-hidden z-10">
+          <div class="max-w-5xl mx-auto px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              <div class="lg:col-span-5 space-y-4 text-left">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">🛡️ Bảo mật & Quyền riêng tư</span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">An toàn tuyệt đối cho tài liệu của bạn</h2>
+                <p class="text-slate-400 text-sm sm:text-base leading-relaxed">Chúng tôi hiểu rằng tài liệu hành chính, bản án và các hợp đồng kinh tế là tài sản vô giá và cực kỳ nhạy cảm. DOC được thiết kế trên mô hình phi trạng thái để đảm bảo dữ liệu luôn thuộc quyền kiểm soát của bạn.</p>
+              </div>
+              <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                <div class="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-2">
+                  <h3 class="font-bold text-white text-base">🖥️ Xử lý file cục bộ</h3>
+                  <p class="text-xs text-slate-400 leading-relaxed">Tài liệu của bạn được tách trang và nén trực tiếp trên trình duyệt bằng canvas, gửi thẳng tới Google Gemini API qua kết nối HTTPS mã hóa mà không qua server trung gian nào.</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-2">
+                  <h3 class="font-bold text-white text-base">🔑 Lưu API Key tại máy</h3>
+                  <p class="text-xs text-slate-400 leading-relaxed">Gemini API Key cá nhân của bạn được lưu trữ hoàn toàn dưới dạng cục bộ trong localStorage trên trình duyệt của riêng bạn, không bao giờ được gửi tới bất kỳ bên thứ ba nào.</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-2">
+                  <h3 class="font-bold text-white text-base">⏳ Không lưu lịch sử</h3>
+                  <p class="text-xs text-slate-400 leading-relaxed">Hệ thống hoạt động phi trạng thái (stateless). Các file tài liệu và văn bản kết quả OCR chỉ tồn tại tạm thời trong bộ nhớ phiên hiện tại và tự động xoá sạch khi đóng tab.</p>
+                </div>
+                <div class="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-2">
+                  <h3 class="font-bold text-white text-base">🗑️ Dễ dàng xoá bỏ</h3>
+                  <p class="text-xs text-slate-400 leading-relaxed">Bạn có thể chủ động xoá bỏ hoàn toàn API Key khỏi trình duyệt bất cứ lúc nào bằng cách click vào nút "Làm mới" trên Workspace hoặc nhấn "Xóa cấu hình" trong bảng Cấu hình API.</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- DISCLAIMER -->
+            <div class="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-start gap-4 text-left">
+              <div class="text-left space-y-1">
+                <h4 class="font-bold text-amber-400 text-sm">⚠️ Tuyên bố miễn trừ trách nhiệm (Disclaimer)</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">Mặc dù mô hình AI Gemini thế hệ mới sở hữu khả năng nhận diện ngữ cảnh tiếng Việt vô cùng chính xác, kết quả bóc tách (OCR) vẫn có thể phát sinh sai lệch nhỏ ngoài ý muốn tùy thuộc vào chất lượng tài liệu chụp, độ nhòe hoặc góc nghiêng của văn bản gốc. Người dùng được khuyến nghị bắt buộc phải kiểm tra và đối chiếu lại toàn bộ kết quả văn bản trước khi áp dụng cho các mục đích chính thức như tài liệu pháp lý, thủ tục hành chính, văn bản thương mại hoặc các báo cáo quan trọng.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FAQ SECTION -->
+        <section id="faq" class="max-w-4xl mx-auto w-full px-6 py-20 relative z-10">
+          <div class="text-center space-y-4 mb-12">
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">Các câu hỏi thường gặp</h2>
+          </div>
+          <div class="space-y-4 text-left">
+            <div class="bg-white rounded-2xl border border-outline-variant/60 p-5 shadow-sm">
+              <h3 class="text-base sm:text-lg font-bold text-on-surface mb-2">❓ DOC có miễn phí không?</h3>
+              <p class="text-sm sm:text-base text-on-surface-variant leading-relaxed">Hoàn toàn miễn phí! DOC được vận hành theo cơ chế BYOK (Bring Your Own Key) - bạn sử dụng chính mã API Key miễn phí tự tạo của mình để kết nối trực tiếp với Google Gemini AI, không lo giới hạn số lượng và hoàn toàn không mất phí trung gian.</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-outline-variant/60 p-5 shadow-sm">
+              <h3 class="text-base sm:text-lg font-bold text-on-surface mb-2">❓ Tài liệu tôi tải lên có bị lưu lại không?</h3>
+              <p class="text-sm sm:text-base text-on-surface-variant leading-relaxed">Tuyệt đối không. Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tài liệu được xử lý cục bộ và chuyển trực tiếp tới máy chủ bảo mật của Google thông qua kết nối HTTPS để xử lý rồi trả kết quả về. DOC không lưu trữ bất kỳ tài liệu hay văn bản nào của bạn.</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-outline-variant/60 p-5 shadow-sm">
+              <h3 class="text-base sm:text-lg font-bold text-on-surface mb-2">❓ OCR tiếng Việt có chính xác không?</h3>
+              <p class="text-sm sm:text-base text-on-surface-variant leading-relaxed">Nhờ sức mạnh của mô hình ngôn ngữ lớn Google Gemini AI tiên tiến nhất hiện nay, DOC có thể nhận diện chính xác tiếng Việt kể cả các bản scan mờ, chữ viết tay nghiêng hoặc tài liệu cũ. Ngoài ra, AI sẽ tự động phân tích ngữ cảnh để sửa các lỗi chính tả phổ biến của tiếng Việt một cách thông minh.</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-outline-variant/60 p-5 shadow-sm">
+              <h3 class="text-base sm:text-lg font-bold text-on-surface mb-2">❓ Có hỗ trợ xuất sang file Word được không?</h3>
+              <p class="text-sm sm:text-base text-on-surface-variant leading-relaxed">Có. Bạn có thể xuất kết quả sang tệp văn bản (.txt), Markdown (.md) hoặc Microsoft Word (.docx) đã được chuẩn hóa để chỉnh sửa ngay lập tức mà không phải định dạng lại.</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-outline-variant/60 p-5 shadow-sm">
+              <h3 class="text-base sm:text-lg font-bold text-on-surface mb-2">❓ Giới hạn dung lượng và số lượng trang tệp là bao nhiêu?</h3>
+              <p class="text-sm sm:text-base text-on-surface-variant leading-relaxed">DOC hỗ trợ tải lên nhiều hình ảnh cùng lúc (JPG, PNG, WEBP) và tệp PDF dung lượng tối đa lên đến 100MB. Hệ thống có cơ chế phân tách các trang PDF tự động và sắp xếp hàng đợi xử lý song song, giúp bóc tách hàng trăm trang tài liệu cực kỳ nhanh chóng.</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-outline-variant/60 p-5 shadow-sm">
+              <h3 class="text-base sm:text-lg font-bold text-on-surface mb-2">❓ Làm thế nào để lấy Gemini API Key miễn phí?</h3>
+              <p class="text-sm sm:text-base text-on-surface-variant leading-relaxed">Bạn chỉ cần truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google bất kỳ, click vào nút 'Get API Key' và tạo một khoá trong 10 giây.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="w-full bg-slate-50 border-t border-outline-variant/60 py-16 relative z-10">
+          <div class="max-w-7xl mx-auto px-6 text-center text-xs font-medium text-on-surface-variant">
+            <p>© 2026 DOC. Bản quyền thuộc về dự án bóc tách tài liệu thông minh.</p>
+            <p class="mt-2">Email hỗ trợ: support@hotro.online</p>
+          </div>
+        </footer>
       </div>
     </div>
-
-    <!-- Modal Helper Script -->
-    <script>
-      window.openVideoModal = function() {
-        const modal = document.getElementById('video-modal');
-        if (modal) {
-          modal.classList.remove('hidden');
-        }
-      };
-      
-      window.closeVideoModal = function() {
-        const modal = document.getElementById('video-modal');
-        if (modal) {
-          modal.classList.add('hidden');
-          const iframe = document.getElementById('youtube-iframe');
-          if (iframe) {
-            // Reset src to stop audio from playing in the background
-            iframe.src = "https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1";
-          }
-        }
-      };
-      
-      // Close when clicking outside
-      document.addEventListener('DOMContentLoaded', () => {
-        const modal = document.getElementById('video-modal');
-        if (modal) {
-          modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-              window.closeVideoModal();
-            }
-          });
-        }
-      });
-    </script>
 
     <script type="module" src="/src/main.jsx"></script>
   </body>

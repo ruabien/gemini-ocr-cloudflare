@@ -29,6 +29,16 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  useEffect(() => {
+    window.openVideoModal = () => setIsVideoModalOpen(true);
+    window.closeVideoModal = () => setIsVideoModalOpen(false);
+    return () => {
+      delete window.openVideoModal;
+      delete window.closeVideoModal;
+    };
+  }, []);
 
   // Bộ chọn dải trang
   const [fromPage, setFromPage] = useState(1);
@@ -502,6 +512,44 @@ function App() {
             </div>
           </div>
         )}
+        
+        {/* Video Modal (Global) */}
+        {isVideoModalOpen && (
+          <div 
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsVideoModalOpen(false);
+            }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          >
+            <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
+                </h3>
+                <button 
+                  onClick={() => setIsVideoModalOpen(false)} 
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer font-bold"
+                >
+                  <span className="text-xl font-semibold leading-none">&times;</span>
+                </button>
+              </div>
+              {/* Body */}
+              <div className="w-full aspect-video bg-black">
+                <iframe 
+                  id="youtube-iframe"
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
+                  title="YouTube video player" 
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -694,6 +742,44 @@ function App() {
               >
                 Hoàn tất
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Video Modal (Global) */}
+      {isVideoModalOpen && (
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsVideoModalOpen(false);
+          }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
+              </h3>
+              <button 
+                onClick={() => setIsVideoModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer font-bold"
+              >
+                <span className="text-xl font-semibold leading-none">&times;</span>
+              </button>
+            </div>
+            {/* Body */}
+            <div className="w-full aspect-video bg-black">
+              <iframe 
+                id="youtube-iframe"
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
+                title="YouTube video player" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
             </div>
           </div>
         </div>
