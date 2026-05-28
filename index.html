@@ -4,19 +4,108 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DOC - Chuyển đổi PDF & Hình ảnh sang Văn bản trực tuyến</title>
-    <meta name="description" content="Công cụ DOC giúp bóc tách chữ (OCR) từ file ảnh, tài liệu PDF sang văn bản soạn thảo hoàn toàn miễn phí, chính xác, bảo mật và siêu tốc bằng công nghệ AI." />
-    <meta name="keywords" content="ocr, chuyển ảnh thành văn bản, ocr pdf, bóc chữ dữ liệu, doc hotro, số hóa tài liệu" />
+    <title>DOC - OCR Tiếng Việt Miễn Phí - Chuyển PDF và Ảnh sang Văn Bản</title>
+    <meta name="description" content="Công cụ DOC giúp bóc tách chữ (OCR) từ file ảnh, tài liệu PDF scan sang văn bản soạn thảo hoàn toàn miễn phí, chính xác, bảo mật và siêu tốc bằng công nghệ AI Gemini." />
+    <meta name="keywords" content="ocr, chuyển ảnh thành văn bản, ocr pdf, bóc chữ dữ liệu, doc hotro, số hóa tài liệu, ocr tieng viet, convert pdf to word" />
     <meta name="google-site-verification" content="dz4ncEb0JJZqzRJZ9vM6xuJi-cBl0TlFDdEcCyrC4ug" />
+    <link rel="canonical" href="https://doc.hotro.online" />
+    
+    <!-- Bảo mật Content Security Policy (CSP) chống XSS & bảo vệ API Keys -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; connect-src 'self' https://generativelanguage.googleapis.com https://*.workers.dev; img-src 'self' data: blob:; iframe-src https://www.youtube.com;" />
+
     <!-- Open Graph / Facebook / Zalo -->
-    <meta property="og:title" content="DOC - Chuyển đổi PDF & Hình ảnh sang Văn bản trực tuyến" />
+    <meta property="og:title" content="DOC - OCR Tiếng Việt Miễn Phí - Chuyển PDF và Ảnh sang Văn Bản" />
     <meta property="og:description" content="Bóc tách chữ (OCR) từ tài liệu giấy và PDF sang văn bản số chỉ trong vài giây với công nghệ AI hiện đại." />
-    <meta property="og:image" content="logo.png" />
+    <meta property="og:image" content="https://doc.hotro.online/logo.png" />
     <meta property="og:url" content="https://doc.hotro.online" />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DOC - OCR Tiếng Việt Miễn Phí - Chuyển PDF và Ảnh sang Văn Bản" />
+    <meta name="twitter:description" content="Công cụ bóc tách chữ (OCR) tiếng Việt từ ảnh, file scan, PDF sang văn bản trực tuyến miễn phí bằng công nghệ AI Gemini siêu nhanh, bảo mật và chính xác." />
+    <meta name="twitter:image" content="https://doc.hotro.online/logo.png" />
 
     <!-- Google Fonts & Material Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Schema Structured Data: WebApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "DOC - Công cụ AI OCR Tiếng Việt",
+      "url": "https://doc.hotro.online",
+      "description": "Chuyển đổi hình ảnh, ảnh chụp văn bản, PDF scan thành văn bản soạn thảo Word hoặc Text trực tuyến miễn phí.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript. Requires HTML5.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0.00",
+        "priceCurrency": "VND"
+      }
+    }
+    </script>
+
+    <!-- Schema Structured Data: FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "DOC có miễn phí không?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Hoàn toàn miễn phí! DOC được vận hành theo cơ chế BYOK (Bring Your Own Key) - bạn sử dụng chính mã API Key miễn phí tự tạo của mình để kết nối trực tiếp với Google Gemini AI, không lo giới hạn số lượng và hoàn toàn không mất phí trung gian."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Tài liệu tôi tải lên có bị lưu lại không?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Tuyệt đối không. Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tài liệu được xử lý cục bộ và chuyển trực tiếp tới máy chủ bảo mật của Google thông qua kết nối HTTPS để xử lý rồi trả kết quả về. DOC không lưu trữ bất kỳ tài liệu hay văn bản nào của bạn."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "OCR tiếng Việt có chính xác không?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Nhờ sức mạnh của mô hình ngôn ngữ lớn Google Gemini AI tiên tiến nhất hiện nay, DOC có thể nhận diện chính xác tiếng Việt kể cả các bản scan mờ, chữ viết tay nghiêng hoặc tài liệu cũ. Ngoài ra, AI sẽ tự động phân tích ngữ cảnh để sửa các lỗi chính tả phổ biến của tiếng Việt một cách thông minh."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Có hỗ trợ xuất sang file Word được không?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Có. Bạn có thể xuất kết quả sang tệp văn bản (.txt) đã được chuẩn hóa, loại bỏ hoàn toàn các ký tự xuống dòng bừa bãi. Bạn chỉ cần copy-paste trực tiếp vào Microsoft Word, Google Docs hoặc Excel để chỉnh sửa ngay lập tức mà không phải định dạng lại."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Giới hạn dung lượng và số lượng trang tệp là bao nhiêu?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "DOC hỗ trợ tải lên nhiều hình ảnh cùng lúc (JPG, PNG) và tệp PDF dung lượng tối đa lên đến 100MB. Hệ thống có cơ chế phân tách các trang PDF tự động và sắp xếp hàng đợi xử lý song song, giúp bóc tách hàng trăm trang tài liệu cực kỳ nhanh chóng."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Làm thế nào để lấy Gemini API Key miễn phí?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Bạn chỉ cần truy cập Google AI Studio (aistudio.google.com), đăng nhập bằng tài khoản Google bất kỳ, click vào nút 'Get API Key' và tạo một khoá trong 10 giây. Bạn có thể click vào nút 'Xem cách hoạt động' ở góc trên để xem video hướng dẫn chi tiết."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

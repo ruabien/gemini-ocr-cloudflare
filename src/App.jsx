@@ -56,7 +56,7 @@ function App() {
       setFromPage(1);
       setToPage(1);
     }
-  }, [activeParentPdf?.id, activeParentPdf?.totalPages]);
+  }, [activeParentPdf?.id, activeParentPdf?.totalPages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleConfigChange = useCallback((newConfig) => {
     setConfig(newConfig);

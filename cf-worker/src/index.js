@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -86,7 +86,9 @@ export default {
         try {
           const errData = await response.json();
           errorMsg = errData?.error?.message || errorMsg;
-        } catch {}
+        } catch {
+          // ignore
+        }
         throw new Error(errorMsg);
       }
 

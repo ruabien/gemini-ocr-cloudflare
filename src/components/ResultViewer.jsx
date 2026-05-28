@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { Copy, Check, FileText, Download, AlertCircle } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
@@ -12,11 +13,6 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   const parentPdf = file?.isParentPdf ? file : (allFiles && file?.parentPdfId ? allFiles.find(f => f.id === file.parentPdfId) : null);
   const pdfPages = parentPdf ? allFiles.filter(f => f.isPdfPage && f.parentPdfId === parentPdf.id) : [];
   const hasPdfResult = pdfPages.some(p => p.result && p.result.trim());
-
-  const getCleanLine = (text) => {
-    if (!text) return "";
-    return text.trim();
-  };
 
   const getMergedNormalizedText = () => {
     const merged = imageFiles
@@ -53,7 +49,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     } else {
       setLocalText(file?.result || "");
     }
-  }, [file?.id, file?.result, allFiles, file?.isParentPdf]);
+  }, [file?.id, file?.result, allFiles, file?.isParentPdf]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!file) {
     return (

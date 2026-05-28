@@ -24,7 +24,7 @@ const fileToBase64 = (file) => {
  * @param {string} workerUrl - (Bỏ qua/Không dùng)
  * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
-export const processOCR = async (file, apiKey, modelName, workerUrl) => {
+export const processOCR = async (file, apiKey, modelName) => {
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
   let normalizedModel = modelName || 'gemini-2.5-flash';
@@ -103,7 +103,9 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
     try {
       const errData = await response.json();
       errorMsg = errData?.error?.message || errorMsg;
-    } catch {}
+    } catch {
+      // ignore
+    }
     const err = new Error(errorMsg);
     err.status = response.status;
     throw err;
@@ -122,6 +124,7 @@ export const processOCR = async (file, apiKey, modelName, workerUrl) => {
   
   if (textResult === undefined || textResult === null) {
 
+    const finishReason = data.candidates?.[0]?.finishReason;
     const blockReason = data.promptFeedback?.blockReason;
     const safetyRatings = data.candidates?.[0]?.safetyRatings;
     

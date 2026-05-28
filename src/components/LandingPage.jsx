@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Sparkles, ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
   HelpCircle, ChevronDown, Check, ArrowRight, Upload, Play,
-  Lock, Eye, ServerOff, Cpu
+  Lock, Eye, ServerOff, Cpu, FileText, Printer, Camera, Gavel, AlertTriangle
 } from 'lucide-react';
 import FileDropzone from './FileDropzone';
 
@@ -12,7 +12,6 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
   
   // Live Demo Typing State
   const [demoText, setDemoText] = useState('');
-  const [demoPhase, setDemoPhase] = useState('typing'); // 'typing', 'highlighting', 'done'
   const demoTextTarget = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc\n\nĐƠN KHỞI KIỆN\n\nKính gửi: Tòa án nhân dân quận Hoàn Kiếm, thành phố Hà Nội.\n\nTôi tên là: Nguyễn Văn A, sinh năm 1985.\nCăn cước công dân số: 001085000123 cấp ngày 15/10/2021 tại Cục Cảnh sát Quản lý hành chính về trật tự xã hội.";
   
   // Typing Effect for Live Demo
@@ -21,17 +20,14 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
     let timer;
     
     const startTyping = () => {
-      setDemoPhase('typing');
       timer = setInterval(() => {
         if (index < demoTextTarget.length) {
           setDemoText(demoTextTarget.substring(0, index + 1));
           index++;
         } else {
           clearInterval(timer);
-          setDemoPhase('highlighting');
           // Wait and restart loop
           setTimeout(() => {
-            setDemoPhase('done');
             setTimeout(() => {
               index = 0;
               setDemoText('');
@@ -162,12 +158,12 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
-              OCR tiếng Việt bằng AI <br />
-              <span className="gradient-text-ai">chính xác vượt trội</span>
+              OCR tiếng Việt miễn phí <br />
+              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2">Chuyển PDF, hình ảnh sang văn bản</span>
             </h1>
             
             <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-xl">
-              Chuyển PDF scan, ảnh chụp và tài liệu giấy thành văn bản có thể chỉnh sửa chỉ trong vài giây. Tự động sửa lỗi chính tả theo ngữ cảnh thực tế.
+              Công cụ số hóa tài liệu trực tuyến miễn phí sử dụng trí tuệ nhân tạo Gemini AI. Chuyển đổi nhanh chóng mọi tệp PDF scan, ảnh chụp giấy tờ thành văn bản sạch có thể chỉnh sửa ngay lập tức.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -412,6 +408,72 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         </div>
       </section>
 
+      {/* USE CASES SECTION */}
+      <section id="use-cases" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
+        <div className="text-center space-y-4 mb-16">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
+            <FileText size={12} />
+            <span>Trường hợp sử dụng</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
+            Giải pháp số hóa tài liệu cho mọi nhu cầu
+          </h2>
+          <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
+            Tối ưu hóa năng suất xử lý dữ liệu chữ viết cho nhiều loại tài liệu khác nhau.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+                <Gavel size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base mb-2">Hợp đồng & Thỏa thuận</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Trích xuất chính xác các điều khoản, thông tin đối tác và số liệu từ các bản scan PDF hoặc ảnh chụp hợp đồng thương mại.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+                <FileText size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base mb-2">Hồ sơ hành chính</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Số hóa nhanh các đơn từ, giấy tờ, quyết định hành chính nhà nước có kết cấu văn bản phức tạp mà không lo lỗi font tiếng Việt.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                <Printer size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base mb-2">Tài liệu scan cũ</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Nhận diện hiệu quả sách báo, tài liệu scan mờ nhòe hoặc mất nét nhờ cơ chế tự phân tích ngữ cảnh để khôi phục chữ viết của Gemini AI.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 hover:shadow-md transition-all flex flex-col justify-between text-left hover-glow-card">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+                <Camera size={20} />
+              </div>
+              <h3 className="font-bold text-on-surface text-base mb-2">Ảnh chụp văn bản</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Xử lý ảnh chụp biên lai, hóa đơn, giấy tờ tùy thân từ camera điện thoại, tự động làm sạch và chuyển thành dữ liệu văn bản.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* HOW IT WORKS SECTION */}
       <section id="how-it-works" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
         <div className="text-center space-y-4 mb-16">
@@ -440,9 +502,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <Upload size={28} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">Tải tài liệu lên</h3>
+            <h3 className="text-lg font-bold text-on-surface">Tải file lên</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
-              Kéo thả hình ảnh hoặc tệp tin PDF cần bóc chữ trực tiếp vào hộp nhận diện trên màn hình.
+              Tải hình ảnh (.jpg, .png) hoặc tệp tài liệu .pdf cần bóc tách chữ lên hệ thống.
             </p>
           </div>
 
@@ -456,7 +518,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </div>
             <h3 className="text-lg font-bold text-on-surface">AI xử lý OCR</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
-              Mô hình trí tuệ nhân tạo sẽ tự động phân tích kết cấu, bóc tách chữ tiếng Việt và sửa lỗi.
+              Mô hình Gemini AI tiến hành quét chữ và tự động sửa các lỗi chính tả dính chữ theo ngữ cảnh.
             </p>
           </div>
 
@@ -468,9 +530,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <FileOutput size={28} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">Tải xuống kết quả</h3>
+            <h3 className="text-lg font-bold text-on-surface">Sao chép / Tải xuống</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
-              Copy kết quả cực nhanh chỉ bằng 1-click hoặc xuất tệp văn bản .txt đã gộp định dạng chuẩn chỉnh.
+              Sao chép nhanh văn bản kết quả chỉ bằng 1-click hoặc tải xuống file .txt đã được chuẩn hóa.
             </p>
           </div>
 
@@ -489,61 +551,75 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="lg:col-span-5 space-y-4 text-left">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
                 <ShieldCheck size={12} />
-                <span>Tuyệt đối bảo mật</span>
+                <span>Bảo mật & Quyền riêng tư</span>
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                Dữ liệu của bạn luôn được bảo vệ
+                An toàn tuyệt đối cho tài liệu của bạn
               </h2>
               <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-                Chúng tôi hiểu rằng tài liệu hành chính, bản án và các hợp đồng kinh tế là tài sản vô giá và cực kỳ nhạy cảm. DOC được kiến trúc dựa trên nền tảng an ninh tối ưu nhất.
+                Chúng tôi hiểu rằng tài liệu hành chính, bản án và các hợp đồng kinh tế là tài sản vô giá và cực kỳ nhạy cảm. DOC được thiết kế trên mô hình phi trạng thái để đảm bảo dữ liệu luôn thuộc quyền kiểm soát của bạn.
               </p>
             </div>
 
             <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
               
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400">
                   <ServerOff size={18} />
                 </div>
-                <h3 className="font-bold text-white text-base">Không lưu tài liệu</h3>
+                <h3 className="font-bold text-white text-base">Xử lý file cục bộ</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Ứng dụng bóc tách hoàn toàn ở phía client (trình duyệt của bạn). Không một máy chủ trung gian nào lưu trữ file.
+                  Tài liệu của bạn được tách trang và nén trực tiếp trên trình duyệt bằng canvas, gửi thẳng tới Google Gemini API qua kết nối HTTPS mã hóa mà không qua server trung gian nào.
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
                 <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center text-primary">
                   <Lock size={18} />
                 </div>
-                <h3 className="font-bold text-white text-base">HTTPS Secure</h3>
+                <h3 className="font-bold text-white text-base">Lưu API Key tại máy</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Đường truyền tải dữ liệu trực tiếp từ máy bạn tới cổng API của Google được mã hóa SSL/TLS 256-bit mức độ quân sự.
+                  Gemini API Key cá nhân của bạn được lưu trữ hoàn toàn dưới dạng cục bộ trong <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded text-primary">localStorage</code> trên trình duyệt của riêng bạn, không bao giờ được gửi tới bất kỳ bên thứ ba nào.
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
                 <div className="w-10 h-10 rounded-lg bg-ai-accent/15 flex items-center justify-center text-ai-accent">
                   <RefreshCw size={18} />
                 </div>
-                <h3 className="font-bold text-white text-base">Tự động xóa file</h3>
+                <h3 className="font-bold text-white text-base">Không lưu lịch sử</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Ngay sau khi kết thúc quá trình OCR, bộ nhớ đệm hình ảnh trên trình duyệt sẽ được giải phóng lập tức để đảm bảo an toàn.
+                  Hệ thống hoạt động phi trạng thái (stateless). Các file tài liệu và văn bản kết quả OCR chỉ tồn tại tạm thời trong bộ nhớ phiên hiện tại và tự động xoá sạch khi đóng tab.
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all">
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
                 <div className="w-10 h-10 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400">
                   <Eye size={18} />
                 </div>
-                <h3 className="font-bold text-white text-base">Không train dữ liệu</h3>
+                <h3 className="font-bold text-white text-base">Dễ dàng xoá bỏ</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Khi dùng API Key cá nhân của bạn, Google cam kết không sử dụng bất kỳ dữ liệu hình ảnh hay văn bản nào để huấn luyện AI.
+                  Bạn có thể chủ động xoá bỏ hoàn toàn API Key khỏi trình duyệt bất cứ lúc nào bằng cách click vào nút "Làm mới" trên Workspace hoặc nhấn "Xóa cấu hình" trong bảng Cấu hình API.
                 </p>
               </div>
 
             </div>
 
           </div>
+
+          {/* DISCLAIMER CARD */}
+          <div className="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-start gap-4">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-500 shrink-0">
+              <AlertTriangle size={20} />
+            </div>
+            <div className="text-left space-y-1">
+              <h4 className="font-bold text-amber-400 text-sm">Tuyên bố miễn trừ trách nhiệm (Disclaimer)</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Mặc dù mô hình AI Gemini thế hệ mới sở hữu khả năng nhận diện ngữ cảnh tiếng Việt vô cùng chính xác, kết quả bóc tách (OCR) vẫn có thể phát sinh sai lệch nhỏ ngoài ý muốn tùy thuộc vào chất lượng tài liệu chụp, độ nhòe hoặc góc nghiêng của văn bản gốc. Người dùng được khuyến nghị <strong>bắt buộc phải kiểm tra và đối chiếu lại toàn bộ kết quả văn bản</strong> trước khi áp dụng cho các mục đích chính thức như tài liệu pháp lý, thủ tục hành chính, văn bản thương mại hoặc các báo cáo quan trọng.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
 

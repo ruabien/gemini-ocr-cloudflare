@@ -154,7 +154,9 @@ export default function ApiConfig({ onConfigChange }) {
           try {
             const data = await response.json();
             errorMsg = data?.error?.message || errorMsg;
-          } catch {}
+          } catch {
+            // ignore
+          }
 
           if (status === 429) {
             results.push({
