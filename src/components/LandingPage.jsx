@@ -66,24 +66,24 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
   const faqItems = [
     {
-      q: "DOC có miễn phí không?",
-      a: "Hoàn toàn miễn phí! DOC được vận hành theo cơ chế BYOK (Bring Your Own Key) - bạn sử dụng chính mã API Key miễn phí tự tạo của mình để kết nối trực tiếp với Google Gemini AI, không lo giới hạn số lượng và hoàn toàn không mất phí trung gian."
+      q: "DOC có đảm bảo an toàn bí mật hồ sơ vụ án không?",
+      a: "Tuyệt đối an toàn. Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tất cả dữ liệu hồ sơ vụ án, chứng cứ chụp thực địa đều được xử lý cục bộ và chuyển thẳng tới máy chủ bảo mật của Google qua kết nối HTTPS mã hóa, không qua bất kỳ máy chủ trung gian nào của DOC. Thiết kế này đáp ứng các tiêu chuẩn bảo mật nghiêm ngặt của Luật Bảo vệ bí mật nhà nước."
     },
     {
-      q: "Tài liệu tôi tải lên có bị lưu lại không?",
-      a: "Tuyệt đối không. Ứng dụng chạy trực tiếp trên trình duyệt của bạn (Client-Side). Tài liệu được xử lý cục bộ và chuyển trực tiếp tới máy chủ bảo mật của Google thông qua kết nối HTTPS để xử lý rồi trả kết quả về. DOC không lưu trữ bất kỳ tài liệu hay văn bản nào của bạn."
+      q: "API Key Gemini được quản lý như thế nào để tránh lộ thông tin?",
+      a: "Gemini API Key cá nhân của bạn được lưu trữ cục bộ tại bộ nhớ trình duyệt (localStorage) của bạn. Hệ thống hoạt động phi trạng thái (stateless), không ghi nhật ký lịch sử tài liệu tố tụng hay lưu trữ khóa của bạn trên đám mây. Bạn có thể xóa cấu hình này bất cứ lúc nào."
     },
     {
-      q: "OCR tiếng Việt có chính xác không?",
-      a: "Nhờ sức mạnh của mô hình ngôn ngữ lớn Google Gemini AI tiên tiến nhất hiện nay, DOC có thể nhận diện chính xác tiếng Việt kể cả các bản scan mờ, chữ viết tay nghiêng hoặc tài liệu cũ. Ngoài ra, AI sẽ tự động phân tích ngữ cảnh để sửa các lỗi chính tả phổ biến của tiếng Việt một cách thông minh."
+      q: "Có bóc tách được các bản scan tài liệu chứng cứ cũ, mờ hoặc chữ viết tay không?",
+      a: "Nhờ sức mạnh của trí tuệ nhân tạo Google Gemini AI thế hệ mới, ứng dụng tự động nhận diện ngữ cảnh tiếng Việt pháp lý để khôi phục và sửa các chữ bị mờ, mất nét, dính chữ do chất lượng quét ảnh kém từ hồ sơ cũ hoặc ảnh chụp thực địa."
     },
     {
-      q: "Có hỗ trợ xuất sang file Word được không?",
-      a: "Có. Bạn có thể xuất kết quả sang tệp văn bản (.txt) đã được chuẩn hóa, loại bỏ hoàn toàn các ký tự xuống dòng bừa bãi. Bạn chỉ cần copy-paste trực tiếp vào Microsoft Word, Google Docs hoặc Excel để chỉnh sửa ngay lập tức mà không phải định dạng lại."
+      q: "Hệ thống hỗ trợ xuất những định dạng tài liệu nào phục vụ xây dựng hồ sơ án?",
+      a: "Bạn có thể xuất văn bản bóc tách sang định dạng tài liệu Word (.docx), Markdown (.md) hoặc tệp văn bản thuần (.txt) được chuẩn hóa, giúp dễ dàng sao chép trực tiếp vào các mẫu văn bản tố tụng, cáo trạng hoặc bản án mà không lo lỗi định dạng."
     },
     {
-      q: "Giới hạn dung lượng và số lượng trang tệp là bao nhiêu?",
-      a: "DOC hỗ trợ tải lên nhiều hình ảnh cùng lúc (JPG, PNG) và tệp PDF dung lượng tối đa lên đến 100MB. Hệ thống có cơ chế phân tách các trang PDF tự động và sắp xếp hàng đợi xử lý song song, giúp bóc tách hàng trăm trang tài liệu cực kỳ nhanh chóng."
+      q: "Có giới hạn số lượng trang tài liệu scan hoặc dung lượng file không?",
+      a: "DOC hỗ trợ tải lên nhiều hình ảnh chứng cứ cùng lúc và các tệp hồ sơ PDF scan dung lượng tối đa lên đến 100MB. Hệ thống tự động phân tách trang PDF và xử lý song song trên hàng đợi để hoàn thành việc bóc tách tài liệu số lượng lớn trong thời gian ngắn nhất."
     },
     {
       q: "Làm thế nào để lấy Gemini API Key miễn phí?",
@@ -154,16 +154,16 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           <div className="lg:col-span-6 space-y-8 text-left animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-container border border-primary/20 text-primary text-xs font-bold shadow-sm">
               <Sparkles size={13} className="text-ai-accent" />
-              <span className="uppercase tracking-wider">OCR Tiếng Việt bằng AI thế hệ mới</span>
+              <span className="uppercase tracking-wider">Số hóa hồ sơ tư pháp bằng AI thế hệ mới</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
-              OCR tiếng Việt miễn phí <br />
-              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2">Chuyển PDF, hình ảnh sang văn bản</span>
+              Số hóa hồ sơ vụ án <br />
+              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2">Bóc tách chứng cứ & tài liệu tư pháp bằng AI</span>
             </h1>
             
             <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-xl">
-              Công cụ số hóa tài liệu trực tuyến miễn phí sử dụng trí tuệ nhân tạo Gemini AI. Chuyển đổi nhanh chóng mọi tệp PDF scan, ảnh chụp giấy tờ thành văn bản sạch có thể chỉnh sửa ngay lập tức.
+              Giải pháp số hóa tài liệu nghiệp vụ an toàn cao dành riêng cho Kiểm sát viên, Thẩm phán, Điều tra viên, Chấp hành viên và Luật sư tại Việt Nam. Chuyển đổi siêu tốc các tệp ảnh chứng cứ chụp, PDF scan cũ hỏng sang dạng Word (.docx) sạch với độ chính xác tối đa.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -172,7 +172,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                 className="btn-premium-primary text-white font-bold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 text-sm sm:text-base group"
               >
                 <Upload size={18} />
-                <span>Tải tài liệu lên</span>
+                <span>Tải hồ sơ / chứng cứ lên</span>
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
               
@@ -181,7 +181,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                 className="btn-premium-secondary text-on-surface font-semibold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base"
               >
                 <Play size={16} className="text-primary fill-primary" />
-                <span>Xem Demo trước/sau</span>
+                <span>Xem mẫu số hóa</span>
               </button>
             </div>
             
@@ -190,19 +190,19 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-semibold text-on-surface-variant">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
-                  <span>Không lưu dữ liệu</span>
+                  <span>Bảo mật Zero-Server</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Layers size={14} className="text-primary shrink-0" />
-                  <span>OCR hàng loạt</span>
+                  <span>Xử lý hồ sơ lớn</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <FileOutput size={14} className="text-ai-accent shrink-0" />
-                  <span>Xuất Word / Text</span>
+                  <span>Tải Word (.docx) sạch</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Lock size={14} className="text-indigo-500 shrink-0" />
-                  <span>Bảo mật tuyệt đối</span>
+                  <span>Tuân thủ bảo vệ bí mật</span>
                 </div>
               </div>
             </div>
@@ -229,15 +229,15 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="space-y-1">
               <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">50.000+</div>
-              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Tài liệu đã được bóc tách</p>
+              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Hồ sơ tư pháp được số hóa</p>
             </div>
             <div className="space-y-1 border-y md:border-y-0 md:border-x border-outline-variant/40 py-6 md:py-0">
               <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">98%</div>
-              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Độ chính xác từ ngữ Việt Nam</p>
+              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Chính xác thuật ngữ pháp lý</p>
             </div>
             <div className="space-y-1">
               <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-primary to-ai-accent bg-clip-text text-transparent">10x</div>
-              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Nhanh hơn gõ tay thủ công</p>
+              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Tiết kiệm thời gian lập hồ sơ</p>
             </div>
           </div>
         </div>
@@ -248,13 +248,13 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="text-center space-y-4 mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ai-accent/10 border border-ai-accent/20 text-ai-accent text-xs font-bold">
             <Sparkles size={12} />
-            <span>Trải nghiệm thực tế</span>
+            <span>Trải nghiệm số hóa</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
-            Nhận diện chuẩn xác từng ký tự
+            Số hóa hồ sơ vụ án thông minh
           </h2>
           <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
-            Xem cách AI bóc tách và khôi phục văn bản từ bản scan gốc bị nhòe và lỗi chính tả.
+            Xem cách AI tự động phục hồi văn bản pháp lý từ ảnh chụp chứng cứ bị mờ và tự sửa lỗi chính tả theo đúng ngữ cảnh tư pháp.
           </p>
         </div>
 
@@ -264,7 +264,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
               <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                Bản scan/ảnh chụp gốc (Mờ, lỗi gõ)
+                Tài liệu chứng cứ / Biên bản gốc (Mờ, dính chữ)
               </span>
               <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">JPEG/PDF</span>
             </div>
@@ -288,8 +288,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </div>
             
             <div className="mt-4 pt-3 border-t border-outline-variant/30 flex justify-between text-xs text-on-surface-variant/80 font-medium">
-              <span>Độ phân giải: 150 DPI</span>
-              <span>Chụp bằng điện thoại</span>
+              <span>Độ phân giải thấp</span>
+              <span>Ảnh chụp hiện trường/Điện thoại</span>
             </div>
           </div>
 
@@ -301,11 +301,11 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
               <span className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-                Kết quả bóc tách bởi DOC AI
+                Văn bản số hóa bởi DOC AI
               </span>
               <span className="text-xs bg-primary-container text-primary px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
                 <Sparkles size={10} />
-                AI Sửa Lỗi
+                AI Nghiệp Vụ
               </span>
             </div>
 
@@ -333,13 +333,13 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="text-center space-y-4 mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
             <Layers size={12} />
-            <span>Tính năng đột phá</span>
+            <span>Tính năng chuyên biệt</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
             Tại sao DOC mang lại hiệu quả vượt trội?
           </h2>
           <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
-            Thiết kế riêng cho các biểu mẫu và tài liệu hành chính tiếng Việt phức tạp nhất.
+            Thiết kế chuyên biệt cho hồ sơ tố tụng và tài liệu tư pháp tiếng Việt phức tạp.
           </p>
         </div>
 
@@ -349,9 +349,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
               <Zap size={22} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">OCR siêu nhanh</h3>
+            <h3 className="text-lg font-bold text-on-surface mb-2">Số hóa nghiệp vụ siêu tốc</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Xử lý tài liệu tức thì chỉ trong vài giây mỗi trang. Tách luồng xử lý song song để tiết kiệm tối đa thời gian chờ đợi.
+              Xử lý hồ sơ tài liệu tức thì chỉ trong vài giây mỗi trang chứng cứ. Tách luồng xử lý song song để giảm thời gian chờ đợi đối với các vụ án nhiều trang.
             </p>
           </div>
 
@@ -359,9 +359,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="w-12 h-12 rounded-xl bg-ai-accent/10 flex items-center justify-center text-ai-accent mb-5">
               <Sparkles size={22} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">Tối ưu tiếng Việt</h3>
+            <h3 className="text-lg font-bold text-on-surface mb-2">Tối ưu tiếng Việt tư pháp</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Được huấn luyện đặc biệt để nhận dạng chuẩn xác 100% hệ thống dấu tiếng Việt, từ vựng pháp lý, hành chính.
+              Khả năng nhận dạng chuẩn xác 100% các từ ngữ pháp lý cổ, từ viết tắt hành chính, dấu quốc huy và văn phong tư pháp Việt Nam.
             </p>
           </div>
 
@@ -369,9 +369,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-5">
               <ShieldCheck size={22} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">Bảo mật tuyệt đối</h3>
+            <h3 className="text-lg font-bold text-on-surface mb-2">Bảo mật tài liệu tuyệt đối</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Mô hình Zero-Server xử lý trực tiếp trên trình duyệt. Dữ liệu của bạn được bảo mật hoàn toàn và không lưu trữ trên máy chủ nào.
+              Xử lý hoàn toàn tại Client-Side. Tài liệu nghiệp vụ nhạy cảm được truyền thẳng tới cổng bảo mật Google API, đáp ứng nghiêm ngặt việc bảo vệ bí mật tư pháp.
             </p>
           </div>
 
@@ -379,9 +379,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-5">
               <Layers size={22} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">Giữ nguyên bố cục</h3>
+            <h3 className="text-lg font-bold text-on-surface mb-2">Bảo toàn cấu trúc văn bản</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Nhận diện phân vùng bảng biểu, danh sách liệt kê, và các đoạn văn để dàn dựng lại đúng nguyên bản tài liệu.
+              Giữ nguyên định dạng bảng biểu, thụt lề biên bản ghi lời khai, phân vùng chữ ký/dấu đỏ giúp hồ sơ số hóa giữ đúng nguyên bản.
             </p>
           </div>
 
@@ -389,9 +389,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-5">
               <RefreshCw size={22} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">OCR hàng loạt</h3>
+            <h3 className="text-lg font-bold text-on-surface mb-2">Xử lý hồ sơ vụ án lớn</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Thả hàng chục tệp ảnh hoặc PDF nhiều trang cùng lúc. Hệ thống hàng đợi tự động chạy tuần tự và gộp file kết quả tiện lợi.
+              Thả hàng chục ảnh tài liệu hoặc tệp PDF vụ án hàng trăm trang. Hệ thống tự động phân tách trang và ghép nối kết quả văn bản số hóa hoàn chỉnh.
             </p>
           </div>
 
@@ -399,9 +399,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mb-5">
               <Sparkles size={22} className="text-rose-500" />
             </div>
-            <h3 className="text-lg font-bold text-on-surface mb-2">AI sửa lỗi chính tả</h3>
+            <h3 className="text-lg font-bold text-on-surface mb-2">AI phục hồi chữ mờ, hỏng</h3>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Tự động phân tích ngữ cảnh của văn bản để phát hiện và khôi phục các ký tự bị mất dấu, dính chữ do chất lượng quét ảnh kém.
+              Sử dụng trí tuệ nhân tạo để phân tích ngữ cảnh hồ sơ, tự động bổ sung nét chữ mờ, sửa các lỗi dính chữ do chất lượng giấy tờ lưu trữ lâu năm kém.
             </p>
           </div>
 
@@ -413,13 +413,13 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="text-center space-y-4 mb-16">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
             <FileText size={12} />
-            <span>Trường hợp sử dụng</span>
+            <span>Nghiệp vụ áp dụng</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
-            Giải pháp số hóa tài liệu cho mọi nhu cầu
+            Số hóa hồ sơ chuyên dụng cho khối tư pháp
           </h2>
           <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
-            Tối ưu hóa năng suất xử lý dữ liệu chữ viết cho nhiều loại tài liệu khác nhau.
+            Tăng cường hiệu quả nghiên cứu án, soạn thảo văn bản tố tụng và lập hồ sơ kiểm sát, xét xử.
           </p>
         </div>
 
@@ -429,9 +429,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
                 <Gavel size={20} />
               </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Hợp đồng & Thỏa thuận</h3>
+              <h3 className="font-bold text-on-surface text-base mb-2">Hồ sơ vụ án & Chứng cứ</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Trích xuất chính xác các điều khoản, thông tin đối tác và số liệu từ các bản scan PDF hoặc ảnh chụp hợp đồng thương mại.
+                Bóc tách văn bản cực kỳ nhanh từ các tài liệu chứng cứ cũ, mờ, chụp nghiêng từ thực địa hoặc tài liệu do các đương sự nộp.
               </p>
             </div>
           </div>
@@ -441,9 +441,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
                 <FileText size={20} />
               </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Hồ sơ hành chính</h3>
+              <h3 className="font-bold text-on-surface text-base mb-2">Biên bản nghiệp vụ & Lời khai</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Số hóa nhanh các đơn từ, giấy tờ, quyết định hành chính nhà nước có kết cấu văn bản phức tạp mà không lo lỗi font tiếng Việt.
+                Chuyển nhanh các biên bản lấy lời khai viết tay/scan, biên bản hỏi cung điều tra thành định dạng văn bản soạn thảo phục vụ lập hồ sơ kiểm sát/xét xử.
               </p>
             </div>
           </div>
@@ -453,9 +453,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
                 <Printer size={20} />
               </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Tài liệu scan cũ</h3>
+              <h3 className="font-bold text-on-surface text-base mb-2">Bản án & Quyết định tố tụng</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Nhận diện hiệu quả sách báo, tài liệu scan mờ nhòe hoặc mất nét nhờ cơ chế tự phân tích ngữ cảnh để khôi phục chữ viết của Gemini AI.
+                Trích xuất nội dung các bản án lịch sử, quyết định giải quyết khiếu nại tố cáo phức tạp để tra cứu án lệ và phục vụ công tác chuyên môn.
               </p>
             </div>
           </div>
@@ -465,9 +465,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
                 <Camera size={20} />
               </div>
-              <h3 className="font-bold text-on-surface text-base mb-2">Ảnh chụp văn bản</h3>
+              <h3 className="font-bold text-on-surface text-base mb-2">Văn bản pháp lý & Hợp đồng</h3>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                Xử lý ảnh chụp biên lai, hóa đơn, giấy tờ tùy thân từ camera điện thoại, tự động làm sạch và chuyển thành dữ liệu văn bản.
+                Số hóa toàn diện các điều khoản trong hợp đồng kinh tế, tài liệu doanh nghiệp hỗ trợ công tác bào chữa và tư vấn pháp lý chuyên sâu.
               </p>
             </div>
           </div>
@@ -482,10 +482,10 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <span>Quy trình sử dụng</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-on-surface">
-            Chuyển đổi văn bản trong 3 bước
+            Số hóa tài liệu vụ án qua 3 bước
           </h2>
           <p className="text-on-surface-variant text-base max-w-xl mx-auto leading-relaxed">
-            Đơn giản, trực quan và tối ưu hóa thời gian thực hiện của bạn.
+            Tối giản, bảo mật và tương thích với nghiệp vụ tư pháp hàng ngày của bạn.
           </p>
         </div>
 
@@ -502,9 +502,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <Upload size={28} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">Tải file lên</h3>
+            <h3 className="text-lg font-bold text-on-surface">Tải hồ sơ lên</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
-              Tải hình ảnh (.jpg, .png) hoặc tệp tài liệu .pdf cần bóc tách chữ lên hệ thống.
+              Tải hình ảnh chứng cứ (.jpg, .png, .webp) hoặc tài liệu scan hồ sơ (.pdf) lên hệ thống.
             </p>
           </div>
 
@@ -516,9 +516,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <Cpu size={28} className="animate-spin-[duration:10s]" />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">AI xử lý OCR</h3>
+            <h3 className="text-lg font-bold text-on-surface">AI xử lý số hóa</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
-              Mô hình Gemini AI tiến hành quét chữ và tự động sửa các lỗi chính tả dính chữ theo ngữ cảnh.
+              Mô hình Gemini AI tiến hành phân tích hình ảnh chứng cứ và tái tạo văn bản, tự động khôi phục chữ mờ theo ngữ cảnh tố tụng.
             </p>
           </div>
 
@@ -530,9 +530,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               </div>
               <FileOutput size={28} />
             </div>
-            <h3 className="text-lg font-bold text-on-surface">Sao chép / Tải xuống</h3>
+            <h3 className="text-lg font-bold text-on-surface">Báo cáo / Kết xuất</h3>
             <p className="text-sm text-on-surface-variant max-w-xs mx-auto">
-              Sao chép nhanh văn bản kết quả chỉ bằng 1-click hoặc tải xuống file .txt đã được chuẩn hóa.
+              Sao chép văn bản số hóa sạch bằng 1-click hoặc kết xuất sang file Microsoft Word (.docx) để hoàn tất hồ sơ.
             </p>
           </div>
 
@@ -554,10 +554,10 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                 <span>Bảo mật & Quyền riêng tư</span>
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                An toàn tuyệt đối cho tài liệu của bạn
+                An toàn tuyệt đối cho hồ sơ tài liệu tư pháp
               </h2>
               <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-                Chúng tôi hiểu rằng tài liệu hành chính, bản án và các hợp đồng kinh tế là tài sản vô giá và cực kỳ nhạy cảm. DOC được thiết kế trên mô hình phi trạng thái để đảm bảo dữ liệu luôn thuộc quyền kiểm soát của bạn.
+                Chúng tôi hiểu rằng hồ sơ vụ án, tài liệu chứng cứ và các biên bản nghiệp vụ tư pháp là tài sản đặc biệt quan trọng, nhạy cảm và thuộc phạm vi bảo mật cao. DOC được thiết kế trên mô hình phi trạng thái (stateless) để đảm bảo dữ liệu luôn thuộc quyền kiểm soát tuyệt đối của riêng bạn.
               </p>
             </div>
 
@@ -569,7 +569,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                 </div>
                 <h3 className="font-bold text-white text-base">Xử lý file cục bộ</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Tài liệu của bạn được tách trang và nén trực tiếp trên trình duyệt bằng canvas, gửi thẳng tới Google Gemini API qua kết nối HTTPS mã hóa mà không qua server trung gian nào.
+                  Hồ sơ chứng cứ được xử lý tách trang trực tiếp trên trình duyệt, gửi thẳng tới máy chủ bảo mật của Google qua kết nối HTTPS mã hóa mà không qua bất kỳ server trung gian nào.
                 </p>
               </div>
 
@@ -578,8 +578,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                   <Lock size={18} />
                 </div>
                 <h3 className="font-bold text-white text-base">Lưu API Key tại máy</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Gemini API Key cá nhân của bạn được lưu trữ hoàn toàn dưới dạng cục bộ trong <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded text-primary">localStorage</code> trên trình duyệt của riêng bạn, không bao giờ được gửi tới bất kỳ bên thứ ba nào.
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Gemini API Key được mã hóa và lưu trữ cục bộ dưới dạng <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded text-primary">localStorage</code> trên trình duyệt của riêng bạn, đáp ứng các tiêu chuẩn bảo mật dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.
                 </p>
               </div>
 
@@ -589,7 +589,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                 </div>
                 <h3 className="font-bold text-white text-base">Không lưu lịch sử</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Hệ thống hoạt động phi trạng thái (stateless). Các file tài liệu và văn bản kết quả OCR chỉ tồn tại tạm thời trong bộ nhớ phiên hiện tại và tự động xoá sạch khi đóng tab.
+                  Hệ thống hoạt động phi trạng thái (stateless). Các tệp tin nghiệp vụ và kết quả số hóa chỉ tồn tại tạm thời trong bộ nhớ phiên làm việc và tự động hủy sạch ngay khi bạn đóng tab trình duyệt.
                 </p>
               </div>
 
@@ -599,7 +599,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                 </div>
                 <h3 className="font-bold text-white text-base">Dễ dàng xoá bỏ</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Bạn có thể chủ động xoá bỏ hoàn toàn API Key khỏi trình duyệt bất cứ lúc nào bằng cách click vào nút "Làm mới" trên Workspace hoặc nhấn "Xóa cấu hình" trong bảng Cấu hình API.
+                  Bạn có thể chủ động hủy bỏ cấu hình khóa API khỏi thiết bị bất cứ lúc nào, đảm bảo tuân thủ nghiêm ngặt Luật Bảo vệ bí mật nhà nước về quản lý thiết bị số.
                 </p>
               </div>
 
@@ -615,7 +615,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="text-left space-y-1">
               <h4 className="font-bold text-amber-400 text-sm">Tuyên bố miễn trừ trách nhiệm (Disclaimer)</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Mặc dù mô hình AI Gemini thế hệ mới sở hữu khả năng nhận diện ngữ cảnh tiếng Việt vô cùng chính xác, kết quả bóc tách (OCR) vẫn có thể phát sinh sai lệch nhỏ ngoài ý muốn tùy thuộc vào chất lượng tài liệu chụp, độ nhòe hoặc góc nghiêng của văn bản gốc. Người dùng được khuyến nghị <strong>bắt buộc phải kiểm tra và đối chiếu lại toàn bộ kết quả văn bản</strong> trước khi áp dụng cho các mục đích chính thức như tài liệu pháp lý, thủ tục hành chính, văn bản thương mại hoặc các báo cáo quan trọng.
+                Mặc dù mô hình AI Gemini thế hệ mới sở hữu khả năng nhận diện ngữ cảnh thuật ngữ pháp lý vô cùng chính xác, kết quả bóc tách vẫn có thể phát sinh sai sót nhỏ ngoài ý muốn tùy thuộc vào độ nhòe, góc nghiêng hoặc chất lượng tài liệu gốc. Cán bộ tư pháp, kiểm sát viên và luật sư được khuyến nghị <strong>bắt buộc phải đối chiếu và kiểm tra lại văn bản</strong> trước khi áp dụng vào các tài liệu tố tụng chính thức như cáo trạng, bản án, quyết định khởi tố hoặc tài liệu chứng cứ trước tòa.
               </p>
             </div>
           </div>
@@ -676,17 +676,17 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
           <div className="relative max-w-2xl mx-auto space-y-8">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              Bắt đầu chuyển đổi tài liệu bằng AI ngay hôm nay
+              Bắt đầu số hóa hồ sơ tư pháp bằng AI ngay hôm nay
             </h2>
             <p className="text-white/80 text-base sm:text-lg leading-relaxed">
-              Không cần đăng ký rườm rà. Chỉ cần tải tài liệu lên và nhận văn bản soạn thảo chuẩn tiếng Việt chỉ sau vài giây.
+              Quy trình khép kín, an toàn tuyệt đối. Chỉ cần tải hồ sơ lên và nhận kết quả văn bản số hóa dạng Word sạch chỉ trong vài giây.
             </p>
             <button 
               onClick={triggerGlobalUpload}
               className="bg-white hover:bg-slate-100 text-primary font-bold text-sm sm:text-base px-8 py-4 rounded-xl shadow-lg active:scale-95 transition-all duration-200 inline-flex items-center gap-2 cursor-pointer mx-auto"
             >
               <Upload size={18} />
-              <span>Tải tài liệu lên ngay</span>
+              <span>Tải hồ sơ lên ngay</span>
             </button>
           </div>
         </div>
@@ -704,7 +704,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <span className="font-bold text-xl tracking-tight text-on-surface">DOC</span>
             </a>
             <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm">
-              Nền tảng OCR tiếng Việt trực tuyến ứng dụng trí tuệ nhân tạo. Chuyển đổi mọi PDF scan, hình ảnh mờ nhòe sang văn bản soạn thảo chuẩn chỉnh trong chớp mắt.
+              Hệ thống số hóa hồ sơ vụ án và tài liệu tư pháp bằng trí tuệ nhân tạo. Chuyển đổi mọi tệp PDF scan nghiệp vụ, ảnh chụp chứng cứ mờ nhòe sang định dạng văn bản soạn thảo chuẩn chỉnh trong chớp mắt.
             </p>
           </div>
 
@@ -745,7 +745,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         </div>
         
         <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-outline-variant/30 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-on-surface-variant">
-          <p>© 2026 DOC. Bản quyền thuộc về dự án bóc tách tài liệu thông minh.</p>
+          <p>© 2026 DOC. Bản quyền thuộc về dự án số hóa tài liệu tư pháp thông minh.</p>
           <div className="flex gap-4">
             <a href="#" className="hover:text-primary">Facebook</a>
             <a href="#" className="hover:text-primary">Github</a>
