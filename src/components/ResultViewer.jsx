@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Copy, Check, FileText, Download, AlertCircle } from 'lucide-react';
-import { normalizeOcrText } from '../utils/textNormalizer';
+import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 
 export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }) {
   const [copied, setCopied] = useState(false);
@@ -109,7 +109,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
       const fileName = `${baseName}_gop.txt`;
       
-      downloadTxtFile(processedText, fileName);
+      const cleanedText = cleanTextNewlines(processedText);
+      downloadTxtFile(cleanedText, fileName);
     } else if (isMultiImage) {
       const processedText = getMergedNormalizedText();
       if (!processedText) return;
@@ -122,7 +123,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
         fileName = `${baseName}_gop_all.txt`;
       }
       
-      downloadTxtFile(processedText, fileName);
+      const cleanedText = cleanTextNewlines(processedText);
+      downloadTxtFile(cleanedText, fileName);
     } else {
       if (!localText) return;
       
@@ -131,7 +133,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
       const fileName = `${baseName}.txt`;
       
-      downloadTxtFile(processedText, fileName);
+      const cleanedText = cleanTextNewlines(processedText);
+      downloadTxtFile(cleanedText, fileName);
     }
   };
 

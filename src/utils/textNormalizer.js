@@ -3,6 +3,19 @@
  * @param {string} text - Văn bản trích xuất gốc.
  * @returns {string} Văn bản đã được làm sạch ngắt dòng.
  */
+export const cleanTextNewlines = (text) => {
+  if (!text) return "";
+  return text
+    .replace(/\r\n/g, '\n')
+    // Loại bỏ các dòng không có chữ mà chỉ chứa khoảng trắng hoặc tab
+    .split('\n')
+    .filter(line => line.trim() !== '')
+    .join('\n')
+    // Khử dòng trống liên tiếp thành duy nhất 1 dấu xuống dòng
+    .replace(/\n\s*\n/g, '\n')
+    .trim();
+};
+
 export const normalizeOcrText = (text) => {
   if (!text) return "";
   
@@ -34,8 +47,8 @@ export const normalizeOcrText = (text) => {
                               /^[-\u2022]\s+/.test(currentLine);
                               
       if (isSentenceEnd || isHeaderPattern) {
-        // Giữ lại hoặc tạo dấu xuống dòng đôi (\n\n) để phân đoạn thực sự
-        result.push('\n\n');
+        // Giữ lại hoặc tạo dấu xuống dòng đơn (\n) để các dòng đứng sát nhau
+        result.push('\n');
         result.push(currentLine);
       } else {
         // Nối dòng bằng khoảng trắng
@@ -46,6 +59,7 @@ export const normalizeOcrText = (text) => {
     return result.join('');
   });
   
-  // Gộp các đoạn văn lại bằng dấu xuống dòng kép và dọn dẹp các dấu xuống dòng thừa
-  return processedParagraphs.filter(Boolean).join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+  // Gộp các đoạn văn lại bằng dấu xuống dòng đơn và làm sạch
+  const joinedText = processedParagraphs.filter(Boolean).join('\n');
+  return cleanTextNewlines(joinedText);
 };
