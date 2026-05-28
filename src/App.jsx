@@ -512,6 +512,56 @@ function App() {
     processingRef.current = false;
   };
 
+  const renderSecurityModal = () => {
+    if (!isSecurityModalOpen) return null;
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100 bg-rose-50/50">
+            <span className="material-icons text-rose-600 text-[24px]">security</span>
+            <h3 className="text-base font-bold text-slate-800">
+              Cam kết Bảo mật & An toàn Nghiệp vụ
+            </h3>
+          </div>
+          <div className="p-6 space-y-4 text-left">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Hệ thống chuẩn bị tải lên <strong>{pendingFiles.length} tệp tài liệu</strong> để xử lý OCR. Để đảm bảo an toàn thông tin tố tụng và an ninh quốc gia, vui lòng xác nhận:
+            </p>
+            
+            <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-3.5 space-y-2.5 text-xs text-rose-800">
+              <div className="flex items-start gap-2">
+                <span className="material-icons text-[16px] text-rose-600 shrink-0 mt-0.5">report_problem</span>
+                <span><strong>KHÔNG tải tài liệu mật:</strong> Tuyệt đối không tải lên các tài liệu, hồ sơ thuộc danh mục <strong>Bí mật nhà nước</strong> theo quy định của Luật Bảo vệ bí mật nhà nước.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="material-icons text-[16px] text-rose-600 shrink-0 mt-0.5">cloud_queue</span>
+                <span><strong>Xử lý trực tiếp:</strong> Dữ liệu được mã hóa và truyền trực tiếp qua HTTPS tới dịch vụ Google Gemini API từ trình duyệt của bạn, không lưu lại trên máy chủ trung gian của chúng tôi.</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500 italic">
+              Bằng việc nhấn "Tôi cam kết và tiếp tục", bạn xác nhận tài liệu được phép xử lý và chịu trách nhiệm pháp lý đối với nội dung tải lên.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+            <button 
+              onClick={cancelImportFiles}
+              className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer"
+            >
+              Hủy bỏ
+            </button>
+            <button 
+              onClick={confirmImportFiles}
+              className="bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-primary/10"
+            >
+              Tôi cam kết và tiếp tục
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (files.length === 0) {
     return (
       <>
@@ -591,6 +641,7 @@ function App() {
             </div>
           </div>
         )}
+        {renderSecurityModal()}
       </>
     );
   }
@@ -873,52 +924,7 @@ function App() {
       )}
 
       {/* Security Warning Modal */}
-      {isSecurityModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100 bg-rose-50/50">
-              <span className="material-icons text-rose-600 text-[24px]">security</span>
-              <h3 className="text-base font-bold text-slate-800">
-                Cam kết Bảo mật & An toàn Nghiệp vụ
-              </h3>
-            </div>
-            <div className="p-6 space-y-4 text-left">
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Hệ thống chuẩn bị tải lên <strong>{pendingFiles.length} tệp tài liệu</strong> để xử lý OCR. Để đảm bảo an toàn thông tin tố tụng và an ninh quốc gia, vui lòng xác nhận:
-              </p>
-              
-              <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-3.5 space-y-2.5 text-xs text-rose-800">
-                <div className="flex items-start gap-2">
-                  <span className="material-icons text-[16px] text-rose-600 shrink-0 mt-0.5">report_problem</span>
-                  <span><strong>KHÔNG tải tài liệu mật:</strong> Tuyệt đối không tải lên các tài liệu, hồ sơ thuộc danh mục <strong>Bí mật nhà nước</strong> theo quy định của Luật Bảo vệ bí mật nhà nước.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="material-icons text-[16px] text-rose-600 shrink-0 mt-0.5">cloud_queue</span>
-                  <span><strong>Xử lý trực tiếp:</strong> Dữ liệu được mã hóa và truyền trực tiếp qua HTTPS tới dịch vụ Google Gemini API từ trình duyệt của bạn, không lưu lại trên máy chủ trung gian của chúng tôi.</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-500 italic">
-                Bằng việc nhấn "Tôi cam kết và tiếp tục", bạn xác nhận tài liệu được phép xử lý và chịu trách nhiệm pháp lý đối với nội dung tải lên.
-              </p>
-            </div>
-            <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
-              <button 
-                onClick={cancelImportFiles}
-                className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer"
-              >
-                Hủy bỏ
-              </button>
-              <button 
-                onClick={confirmImportFiles}
-                className="bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-primary/10"
-              >
-                Tôi cam kết và tiếp tục
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {renderSecurityModal()}
     </div>
   );
 }
