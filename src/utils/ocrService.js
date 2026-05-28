@@ -44,6 +44,8 @@ export const processOCR = async (file, apiKey, modelName) => {
       fileType = 'image/png';
     } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
       fileType = 'image/jpeg';
+    } else if (fileName.toLowerCase().endsWith('.webp')) {
+      fileType = 'image/webp';
     } else {
       fileType = 'application/octet-stream';
     }
@@ -100,13 +102,29 @@ export const processOCR = async (file, apiKey, modelName) => {
 
   if (!response.ok) {
     let errorMsg = `HTTP ${response.status}`;
+    let isKeyInvalid = false;
     try {
       const errData = await response.json();
       errorMsg = errData?.error?.message || errorMsg;
+      if (errorMsg.includes("API key not valid") || errorMsg.includes("key is invalid")) {
+        isKeyInvalid = true;
+      }
     } catch {
       // ignore
     }
-    const err = new Error(errorMsg);
+    
+    let friendlyMessage = errorMsg;
+    if (response.status === 400 && isKeyInvalid) {
+      friendlyMessage = "API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại cấu hình API Key của bạn.";
+    } else if (response.status === 429) {
+      friendlyMessage = "Hạn mức API Key của bạn đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng đợi 1 phút hoặc đổi sang Key khác.";
+    } else if (response.status === 403) {
+      friendlyMessage = "Truy cập bị từ chối. API Key không có quyền sử dụng mô hình này hoặc kết nối bị chặn.";
+    } else if (response.status === 413) {
+      friendlyMessage = "Tài liệu quá lớn so với giới hạn xử lý cho phép của API.";
+    }
+    
+    const err = new Error(friendlyMessage);
     err.status = response.status;
     throw err;
   }

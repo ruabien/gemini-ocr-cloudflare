@@ -47,24 +47,44 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
 
   const handleFiles = (fileList) => {
     const filesArray = Array.from(fileList);
+    const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+    const rejectedFiles = [];
+    
     const validFiles = filesArray.filter(file => {
       const type = file.type || '';
       const name = (file.name || '').toLowerCase();
-      return (
+      const isFormatValid = (
         type === 'image/jpeg' || 
         type === 'image/png' || 
+        type === 'image/webp' ||
         type === 'application/pdf' ||
         name.endsWith('.jpg') ||
         name.endsWith('.jpeg') ||
         name.endsWith('.png') ||
+        name.endsWith('.webp') ||
         name.endsWith('.pdf')
       );
+      
+      if (!isFormatValid) {
+        rejectedFiles.push({ name: file.name, reason: "Định dạng không hỗ trợ" });
+        return false;
+      }
+      
+      if (file.size > MAX_SIZE) {
+        rejectedFiles.push({ name: file.name, reason: "Kích thước vượt quá 100MB" });
+        return false;
+      }
+      
+      return true;
     });
+    
+    if (rejectedFiles.length > 0) {
+      const errorList = rejectedFiles.map(f => `- ${f.name}: ${f.reason}`).join('\n');
+      alert(`Một số tệp bị từ chối:\n${errorList}`);
+    }
     
     if (validFiles.length > 0 && onFilesSelected) {
       onFilesSelected(validFiles);
-    } else {
-      alert("Vui lòng chỉ chọn file .jpg, .png hoặc .pdf");
     }
     
     if (fileInputRef.current) {
@@ -99,7 +119,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
             <p className="text-xs font-bold text-on-surface truncate">
               {isDragActive ? 'Thả file vào đây...' : 'Kéo thả hoặc chạm để thêm tài liệu'}
             </p>
-            <p className="text-[10px] text-on-surface-variant/80 font-medium">PDF, JPG, PNG tối đa 100MB</p>
+            <p className="text-[10px] text-on-surface-variant/80 font-medium">PDF, JPG, PNG, WEBP tối đa 100MB</p>
           </div>
         </div>
 
@@ -107,9 +127,9 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
           type="file"
           ref={fileInputRef}
           onChange={handleChange}
-          accept=".pdf, .jpg, .jpeg, .png"
+          accept=".pdf, .jpg, .jpeg, .png, .webp"
           multiple
-          id="hero-file-input"
+          id="compact-file-input"
           className="hidden"
         />
       </label>
@@ -144,7 +164,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
             {isDragActive ? 'Thả file của bạn để bắt đầu...' : 'Kéo thả hoặc chạm để tải file lên'}
           </p>
           <p className="text-xs sm:text-sm text-on-surface-variant font-medium max-w-sm mx-auto leading-relaxed">
-            Hỗ trợ hình ảnh chụp tài liệu dạng JPG, PNG hoặc tệp văn bản PDF scan nhiều trang
+            Hỗ trợ hình ảnh chụp tài liệu dạng JPG, PNG, WEBP hoặc tệp văn bản PDF scan nhiều trang
           </p>
         </div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-500">
@@ -156,7 +176,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
         type="file"
         ref={fileInputRef}
         onChange={handleChange}
-        accept=".pdf, .jpg, .jpeg, .png"
+        accept=".pdf, .jpg, .jpeg, .png, .webp"
         multiple
         id="hero-file-input"
         className="hidden"

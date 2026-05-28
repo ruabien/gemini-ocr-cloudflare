@@ -28,6 +28,7 @@ function App() {
   const [activeFileId, setActiveFileId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
 
   // Bộ chọn dải trang
   const [fromPage, setFromPage] = useState(1);
@@ -243,6 +244,7 @@ function App() {
 
     setIsProcessing(true);
     processingRef.current = true;
+    setMobileTab('result'); // Tự động chuyển sang tab kết quả khi bắt đầu xử lý
 
     // Chọn danh sách ID được phép xử lý
     let allowedIds = [];
@@ -530,9 +532,9 @@ function App() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => window.openVideoModal && window.openVideoModal()}
-              className="hidden md:flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-on-surface rounded-xl transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-1 px-3 py-2 text-[10px] sm:text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-on-surface rounded-xl transition-all active:scale-95 cursor-pointer"
             >
-              <span>🎥 Hướng dẫn API Key</span>
+              <span>🎥 Hướng dẫn</span>
             </button>
             
             <button 
@@ -555,10 +557,27 @@ function App() {
 
       {/* Main Workspace Layout */}
       <main className="max-w-[1400px] mx-auto px-4 md:px-8 pt-24 pb-12 flex-1 flex flex-col justify-start w-full min-h-0">
+        
+        {/* Mobile Tabs Switcher */}
+        <div className="flex lg:hidden bg-slate-100 p-1 rounded-2xl mb-6 self-center w-full max-w-md border border-slate-200 shadow-sm">
+          <button
+            onClick={() => setMobileTab('queue')}
+            className={`flex-1 text-center py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${mobileTab === 'queue' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            Hàng đợi ({files.filter(f => !f.isPdfPage).length})
+          </button>
+          <button
+            onClick={() => setMobileTab('result')}
+            className={`flex-1 text-center py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${mobileTab === 'result' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            Kết quả OCR
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
           
           {/* Left Column: Dropzone + Queue */}
-          <div className="lg:col-span-5 flex flex-col gap-6 w-full lg:sticky lg:top-24 max-h-[calc(100vh-120px)]">
+          <div className={`lg:col-span-5 flex-col gap-6 w-full lg:sticky lg:top-24 max-h-[calc(100vh-120px)] ${mobileTab === 'queue' ? 'flex' : 'hidden lg:flex'}`}>
             
             {/* Compact Drag & Drop upload */}
             <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
@@ -570,7 +589,10 @@ function App() {
               <QueueList 
                 files={files} 
                 activeFileId={activeFileId} 
-                onFileClick={setActiveFileId}
+                onFileClick={(id) => {
+                  setActiveFileId(id);
+                  setMobileTab('result'); // Tự động chuyển tab xem kết quả khi click chọn file
+                }} 
                 onRemoveFile={handleRemoveFile}
               />
               
@@ -626,7 +648,7 @@ function App() {
           </div>
 
           {/* Right Column: Result Viewer */}
-          <div className="lg:col-span-7 h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 w-full">
+          <div className={`lg:col-span-7 h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 w-full ${mobileTab === 'result' ? 'block' : 'hidden lg:block'}`}>
             <ResultViewer 
               file={activeFile} 
               allFiles={files} 

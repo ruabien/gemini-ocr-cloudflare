@@ -1,11 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
-import { Copy, Check, FileText, Download, AlertCircle } from 'lucide-react';
+import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 
 export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
   const isMultiImage = imageFiles.length > 1;
@@ -82,8 +83,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     }
   };
 
-  const downloadTxtFile = (text, fileName) => {
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const downloadFile = (content, fileName, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     
     const a = document.createElement('a');
@@ -96,41 +97,55 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     URL.revokeObjectURL(url);
   };
 
-  const handleExportTxt = () => {
+  const handleExport = (formatType) => {
+    let processedText;
+    let baseFileName = "tailieu_ocr";
+    
     if (parentPdf) {
-      const processedText = getPdfMergedNormalizedText();
-      if (!processedText) return;
-      
+      processedText = getPdfMergedNormalizedText();
       const originalName = parentPdf.originalFile?.name || parentPdf.name || 'tailieu_ocr.pdf';
-      const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
-      const fileName = `${baseName}_gop.txt`;
-      
-      const cleanedText = cleanTextNewlines(processedText);
-      downloadTxtFile(cleanedText, fileName);
+      baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
     } else if (isMultiImage) {
-      const processedText = getMergedNormalizedText();
-      if (!processedText) return;
-      
+      processedText = getMergedNormalizedText();
       const firstImageFile = imageFiles[0];
-      let fileName = "gop_all.txt";
       if (firstImageFile) {
         const originalName = firstImageFile.originalFile?.name || firstImageFile.name || 'anh';
-        const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
-        fileName = `${baseName}_gop_all.txt`;
+        baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
       }
-      
-      const cleanedText = cleanTextNewlines(processedText);
-      downloadTxtFile(cleanedText, fileName);
     } else {
-      if (!localText) return;
-      
-      let processedText = normalizeOcrText(localText);
+      processedText = normalizeOcrText(localText);
       const originalName = file.originalFile?.name || 'tailieu_ocr.txt';
-      const baseName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
-      const fileName = `${baseName}.txt`;
-      
+      baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+    }
+    
+    if (!processedText) return;
+
+    if (formatType === 'txt') {
       const cleanedText = cleanTextNewlines(processedText);
-      downloadTxtFile(cleanedText, fileName);
+      downloadFile(cleanedText, `${baseFileName}_ocr.txt`, "text/plain;charset=utf-8");
+    } else if (formatType === 'md') {
+      const cleanedText = cleanTextNewlines(processedText);
+      downloadFile(cleanedText, `${baseFileName}_ocr.md`, "text/markdown;charset=utf-8");
+    } else if (formatType === 'docx') {
+      const cleanedText = cleanTextNewlines(processedText);
+      const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
+            "xmlns:w='urn:schemas-microsoft-com:office:word' " +
+            "xmlns='http://www.w3.org/TR/REC-html40'>" +
+            "<head><meta charset='utf-8'><title>OCR Export</title>" +
+            "<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->" +
+            "<style>body { font-family: 'Arial', sans-serif; font-size: 12pt; line-height: 1.5; } p { margin: 0 0 10pt 0; }</style>" +
+            "</head><body>";
+      const footer = "</body></html>";
+      const htmlBody = cleanedText
+        .split('\n')
+        .map(pText => {
+          const trimmed = pText.trim();
+          if (!trimmed) return "<p>&nbsp;</p>";
+          return `<p>${trimmed}</p>`;
+        })
+        .join('');
+      const docHtml = header + htmlBody + footer;
+      downloadFile('\ufeff' + docHtml, `${baseFileName}_ocr.docx`, "application/msword;charset=utf-8");
     }
   };
 
@@ -162,23 +177,51 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
               <span>Làm mới</span>
             </button>
           )}
-          <button
-            onClick={handleExportTxt}
-            disabled={
-              parentPdf
-                ? !hasPdfResult
-                : (isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error'))
-            }
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold btn-premium-primary text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
-            title={
-              parentPdf
-                ? "Xuất file TXT gộp các trang đã hoàn thành"
-                : (isMultiImage ? "Xuất file TXT gộp toàn bộ ảnh" : "Xuất file TXT chuẩn hoá 1 dòng")
-            }
-          >
-            <Download size={14} />
-            <span>Xuất file {(isMultiImage || parentPdf) && "(Gộp)"}</span>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setIsExportOpen(!isExportOpen)}
+              disabled={
+                parentPdf
+                  ? !hasPdfResult
+                  : (isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error'))
+              }
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold btn-premium-primary text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
+              title="Tải xuống kết quả dạng TXT, MD hoặc DOCX"
+            >
+              <Download size={14} />
+              <span>Xuất file {(isMultiImage || parentPdf) && "(Gộp)"}</span>
+              <ChevronDown size={14} />
+            </button>
+            
+            {isExportOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsExportOpen(false)}></div>
+                <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                  <button 
+                    onClick={() => { handleExport('txt'); setIsExportOpen(false); }} 
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-slate-50 flex items-center gap-2 text-slate-700 transition-colors"
+                  >
+                    <FileText size={14} className="text-slate-400" />
+                    <span>Tệp Văn bản (.txt)</span>
+                  </button>
+                  <button 
+                    onClick={() => { handleExport('md'); setIsExportOpen(false); }} 
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-slate-50 flex items-center gap-2 text-slate-700 transition-colors"
+                  >
+                    <FileCode size={14} className="text-slate-400" />
+                    <span>Tệp Markdown (.md)</span>
+                  </button>
+                  <button 
+                    onClick={() => { handleExport('docx'); setIsExportOpen(false); }} 
+                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-slate-50 flex items-center gap-2 text-slate-700 transition-colors"
+                  >
+                    <File size={14} className="text-slate-400" />
+                    <span>Tài liệu Word (.docx)</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           {!isMultiImage && !file.isParentPdf && (
             <button
               onClick={handleCopy}
@@ -230,7 +273,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           onChange={handleChange}
           readOnly={file.isParentPdf}
           placeholder={file.isParentPdf ? "Chưa có trang nào hoàn thành OCR để hiển thị văn bản gộp." : "Chưa có dữ liệu trích xuất."}
-          className={`flex-1 w-full p-5 bg-white text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed focus:ring-1 focus:ring-primary focus:border-primary transition-all border-0 ${file.isParentPdf ? 'bg-slate-50/50 cursor-not-allowed text-slate-500 font-medium' : 'font-mono'}`}
+          className={`flex-1 w-full p-6 bg-slate-50/20 text-slate-800 placeholder-slate-400 outline-none resize-none text-sm leading-relaxed tracking-wide font-mono focus:bg-white focus:ring-1 focus:ring-primary focus:border-primary transition-all border-0 ${file.isParentPdf ? 'bg-slate-50/50 cursor-not-allowed text-slate-500 font-medium' : 'font-medium'}`}
         />
       )}
     </div>

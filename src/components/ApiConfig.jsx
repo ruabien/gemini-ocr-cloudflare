@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { KeyRound, Save, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
+import { KeyRound, Save, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Loader2, Eye, EyeOff, Trash2 } from 'lucide-react';
 
 const DEFAULT_WORKER_URL = 'https://gemini-ocr-backend.ruabien1504.workers.dev';
 
@@ -8,6 +8,7 @@ export default function ApiConfig({ onConfigChange }) {
   const [modelName, setModelName] = useState(() => localStorage.getItem('ocr_model') || 'gemini-2.5-flash');
   const [workerUrl] = useState(() => localStorage.getItem('ocr_worker_url') || DEFAULT_WORKER_URL);
   const [showToast, setShowToast] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
   // States cho tính năng Kiểm tra Key
   const [isValidated, setIsValidated] = useState(() => {
@@ -23,12 +24,11 @@ export default function ApiConfig({ onConfigChange }) {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const dismissTimerRef = useRef(null);
 
-  // UX & Bảo mật: Kiểm tra trạng thái đã Lưu và trạng thái Focus của ô nhập
+  // UX & Bảo mật: Kiểm tra trạng thái đã Lưu
   const [isSaved, setIsSaved] = useState(() => {
     const saved = localStorage.getItem('ocr_api_key') || '';
     return saved !== '';
   });
-  const [isFocused, setIsFocused] = useState(false);
 
   // Hộp cấu hình có thể xổ ra hoặc thu lại (Collapsible/Accordion Box)
   const [isExpanded, setIsExpanded] = useState(() => {
@@ -63,20 +63,6 @@ export default function ApiConfig({ onConfigChange }) {
       return () => clearTimeout(timer);
     }
   }, [showToast]);
-
-  // Tạo mặt nạ che giấu Key nhạy cảm
-  const getMaskedKeyString = (rawKeys) => {
-    if (!rawKeys) return '';
-    return rawKeys
-      .split(',')
-      .map(k => {
-        const trimmed = k.trim();
-        if (trimmed.length === 0) return '';
-        if (trimmed.length <= 8) return '*'.repeat(trimmed.length);
-        return `${trimmed.substring(0, 6)}${'*'.repeat(trimmed.length - 10)}${trimmed.substring(trimmed.length - 4)}`;
-      })
-      .join(', ');
-  };
 
   const handleKeyChange = (val) => {
     setApiKey(val);
@@ -222,6 +208,27 @@ export default function ApiConfig({ onConfigChange }) {
     }
   };
 
+  const handleClearConfig = () => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ cấu hình API Key khỏi trình duyệt này không?")) {
+      localStorage.removeItem('ocr_api_key');
+      localStorage.removeItem('ocr_model');
+      setApiKey('');
+      setModelName('gemini-2.5-flash');
+      setIsValidated(false);
+      setIsSaved(false);
+      setValidationResults([]);
+      setValidationMessage("");
+      if (onConfigChange) {
+        onConfigChange({
+          apiKey: '',
+          model: 'gemini-2.5-flash',
+          workerUrl: DEFAULT_WORKER_URL
+        });
+      }
+      alert("Đã xóa sạch cấu hình lưu trên trình duyệt.");
+    }
+  };
+
   return (
     <div className="bg-surface-container-lowest border border-outline-variant/30 w-full rounded-xl shadow-[0_4px_20px_rgba(0,88,190,0.02)] overflow-hidden">
       {/* Header Accordion Bar */}
@@ -261,22 +268,28 @@ export default function ApiConfig({ onConfigChange }) {
           {/* Inputs & Buttons Grid */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             {/* API Key list field */}
-            <div className="md:col-span-6 flex flex-col gap-1.5 text-left">
+            <div className="md:col-span-5 flex flex-col gap-1.5 text-left">
               <label className="text-xs font-bold text-on-surface-variant">Danh sách Gemini API Keys:</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant/60 group-focus-within:text-primary">
                   <KeyRound size={14} />
                 </div>
                 <input
-                  type="text"
+                  type={showKey ? "text" : "password"}
                   placeholder="Nhập các key cách nhau bằng dấu phẩy"
-                  value={isFocused ? apiKey : (isSaved ? getMaskedKeyString(apiKey) : apiKey)}
+                  value={apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
                   disabled={isChecking}
-                  className="w-full h-10 pl-9 pr-3 bg-white border border-outline-variant/60 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-on-surface placeholder-on-surface-variant/50 disabled:opacity-50"
+                  className="w-full h-10 pl-9 pr-10 bg-white border border-outline-variant/60 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-on-surface placeholder-on-surface-variant/50 disabled:opacity-50"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  title={showKey ? "Ẩn Key" : "Hiện Key"}
+                >
+                  {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
               </div>
             </div>
 
@@ -299,31 +312,49 @@ export default function ApiConfig({ onConfigChange }) {
             </div>
 
             {/* Buttons */}
-            <div className="md:col-span-3 flex gap-2">
+            <div className="md:col-span-4 flex gap-2">
               <button
                 onClick={validateGeminiKeys}
                 disabled={isChecking || !apiKey.trim() || !modelName.trim()}
-                className="flex-1 h-10 px-3 bg-slate-100 hover:bg-slate-200 text-on-surface border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="flex-1 h-10 px-2 bg-slate-100 hover:bg-slate-200 text-on-surface border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Kiểm tra tính hợp lệ của các API Key với mô hình đã nhập"
               >
                 {isChecking ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <Loader2 size={12} className="animate-spin" />
                 ) : (
-                  <ShieldCheck size={14} />
+                  <ShieldCheck size={12} />
                 )}
-                <span>Kiểm tra Key</span>
+                <span>Kiểm tra</span>
               </button>
 
               <button
                 onClick={handleSaveKey}
                 disabled={!isValidated || isChecking || !apiKey.trim() || !modelName.trim()}
-                className="flex-1 h-10 px-3 bg-primary hover:bg-primary-container text-on-primary rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-primary/10"
+                className="flex-1 h-10 px-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-primary/10"
                 title="Lưu cấu hình API Key và Mô hình"
               >
-                <Save size={14} />
+                <Save size={12} />
                 <span>Lưu</span>
               </button>
+
+              <button
+                onClick={handleClearConfig}
+                disabled={isChecking || (!apiKey.trim() && !localStorage.getItem('ocr_api_key'))}
+                className="flex-1 h-10 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                title="Xóa cấu hình API Key khỏi trình duyệt này"
+              >
+                <Trash2 size={12} />
+                <span>Xóa</span>
+              </button>
             </div>
+          </div>
+
+          {/* Warning notice */}
+          <div className="mt-3 flex items-start gap-1.5 text-[10px] text-amber-700 bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/40 text-left">
+            <AlertTriangle size={12} className="shrink-0 text-amber-600 mt-0.5" />
+            <p className="leading-normal">
+              <strong>Lưu ý bảo mật:</strong> API Key được lưu trực tiếp dưới dạng thuần túy trong bộ nhớ <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[9px]">localStorage</code> của trình duyệt này để tự động nạp cho các phiên làm việc sau. Vui lòng bấm nút <strong>"Xóa"</strong> ở trên trước khi rời khỏi thiết bị công cộng hoặc thiết bị dùng chung.
+            </p>
           </div>
         </div>
 

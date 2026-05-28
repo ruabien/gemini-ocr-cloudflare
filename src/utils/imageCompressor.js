@@ -45,23 +45,26 @@ export const compressImageIfNeeded = async (file) => {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Xuất sang Blob JPEG với chất lượng nén 0.8
+        const outputType = file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+        const suffix = file.type === 'image/webp' ? '_compressed.webp' : '_compressed.jpg';
+
+        // Xuất sang Blob với chất lượng nén 0.8
         canvas.toBlob((blob) => {
           if (!blob) {
             reject(new Error("Lỗi khi nén ảnh: không tạo được Blob."));
             return;
           }
 
-          // Tạo đối tượng File mới có đuôi _compressed.jpg
-          const newFileName = file.name.replace(/\.[^/.]+$/, "") + "_compressed.jpg";
+          // Tạo đối tượng File mới
+          const newFileName = file.name.replace(/\.[^/.]+$/, "") + suffix;
           const compressedFile = new File([blob], newFileName, { 
-            type: 'image/jpeg',
+            type: outputType,
             lastModified: Date.now()
           });
 
           console.log(`Đã nén xong: ${compressedFile.name} (${(compressedFile.size / 1024).toFixed(2)} KB)`);
           resolve(compressedFile);
-        }, 'image/jpeg', 0.8);
+        }, outputType, 0.8);
       };
       img.onerror = () => {
         reject(new Error("Lỗi khi nén: không thể tải ảnh gốc vào bộ nhớ."));
