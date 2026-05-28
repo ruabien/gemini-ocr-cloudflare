@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   Sparkles, ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
   HelpCircle, ChevronDown, Check, ArrowRight, Upload, Play,
-  Lock, Eye, ServerOff, Cpu, FileText, Camera, Gavel, AlertTriangle,
-  Shield, BookOpen, Search, ClipboardCheck
+  Lock, Cpu, FileText, Camera, Gavel,
+  Shield, BookOpen, Search, ClipboardCheck, ShieldAlert, Scale
 } from 'lucide-react';
 import FileDropzone from './FileDropzone';
 
@@ -659,79 +659,102 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="absolute inset-0 bg-grid opacity-5 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            <div className="lg:col-span-5 space-y-4 text-left">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-                <ShieldCheck size={12} />
-                <span>Bảo mật & Quyền riêng tư</span>
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                An toàn tuyệt đối cho hồ sơ tài liệu tư pháp
-              </h2>
-              <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-                Chúng tôi hiểu rằng hồ sơ vụ án, tài liệu chứng cứ và các biên bản nghiệp vụ tư pháp là tài sản đặc biệt quan trọng, nhạy cảm và thuộc phạm vi bảo mật cao. DOC được thiết kế trên mô hình phi trạng thái (stateless) để đảm bảo dữ liệu luôn thuộc quyền kiểm soát tuyệt đối của riêng bạn.
-              </p>
-            </div>
-
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400">
-                  <ServerOff size={18} />
-                </div>
-                <h3 className="font-bold text-white text-base">Xử lý file cục bộ</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Hồ sơ chứng cứ được xử lý tách trang trực tiếp trên trình duyệt, gửi thẳng tới máy chủ bảo mật của Google qua kết nối HTTPS mã hóa mà không qua bất kỳ server trung gian nào.
-                </p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
-                <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center text-primary">
-                  <Lock size={18} />
-                </div>
-                <h3 className="font-bold text-white text-base">Lưu API Key tại máy</h3>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                  Gemini API Key được mã hóa và lưu trữ cục bộ dưới dạng <code className="text-[10px] bg-slate-900 px-1 py-0.5 rounded text-primary">localStorage</code> trên trình duyệt của riêng bạn, đáp ứng các tiêu chuẩn bảo mật dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.
-                </p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
-                <div className="w-10 h-10 rounded-lg bg-ai-accent/15 flex items-center justify-center text-ai-accent">
-                  <RefreshCw size={18} />
-                </div>
-                <h3 className="font-bold text-white text-base">Không lưu lịch sử</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Hệ thống hoạt động phi trạng thái (stateless). Các tệp tin nghiệp vụ và kết quả số hóa chỉ tồn tại tạm thời trong bộ nhớ phiên làm việc và tự động hủy sạch ngay khi bạn đóng tab trình duyệt.
-                </p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] space-y-3 hover:bg-white/[0.05] transition-all text-left">
-                <div className="w-10 h-10 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400">
-                  <Eye size={18} />
-                </div>
-                <h3 className="font-bold text-white text-base">Dễ dàng xoá bỏ</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Bạn có thể chủ động hủy bỏ cấu hình khóa API khỏi thiết bị bất cứ lúc nào, đảm bảo tuân thủ nghiêm ngặt Luật Bảo vệ bí mật nhà nước về quản lý thiết bị số.
-                </p>
-              </div>
-
-            </div>
-
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+              <ShieldCheck size={12} />
+              <span>Bảo mật & Quyền riêng tư</span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+              Cam kết bảo mật & Cảnh báo nghiệp vụ
+            </h2>
+            <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+              Website ưu tiên bảo vệ tài liệu nghiệp vụ tư pháp. Dữ liệu xử lý được minh bạch hóa hoàn toàn về mặt kỹ thuật.
+            </p>
           </div>
 
-          {/* DISCLAIMER CARD */}
-          <div className="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-start gap-4">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-500 shrink-0">
-              <AlertTriangle size={20} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Card 1: Cam kết bảo mật nghiệp vụ */}
+            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-all text-left flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 mb-4">
+                  <Lock size={18} />
+                </div>
+                <h3 className="font-bold text-white text-lg mb-4">Cam kết bảo mật nghiệp vụ</h3>
+                <ul className="text-xs text-slate-400 space-y-3 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Xử lý cục bộ:</strong> Các tác vụ tiền xử lý như nén hình ảnh và phân tách trang PDF được thực hiện trực tiếp và cục bộ trên trình duyệt thiết bị của bạn.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Truyền tải trực tiếp:</strong> Dữ liệu hình ảnh (mã hóa Base64) và API Key của bạn được gửi trực tiếp từ trình duyệt đến dịch vụ bên thứ ba (Google Gemini API) qua kết nối HTTPS mã hóa để nhận diện văn bản, không đi qua hay lưu trữ ở bất kỳ máy chủ trung gian nào khác.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Không ghi nhật ký:</strong> Hệ thống tuyệt đối không lưu trữ tệp tin của bạn, không ghi nhận nhật ký (log) nội dung văn bản OCR và không ghi log API Key.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Quyền kiểm soát khóa:</strong> API Key cá nhân được lưu tại bộ nhớ trình duyệt của riêng bạn. Bạn có thể ẩn/hiện hoặc chủ động xóa sạch hoàn toàn cấu hình khóa bất kỳ lúc nào.</span>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <div className="text-left space-y-1">
-              <h4 className="font-bold text-amber-400 text-sm">Tuyên bố miễn trừ trách nhiệm (Disclaimer)</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Mặc dù mô hình AI Gemini thế hệ mới sở hữu khả năng nhận diện ngữ cảnh thuật ngữ pháp lý vô cùng chính xác, kết quả bóc tách vẫn có thể phát sinh sai sót nhỏ ngoài ý muốn tùy thuộc vào độ nhòe, góc nghiêng hoặc chất lượng tài liệu gốc. Cán bộ tư pháp, kiểm sát viên và luật sư được khuyến nghị <strong>bắt buộc phải đối chiếu và kiểm tra lại văn bản</strong> trước khi áp dụng vào các tài liệu tố tụng chính thức như cáo trạng, bản án, quyết định khởi tố hoặc tài liệu chứng cứ trước tòa.
-              </p>
+
+            {/* Card 2: Lưu ý với tài liệu mật */}
+            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-all text-left flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 mb-4">
+                  <ShieldAlert size={18} />
+                </div>
+                <h3 className="font-bold text-white text-lg mb-4">Lưu ý với tài liệu mật</h3>
+                <ul className="text-xs text-slate-400 space-y-3 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Bí mật nhà nước:</strong> Tuyệt đối không tải lên hoặc xử lý các tài liệu thuộc danh mục bí mật nhà nước (tài liệu mật, tối mật, tuyệt mật) theo quy định của Luật Bảo vệ bí mật nhà nước hiện hành.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Hạn chế thông tin nhạy cảm:</strong> Không thực hiện nhận dạng văn bản đối với chứng cứ vụ án, hồ sơ điều tra tố tụng nhạy cảm hoặc dữ liệu cá nhân khi chưa được phê duyệt của cơ quan có thẩm quyền hoặc chưa được sự đồng ý của khách hàng.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Trách nhiệm tuân thủ:</strong> Người dùng hoàn toàn tự chịu trách nhiệm trong việc kiểm tra và tuân thủ các quy định bảo mật nội bộ của cơ quan, tổ chức hoặc văn phòng luật sư mà mình đang công tác.</span>
+                  </li>
+                </ul>
+              </div>
             </div>
+
+            {/* Card 3: Giới hạn của OCR/AI */}
+            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-all text-left flex flex-col justify-between">
+              <div>
+                <div className="w-10 h-10 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 mb-4">
+                  <Scale size={18} />
+                </div>
+                <h3 className="font-bold text-white text-lg mb-4">Giới hạn của OCR & AI</h3>
+                <ul className="text-xs text-slate-400 space-y-3 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Sai số kỹ thuật:</strong> Kết quả nhận dạng ký tự quang học (OCR) từ mô hình AI có thể phát sinh sai lệch, nhầm lẫn ký tự, lỗi dịch nghĩa do chất lượng quét ảnh kém, chữ viết tay hoặc phông chữ cổ.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Đối chiếu bắt buộc:</strong> Văn bản nhận dạng cần được đối chiếu, soát lỗi và kiểm tra kỹ lưỡng thủ công với bản gốc trước khi đưa vào hồ sơ vụ án hoặc tài liệu chính thức.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Tính chất hỗ trợ:</strong> Công cụ chỉ hỗ trợ số hóa bóc tách văn bản thô để tối ưu hóa thời gian soạn thảo, hoàn toàn không thay thế cho đánh giá chuyên môn pháp lý của cán bộ nghiệp vụ.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Không làm căn cứ duy nhất:</strong> Tuyệt đối không sử dụng kết quả nhận dạng từ AI làm căn cứ pháp lý hoặc chứng cứ duy nhất trong hoạt động tố tụng, phán quyết hoặc tư vấn pháp luật.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
           </div>
 
         </div>
