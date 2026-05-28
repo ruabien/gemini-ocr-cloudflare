@@ -36,7 +36,7 @@ function App() {
     layoutPreserve: true,
     precisionMode: true,
     normalizeLines: false,
-    extractCaseNumber: false
+    legalOptimize: true
   });
   const [pendingFiles, setPendingFiles] = useState([]);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
@@ -367,14 +367,25 @@ function App() {
               progress: Math.min(90, 20 + attemptCount * 20) 
             } : f));
 
+            const startTime = Date.now();
             const textResult = await processOCR(
               fileToProcess.originalFile,
               activeKey,
               currentModel,
               ocrOptions
             );
+            const endTime = Date.now();
+            const durationSec = ((endTime - startTime) / 1000).toFixed(1);
 
             if (!processingRef.current) return;
+
+            // Build a list of active OCR modes for metadata display
+            const activeOptionsList = [];
+            if (ocrOptions.layoutPreserve) activeOptionsList.push("Giữ bố cục");
+            if (ocrOptions.precisionMode) activeOptionsList.push("Độ chính xác");
+            if (ocrOptions.normalizeLines) activeOptionsList.push("Chuẩn hóa dòng");
+            if (ocrOptions.legalOptimize) activeOptionsList.push("Tối ưu pháp lý");
+            const ocrModeStr = activeOptionsList.join(", ") || "Mặc định";
 
             setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
               ...f,
@@ -382,7 +393,12 @@ function App() {
               progress: 100,
               result: normalizeOcrText(textResult),
               retryInfo: null,
-              error: null
+              error: null,
+              metadata: {
+                duration: durationSec,
+                engine: currentModel,
+                ocrMode: ocrModeStr
+              }
             } : f));
 
             success = true;
@@ -744,11 +760,11 @@ function App() {
                     <label className="flex items-center gap-2 p-1.5 bg-white border border-slate-150 rounded-lg hover:bg-slate-100/50 cursor-pointer select-none text-left">
                       <input 
                         type="checkbox" 
-                        checked={ocrOptions.extractCaseNumber} 
-                        onChange={() => setOcrOptions(p => ({ ...p, extractCaseNumber: !p.extractCaseNumber }))}
+                        checked={ocrOptions.legalOptimize} 
+                        onChange={() => setOcrOptions(p => ({ ...p, legalOptimize: !p.legalOptimize }))}
                         className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                       />
-                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Trích xuất số văn bản</span>
+                      <span className="text-[11px] font-bold text-slate-700 leading-tight">Tối ưu văn bản pháp lý</span>
                     </label>
                   </div>
                 </div>

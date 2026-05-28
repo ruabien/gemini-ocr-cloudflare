@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-ai-accent: #7C3AED;
-  --color-ai-accent-hover: #6D28D9;
+  --color-primary: #1B365D; /* Navy Blue - nghiêm túc, tin cậy */
+  --color-primary-hover: #11223F; /* Deep Navy */
+  --color-ai-accent: #334155; /* Slate Gray - chuyên nghiệp */
+  --color-ai-accent-hover: #1E293B; /* Slate Dark */
   
   /* Cập nhật bảng màu mặc định sang Slate nhẹ nhàng và cao cấp */
   --color-background: #F8FAFC;
@@ -20,8 +20,8 @@
   
   --color-outline-variant: #E2E8F0;
   --color-outline: #94A3B8;
-  --color-primary-container: #EFF6FF;
-  --color-on-primary-container: #1E40AF;
+  --color-primary-container: #F1F5F9;
+  --on-primary-container: #1B365D;
   
   --font-sans: 'Inter', 'Be Vietnam Pro', sans-serif;
   --font-inter: 'Inter', sans-serif;
@@ -66,70 +66,66 @@ body {
 /* Scanning Animation Effect */
 .scanning-line {
   position: absolute;
-  height: 3px;
+  height: 2px;
   width: 100%;
-  background: linear-gradient(90deg, transparent, #2563EB, #7C3AED, #2563EB, transparent);
-  animation: scan 2.5s infinite linear;
-  box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+  background: linear-gradient(90deg, transparent, var(--color-primary), var(--color-primary), transparent);
+  animation: scan 4s infinite linear; /* Chậm lại */
+  box-shadow: 0 0 6px rgba(27, 54, 93, 0.3);
 }
 
 @keyframes scan {
   0% { top: 0%; opacity: 0; }
-  5% { opacity: 1; }
-  95% { opacity: 1; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
   100% { top: 100%; opacity: 0; }
 }
 
-/* Glow Effect */
+/* Glow Effect - Tối giản sang viền Navy tinh tế, giảm dịch chuyển */
 .hover-glow-card {
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s ease;
   border: 1px solid #E2E8F0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .hover-glow-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 
-    0 20px 40px -15px rgba(37, 99, 235, 0.08), 
-    0 0 30px -5px rgba(124, 58, 237, 0.05),
-    0 1px 1px 0 rgba(0, 0, 0, 0.02);
-  border-color: rgba(124, 58, 237, 0.25);
+  transform: translateY(-2px); /* Giảm nhấp nhô */
+  box-shadow: 0 10px 20px rgba(27, 54, 93, 0.04);
+  border-color: rgba(27, 54, 93, 0.2);
 }
 
-/* Custom premium buttons */
+/* Custom premium buttons - Đổi sang phong cách Navy chính quy, giảm bóng đổ lòe loẹt */
 .btn-premium-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
-  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: var(--color-primary);
+  border: 1px solid var(--color-primary-hover);
+  color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 .btn-premium-primary:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.4), 0 0 12px 0 rgba(124, 58, 237, 0.2);
+  background-color: var(--color-primary-hover);
+  box-shadow: 0 3px 6px rgba(27, 54, 93, 0.15);
   transform: translateY(-1px);
 }
 .btn-premium-primary:active {
-  transform: translateY(1px);
+  transform: translateY(0);
 }
 
 .btn-premium-secondary {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid #E2E8F0;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  color: #374151;
+  transition: all 0.2s ease;
 }
 .btn-premium-secondary:hover {
-  background: #FFFFFF;
-  border-color: #CBD5E1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background-color: #F9FAFB;
+  border-color: #9CA3AF;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   transform: translateY(-1px);
 }
 
-/* Gradient AI Text */
+/* Gradient AI Text - Thay thế dải màu neon bằng Navy chuyên nghiệp */
 .gradient-text-ai {
-  background: linear-gradient(135deg, #2563EB 0%, #7C3AED 50%, #C084FC 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-primary);
   display: inline-block;
 }
 

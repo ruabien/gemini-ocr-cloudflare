@@ -141,7 +141,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               onClick={triggerGlobalUpload}
               className="btn-premium-primary text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Dùng miễn phí</span>
+              <span>Bắt đầu số hóa</span>
             </button>
           </div>
         </div>
@@ -154,8 +154,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           {/* Hero Left Content */}
           <div className="lg:col-span-6 space-y-8 text-left animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-container border border-primary/20 text-primary text-xs font-bold shadow-sm">
-              <Sparkles size={13} className="text-ai-accent" />
-              <span className="uppercase tracking-wider">Số hóa hồ sơ tư pháp bằng AI thế hệ mới</span>
+              <span className="material-icons text-[14px] text-primary shrink-0">gavel</span>
+              <span className="uppercase tracking-wider">Hệ thống số hóa hồ sơ tư pháp chuyên sâu</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
@@ -830,50 +830,53 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
       </section>
 
       {/* FOOTER SECTION */}
-      <footer className="w-full bg-slate-50 border-t border-outline-variant/60 py-16 relative z-10">
+      <footer className="w-full bg-slate-100 border-t border-slate-200 py-16 relative z-10">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-6">
           
           <div className="md:col-span-5 space-y-4 text-left">
             <a href="#" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-ai-accent flex items-center justify-center text-white">
-                <Sparkles size={16} />
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-sm">
+                <span className="material-icons text-[16px]">gavel</span>
               </div>
               <span className="font-bold text-xl tracking-tight text-on-surface">DOC</span>
             </a>
             <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm">
-              Hệ thống số hóa hồ sơ vụ án và tài liệu tư pháp bằng trí tuệ nhân tạo. Chuyển đổi mọi tệp PDF scan nghiệp vụ, ảnh chụp chứng cứ mờ nhòe sang định dạng văn bản soạn thảo chuẩn chỉnh trong chớp mắt.
+              Hệ thống số hóa hồ sơ vụ án và tài liệu tư pháp chuyên dụng bằng Trí tuệ Nhân tạo. Giải pháp nhận dạng và chuẩn hóa văn bản tố tụng bảo mật tối đa cho khối cơ quan tư pháp và văn phòng luật.
             </p>
+            <div className="text-xs text-slate-500 font-bold">
+              Phiên bản: v1.4.0 (Nâng cấp Tư pháp Chuyên sâu)
+            </div>
           </div>
 
           <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8 text-left">
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Sản phẩm</h4>
+              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Hệ thống</h4>
               <ul className="space-y-2.5 text-sm text-on-surface-variant">
-                <li><button onClick={() => scrollToSection('features')} className="hover:text-primary transition-colors cursor-pointer">Tính năng</button></li>
+                <li><button onClick={() => scrollToSection('features')} className="hover:text-primary transition-colors cursor-pointer">Tính năng nghiệp vụ</button></li>
                 <li><button onClick={() => scrollToSection('demo')} className="hover:text-primary transition-colors cursor-pointer">Bản dùng thử</button></li>
-                <li><button onClick={() => scrollToSection('how-it-works')} className="hover:text-primary transition-colors cursor-pointer">Quy trình</button></li>
+                <li><button onClick={() => scrollToSection('how-it-works')} className="hover:text-primary transition-colors cursor-pointer">Quy trình số hóa</button></li>
               </ul>
             </div>
             
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Pháp lý</h4>
+              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Thông tin pháp lý</h4>
               <ul className="space-y-2.5 text-sm text-on-surface-variant">
-                <li><a href="#" className="hover:text-primary transition-colors">Điều khoản dịch vụ</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Chính sách bảo mật</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Điều khoản Sử dụng (Terms)</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Chính sách Bảo mật (Privacy)</a></li>
                 <li><button onClick={() => scrollToSection('security')} className="hover:text-primary transition-colors cursor-pointer">Cam kết an toàn</button></li>
               </ul>
             </div>
 
             <div className="space-y-4 col-span-2 sm:col-span-1">
-              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Liên hệ</h4>
+              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider">Hỗ trợ nghiệp vụ</h4>
               <ul className="space-y-2.5 text-sm text-on-surface-variant">
                 <li className="flex items-center gap-1.5">
                   <span className="material-icons text-xs text-on-surface-variant">email</span>
                   <a href="mailto:support@hotro.online" className="hover:text-primary transition-colors">support@hotro.online</a>
                 </li>
                 <li className="flex items-center gap-1.5">
-                  <span className="material-icons text-xs text-on-surface-variant">language</span>
-                  <a href="https://doc.hotro.online" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">doc.hotro.online</a>
+                  <span className="material-icons text-xs text-on-surface-variant">history</span>
+                  <a href="#" className="hover:text-primary transition-colors" onClick={(e) => { e.preventDefault(); alert("Nhật ký thay đổi v1.4.0:\n- Chuyển đổi giao diện chính quy sang tone màu Navy/Slate tư pháp.\n- Tích hợp công cụ Nhận diện số văn bản tố tụng dùng regex.\n- Thêm tính năng Chuẩn hóa quốc hiệu, tiêu ngữ và dấu câu văn bản pháp lý.\n- Thêm nút tải Word (.docx) trực tiếp.\n- Đo lường và hiển thị siêu dữ liệu thời gian số hóa."); }}>Nhật ký thay đổi (Changelog)</a>
                 </li>
               </ul>
             </div>
@@ -881,12 +884,10 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
         </div>
         
-        <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-outline-variant/30 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-on-surface-variant">
-          <p>© 2026 DOC. Bản quyền thuộc về dự án số hóa tài liệu tư pháp thông minh.</p>
+        <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-semibold text-on-surface-variant">
+          <p>© 2026 DOC. Hệ thống Số hóa Hồ sơ Tư pháp Chuyên dụng.</p>
           <div className="flex gap-4">
-            <a href="#" className="hover:text-primary">Facebook</a>
-            <a href="#" className="hover:text-primary">Github</a>
-            <a href="#" className="hover:text-primary">Discord</a>
+            <a href="mailto:support@hotro.online" className="hover:text-primary">Liên hệ hỗ trợ</a>
           </div>
         </div>
       </footer>
