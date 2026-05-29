@@ -94,6 +94,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
 
   if (isCompact) {
     return (
+<<<<<<< HEAD
       <label
         className={`relative block w-full bg-background border border-dashed rounded-2xl p-4 transition-all duration-300 cursor-pointer group select-none text-center ${
           isDragActive 
@@ -108,20 +109,39 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
         {isDragActive && (
           <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
             <div className="scanning-line"></div>
+=======
+      <>
+        <label
+          htmlFor="compact-file-input"
+          className={`relative block w-full bg-background border border-dashed rounded-2xl p-4 transition-all duration-300 cursor-pointer group select-none text-center ${
+            isDragActive 
+              ? 'border-primary bg-primary/5 scale-[1.01]' 
+              : 'border-border hover:border-primary hover:bg-surface'
+          }`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {isDragActive && (
+            <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+              <div className="scanning-line"></div>
+            </div>
+          )}
+          
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform shrink-0">
+              <span className="material-icons text-[20px]">cloud_upload</span>
+            </div>
+            <div className="text-left min-w-0">
+              <p className="text-xs font-bold text-text-primary truncate">
+                {isDragActive ? 'Thả file vào đây...' : 'Kéo thả hoặc chạm để thêm tài liệu'}
+              </p>
+              <p className="text-[10px] text-text-secondary/80 font-medium">PDF, JPG, PNG, WEBP tối đa 100MB</p>
+            </div>
+>>>>>>> 809c312c29db19882d1eff194a954c82fce007a1
           </div>
-        )}
-        
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform shrink-0">
-            <span className="material-icons text-[20px]">cloud_upload</span>
-          </div>
-          <div className="text-left min-w-0">
-            <p className="text-xs font-bold text-text-primary truncate">
-              {isDragActive ? 'Thả file vào đây...' : 'Kéo thả hoặc chạm để thêm tài liệu'}
-            </p>
-            <p className="text-[10px] text-text-secondary/80 font-medium">PDF, JPG, PNG, WEBP tối đa 100MB</p>
-          </div>
-        </div>
+        </label>
 
         <input
           type="file"
@@ -132,11 +152,12 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
           id="compact-file-input"
           className="hidden"
         />
-      </label>
+      </>
     );
   }
 
   return (
+<<<<<<< HEAD
     <label
       className={`relative block w-full bg-surface border-2 border-dashed rounded-2xl p-10 md:p-12 transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(22,58,112,0.03)] select-none text-center ${
         isDragActive 
@@ -152,25 +173,45 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
       {isDragActive && (
         <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
           <div className="scanning-line"></div>
+=======
+    <>
+      <label
+        htmlFor="hero-file-input"
+        className={`relative block w-full bg-surface border-2 border-dashed rounded-2xl p-10 md:p-12 transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(22,58,112,0.03)] select-none text-center ${
+          isDragActive 
+            ? 'border-primary bg-primary/5 scale-[1.01]' 
+            : 'border-border hover:border-primary hover:bg-background/50'
+        }`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {/* Scanner Animation */}
+        {isDragActive && (
+          <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+            <div className="scanning-line"></div>
+          </div>
+        )}
+        
+        <div className="flex flex-col items-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-all duration-300 border border-border/50 shadow-xs">
+            <span className="material-icons text-[32px] text-primary">cloud_upload</span>
+          </div>
+          <div className="space-y-2">
+            <p className="font-bold text-lg sm:text-xl text-text-primary leading-tight">
+              {isDragActive ? 'Thả file của bạn để bắt đầu...' : 'Kéo thả hoặc chạm để tải file lên'}
+            </p>
+            <p className="text-xs sm:text-sm text-text-secondary font-medium max-w-sm mx-auto leading-relaxed">
+              Hỗ trợ hình ảnh chụp tài liệu dạng JPG, PNG, WEBP hoặc tệp văn bản PDF scan nhiều trang
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-background border border-border rounded-lg text-xs font-semibold text-text-secondary">
+            <span>Giới hạn file: 100 MB</span>
+          </div>
+>>>>>>> 809c312c29db19882d1eff194a954c82fce007a1
         </div>
-      )}
-      
-      <div className="flex flex-col items-center space-y-6">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-all duration-300 border border-border/50 shadow-xs">
-          <span className="material-icons text-[32px] text-primary">cloud_upload</span>
-        </div>
-        <div className="space-y-2">
-          <p className="font-bold text-lg sm:text-xl text-text-primary leading-tight">
-            {isDragActive ? 'Thả file của bạn để bắt đầu...' : 'Kéo thả hoặc chạm để tải file lên'}
-          </p>
-          <p className="text-xs sm:text-sm text-text-secondary font-medium max-w-sm mx-auto leading-relaxed">
-            Hỗ trợ hình ảnh chụp tài liệu dạng JPG, PNG, WEBP hoặc tệp văn bản PDF scan nhiều trang
-          </p>
-        </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-background border border-border rounded-lg text-xs font-semibold text-text-secondary">
-          <span>Giới hạn file: 100 MB</span>
-        </div>
-      </div>
+      </label>
 
       <input
         type="file"
@@ -181,7 +222,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
         id="hero-file-input"
         className="hidden"
       />
-    </label>
+    </>
   );
 }
 
