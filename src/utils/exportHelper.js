@@ -2,88 +2,6 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 
 /**
- * Helper to parse a line of text into an array of docx TextRun objects,
- * identifying bold (**) and italic (*) markdown formatting.
- * @param {string} line - text line to parse
- * @returns {TextRun[]} array of docx TextRun instances
- */
-function parseLineToTextRuns(line) {
-  if (!line) return [];
-  const runs = [];
-  const regex = /(\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*)/g;
-  let match;
-  let lastIndex = 0;
-  
-  while ((match = regex.exec(line)) !== null) {
-    const matchIndex = match.index;
-    const matchText = match[0];
-    
-    // Add normal text before the match
-    if (matchIndex > lastIndex) {
-      const normalText = line.substring(lastIndex, matchIndex);
-      if (normalText) {
-        runs.push(new TextRun({
-          text: normalText,
-          font: "Times New Roman",
-          size: 28 // 14pt
-        }));
-      }
-    }
-    
-    // Process the matched formatted text and strip markdown stars
-    let text = matchText;
-    let bold = false;
-    let italic = false;
-    
-    if (matchText.startsWith('***') && matchText.endsWith('***')) {
-      text = matchText.slice(3, -3);
-      bold = true;
-      italic = true;
-    } else if (matchText.startsWith('**') && matchText.endsWith('**')) {
-      text = matchText.slice(2, -2);
-      bold = true;
-    } else if (matchText.startsWith('*') && matchText.endsWith('*')) {
-      text = matchText.slice(1, -1);
-      italic = true;
-    }
-    
-    if (text) {
-      runs.push(new TextRun({
-        text: text,
-        bold: bold,
-        italic: italic,
-        font: "Times New Roman",
-        size: 28 // 14pt
-      }));
-    }
-    
-    lastIndex = regex.lastIndex;
-  }
-  
-  // Add remaining normal text after the last match
-  if (lastIndex < line.length) {
-    const remainingText = line.substring(lastIndex);
-    if (remainingText) {
-      runs.push(new TextRun({
-        text: remainingText,
-        font: "Times New Roman",
-        size: 28 // 14pt
-      }));
-    }
-  }
-  
-  if (runs.length === 0 && line) {
-    runs.push(new TextRun({
-      text: line,
-      font: "Times New Roman",
-      size: 28 // 14pt
-    }));
-  }
-  
-  return runs;
-}
-
-/**
  * Clean and export text to a TXT file (maintaining Unicode UTF-8 with BOM).
  * @param {string} text - Raw text to export
  * @param {string} filename - Target filename
@@ -134,14 +52,64 @@ export async function exportDocx(textOrPages, filename, options = {}) {
 
   // Split cleaned text into separate lines and map to Paragraphs with formatted TextRuns
   const docParagraphs = cleanedText.split('\n').map(line => {
-    const docxRuns = parseLineToTextRuns(line);
-    return new Paragraph({
-      children: docxRuns,
-      alignment: AlignmentType.JUSTIFIED,
-      spacing: { 
-        before: 120, // 6 pt
-        after: 120   // 6 pt
+    const runs = [];
+    // Regex quét toàn bộ các cụm **đậm** và *nghiêng* toàn cục
+    const regex = /(\*\*.*?\*\*|\*.*?\*)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(line)) !== null) {
+      const matchIndex = match.index;
+      const matchText = match[0];
+
+      // 1. Thêm đoạn văn bản thường trước từ khóa (nếu có)
+      if (matchIndex > lastIndex) {
+        runs.push(new TextRun({
+          text: line.substring(lastIndex, matchIndex),
+          font: "Times New Roman",
+          size: 28
+        }));
       }
+
+      // 2. Xử lý đoạn text định dạng được tìm thấy
+      if (matchText.startsWith('**') && matchText.endsWith('**')) {
+        runs.push(new TextRun({
+          text: matchText.slice(2, -2), // Cắt bỏ 2 dấu sao
+          bold: true,
+          font: "Times New Roman",
+          size: 28
+        }));
+      } else if (matchText.startsWith('*') && matchText.endsWith('*')) {
+        runs.push(new TextRun({
+          text: matchText.slice(1, -1), // Cắt bỏ 1 dấu sao
+          italic: true,
+          font: "Times New Roman",
+          size: 28
+        }));
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    // 3. Thêm đoạn văn bản thường còn sót lại ở cuối dòng (nếu có)
+    if (lastIndex < line.length) {
+      runs.push(new TextRun({
+        text: line.substring(lastIndex),
+        font: "Times New Roman",
+        size: 28
+      }));
+    }
+
+    // Nếu dòng trống, tạo một dòng trống để giãn dòng
+    if (runs.length === 0) {
+      runs.push(new TextRun({ text: "" }));
+    }
+
+    // Khởi tạo Paragraph chứa mảng các cụm chữ đã chẻ nhỏ
+    return new Paragraph({
+      children: runs,
+      alignment: AlignmentType.JUSTIFIED, // Căn đều 2 bên
+      spacing: { before: 120, after: 120 } // Khoảng cách đoạn 6pt
     });
   });
 
