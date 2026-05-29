@@ -4,12 +4,6 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleClick = (e) => {
-    if (e.target === fileInputRef.current) return;
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
 
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -101,8 +95,8 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
 
   if (isCompact) {
     return (
-      <div
-        onClick={handleClick}
+      <label
+        htmlFor="compact-file-input"
         className={`relative block w-full bg-background border border-dashed rounded-2xl p-4 transition-all duration-300 cursor-pointer group select-none text-center ${
           isDragActive 
             ? 'border-primary bg-primary/5 scale-[1.01]' 
@@ -138,15 +132,15 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
           accept=".pdf, .jpg, .jpeg, .png, .webp"
           multiple
           id="compact-file-input"
-          className="hidden"
+          className="sr-only"
         />
-      </div>
+      </label>
     );
   }
 
   return (
-    <div
-      onClick={handleClick}
+    <label
+      htmlFor="hero-file-input"
       className={`relative block w-full bg-surface border-2 border-dashed rounded-2xl p-10 md:p-12 transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(22,58,112,0.03)] select-none text-center ${
         isDragActive 
           ? 'border-primary bg-primary/5 scale-[1.01]' 
@@ -188,9 +182,9 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
         accept=".pdf, .jpg, .jpeg, .png, .webp"
         multiple
         id="hero-file-input"
-        className="hidden"
+        className="sr-only"
       />
-    </div>
+    </label>
   );
 }
 
