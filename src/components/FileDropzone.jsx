@@ -130,7 +130,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
           type="file"
           ref={fileInputRef}
           onChange={handleChange}
-          accept=".pdf, .jpg, .jpeg, .png, .webp"
+          accept=".pdf,.jpg,.jpeg,.png,.webp"
           multiple
           id="compact-file-input"
           className="hidden"
@@ -182,7 +182,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
         type="file"
         ref={fileInputRef}
         onChange={handleChange}
-        accept=".pdf, .jpg, .jpeg, .png, .webp"
+        accept=".pdf,.jpg,.jpeg,.png,.webp"
         multiple
         id="hero-file-input"
         className="hidden"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
   HelpCircle, ChevronDown, Check, ArrowRight, Upload, Play,
@@ -8,6 +8,7 @@ import {
 import FileDropzone from './FileDropzone';
 
 export default function LandingPage({ onFilesSelected, onOpenSettings }) {
+  const fileInputRef = useRef(null);
   // FAQ state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   
@@ -53,9 +54,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 
   // Trigger hidden input click
   const triggerGlobalUpload = () => {
-    const input = document.getElementById('landing-global-file-input');
-    if (input) {
-      input.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
@@ -97,9 +97,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
       {/* Hidden file input for CTA triggers */}
       <input 
         type="file" 
-        id="landing-global-file-input"
+        ref={fileInputRef}
         onChange={handleGlobalFileChange}
-        accept=".pdf, .jpg, .jpeg, .png"
+        accept=".pdf,.jpg,.jpeg,.png,.webp"
         multiple
         className="hidden"
       />
