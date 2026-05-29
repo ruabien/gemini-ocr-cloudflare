@@ -4,7 +4,7 @@ import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, Fi
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
-export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }) {
+export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -225,11 +225,18 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   const handleExport = async (formatType) => {
     let processedText;
     let baseFileName = "tailieu_ocr";
+    let pagesData = [];
     
     if (parentPdf) {
       processedText = getPdfMergedNormalizedText();
       const originalName = parentPdf.originalFile?.name || parentPdf.name || 'tailieu_ocr.pdf';
       baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+      
+      const sortedPages = [...pdfPages].sort((a, b) => a.pageIndex - b.pageIndex);
+      pagesData = sortedPages.map(p => ({
+        text: p.result || '',
+        imageFile: p.originalFile
+      }));
     } else if (isMultiImage) {
       processedText = getMergedNormalizedText();
       const firstImageFile = imageFiles[0];
@@ -237,10 +244,19 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
         const originalName = firstImageFile.originalFile?.name || firstImageFile.name || 'anh';
         baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
       }
+      pagesData = imageFiles.map(d => ({
+        text: d.result || '',
+        imageFile: d.originalFile
+      }));
     } else {
       processedText = normalizeOcrText(localText);
       const originalName = file.originalFile?.name || 'tailieu_ocr.txt';
       baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+      
+      pagesData = [{
+        text: processedText,
+        imageFile: file.originalFile
+      }];
     }
     
     if (!processedText || !processedText.trim()) {
@@ -256,7 +272,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       } else if (formatType === 'md') {
         exportMarkdown(cleanedText, `${baseFileName}_ocr.md`);
       } else if (formatType === 'docx') {
-        await exportDocx(cleanedText, `${baseFileName}_ocr.docx`);
+        await exportDocx(pagesData, `${baseFileName}_ocr.docx`, ocrOptions || {});
       }
     } catch (error) {
       console.error("Lỗi xuất file:", error);

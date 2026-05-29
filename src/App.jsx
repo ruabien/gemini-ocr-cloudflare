@@ -36,7 +36,8 @@ function App() {
     layoutPreserve: true,
     precisionMode: true,
     normalizeLines: false,
-    legalOptimize: true
+    legalOptimize: true,
+    wordNd30: true
   });
 
   useEffect(() => {
@@ -751,6 +752,15 @@ function App() {
                       />
                       <span className="text-[11px] font-bold text-text-secondary leading-tight">Tối ưu văn bản pháp lý</span>
                     </label>
+                    <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left col-span-1 sm:col-span-2">
+                      <input 
+                        type="checkbox" 
+                        checked={ocrOptions.wordNd30} 
+                        onChange={() => setOcrOptions(p => ({ ...p, wordNd30: !p.wordNd30 }))}
+                        className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-primary leading-tight">Xuất Word chuẩn Nghị định 30</span>
+                    </label>
                   </div>
                 </div>
 
@@ -774,6 +784,7 @@ function App() {
               allFiles={files} 
               onUpdateResult={handleUpdateResult} 
               onReset={handleReset}
+              ocrOptions={ocrOptions}
             />
             
             {/* ApiConfig Collapsible in Workspace */}

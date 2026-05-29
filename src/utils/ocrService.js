@@ -77,6 +77,15 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
     systemText += "\n- Optimize for Vietnamese legal documents: Recognize formal headings, national motto (CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM), state organization names, stamp titles, signatures, case record codes, and legal article references. Avoid misinterpreting blurred state seals or stamps; do not describe them, just ignore visual stamps/seals and extract text only.";
   }
 
+  if (options.wordNd30) {
+    systemText += "\n- BẮT BUỘC định dạng đầu ra để xuất Word (.docx) chuẩn hành chính Việt Nam (Nghị định 30/2020/NĐ-CP):\n" +
+      "  + Quốc hiệu - Tiêu ngữ: viết hoa đậm **CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM** và viết thường đậm **Độc lập - Tự do - Hạnh phúc**.\n" +
+      "  + Tiêu đề cơ quan ban hành, số hiệu văn bản và ngày tháng năm (in nghiêng *Hà Nội, ngày...*) ở đầu trang.\n" +
+      "  + Bảng biểu (Tables): Chuyển đổi mọi bảng biểu, bảng kê tài sản, bảng kê đương sự thành bảng Markdown chuẩn (`| cột 1 | cột 2 |`).\n" +
+      "  + Định vị phi văn bản: Khi thấy con dấu, chữ ký hoặc hình ảnh, chèn thẻ placeholder dạng `[IMAGE_PLACEHOLDER: Signature]` hoặc `[IMAGE_PLACEHOLDER: Stamp]` hoặc `[IMAGE_PLACEHOLDER: Diagram]` tại đúng vị trí xuất hiện của chúng.\n" +
+      "  + Thêm tag `<!-- font: Times New Roman -->` ở dòng đầu tiên.";
+  }
+
   // Gọi trực tiếp đến Google Gemini API
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`, {
     method: 'POST',
