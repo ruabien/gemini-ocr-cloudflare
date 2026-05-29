@@ -29,7 +29,11 @@ export function exportTxt(text, filename) {
   if (!text) {
     throw new Error("Không có nội dung để xuất file.");
   }
-  const cleanText = text.replace(/<!--[\s\S]*?-->/g, '').replace(/\[IMAGE_PLACEHOLDER:.*?\]/g, '');
+  const cleanText = text
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/\[IMAGE_PLACEHOLDER:.*?\]/g, '');
   const blob = new Blob(['\ufeff' + cleanText], { type: "text/plain;charset=utf-8" });
   downloadBlob(blob, filename);
 }
