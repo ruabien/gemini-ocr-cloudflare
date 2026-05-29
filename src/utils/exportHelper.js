@@ -138,7 +138,10 @@ export async function exportDocx(textOrPages, filename, options = {}) {
     return new Paragraph({
       children: docxRuns,
       alignment: AlignmentType.JUSTIFIED,
-      spacing: { after: 120 } // paragraph margin spacing
+      spacing: { 
+        before: 120, // 6 pt
+        after: 120   // 6 pt
+      }
     });
   });
 
@@ -151,7 +154,7 @@ export async function exportDocx(textOrPages, filename, options = {}) {
             top: 1134,    // 20mm
             bottom: 1134, // 20mm
             left: 1701,   // 30mm (for binding judicial dossier)
-            right: 850    // 15mm
+            right: 1134   // 20mm
           }
         }
       },
