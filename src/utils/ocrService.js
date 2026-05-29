@@ -29,9 +29,9 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
   
   let normalizedModel = modelName || 'gemini-2.5-flash';
   if (normalizedModel === 'gemini-1.5-flash' || normalizedModel === 'gemini-1.5-flash-latest') {
-    normalizedModel = 'gemini-2.5-flash-latest';
+    normalizedModel = 'gemini-2.5-flash';
   } else if (normalizedModel === 'gemini-1.5-pro' || normalizedModel === 'gemini-1.5-pro-latest') {
-    normalizedModel = 'gemini-2.5-pro-latest';
+    normalizedModel = 'gemini-2.5-pro';
   }
 
   const fileName = file.name || '';
