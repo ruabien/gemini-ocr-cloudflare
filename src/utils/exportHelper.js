@@ -21,7 +21,8 @@ export function exportTxt(text, filename) {
   if (!text) {
     throw new Error("Không có nội dung để xuất file.");
   }
-  const blob = new Blob(['\ufeff' + text], { type: "text/plain;charset=utf-8" });
+  const cleanText = text.replace(/<!--[\s\S]*?-->/g, '');
+  const blob = new Blob(['\ufeff' + cleanText], { type: "text/plain;charset=utf-8" });
   saveAs(blob, filename);
 }
 
@@ -34,7 +35,8 @@ export function exportMarkdown(text, filename) {
   if (!text) {
     throw new Error("Không có nội dung để xuất file.");
   }
-  const blob = new Blob(['\ufeff' + text], { type: "text/markdown;charset=utf-8" });
+  const cleanText = text.replace(/<!--[\s\S]*?-->/g, '');
+  const blob = new Blob(['\ufeff' + cleanText], { type: "text/markdown;charset=utf-8" });
   saveAs(blob, filename);
 }
 
@@ -209,14 +211,19 @@ function createParagraphFromText(line) {
     });
   });
 
-  return new Paragraph({
+  const paragraphOptions = {
     children: docxRuns,
-    alignment: alignment,
     spacing: {
       line: 320, // 1.33 line spacing
       after: 120 // 6pt space after
     }
-  });
+  };
+
+  if (alignment) {
+    paragraphOptions.alignment = alignment;
+  }
+
+  return new Paragraph(paragraphOptions);
 }
 
 /**
@@ -272,31 +279,39 @@ function createDocxTable(tableLines) {
         cellAlignment = "center";
       }
 
-      cells.push(
-        new TableCell({
-          children: [
-            new Paragraph({
-              children: cellRuns,
-              alignment: cellAlignment,
-              spacing: { after: 120, before: 60 }
-            })
-          ],
-          borders: isHeaderTable ? {
-            top: { style: BorderStyle.NONE },
-            bottom: { style: BorderStyle.NONE },
-            left: { style: BorderStyle.NONE },
-            right: { style: BorderStyle.NONE },
-          } : {
-            top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
-            bottom: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
-            left: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
-            right: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
-          },
-          shading: (rowIndex === 0 && !isHeaderTable) ? {
-            fill: "F2F2F2"
-          } : undefined
-        })
-      );
+      const cellParagraphOptions = {
+        children: cellRuns,
+        spacing: { after: 120, before: 60 }
+      };
+
+      if (cellAlignment) {
+        cellParagraphOptions.alignment = cellAlignment;
+      }
+
+      const cellOptions = {
+        children: [
+          new Paragraph(cellParagraphOptions)
+        ],
+        borders: isHeaderTable ? {
+          top: { style: BorderStyle.NONE },
+          bottom: { style: BorderStyle.NONE },
+          left: { style: BorderStyle.NONE },
+          right: { style: BorderStyle.NONE },
+        } : {
+          top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+          bottom: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+          left: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+          right: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+        }
+      };
+
+      if (rowIndex === 0 && !isHeaderTable) {
+        cellOptions.shading = {
+          fill: "F2F2F2"
+        };
+      }
+
+      cells.push(new TableCell(cellOptions));
     }
     return new TableRow({ children: cells });
   });
@@ -326,6 +341,16 @@ export async function exportDocx(textOrPages, filename, options = {}) {
   } else {
     throw new Error("Dữ liệu đầu vào không hợp lệ để xuất DOCX.");
   }
+
+  // Clean all HTML comment blocks from each page text to avoid residual layout markers
+  pagesData = pagesData.map(page => {
+    let cleanText = page.text || '';
+    cleanText = cleanText.replace(/<!--[\s\S]*?-->/g, '');
+    return {
+      ...page,
+      text: cleanText
+    };
+  });
 
   const sections = [];
 
