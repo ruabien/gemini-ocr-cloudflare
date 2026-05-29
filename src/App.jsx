@@ -14,10 +14,10 @@ import { normalizeOcrText } from './utils/textNormalizer';
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const getFallbackModel = (currentModel) => {
-  if (!currentModel) return 'gemini-2.5-flash-latest';
+  if (!currentModel) return 'gemini-2.5-flash';
   const modelLower = currentModel.toLowerCase();
-  if (modelLower !== 'gemini-2.5-flash-latest') {
-    return 'gemini-2.5-flash-latest';
+  if (modelLower !== 'gemini-2.5-flash') {
+    return 'gemini-2.5-flash';
   }
   return currentModel;
 };
