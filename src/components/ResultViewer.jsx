@@ -256,14 +256,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       } else if (formatType === 'md') {
         exportMarkdown(cleanedText, `${baseFileName}_ocr.md`);
       } else if (formatType === 'docx') {
-        const metadata = {
-          title: file.originalFile?.name || file.name || "Tài liệu số hóa",
-          processingTime: file.metadata?.duration ? `${file.metadata.duration}s` : (file.processingTime ? `${(file.processingTime / 1000).toFixed(2)}s` : null),
-          pageCount: parentPdf ? pdfPages.length : 1,
-          engineVersion: file.metadata?.engine || file.engineUsed || "Gemini API",
-          ocrMode: file.metadata?.ocrMode || file.ocrMode || "Tối ưu hóa văn bản pháp lý"
-        };
-        await exportDocx(cleanedText, `${baseFileName}_ocr.docx`, metadata);
+        await exportDocx(cleanedText, `${baseFileName}_ocr.docx`);
       }
     } catch (error) {
       console.error("Lỗi xuất file:", error);
