@@ -1,11 +1,14 @@
 import { saveAs } from 'file-saver';
 
-// Helper to access docx library loaded from CDN via window.docx
+// Helper to access docx library loaded from CDN via window.docx or window.Docx
 const getDocxLib = () => {
-  if (typeof window !== 'undefined' && window.docx) {
-    return window.docx;
+  if (typeof window !== 'undefined') {
+    const docxLib = window.docx || window.Docx;
+    if (docxLib) {
+      return docxLib;
+    }
   }
-  throw new Error("Thư viện docx.js chưa được tải hoàn tất từ CDN.");
+  throw new Error("Thư viện docx.js chưa được tải hoàn tất từ CDN. Vui lòng làm mới trang (F5) hoặc kiểm tra lại kết nối mạng.");
 };
 
 /**
