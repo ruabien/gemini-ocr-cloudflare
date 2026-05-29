@@ -1,15 +1,5 @@
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { saveAs } from 'file-saver';
-
-// Helper to access docx library loaded from CDN via window.docx or window.Docx
-const getDocxLib = () => {
-  if (typeof window !== 'undefined') {
-    const docxLib = window.docx || window.Docx;
-    if (docxLib) {
-      return docxLib;
-    }
-  }
-  throw new Error("Thư viện docx.js chưa được tải hoàn tất từ CDN. Vui lòng làm mới trang (F5) hoặc kiểm tra lại kết nối mạng.");
-};
 
 /**
  * Clean and export text to a TXT file (maintaining Unicode UTF-8 with BOM).
@@ -46,7 +36,6 @@ export function exportMarkdown(text, filename) {
  * @param {object} options - Export options (e.g. { wordNd30: true })
  */
 export async function exportDocx(textOrPages, filename, options = {}) {
-  const { Document, Packer, Paragraph, TextRun } = getDocxLib();
 
   let text = "";
   if (typeof textOrPages === 'string') {
