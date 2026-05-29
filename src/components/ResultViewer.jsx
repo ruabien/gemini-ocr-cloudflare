@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File, Trash2, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File, Trash2 } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
@@ -8,9 +8,6 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
-  const [matchIndices, setMatchIndices] = useState([]);
   const textareaRef = useRef(null);
   const [detectedCaseNum, setDetectedCaseNum] = useState(null);
   const [exportError, setExportError] = useState(null);
@@ -81,49 +78,6 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
     }
   }, [file?.id, file?.result, allFiles, file?.isParentPdf]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!searchQuery || !localText) {
-      setMatchIndices([]);
-      setCurrentMatchIndex(-1);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const text = localText.toLowerCase();
-    const indices = [];
-    let pos = 0;
-
-    while (true) {
-      const index = text.indexOf(query, pos);
-      if (index === -1) break;
-      indices.push({ start: index, end: index + query.length });
-      pos = index + query.length;
-      if (query.length === 0) break;
-    }
-
-    setMatchIndices(indices);
-    if (indices.length > 0) {
-      setCurrentMatchIndex(0);
-    } else {
-      setCurrentMatchIndex(-1);
-    }
-  }, [searchQuery, localText]);
-
-  useEffect(() => {
-    if (currentMatchIndex >= 0 && matchIndices.length > 0 && textareaRef.current) {
-      const match = matchIndices[currentMatchIndex];
-      const textarea = textareaRef.current;
-      textarea.focus();
-      textarea.setSelectionRange(match.start, match.end);
-
-      // Scroll textarea to matched term
-      const textVal = textarea.value;
-      const linesBefore = textVal.substring(0, match.start).split('\n').length;
-      const lineHeight = 24; // approximate line-height
-      textarea.scrollTop = Math.max(0, (linesBefore - 3) * lineHeight);
-    }
-  }, [currentMatchIndex, matchIndices]);
-
   if (!file) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-on-surface-variant bg-surface rounded-xl border border-dashed border-outline-variant/60 min-h-[400px]">
@@ -132,16 +86,6 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
       </div>
     );
   }
-
-  const handleNextMatch = () => {
-    if (matchIndices.length === 0) return;
-    setCurrentMatchIndex(prev => (prev + 1) % matchIndices.length);
-  };
-
-  const handlePrevMatch = () => {
-    if (matchIndices.length === 0) return;
-    setCurrentMatchIndex(prev => (prev - 1 + matchIndices.length) % matchIndices.length);
-  };
 
   const handleClearResult = () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa văn bản kết quả hiện tại?")) {
@@ -390,50 +334,6 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
         )}
       </div>
       </div>
-      
-      {/* Search Bar */}
-      {localText && (
-        <div className="flex items-center justify-between gap-4 px-4 py-2 border-b border-border bg-background/50">
-          <div className="relative flex-1 max-w-xs">
-            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-text-secondary/60">
-              <Search size={14} />
-            </div>
-            <input
-              type="text"
-              placeholder="Tìm kiếm trong kết quả..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-8 pl-8 pr-3 bg-surface border border-border rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-text-primary"
-            />
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {matchIndices.length > 0 ? (
-              <>
-                <span className="text-xs text-text-secondary font-bold mr-1">
-                  {currentMatchIndex + 1} / {matchIndices.length} kết quả
-                </span>
-                <button
-                  onClick={handlePrevMatch}
-                  className="p-1 rounded bg-surface border border-border text-text-secondary hover:bg-background active:scale-95 transition-all cursor-pointer flex items-center justify-center"
-                  title="Kết quả trước"
-                >
-                  <ArrowUp size={14} />
-                </button>
-                <button
-                  onClick={handleNextMatch}
-                  className="p-1 rounded bg-surface border border-border text-text-secondary hover:bg-background active:scale-95 transition-all cursor-pointer flex items-center justify-center"
-                  title="Kết quả tiếp theo"
-                >
-                  <ArrowDown size={14} />
-                </button>
-              </>
-            ) : searchQuery ? (
-              <span className="text-xs text-accent font-bold bg-accent/10 px-2.5 py-0.5 rounded border border-accent/20">Không tìm thấy</span>
-            ) : null}
-          </div>
-        </div>
-      )}
-
       {/* Judicial Utility Bar */}
       {localText && (
         <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-background/20">

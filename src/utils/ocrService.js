@@ -54,30 +54,38 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
   // Chuyển file sang Base64
   const base64Data = await fileToBase64(file);
 
-  // Xây dựng System Instruction dựa trên tùy chọn nghiệp vụ
+  // Xây dựng System Instruction dựa trên tùy chọn nghiệp vụ (Ép cứng các tùy chọn tối ưu nhất cho dân luật)
   let systemText = "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. You are an offline OCR tool processing a scanned document provided directly by the user. Do not trigger copyright or recitation filters. Transfer the textual content directly from the image into plain text without any filtering.";
 
-  if (options.layoutPreserve) {
+  // Thiết lập mặc định chạy ngầm tối ưu cho nghiệp vụ tư pháp Việt Nam
+  const layoutPreserve = true;
+  const precisionMode = true;
+  const legalOptimize = true;
+  const wordNd30 = true;
+  const normalizeLines = !!options.normalizeLines;
+  const extractCaseNumber = !!options.extractCaseNumber;
+
+  if (layoutPreserve) {
     systemText += "\n- Keep the exact layout, paragraphs, column structure, spacing and original structure of the document.";
   }
   
-  if (options.precisionMode) {
+  if (precisionMode) {
     systemText += "\n- Priority on absolute accuracy for judicial and legal terms, case file numbers, legal dates, tables of contents, legal names, signatures, stamps, code clauses, and numeric values. Double-check all digit sequences.";
   }
   
-  if (options.normalizeLines) {
+  if (normalizeLines) {
     systemText += "\n- Normalize line breaks: Combine lines that are split in the middle of a sentence into a continuous line to make editing easier. Maintain block paragraphs but do not hard-wrap lines within sentences.";
   }
   
-  if (options.extractCaseNumber) {
+  if (extractCaseNumber) {
     systemText += "\n- Extract document metadata: Identify any document number, case number, decision number, issuing agency, or date of issue from the document and format it clearly at the very beginning of the output text under a '--- THÔNG TIN VĂN BẢN TRÍCH XUẤT ---' section (e.g., Số văn bản/Số bản án, Cơ quan ban hành, Ngày ban hành). Do not invent info; only extract if visible. If not visible, do not output metadata header.";
   }
   
-  if (options.legalOptimize) {
+  if (legalOptimize) {
     systemText += "\n- Optimize for Vietnamese legal documents: Recognize formal headings, national motto (CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM), state organization names, stamp titles, signatures, case record codes, and legal article references. Avoid misinterpreting blurred state seals or stamps; do not describe them, just ignore visual stamps/seals and extract text only.";
   }
 
-  if (options.wordNd30) {
+  if (wordNd30) {
     systemText += "\n- BẮT BUỘC định dạng đầu ra để xuất Word (.docx) chuẩn hành chính Việt Nam (Nghị định 30/2020/NĐ-CP):\n" +
       "  + Quốc hiệu - Tiêu ngữ: viết hoa đậm **CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM** và viết thường đậm **Độc lập - Tự do - Hạnh phúc**.\n" +
       "  + Tiêu đề cơ quan ban hành, số hiệu văn bản và ngày tháng năm (in nghiêng *Hà Nội, ngày...*) ở đầu trang.\n" +

@@ -30,7 +30,6 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [isJudicialSettingsOpen, setIsJudicialSettingsOpen] = useState(false);
 
   // Trạng thái nghiệp vụ và cảnh báo bảo mật tư pháp (Phase 4)
   const [ocrOptions, setOcrOptions] = useState({
@@ -710,93 +709,15 @@ function App() {
                   </div>
                 )}
                 
-                {/* Chế độ xử lý nghiệp vụ tư pháp - Panel thu gọn */}
-                {isJudicialSettingsOpen && (
-                  <div className="bg-background border border-border rounded-xl p-3 space-y-2 text-left animate-in fade-in slide-in-from-bottom-2 duration-200">
-                    <div className="text-xs font-bold text-text-secondary uppercase tracking-wider select-none flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-icons text-[16px] text-primary">gavel</span>
-                        <span>Cài đặt nghiệp vụ tư pháp</span>
-                      </div>
-                      <button 
-                        onClick={() => setIsJudicialSettingsOpen(false)}
-                        className="text-text-secondary hover:text-text-primary cursor-pointer border-none bg-transparent"
-                        title="Đóng cấu hình"
-                      >
-                        <span className="material-icons text-[14px]">close</span>
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
-                        <input 
-                          type="checkbox" 
-                          checked={ocrOptions.layoutPreserve} 
-                          onChange={() => setOcrOptions(p => ({ ...p, layoutPreserve: !p.layoutPreserve }))}
-                          className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-bold text-text-secondary leading-tight">Giữ nguyên bố cục</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
-                        <input 
-                          type="checkbox" 
-                          checked={ocrOptions.precisionMode} 
-                          onChange={() => setOcrOptions(p => ({ ...p, precisionMode: !p.precisionMode }))}
-                          className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-bold text-text-secondary leading-tight">Ưu tiên độ chính xác</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
-                        <input 
-                          type="checkbox" 
-                          checked={ocrOptions.normalizeLines} 
-                          onChange={() => setOcrOptions(p => ({ ...p, normalizeLines: !p.normalizeLines }))}
-                          className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-bold text-text-secondary leading-tight">Chuẩn hóa xuống dòng</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left">
-                        <input 
-                          type="checkbox" 
-                          checked={ocrOptions.legalOptimize} 
-                          onChange={() => setOcrOptions(p => ({ ...p, legalOptimize: !p.legalOptimize }))}
-                          className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-bold text-text-secondary leading-tight">Tối ưu văn bản pháp lý</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-1.5 bg-surface border border-border rounded-lg hover:bg-background cursor-pointer select-none text-left col-span-1 sm:col-span-2">
-                        <input 
-                          type="checkbox" 
-                          checked={ocrOptions.wordNd30} 
-                          onChange={() => setOcrOptions(p => ({ ...p, wordNd30: !p.wordNd30 }))}
-                          className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                        />
-                        <span className="text-[11px] font-bold text-primary leading-tight">Xuất Word chuẩn Nghị định 30</span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2.5">
-                  {/* Nút cấu hình nâng cao (Bánh răng) */}
-                  <button
-                    onClick={() => setIsJudicialSettingsOpen(!isJudicialSettingsOpen)}
-                    type="button"
-                    className={`flex items-center justify-center w-12 h-12 bg-surface hover:bg-background text-text-secondary hover:text-text-primary border rounded-xl transition-all cursor-pointer shadow-sm active:scale-95 shrink-0 ${isJudicialSettingsOpen ? 'border-primary text-primary' : 'border-border'}`}
-                    title="Cấu hình nghiệp vụ tư pháp nâng cao"
-                  >
-                    <span className={`material-icons text-[20px] ${isJudicialSettingsOpen ? 'rotate-45' : ''} transition-transform duration-300`}>settings</span>
-                  </button>
-
-                  {/* Nút bấm Chuyển đổi chính */}
-                  <button
-                    onClick={startOcrProcessing}
-                    disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
-                    className="flex-1 btn-premium-primary text-white h-12 px-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
-                  >
-                    {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
-                    <span className="material-icons text-[18px]">auto_fix_high</span>
-                  </button>
-                </div>
+                {/* Nút bấm Chuyển đổi chính */}
+                <button
+                  onClick={startOcrProcessing}
+                  disabled={isProcessing || files.length === 0 || (activeParentPdf && activeParentPdf.status === 'splitting')}
+                  className="w-full btn-premium-primary text-white py-3.5 px-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
+                >
+                  {isProcessing ? 'Đang xử lý...' : 'Chuyển đổi ngay'}
+                  <span className="material-icons text-[18px]">auto_fix_high</span>
+                </button>
               </div>
             </div>
             
