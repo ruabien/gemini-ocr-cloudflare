@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File, Trash2, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
+import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
 export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }) {
   const [copied, setCopied] = useState(false);
@@ -12,13 +13,13 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
   const [matchIndices, setMatchIndices] = useState([]);
   const textareaRef = useRef(null);
   const [detectedCaseNum, setDetectedCaseNum] = useState(null);
+  const [exportError, setExportError] = useState(null);
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
   const isMultiImage = imageFiles.length > 1;
 
   const parentPdf = file?.isParentPdf ? file : (allFiles && file?.parentPdfId ? allFiles.find(f => f.id === file.parentPdfId) : null);
   const pdfPages = parentPdf ? allFiles.filter(f => f.isPdfPage && f.parentPdfId === parentPdf.id) : [];
-  const hasPdfResult = pdfPages.some(p => p.result && p.result.trim());
 
   const getMergedNormalizedText = () => {
     const merged = imageFiles
@@ -47,6 +48,19 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       .join('\n\n');
     return normalizeOcrText(merged);
   };
+
+  const getProcessedText = () => {
+    if (parentPdf) {
+      return getPdfMergedNormalizedText();
+    } else if (isMultiImage) {
+      return getMergedNormalizedText();
+    } else {
+      return normalizeOcrText(localText);
+    }
+  };
+
+  const processedTextStr = getProcessedText();
+  const isOcrEmpty = !processedTextStr || !processedTextStr.trim();
 
   useEffect(() => {
     if (file?.isParentPdf) {
@@ -208,21 +222,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
     }
   };
 
-  const downloadFile = (content, fileName, mimeType) => {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExport = (formatType) => {
+  const handleExport = async (formatType) => {
     let processedText;
     let baseFileName = "tailieu_ocr";
     
@@ -243,34 +243,40 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
       baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
     }
     
-    if (!processedText) return;
+    if (!processedText || !processedText.trim()) {
+      alert("Không có nội dung để xuất file.");
+      return;
+    }
 
-    if (formatType === 'txt') {
-      const cleanedText = cleanTextNewlines(processedText);
-      downloadFile(cleanedText, `${baseFileName}_ocr.txt`, "text/plain;charset=utf-8");
-    } else if (formatType === 'md') {
-      const cleanedText = cleanTextNewlines(processedText);
-      downloadFile(cleanedText, `${baseFileName}_ocr.md`, "text/markdown;charset=utf-8");
-    } else if (formatType === 'docx') {
-      const cleanedText = cleanTextNewlines(processedText);
-      const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
-            "xmlns:w='urn:schemas-microsoft-com:office:word' " +
-            "xmlns='http://www.w3.org/TR/REC-html40'>" +
-            "<head><meta charset='utf-8'><title>OCR Export</title>" +
-            "<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->" +
-            "<style>body { font-family: 'Arial', sans-serif; font-size: 12pt; line-height: 1.5; } p { margin: 0 0 10pt 0; }</style>" +
-            "</head><body>";
-      const footer = "</body></html>";
-      const htmlBody = cleanedText
-        .split('\n')
-        .map(pText => {
-          const trimmed = pText.trim();
-          if (!trimmed) return "<p>&nbsp;</p>";
-          return `<p>${trimmed}</p>`;
-        })
-        .join('');
-      const docHtml = header + htmlBody + footer;
-      downloadFile('\ufeff' + docHtml, `${baseFileName}_ocr.docx`, "application/msword;charset=utf-8");
+    const cleanedText = cleanTextNewlines(processedText);
+
+    try {
+      if (formatType === 'txt') {
+        exportTxt(cleanedText, `${baseFileName}_ocr.txt`);
+      } else if (formatType === 'md') {
+        exportMarkdown(cleanedText, `${baseFileName}_ocr.md`);
+      } else if (formatType === 'docx') {
+        const metadata = {
+          title: file.originalFile?.name || file.name || "Tài liệu số hóa",
+          processingTime: file.metadata?.duration ? `${file.metadata.duration}s` : (file.processingTime ? `${(file.processingTime / 1000).toFixed(2)}s` : null),
+          pageCount: parentPdf ? pdfPages.length : 1,
+          engineVersion: file.metadata?.engine || file.engineUsed || "Gemini API",
+          ocrMode: file.metadata?.ocrMode || file.ocrMode || "Tối ưu hóa văn bản pháp lý"
+        };
+        await exportDocx(cleanedText, `${baseFileName}_ocr.docx`, metadata);
+      }
+    } catch (error) {
+      console.error("Lỗi xuất file:", error);
+      if (formatType === 'docx') {
+        setExportError({
+          message: "Không thể xuất file Word (.docx) đúng chuẩn do lỗi hệ thống.",
+          detail: error.message || String(error),
+          textToFallback: cleanedText,
+          fallbackFilename: `${baseFileName}_ocr.txt`
+        });
+      } else {
+        alert(`Lỗi xuất file: ${error.message}`);
+      }
     }
   };
 
@@ -305,13 +311,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           <div className="relative">
             <button
               onClick={() => setIsExportOpen(!isExportOpen)}
-              disabled={
-                parentPdf
-                  ? !hasPdfResult
-                  : (isMultiImage ? !getMergedNormalizedText() : (!localText && file.status !== 'error'))
-              }
+              disabled={isOcrEmpty}
               className="w-full sm:w-auto flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold btn-premium-primary text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer animate-fade-in"
-              title="Tải xuống kết quả dạng TXT, MD hoặc DOCX"
+              title={isOcrEmpty ? "Không có dữ liệu văn bản để xuất" : "Tải xuống kết quả dạng TXT, MD hoặc DOCX"}
             >
               <Download size={14} />
               <span>Xuất file {(isMultiImage || parentPdf) && "(Gộp)"}</span>
@@ -442,8 +444,9 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
           
           <button
             onClick={() => handleExport('docx')}
-            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-surface border border-border hover:bg-background text-text-primary hover:border-primary hover:text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95"
-            title="Xuất trực tiếp sang Microsoft Word (.docx)"
+            disabled={isOcrEmpty}
+            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-surface border border-border hover:bg-background text-text-primary hover:border-primary hover:text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isOcrEmpty ? "Không có dữ liệu văn bản để xuất" : "Xuất trực tiếp sang Microsoft Word (.docx)"}
           >
             <span className="material-icons text-[14px] text-text-secondary/70">file_download</span>
             <span>Xuất bản DOCX</span>
@@ -560,6 +563,49 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset }
                 className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* DOCX Export Error Modal */}
+      {exportError && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-text-primary/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl border border-border p-5 mx-4 text-left animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-2 mb-3 text-accent">
+              <span className="material-icons text-[20px]">warning</span>
+              <h4 className="font-bold text-sm text-text-primary">Lỗi Xuất File DOCX</h4>
+            </div>
+            <p className="text-xs text-text-secondary mb-2 font-medium">
+              {exportError.message}
+            </p>
+            <div className="text-[10px] text-accent/80 font-mono bg-accent/5 p-2.5 rounded-lg border border-accent/10 max-h-[100px] overflow-auto select-text mb-4">
+              Chi tiết: {exportError.detail}
+            </div>
+            <p className="text-xs text-text-secondary mb-4">
+              Bạn có thể tải file dạng văn bản thuần (.txt) thay thế bên dưới để tránh gián đoạn công việc:
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  try {
+                    exportTxt(exportError.textToFallback, exportError.fallbackFilename);
+                  } catch (txtErr) {
+                    alert("Không thể tải file văn bản thay thế: " + txtErr.message);
+                  }
+                  setExportError(null);
+                }}
+                className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Download size={14} />
+                <span>Tải TXT Thay Thế</span>
+              </button>
+              <button
+                onClick={() => setExportError(null)}
+                className="px-3.5 py-2 bg-background hover:bg-border text-text-primary text-xs font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                Hủy bỏ
               </button>
             </div>
           </div>
