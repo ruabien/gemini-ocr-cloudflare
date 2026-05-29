@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 
 /**
@@ -8,43 +8,69 @@ import { saveAs } from 'file-saver';
  * @returns {TextRun[]} array of docx TextRun instances
  */
 function parseLineToTextRuns(line) {
+  if (!line) return [];
   const runs = [];
   const regex = /(\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*)/g;
-  const parts = line.split(regex);
+  let match;
+  let lastIndex = 0;
   
-  parts.forEach(part => {
-    if (!part) return;
+  while ((match = regex.exec(line)) !== null) {
+    const matchIndex = match.index;
+    const matchText = match[0];
     
-    if (part.startsWith('***') && part.endsWith('***')) {
+    // Add normal text before the match
+    if (matchIndex > lastIndex) {
+      const normalText = line.substring(lastIndex, matchIndex);
+      if (normalText) {
+        runs.push(new TextRun({
+          text: normalText,
+          font: "Times New Roman",
+          size: 28 // 14pt
+        }));
+      }
+    }
+    
+    // Process the matched formatted text and strip markdown stars
+    let text = matchText;
+    let bold = false;
+    let italic = false;
+    
+    if (matchText.startsWith('***') && matchText.endsWith('***')) {
+      text = matchText.slice(3, -3);
+      bold = true;
+      italic = true;
+    } else if (matchText.startsWith('**') && matchText.endsWith('**')) {
+      text = matchText.slice(2, -2);
+      bold = true;
+    } else if (matchText.startsWith('*') && matchText.endsWith('*')) {
+      text = matchText.slice(1, -1);
+      italic = true;
+    }
+    
+    if (text) {
       runs.push(new TextRun({
-        text: part.slice(3, -3),
-        bold: true,
-        italic: true,
-        font: "Times New Roman",
-        size: 28 // 14pt
-      }));
-    } else if (part.startsWith('**') && part.endsWith('**')) {
-      runs.push(new TextRun({
-        text: part.slice(2, -2),
-        bold: true,
-        font: "Times New Roman",
-        size: 28 // 14pt
-      }));
-    } else if (part.startsWith('*') && part.endsWith('*')) {
-      runs.push(new TextRun({
-        text: part.slice(1, -1),
-        italic: true,
-        font: "Times New Roman",
-        size: 28 // 14pt
-      }));
-    } else {
-      runs.push(new TextRun({
-        text: part,
+        text: text,
+        bold: bold,
+        italic: italic,
         font: "Times New Roman",
         size: 28 // 14pt
       }));
     }
-  });
+    
+    lastIndex = regex.lastIndex;
+  }
+  
+  // Add remaining normal text after the last match
+  if (lastIndex < line.length) {
+    const remainingText = line.substring(lastIndex);
+    if (remainingText) {
+      runs.push(new TextRun({
+        text: remainingText,
+        font: "Times New Roman",
+        size: 28 // 14pt
+      }));
+    }
+  }
   
   if (runs.length === 0 && line) {
     runs.push(new TextRun({
@@ -111,6 +137,7 @@ export async function exportDocx(textOrPages, filename, options = {}) {
     const docxRuns = parseLineToTextRuns(line);
     return new Paragraph({
       children: docxRuns,
+      alignment: AlignmentType.JUSTIFIED,
       spacing: { after: 120 } // paragraph margin spacing
     });
   });
