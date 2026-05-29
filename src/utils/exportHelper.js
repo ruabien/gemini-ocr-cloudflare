@@ -206,7 +206,7 @@ function createParagraphFromText(line) {
       text: run.text,
       bold: run.bold,
       italics: run.italics,
-      size: 26, // 13pt
+      size: 28, // 14pt
       font: "Times New Roman"
     });
   });
@@ -214,7 +214,8 @@ function createParagraphFromText(line) {
   const paragraphOptions = {
     children: docxRuns,
     spacing: {
-      line: 320, // 1.33 line spacing
+      line: 312, // 1.3 line spacing
+      before: 120, // 6pt space before
       after: 120 // 6pt space after
     }
   };
@@ -478,11 +479,12 @@ export async function exportDocx(textOrPages, filename, options = {}) {
         document: {
           run: {
             font: "Times New Roman",
-            size: 26 // 13pt
+            size: 28 // 14pt
           },
           paragraph: {
             spacing: {
-              line: 320, // 1.33 line spacing
+              line: 312, // 1.3 line spacing
+              before: 120, // 6pt space before
               after: 120 // 6pt space after
             }
           }
@@ -493,5 +495,6 @@ export async function exportDocx(textOrPages, filename, options = {}) {
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, filename);
+  const mimeBlob = new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  saveAs(mimeBlob, filename);
 }

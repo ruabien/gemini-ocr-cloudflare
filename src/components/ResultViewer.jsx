@@ -4,7 +4,7 @@ import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, Fi
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
-export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions }) {
+export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions, config }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -14,6 +14,16 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   const textareaRef = useRef(null);
   const [detectedCaseNum, setDetectedCaseNum] = useState(null);
   const [exportError, setExportError] = useState(null);
+  const [isPremiumPopupOpen, setIsPremiumPopupOpen] = useState(false);
+
+  const handlePremiumWordExport = async () => {
+    const premiumKey = config?.licenseKey || localStorage.getItem('ocr_license_key') || '';
+    if (!premiumKey.trim()) {
+      setIsPremiumPopupOpen(true);
+      return;
+    }
+    await handleExport('docx');
+  };
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
   const isMultiImage = imageFiles.length > 1;
@@ -452,13 +462,13 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
           )}
           
           <button
-            onClick={() => handleExport('docx')}
+            onClick={handlePremiumWordExport}
             disabled={isOcrEmpty}
-            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-surface border border-border hover:bg-background text-text-primary hover:border-primary hover:text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={isOcrEmpty ? "Không có dữ liệu văn bản để xuất" : "Xuất trực tiếp sang Microsoft Word (.docx)"}
+            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+            title={isOcrEmpty ? "Không có dữ liệu văn bản để xuất" : "Xuất Word chuyên nghiệp chuẩn Nghị định 30 (Premium)"}
           >
-            <span className="material-icons text-[14px] text-text-secondary/70">file_download</span>
-            <span>Xuất bản DOCX</span>
+            <span className="material-icons text-[14px]">workspace_premium</span>
+            <span>👑 Xuất Word Chuẩn Nghị Định 30</span>
           </button>
         </div>
       )}
@@ -615,6 +625,114 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
                 className="px-3.5 py-2 bg-background hover:bg-border text-text-primary text-xs font-bold rounded-lg transition-colors cursor-pointer"
               >
                 Hủy bỏ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Payment Popup */}
+      {isPremiumPopupOpen && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/75 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-lg bg-surface rounded-3xl shadow-2xl border border-border/80 p-6 mx-4 text-left animate-in zoom-in-95 duration-300 flex flex-col gap-4">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2 text-primary">
+                <span className="material-icons text-[24px]">workspace_premium</span>
+                <h4 className="font-sans font-bold text-base sm:text-lg text-text-primary">Kích Hoạt Gói Premium</h4>
+              </div>
+              <button 
+                onClick={() => setIsPremiumPopupOpen(false)}
+                className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-background cursor-pointer"
+              >
+                <span className="text-2xl font-bold leading-none">&times;</span>
+              </button>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2 text-xs sm:text-sm text-text-secondary leading-relaxed">
+              <p>
+                Tính năng <strong>Xuất Word chuẩn Nghị định 30 (Pipeline 5 layer tự động)</strong> là tính năng cao cấp dành riêng cho hội viên trả phí.
+              </p>
+              <p>
+                Quét mã QR qua ứng dụng ngân hàng của bạn. Sau khi thanh toán thành công, hệ thống SePay sẽ tự động gửi <strong>Mã kích hoạt Premium</strong> qua email của bạn trong vòng 30 giây.
+              </p>
+            </div>
+
+            {/* Payment Card */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-background/50 border border-border rounded-2xl p-4">
+              {/* Info */}
+              <div className="space-y-2 text-xs text-text-primary flex flex-col justify-center">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-text-secondary font-bold uppercase">Ngân hàng</span>
+                  <span className="font-bold text-text-primary">VietinBank (ICB)</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-text-secondary font-bold uppercase">Số tài khoản</span>
+                  <span className="font-mono font-bold text-primary select-all text-sm">101886888888</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-text-secondary font-bold uppercase">Chủ tài khoản</span>
+                  <span className="font-bold text-text-primary uppercase">NGUYEN VAN A</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-text-secondary font-bold uppercase">Số tiền</span>
+                  <span className="font-bold text-accent text-sm">99.000 đ</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-text-secondary font-bold uppercase">Nội dung chuyển khoản</span>
+                  <span className="font-mono font-bold bg-primary/10 border border-primary/20 text-primary px-2 py-1 rounded text-center select-all mt-1">
+                    DOC PREMIUM email_cua_ban@gmail.com
+                  </span>
+                </div>
+              </div>
+
+              {/* Styled QR code box */}
+              <div className="flex flex-col items-center justify-center border-t sm:border-t-0 sm:border-l border-border/80 pt-4 sm:pt-0 sm:pl-4">
+                <div className="relative w-36 h-36 bg-white border-4 border-primary rounded-xl flex items-center justify-center p-2 shadow-sm overflow-hidden select-none">
+                  {/* Decorative QR Pattern */}
+                  <div className="w-full h-full bg-[radial-gradient(#163a70_1.5px,transparent_1.5px)] [background-size:8px_8px] relative opacity-90">
+                    {/* QR Finder patterns */}
+                    <div className="absolute top-0 left-0 w-8 h-8 border-4 border-[#163a70] bg-white"></div>
+                    <div className="absolute top-0 right-0 w-8 h-8 border-4 border-[#163a70] bg-white"></div>
+                    <div className="absolute bottom-0 left-0 w-8 h-8 border-4 border-[#163a70] bg-white"></div>
+                    {/* Small center logo */}
+                    <div className="absolute inset-0 m-auto w-6 h-6 bg-primary rounded flex items-center justify-center text-[10px] text-white font-bold font-sans">
+                      DOC
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[9px] text-text-secondary font-bold uppercase mt-2 select-none tracking-wider">Quét mã để thanh toán nhanh</span>
+              </div>
+            </div>
+
+            {/* Note */}
+            <div className="text-[10px] text-text-secondary flex items-start gap-1.5 bg-background p-3 rounded-xl border border-border">
+              <span className="material-icons text-[14px] text-primary mt-0.5">info</span>
+              <p className="leading-normal">
+                Vui lòng nhập đúng địa chỉ email của bạn vào <strong>Nội dung chuyển khoản</strong> để hệ thống SePay cấp mã kích hoạt tự động.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 border-t border-border/60 pt-3">
+              <button
+                onClick={() => setIsPremiumPopupOpen(false)}
+                className="px-4 py-2 text-xs font-bold bg-background hover:bg-border text-text-primary border border-border rounded-xl transition-all cursor-pointer shadow-sm"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={() => {
+                  const demoKey = "DEMO-PREMIUM-KEY-Decree30";
+                  localStorage.setItem('ocr_license_key', demoKey);
+                  setIsPremiumPopupOpen(false);
+                  alert("Đã áp dụng mã kích hoạt Premium Demo thành công! Vui lòng tải lại trang hoặc lưu cấu hình.");
+                  window.location.reload();
+                }}
+                className="px-4 py-2 text-xs font-bold btn-premium-primary text-white rounded-xl transition-all cursor-pointer shadow-md"
+              >
+                Kích hoạt Demo
               </button>
             </div>
           </div>

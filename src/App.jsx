@@ -785,6 +785,7 @@ function App() {
               onUpdateResult={handleUpdateResult} 
               onReset={handleReset}
               ocrOptions={ocrOptions}
+              config={config}
             />
             
             {/* ApiConfig Collapsible in Workspace */}
