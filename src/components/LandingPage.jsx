@@ -101,7 +101,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         onChange={handleGlobalFileChange}
         accept=".pdf, .jpg, .jpeg, .png"
         multiple
-        className="sr-only"
+        className="hidden"
       />
 
       {/* Grid background overlay */}
@@ -137,12 +137,12 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <span className="material-icons text-[18px]">settings</span>
               <span>Cấu hình API</span>
             </button>
-            <label 
-              htmlFor="landing-global-file-input"
-              className="btn-premium-primary text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer inline-flex"
+            <button 
+              onClick={triggerGlobalUpload}
+              className="btn-premium-primary text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
             >
               <span>Bắt đầu số hóa</span>
-            </label>
+            </button>
           </div>
         </div>
       </header>
@@ -168,14 +168,14 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <label 
-                htmlFor="landing-global-file-input"
-                className="btn-premium-primary text-white font-bold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 text-sm sm:text-base group inline-flex"
+              <button 
+                onClick={triggerGlobalUpload}
+                className="btn-premium-primary text-white font-bold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 text-sm sm:text-base group"
               >
                 <Upload size={18} />
                 <span>Bắt đầu OCR tài liệu</span>
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </label>
+              </button>
               
               <button 
                 onClick={() => scrollToSection('security')}
@@ -821,13 +821,13 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <p className="text-white/80 text-base sm:text-lg leading-relaxed">
               Quy trình khép kín, an toàn tuyệt đối. Chỉ cần tải hồ sơ lên và nhận kết quả văn bản số hóa dạng Word sạch chỉ trong vài giây.
             </p>
-            <label 
-              htmlFor="landing-global-file-input"
+            <button 
+              onClick={triggerGlobalUpload}
               className="bg-surface hover:bg-background text-primary font-bold text-sm sm:text-base px-8 py-4 rounded-xl shadow-md transition-all duration-200 inline-flex items-center gap-2 cursor-pointer mx-auto"
             >
               <Upload size={18} />
               <span>Tải hồ sơ lên ngay</span>
-            </label>
+            </button>
           </div>
         </div>
       </section>
