@@ -29,6 +29,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   // Trạng thái nghiệp vụ và cảnh báo bảo mật tư pháp (Phase 4)
   const [ocrOptions, setOcrOptions] = useState({
@@ -39,7 +40,14 @@ function App() {
     wordNd30: true
   });
 
-
+  useEffect(() => {
+    window.openVideoModal = () => setIsVideoModalOpen(true);
+    window.closeVideoModal = () => setIsVideoModalOpen(false);
+    return () => {
+      delete window.openVideoModal;
+      delete window.closeVideoModal;
+    };
+  }, []);
 
   // Bộ chọn dải trang
   const [fromPage, setFromPage] = useState(1);
@@ -244,6 +252,17 @@ function App() {
   };
 
   const startOcrProcessing = async () => {
+    if (!config || !config.apiKey) {
+      setIsSettingsOpen(true);
+      return;
+    }
+
+    const keysArray = config.apiKey.split(',').map(k => k.trim()).filter(Boolean);
+    if (keysArray.length === 0) {
+      setIsSettingsOpen(true);
+      return;
+    }
+
     setIsProcessing(true);
     processingRef.current = true;
     setMobileTab('result'); // Tự động chuyển sang tab kết quả khi bắt đầu xử lý
@@ -294,6 +313,8 @@ function App() {
 
     await delay(100);
 
+    let currentKeyIndex = 0;
+
     const processNext = async () => {
       if (!processingRef.current) return;
 
@@ -317,109 +338,150 @@ function App() {
       await delay(50);
 
       let success = false;
-      const maxRetries = 3;
-      let attemptCount = 0;
-      let currentModel = (config && config.model) || 'gemini-2.5-flash';
+      let keysTriedForThisFile = 0;
+      const maxRetriesPerKey = 3;
+      let currentModel = config.model || 'gemini-2.5-flash';
 
-      while (!success && attemptCount <= maxRetries && processingRef.current) {
-        try {
-          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
-            ...f, 
-            progress: Math.min(90, 20 + attemptCount * 20) 
-          } : f));
+      while (!success && keysTriedForThisFile < keysArray.length && processingRef.current) {
+        const activeKey = keysArray[currentKeyIndex];
+        let attemptCount = 0;
 
-          const startTime = Date.now();
-          const textResult = await processOCR(
-            fileToProcess.originalFile,
-            currentModel,
-            ocrOptions
-          );
-          const endTime = Date.now();
-          const durationSec = ((endTime - startTime) / 1000).toFixed(1);
-
-          if (!processingRef.current) return;
-
-          // Build a list of active OCR modes for metadata display
-          const activeOptionsList = [];
-          if (ocrOptions.layoutPreserve) activeOptionsList.push("Giữ bố cục");
-          if (ocrOptions.precisionMode) activeOptionsList.push("Độ chính xác");
-          if (ocrOptions.normalizeLines) activeOptionsList.push("Chuẩn hóa dòng");
-          if (ocrOptions.legalOptimize) activeOptionsList.push("Tối ưu pháp lý");
-          const ocrModeStr = activeOptionsList.join(", ") || "Mặc định";
-
-          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-            ...f,
-            status: 'completed',
-            progress: 100,
-            result: normalizeOcrText(textResult),
-            retryInfo: null,
-            error: null,
-            metadata: {
-              duration: durationSec,
-              engine: currentModel,
-              ocrMode: ocrModeStr
-            }
-          } : f));
-
-          success = true;
-
-        } catch (error) {
-          if (!processingRef.current) return;
-
-          console.error(`Lỗi OCR với trang ${fileToProcess.name} (Lần thử: ${attemptCount + 1}):`, error);
-
-          if (error.finishReason === 'RECITATION' || error.message === 'RECITATION') {
-            const fallbackModel = getFallbackModel(currentModel);
-            if (fallbackModel !== currentModel) {
-              console.warn(`Phát hiện lỗi bộ lọc RECITATION. Tự động hạ cấp mô hình từ ${currentModel} sang ${fallbackModel} và thử lại ngay lập tức.`);
-              currentModel = fallbackModel;
-              continue;
-            } else {
-              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-                ...f,
-                status: 'error',
-                progress: 0,
-                error: `Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google Gemini chặn tài liệu này.`,
-                retryInfo: null
-              } : f));
-              break;
-            }
-          }
-
-          let displayError = error.message;
-
-          attemptCount++;
-
-          if (attemptCount > maxRetries) {
-            setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-              ...f,
-              status: 'error',
-              progress: 0,
-              error: `Xử lý thất bại sau ${maxRetries} lần thử: ${displayError}`,
-              retryInfo: null
+        while (!success && attemptCount <= maxRetriesPerKey && processingRef.current) {
+          try {
+            setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
+              ...f, 
+              progress: Math.min(90, 20 + attemptCount * 20) 
             } : f));
-            break;
-          }
 
-          // Trì hoãn tăng dần: Lần 1 = 2s, Lần 2 = 4s, Lần 3 = 6s
-          const delaySeconds = attemptCount * 2;
-          const customMessage = `Lỗi xảy ra. Đang tự động thử lại lần ${attemptCount}/${maxRetries}...`;
+            const startTime = Date.now();
+            const textResult = await processOCR(
+              fileToProcess.originalFile,
+              activeKey,
+              currentModel,
+              ocrOptions
+            );
+            const endTime = Date.now();
+            const durationSec = ((endTime - startTime) / 1000).toFixed(1);
 
-          for (let sec = delaySeconds; sec > 0; sec--) {
             if (!processingRef.current) return;
+
+            // Build a list of active OCR modes for metadata display
+            const activeOptionsList = [];
+            if (ocrOptions.layoutPreserve) activeOptionsList.push("Giữ bố cục");
+            if (ocrOptions.precisionMode) activeOptionsList.push("Độ chính xác");
+            if (ocrOptions.normalizeLines) activeOptionsList.push("Chuẩn hóa dòng");
+            if (ocrOptions.legalOptimize) activeOptionsList.push("Tối ưu pháp lý");
+            const ocrModeStr = activeOptionsList.join(", ") || "Mặc định";
+
             setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
               ...f,
-              status: 'processing',
-              retryInfo: {
-                customMessage: customMessage,
-                errorMsg: displayError,
-                attempt: attemptCount,
-                maxAttempts: maxRetries,
-                secondsLeft: sec
+              status: 'completed',
+              progress: 100,
+              result: normalizeOcrText(textResult),
+              retryInfo: null,
+              error: null,
+              metadata: {
+                duration: durationSec,
+                engine: currentModel,
+                ocrMode: ocrModeStr
               }
             } : f));
-            await delay(1000);
+
+            success = true;
+
+          } catch (error) {
+            if (!processingRef.current) return;
+
+            console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}, Lần thử: ${attemptCount + 1}):`, error);
+
+            if (error.finishReason === 'RECITATION' || error.message === 'RECITATION') {
+              const fallbackModel = getFallbackModel(currentModel);
+              if (fallbackModel !== currentModel) {
+                console.warn(`Phát hiện lỗi bộ lọc RECITATION. Tự động hạ cấp mô hình từ ${currentModel} sang ${fallbackModel} và thử lại ngay lập tức.`);
+                currentModel = fallbackModel;
+                continue;
+              } else {
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  status: 'error',
+                  progress: 0,
+                  error: `Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google Gemini chặn tài liệu này.`,
+                  retryInfo: null
+                } : f));
+                keysTriedForThisFile = keysArray.length;
+                break;
+              }
+            }
+
+            let displayError = error.message;
+            if (error.message === 'Load failed' || error.name === 'TypeError') {
+              displayError = 'Lỗi kết nối trực tiếp máy chủ Google (CORS/Network Error trên Mobile). Hãy kiểm tra kết nối mạng và tính hợp lệ của API Key.';
+            }
+
+            attemptCount++;
+
+            if (attemptCount > maxRetriesPerKey) {
+              // Hết số lần thử với Key này
+              break;
+            }
+
+            // Trì hoãn tăng dần: Lần 1 = 2s, Lần 2 = 4s, Lần 3 = 6s
+            const delaySeconds = attemptCount * 2;
+            const customMessage = `Lỗi xảy ra. Đang tự động thử lại lần ${attemptCount}/${maxRetriesPerKey} với Key hiện tại...`;
+
+            for (let sec = delaySeconds; sec > 0; sec--) {
+              if (!processingRef.current) return;
+              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                ...f,
+                status: 'processing',
+                retryInfo: {
+                  customMessage: customMessage,
+                  errorMsg: displayError,
+                  attempt: attemptCount,
+                  maxAttempts: maxRetriesPerKey,
+                  secondsLeft: sec
+                }
+              } : f));
+              await delay(1000);
+            }
           }
+        }
+
+        if (success) {
+          break;
+        }
+
+        keysTriedForThisFile++;
+
+        if (keysTriedForThisFile < keysArray.length) {
+          // Còn Key dự phòng, xoay sang Key tiếp theo và thử lại ngay lập tức
+          const oldKeyIndex = currentKeyIndex;
+          currentKeyIndex = (currentKeyIndex + 1) % keysArray.length;
+          
+          console.warn(`Key Index ${oldKeyIndex} thất bại. Chuyển sang Key Index ${currentKeyIndex} dự phòng...`);
+          
+          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+            ...f,
+            status: 'processing',
+            retryInfo: {
+              customMessage: `Key lỗi. Đang đổi sang Key dự phòng (${keysTriedForThisFile + 1}/${keysArray.length})...`,
+              errorMsg: `Chuyển khóa tự động không trì hoãn.`,
+              attempt: 0,
+              maxAttempts: maxRetriesPerKey,
+              secondsLeft: 1
+            }
+          } : f));
+          
+          await delay(500);
+        } else {
+          // Thử hết tất cả các Key và đều thất bại
+          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+            ...f,
+            status: 'error',
+            progress: 0,
+            error: `Đã thử hết cả ${keysArray.length} Keys nhưng đều thất bại. Hãy kiểm tra kết nối mạng hoặc tính hợp lệ của API Keys.`,
+            retryInfo: null
+          } : f));
         }
       }
 
@@ -463,7 +525,7 @@ function App() {
               <div className="p-6">
                 <ApiConfig onConfigChange={handleConfigChange} />
                 <p className="text-xs text-on-surface-variant/70 mt-4 leading-relaxed">
-                  * Cấu hình mô hình AI sử dụng và mã Premium kích hoạt của bạn. Các yêu cầu xử lý OCR được xử lý trực tiếp qua cổng kết nối Cloudflare an toàn.
+                  * API Key của bạn được lưu cục bộ trong trình duyệt và không bao giờ chuyển đến bất kỳ máy chủ bên thứ ba nào ngoại trừ việc xác thực trực tiếp với Google Gemini API.
                 </p>
               </div>
               <div className="flex justify-end px-6 py-4 bg-background border-t border-border">
@@ -478,7 +540,43 @@ function App() {
           </div>
         )}
         
-
+        {/* Video Modal (Global) */}
+        {isVideoModalOpen && (
+          <div 
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setIsVideoModalOpen(false);
+            }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          >
+            <div className="relative w-full max-w-3xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                  <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
+                </h3>
+                <button 
+                  onClick={() => setIsVideoModalOpen(false)} 
+                  className="text-text-secondary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background cursor-pointer font-bold"
+                >
+                  <span className="text-xl font-semibold leading-none">&times;</span>
+                </button>
+              </div>
+              {/* Body */}
+              <div className="w-full aspect-video bg-black">
+                <iframe 
+                  id="youtube-iframe"
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
+                  title="YouTube video player" 
+                  frameBorder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -507,6 +605,12 @@ function App() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.openVideoModal && window.openVideoModal()}
+              className="flex items-center gap-1 px-3 py-2 text-[10px] sm:text-xs font-semibold bg-background hover:bg-border text-on-surface rounded-xl transition-all active:scale-95 cursor-pointer"
+            >
+              <span>🎥 Hướng dẫn</span>
+            </button>
             
             <button 
               onClick={() => setIsSettingsOpen(true)}
@@ -658,7 +762,7 @@ function App() {
             <div className="p-6">
               <ApiConfig onConfigChange={handleConfigChange} />
               <p className="text-xs text-on-surface-variant/70 mt-4 leading-relaxed">
-                * Cấu hình mô hình AI sử dụng và mã Premium kích hoạt của bạn. Các yêu cầu xử lý OCR được xử lý trực tiếp qua cổng kết nối Cloudflare an toàn.
+                * API Key của bạn được lưu cục bộ trong trình duyệt và không bao giờ chuyển đến bất kỳ máy chủ bên thứ ba nào ngoại trừ việc xác thực trực tiếp với Google Gemini API.
               </p>
             </div>
             <div className="flex justify-end px-6 py-4 bg-background border-t border-border">
@@ -673,7 +777,43 @@ function App() {
         </div>
       )}
       
-
+      {/* Video Modal (Global) */}
+      {isVideoModalOpen && (
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsVideoModalOpen(false);
+          }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-3xl bg-surface rounded-2xl shadow-2xl border border-border overflow-hidden mx-4 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                <span>🎥 Hướng dẫn lấy Gemini API Key (30 giây)</span>
+              </h3>
+              <button 
+                onClick={() => setIsVideoModalOpen(false)} 
+                className="text-text-secondary hover:text-text-primary transition-colors p-1.5 rounded-lg hover:bg-background cursor-pointer font-bold"
+              >
+                <span className="text-xl font-semibold leading-none">&times;</span>
+              </button>
+            </div>
+            {/* Body */}
+            <div className="w-full aspect-video bg-black">
+              <iframe 
+                id="youtube-iframe"
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/ag0bHshpQ4U?enablejsapi=1" 
+                title="YouTube video player" 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

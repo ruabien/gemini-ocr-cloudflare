@@ -87,8 +87,8 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
       a: "Không. Kết quả nhận dạng từ AI chỉ mang tính chất tham khảo chuyên môn và đóng vai trò trợ lý số hóa bóc tách văn bản thô để tiết kiệm thời gian soạn thảo. Người dùng bắt buộc phải đối chiếu, rà soát thủ công kết quả với tài liệu gốc trước khi đưa vào hồ sơ vụ án hoặc văn bản tố tụng chính thức."
     },
     {
-      q: "Cổng kết nối OCR được bảo mật như thế nào?",
-      a: "Hệ thống sử dụng cổng kết nối Cloudflare Pages Function bảo mật làm trung gian chuyển tiếp. Dữ liệu hình ảnh được gửi qua HTTPS mã hóa và truyền tiếp đến API Google Gemini chính thức bằng khóa API bảo mật lưu trữ tại backend. Hệ thống hoạt động phi trạng thái (stateless), tuyệt đối không lưu lại lịch sử tài liệu nghiệp vụ của bạn."
+      q: "API key Gemini được xử lý như thế nào?",
+      a: "API Key cá nhân của bạn được mã hóa và lưu trữ cục bộ ngay tại bộ nhớ trình duyệt (localStorage) trên thiết bị của riêng bạn. Hệ thống hoạt động phi trạng thái (stateless), không ghi nhật ký lịch sử tài liệu nghiệp vụ hay lưu trữ khóa của bạn trên đám mây. Bạn có toàn quyền xóa cấu hình khóa này khỏi thiết bị bất cứ lúc nào."
     }
   ];
 
@@ -456,7 +456,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </div>
             <h3 className="text-lg font-bold text-text-primary mb-2">Bảo mật tài liệu tuyệt đối</h3>
             <p className="text-sm text-text-secondary leading-relaxed">
-              Xử lý qua cổng kết nối bảo mật Serverless. Tài liệu nghiệp vụ nhạy cảm được truyền thẳng qua HTTPS được mã hóa, đáp ứng nghiêm ngặt việc bảo vệ bí mật tư pháp.
+              Xử lý hoàn toàn tại Client-Side. Tài liệu nghiệp vụ nhạy cảm được truyền thẳng tới cổng bảo mật Google API, đáp ứng nghiêm ngặt việc bảo vệ bí mật tư pháp.
             </p>
           </div>
 
@@ -693,15 +693,15 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Truyền tải trực tiếp bảo mật:</strong> Dữ liệu hình ảnh (mã hóa Base64) được gửi qua HTTPS mã hóa đến cổng trung gian Cloudflare Pages Function. Tại đây, hệ thống sử dụng khóa API Gemini lưu trữ an toàn phía Server để giao tiếp với Google Gemini API, đảm bảo an toàn tuyệt đối.</span>
+                    <span><strong>Truyền tải trực tiếp:</strong> Dữ liệu hình ảnh (mã hóa Base64) và API Key của bạn được gửi trực tiếp từ trình duyệt đến dịch vụ bên thứ ba (Google Gemini API) qua kết nối HTTPS mã hóa để nhận diện văn bản, không đi qua hay lưu trữ ở bất kỳ máy chủ trung gian nào khác.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Không ghi nhật ký:</strong> Hệ thống tuyệt đối không lưu trữ tệp tin của bạn, không ghi nhận nhật ký (log) nội dung văn bản OCR hay thông tin nhạy cảm nào.</span>
+                    <span><strong>Không ghi nhật ký:</strong> Hệ thống tuyệt đối không lưu trữ tệp tin của bạn, không ghi nhận nhật ký (log) nội dung văn bản OCR và không ghi log API Key.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Không cần khóa cá nhân:</strong> Người dùng không cần tự cung cấp hay cấu hình API Key cá nhân để số hóa hồ sơ, giảm thiểu nguy cơ rò rỉ khóa.</span>
+                    <span><strong>Quyền kiểm soát khóa:</strong> API Key cá nhân được lưu tại bộ nhớ trình duyệt của riêng bạn. Bạn có thể ẩn/hiện hoặc chủ động xóa sạch hoàn toàn cấu hình khóa bất kỳ lúc nào.</span>
                   </li>
                 </ul>
               </div>
