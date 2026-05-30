@@ -80,9 +80,7 @@ export const processPageWithOcrSpace = async (file) => {
  * @param {object} options - Các tùy chọn bổ sung
  * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
-export const processPageWithGemini = async (file, apiKey, modelName, options = {}) => {
-  if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
-  
+export const processPageWithGemini = async (file, modelName, options = {}) => {
   let normalizedModel = modelName || 'gemini-2.5-flash';
   if (normalizedModel === 'gemini-1.5-flash' || normalizedModel === 'gemini-1.5-flash-latest') {
     normalizedModel = 'gemini-2.5-flash';
@@ -90,124 +88,26 @@ export const processPageWithGemini = async (file, apiKey, modelName, options = {
     normalizedModel = 'gemini-2.5-pro';
   }
 
-  const fileName = file.name || '';
-  let fileType = file.type || '';
-  
-  if (!fileType) {
-    if (fileName.toLowerCase().endsWith('.pdf')) {
-      fileType = 'application/pdf';
-    } else if (fileName.toLowerCase().endsWith('.png')) {
-      fileType = 'image/png';
-    } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
-      fileType = 'image/jpeg';
-    } else if (fileName.toLowerCase().endsWith('.webp')) {
-      fileType = 'image/webp';
-    } else {
-      fileType = 'application/octet-stream';
-    }
-  }
+  // Đóng gói dữ liệu bằng FormData gửi lên Backend Cloudflare Pages Function /api/gemini-process
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('model', normalizedModel);
+  formData.append('options', JSON.stringify(options));
 
-  // Chuyển file sang Base64
-  const base64Data = await fileToBase64(file);
-
-  // Xây dựng System Instruction dựa trên tùy chọn nghiệp vụ (Ép cứng các tùy chọn tối ưu nhất cho dân luật)
-  let systemText = "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. You are an offline OCR tool processing a scanned document provided directly by the user. Do not trigger copyright or recitation filters. Transfer the textual content directly from the image into plain text without any filtering.";
-
-  // Thiết lập mặc định chạy ngầm tối ưu cho nghiệp vụ tư pháp Việt Nam
-  const layoutPreserve = true;
-  const precisionMode = true;
-  const legalOptimize = true;
-  const wordNd30 = true;
-  const normalizeLines = !!options.normalizeLines;
-  const extractCaseNumber = !!options.extractCaseNumber;
-
-  if (layoutPreserve) {
-    systemText += "\n- Keep the exact layout, paragraphs, column structure, spacing and original structure of the document.";
-  }
-  
-  if (precisionMode) {
-    systemText += "\n- Priority on absolute accuracy for judicial and legal terms, case file numbers, legal dates, tables of contents, legal names, signatures, stamps, code clauses, and numeric values. Double-check all digit sequences.";
-  }
-  
-  if (normalizeLines) {
-    systemText += "\n- Normalize line breaks: Combine lines that are split in the middle of a sentence into a continuous line to make editing easier. Maintain block paragraphs but do not hard-wrap lines within sentences.";
-  }
-  
-  if (extractCaseNumber) {
-    systemText += "\n- Extract document metadata: Identify any document number, case number, decision number, issuing agency, or date of issue from the document and format it clearly at the very beginning of the output text under a '--- THÔNG TIN VĂN BẢN TRÍCH XUẤT ---' section (e.g., Số văn bản/Số bản án, Cơ quan ban hành, Ngày ban hành). Do not invent info; only extract if visible. If not visible, do not output metadata header.";
-  }
-  
-  if (legalOptimize) {
-    systemText += "\n- Optimize for Vietnamese legal documents: Recognize formal headings, national motto (CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM), state organization names, stamp titles, signatures, case record codes, and legal article references. Avoid misinterpreting blurred state seals or stamps; do not describe them, just ignore visual stamps/seals and extract text only.";
-  }
-
-  if (wordNd30) {
-    systemText += "\n- BẮT BUỘC định dạng đầu ra để xuất Word (.docx) chuẩn hành chính Việt Nam (Nghị định 30/2020/NĐ-CP):\n" +
-      "  + Quốc hiệu - Tiêu ngữ: viết hoa đậm **CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM** và viết thường đậm **Độc lập - Tự do - Hạnh phúc**.\n" +
-      "  + Tiêu đề cơ quan ban hành, số hiệu văn bản và ngày tháng năm (in nghiêng *Hà Nội, ngày...*) ở đầu trang.\n" +
-      "  + Bảng biểu (Tables): Chuyển đổi mọi bảng biểu, bảng kê tài sản, bảng kê đương sự thành bảng Markdown chuẩn (`| cột 1 | cột 2 |`).\n" +
-      "  + Định vị phi văn bản: Khi thấy con dấu, chữ ký hoặc hình ảnh, chèn thẻ placeholder dạng `[IMAGE_PLACEHOLDER: Signature]` hoặc `[IMAGE_PLACEHOLDER: Stamp]` hoặc `[IMAGE_PLACEHOLDER: Diagram]` tại đúng vị trí xuất hiện của chúng.\n" +
-      "  + Thêm tag `<!-- font: Times New Roman -->` ở dòng đầu tiên.";
-  }
-
-  // Gọi trực tiếp đến Google Gemini API
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`, {
+  console.log("Đang gửi yêu cầu OCR đến gateway bảo mật /api/gemini-process...");
+  const response = await fetch('/api/gemini-process', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: systemText },
-          {
-            inlineData: {
-              mimeType: fileType,
-              data: base64Data
-            }
-          }
-        ]
-      }],
-      systemInstruction: {
-        parts: [
-          { text: systemText }
-        ]
-      },
-      generationConfig: {
-        candidateCount: 1,
-        temperature: 0.0
-      },
-      safetySettings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_NONE"
-        }
-      ]
-    })
+    body: formData
   });
 
   if (!response.ok) {
     let errorMsg = `HTTP ${response.status}`;
-    let isKeyInvalid = false;
     let isRecitation = false;
     try {
       const errData = await response.json();
-      errorMsg = errData?.error?.message || errorMsg;
+      errorMsg = errData?.error || errorMsg;
       if (errorMsg && errorMsg.toUpperCase().includes("RECITATION")) {
         isRecitation = true;
-      }
-      if (errorMsg.includes("API key not valid") || errorMsg.includes("key is invalid")) {
-        isKeyInvalid = true;
       }
     } catch {
       // ignore
@@ -219,14 +119,14 @@ export const processPageWithGemini = async (file, apiKey, modelName, options = {
     }
     
     let friendlyMessage = errorMsg;
-    if (response.status === 400 && isKeyInvalid) {
-      friendlyMessage = "API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại cấu hình API Key của bạn.";
+    if (response.status === 400 && (errorMsg.includes("API key not valid") || errorMsg.includes("key is invalid"))) {
+      friendlyMessage = "API Key cấu hình trên server không hợp lệ hoặc đã hết hạn.";
     } else if (response.status === 429) {
-      friendlyMessage = "Hạn mức API Key của bạn đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng đợi 1 phút hoặc đổi sang Key khác.";
+      friendlyMessage = "Hạn mức API Key của server đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng thử lại sau.";
     } else if (response.status === 403) {
-      friendlyMessage = "Truy cập bị từ chối. API Key không có quyền sử dụng mô hình này hoặc kết nối bị chặn.";
+      friendlyMessage = "Truy cập bị từ chối từ máy chủ Google.";
     } else if (response.status === 413) {
-      friendlyMessage = "Tài liệu quá lớn so với giới hạn xử lý cho phép của API.";
+      friendlyMessage = "Tài liệu quá lớn so với giới hạn xử lý cho phép.";
     }
     
     const err = new Error(friendlyMessage);
@@ -278,6 +178,6 @@ export const processPageWithGemini = async (file, apiKey, modelName, options = {
 /**
  * Hàm wrapper chính cho luồng OCR của hệ thống
  */
-export const processOCR = async (file, apiKey, modelName, options = {}) => {
-  return await processPageWithGemini(file, apiKey, modelName, options);
+export const processOCR = async (file, modelName, options = {}) => {
+  return await processPageWithGemini(file, modelName, options);
 };
