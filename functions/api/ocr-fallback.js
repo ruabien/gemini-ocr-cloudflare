@@ -15,12 +15,10 @@ export async function onRequestOptions(context) {
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
+    const { image } = await request.json();
     
-    const formData = await request.formData();
-    const file = formData.get('file');
-    
-    if (!file) {
-      return new Response(JSON.stringify({ error: 'Không tìm thấy file trong yêu cầu.' }), {
+    if (!image) {
+      return new Response(JSON.stringify({ error: 'Không tìm thấy dữ liệu ảnh (image) trong yêu cầu.' }), {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
@@ -40,25 +38,26 @@ export async function onRequestPost(context) {
       });
     }
 
-    const ocrSpaceFormData = new FormData();
-    ocrSpaceFormData.append('file', file);
-    ocrSpaceFormData.append('language', 'vie');
-    ocrSpaceFormData.append('isTable', 'true');
-    ocrSpaceFormData.append('isOverlayRequired', 'false');
-    ocrSpaceFormData.append('scale', 'true');
-    ocrSpaceFormData.append('OCREngine', '2');
+    const params = new URLSearchParams();
+    params.append('base64Image', image);
+    params.append('language', 'vie');
+    params.append('isTable', 'true');
+    params.append('isOverlayRequired', 'false');
+    params.append('scale', 'true');
+    params.append('OCREngine', '2');
 
-    const response = await fetch('https://api.ocr.space/parse/image', {
+    const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
       method: 'POST',
       headers: {
-        'apikey': ocrSpaceKey
+        'apikey': ocrSpaceKey,
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: ocrSpaceFormData
+      body: params.toString()
     });
 
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: `OCR.space API trả về lỗi: HTTP ${response.status}` }), {
-        status: response.status,
+    if (!ocrResponse.ok) {
+      return new Response(JSON.stringify({ error: `OCR.space API trả về lỗi: HTTP ${ocrResponse.status}` }), {
+        status: ocrResponse.status,
         headers: {
           'Content-Type': 'application/json',
           ...corsHeaders
@@ -66,31 +65,8 @@ export async function onRequestPost(context) {
       });
     }
 
-    const data = await response.json();
-    
-    if (data.IsErroredOnProcessing) {
-      const errorDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Lỗi xử lý không xác định';
-      return new Response(JSON.stringify({ error: `OCR.space Error: ${errorDetails}` }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
-    }
-
-    const text = data.ParsedResults?.[0]?.ParsedText;
-    if (text === undefined || text === null) {
-      return new Response(JSON.stringify({ error: "OCR.space không trả về kết quả văn bản." }), {
-        status: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
-    }
-
-    return new Response(JSON.stringify({ text }), {
+    const result = await ocrResponse.json();
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

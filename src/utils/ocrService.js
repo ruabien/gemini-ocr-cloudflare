@@ -21,13 +21,19 @@ const fileToBase64 = (file) => {
  * @returns {Promise<string>} Kết quả văn bản thô
  */
 export const processPageWithOcrSpace = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
+  // Chuyển đổi file sang chuỗi Data URL Base64
+  const base64Data = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
 
-  console.log("Đang gửi yêu cầu đến API fallback của Cloudflare (/api/ocr-fallback)...");
+  console.log("Đang gửi yêu cầu JSON Base64 đến API fallback của Cloudflare (/api/ocr-fallback)...");
   const response = await fetch('/api/ocr-fallback', {
     method: 'POST',
-    body: formData
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64Data })
   });
 
   if (!response.ok) {
@@ -42,11 +48,18 @@ export const processPageWithOcrSpace = async (file) => {
   }
 
   const data = await response.json();
-  if (!data.text) {
-    throw new Error("API fallback không trả về kết quả văn bản.");
+  
+  if (data.IsErroredOnProcessing) {
+    const errorDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Lỗi xử lý không xác định';
+    throw new Error(`OCR.space Error: ${errorDetails}`);
   }
 
-  return data.text;
+  const text = data.ParsedResults?.[0]?.ParsedText;
+  if (text === undefined || text === null) {
+    throw new Error("OCR.space không trả về kết quả văn bản.");
+  }
+
+  return text;
 };
 
 /**
