@@ -21,36 +21,32 @@ const fileToBase64 = (file) => {
  * @returns {Promise<string>} Kết quả văn bản thô
  */
 export const processPageWithOcrSpace = async (file) => {
-  const ocrSpaceKey = localStorage.getItem('ocr_space_api_key') || "K88587118288957";
-  
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('apikey', ocrSpaceKey);
-  formData.append('language', 'vie');
-  formData.append('isOverlayRequired', 'false');
 
-  console.log("Đang gửi yêu cầu đến OCR.space API...");
-  const response = await fetch('https://api.ocr.space/parse/image', {
+  console.log("Đang gửi yêu cầu đến API fallback của Cloudflare (/api/ocr-fallback)...");
+  const response = await fetch('/api/ocr-fallback', {
     method: 'POST',
     body: formData
   });
 
   if (!response.ok) {
-    throw new Error(`OCR.space API trả về lỗi: HTTP ${response.status}`);
+    let errorMsg = `HTTP ${response.status}`;
+    try {
+      const errData = await response.json();
+      errorMsg = errData.error || errorMsg;
+    } catch {
+      // ignore
+    }
+    throw new Error(`Lỗi fallback OCR: ${errorMsg}`);
   }
 
   const data = await response.json();
-  if (data.IsErroredOnProcessing) {
-    const errorDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Lỗi xử lý không xác định';
-    throw new Error(`OCR.space Error: ${errorDetails}`);
+  if (!data.text) {
+    throw new Error("API fallback không trả về kết quả văn bản.");
   }
 
-  const text = data.ParsedResults?.[0]?.ParsedText;
-  if (text === undefined || text === null) {
-    throw new Error("OCR.space không trả về kết quả văn bản.");
-  }
-
-  return text;
+  return data.text;
 };
 
 /**
