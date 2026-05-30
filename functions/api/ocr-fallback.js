@@ -38,30 +38,29 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Kiểm tra nếu chuỗi chưa có tiền tố định dạng Data URI thì bổ sung để OCR.space nhận diện
+    // Đảm bảo chuỗi Base64 có đầy đủ tiền tố định dạng đầu (Ví dụ: data:image/jpeg;base64,...)
     let formattedBase64 = image;
-    if (!formattedBase64.startsWith('data:')) {
+    if (!formattedBase64.startsWith('data:image/')) {
       formattedBase64 = `data:image/jpeg;base64,${formattedBase64}`;
     }
 
-    // Đóng gói dữ liệu bằng đối tượng JSON phẳng 100%, truyền Base64 vào tham số 'url' 
-    const jsonPayload = {
-      url: formattedBase64,
-      language: 'vie',
-      isTable: true,
-      isOverlayRequired: false,
-      scale: true,
-      OCREngine: 2
-    };
+    // Đóng gói dữ liệu vào FormData theo chuẩn tài liệu API OCR.space
+    const formData = new FormData();
+    formData.append('base64Image', formattedBase64); // Tham số bắt buộc phải tên là base64Image
+    formData.append('language', 'vie');              // Định dạng chuỗi 'vie' viết tắt cho tiếng Việt
+    formData.append('isTable', 'true');              // Ép kiểu chuỗi 'true' để nhận diện bảng/cột
+    formData.append('isOverlayRequired', 'false');   // Ép kiểu chuỗi 'false'
+    formData.append('scale', 'true');                // Ép kiểu chuỗi 'true' để làm nét ảnh
+    formData.append('OCREngine', '2');               // Bắt buộc sử dụng Engine 2 để hỗ trợ tiếng Việt
 
-    // Gửi request bằng chuẩn application/json
+    // Gửi request dạng multipart/form-data sang OCR.space
+    // Tuyệt đối KHÔNG tự đặt 'Content-Type' trong headers để hệ thống tự sinh Boundary Header
     const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
       method: 'POST',
       headers: {
-        'apikey': ocrSpaceKey,
-        'Content-Type': 'application/json'
+        'apikey': ocrSpaceKey
       },
-      body: JSON.stringify(jsonPayload)
+      body: formData
     });
 
     if (!ocrResponse.ok) {
