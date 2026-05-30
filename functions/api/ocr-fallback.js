@@ -38,13 +38,18 @@ export async function onRequestPost(context) {
       });
     }
 
-    const params = new URLSearchParams();
-    params.append('base64Image', image);
-    params.append('language', 'vie');
-    params.append('isTable', 'true');
-    params.append('isOverlayRequired', 'false');
-    params.append('scale', 'true');
-    params.append('OCREngine', '2');
+    // Loại bỏ tiền tố Data URI (ví dụ: "data:image/jpeg;base64," hoặc "data:application/pdf;base64,")
+    const cleanBase64 = image.replace(/^data:[^;]+;base64,/, "");
+
+    // Cấu hình các tham số bắt buộc hoàn toàn bằng Chuỗi (String) và mã hóa URL thủ công an toàn
+    const bodyPayload = [
+      `base64Image=${encodeURIComponent(cleanBase64)}`,
+      `language=${encodeURIComponent('vie')}`,
+      `isTable=${encodeURIComponent('true')}`,
+      `isOverlayRequired=${encodeURIComponent('false')}`,
+      `scale=${encodeURIComponent('true')}`,
+      `OCREngine=${encodeURIComponent('2')}`
+    ].join('&');
 
     const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
       method: 'POST',
@@ -52,7 +57,7 @@ export async function onRequestPost(context) {
         'apikey': ocrSpaceKey,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: params.toString()
+      body: bodyPayload
     });
 
     if (!ocrResponse.ok) {
