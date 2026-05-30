@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File } from 'lucide-react';
+import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
@@ -343,17 +343,6 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
                     </div>
                     <span className="pl-6 text-[10px] font-normal text-text-secondary">Có tiêu đề, metadata và cấu trúc mục/điều cơ bản.</span>
                   </button>
-                  <button 
-                    onClick={() => { handleExport('docx'); setIsExportOpen(false); }} 
-                    className="w-full text-left px-4 py-2 hover:bg-background flex flex-col gap-0.5 text-text-primary transition-colors cursor-pointer"
-                    title="Chuẩn hành chính Việt Nam (Nghị định 30/2020/NĐ-CP)"
-                  >
-                    <div className="flex items-center gap-2">
-                      <File size={14} className="text-text-secondary/60 shrink-0" />
-                      <span className="text-xs font-bold">Tài liệu Word (.docx)</span>
-                    </div>
-                    <span className="pl-6 text-[10px] font-normal text-text-secondary">Chuẩn hành chính Việt Nam (Nghị định 30).</span>
-                  </button>
                 </div>
               </>
             )}
@@ -405,7 +394,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
             title={isOcrEmpty ? "Không có dữ liệu văn bản để xuất" : "Xuất Word chuyên nghiệp chuẩn Nghị định 30 (Premium)"}
           >
             <span className="material-icons text-[14px]">workspace_premium</span>
-            <span>👑 Xuất Word Chuẩn Nghị Định 30</span>
+            <span>👑 Xuất Word Chuẩn Nghị định 30</span>
+            <span className="ml-1 text-[9px] bg-primary text-white font-extrabold px-1 py-0.5 rounded-sm">PRO</span>
           </button>
         </div>
       )}
@@ -593,7 +583,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2 text-primary">
                 <span className="material-icons text-[24px]">workspace_premium</span>
-                <h4 className="font-sans font-bold text-base sm:text-lg text-text-primary">Kích Hoạt Gói Premium</h4>
+                <h4 className="font-sans font-bold text-base sm:text-lg text-text-primary">Xuất Word chuẩn nghiệp vụ</h4>
               </div>
               <button 
                 onClick={() => setIsPremiumPopupOpen(false)}
@@ -604,11 +594,16 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
             </div>
 
             {/* Description */}
-            <div className="space-y-2 text-xs sm:text-sm text-text-secondary leading-relaxed">
+            <div className="space-y-3 text-xs sm:text-sm text-text-secondary leading-relaxed">
               <p>
-                Tính năng <strong>Xuất Word chuẩn Nghị định 30 (Pipeline 5 layer tự động)</strong> là tính năng cao cấp dành riêng cho hội viên trả phí.
+                Tính năng này dành cho gói nâng cao, hỗ trợ:
               </p>
-              <p>
+              <ul className="list-disc pl-5 space-y-1 font-medium text-text-primary">
+                <li>Chuẩn hóa theo Nghị định 30</li>
+                <li>Định dạng hành chính pháp lý</li>
+                <li>Căn lề, font, cấu trúc chuẩn nghiệp vụ</li>
+              </ul>
+              <p className="text-[11px] text-text-secondary">
                 Quét mã QR qua ứng dụng ngân hàng của bạn. Sau khi thanh toán thành công, hệ thống SePay sẽ tự động gửi <strong>Mã kích hoạt Premium</strong> qua email của bạn trong vòng 30 giây.
               </p>
             </div>
@@ -672,9 +667,17 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
             <div className="flex justify-end gap-2 border-t border-border/60 pt-3">
               <button
                 onClick={() => setIsPremiumPopupOpen(false)}
-                className="px-4 py-2 text-xs font-bold bg-background hover:bg-border text-text-primary border border-border rounded-xl transition-all cursor-pointer shadow-sm"
+                className="px-4 py-2 text-xs font-bold bg-background hover:bg-border text-text-primary border border-border rounded-xl transition-all cursor-pointer shadow-sm animate-fade-in"
               >
                 Đóng
+              </button>
+              <button
+                onClick={() => {
+                  alert("Hệ thống thanh toán tự động đang được hoàn thiện. Vui lòng liên hệ quản trị viên hoặc sử dụng nút 'Kích hoạt Demo' để trải nghiệm.");
+                }}
+                className="px-4 py-2 text-xs font-bold bg-background hover:bg-border text-text-primary border border-border rounded-xl transition-all cursor-pointer shadow-sm animate-fade-in"
+              >
+                Tìm hiểu thêm
               </button>
               <button
                 onClick={() => {
@@ -684,7 +687,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
                   alert("Đã áp dụng mã kích hoạt Premium Demo thành công! Vui lòng tải lại trang hoặc lưu cấu hình.");
                   window.location.reload();
                 }}
-                className="px-4 py-2 text-xs font-bold btn-premium-primary text-white rounded-xl transition-all cursor-pointer shadow-md"
+                className="px-4 py-2 text-xs font-bold btn-premium-primary text-white rounded-xl transition-all cursor-pointer shadow-md animate-fade-in"
               >
                 Kích hoạt Demo
               </button>
