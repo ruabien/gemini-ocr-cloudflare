@@ -1,7 +1,23 @@
 import { FileText, Image as ImageIcon, CheckCircle2, Loader2, Clock, AlertCircle, X } from 'lucide-react';
 
 export default function QueueList({ files, activeFileId, onFileClick, onRemoveFile }) {
-  if (!files || files.length === 0) return null;
+  if (!files || files.length === 0) {
+    return (
+      <div className="w-full flex flex-col flex-1 min-h-0">
+        <h3 className="text-sm font-bold text-text-primary mb-3 flex items-center gap-2 shrink-0">
+          Hàng đợi xử lý
+          <span className="bg-primary/10 border border-primary/20 text-primary py-0.5 px-2.5 rounded-full text-xs font-bold font-mono">
+            0
+          </span>
+        </h3>
+        <div className="flex flex-col items-center justify-center bg-background/50 border border-dashed border-border rounded-xl p-6 flex-1 min-h-0 text-center select-none">
+          <Clock className="text-text-secondary/30 mb-2 shrink-0" size={32} />
+          <p className="text-[11px] text-text-secondary font-bold">Hàng đợi trống</p>
+          <p className="text-[10px] text-text-secondary/60">Tải thêm tệp tin để bắt đầu OCR</p>
+        </div>
+      </div>
+    );
+  }
 
   const formatSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';

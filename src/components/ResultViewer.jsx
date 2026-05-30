@@ -79,10 +79,13 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   }, [file?.id, file?.result, allFiles, file?.isParentPdf]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!file) {
+    const hasFiles = allFiles && allFiles.length > 0;
     return (
       <div className="h-full flex flex-col items-center justify-center text-on-surface-variant bg-surface rounded-xl border border-dashed border-outline-variant/60 min-h-[400px]">
         <FileText size={48} strokeWidth={1} className="mb-4 opacity-40 text-on-surface-variant" />
-        <p className="text-on-surface-variant text-sm font-medium">Chọn một file đã hoàn thành để xem kết quả</p>
+        <p className="text-on-surface-variant text-sm font-medium">
+          {hasFiles ? "Chọn một file đã hoàn thành để xem kết quả" : "Chưa có kết quả OCR"}
+        </p>
       </div>
     );
   }

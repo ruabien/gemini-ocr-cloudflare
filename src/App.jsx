@@ -28,6 +28,7 @@ function App() {
   const [files, setFiles] = useState([]);
   const [activeFileId, setActiveFileId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isWorkspaceActive, setIsWorkspaceActive] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -84,13 +85,33 @@ function App() {
     setConfig(newConfig);
   }, []);
 
-  const handleReset = useCallback(() => {
+  const resetWorkspaceSession = useCallback((force = false) => {
+    if (processingRef.current && !force) {
+      const confirmReset = window.confirm("Đang xử lý tài liệu. Bạn có chắc muốn làm mới phiên OCR hiện tại?");
+      if (!confirmReset) return false;
+    }
     processingRef.current = false;
     setIsProcessing(false);
     setFiles([]);
     setActiveFileId(null);
     setFromPage(1);
     setToPage(1);
+    setIsWorkspaceActive(true);
+    return true;
+  }, []);
+
+  const goBackToHome = useCallback(() => {
+    if (processingRef.current) {
+      const confirmHome = window.confirm("Đang xử lý tài liệu. Bạn có chắc muốn trở về trang chủ?");
+      if (!confirmHome) return;
+    }
+    processingRef.current = false;
+    setIsProcessing(false);
+    setFiles([]);
+    setActiveFileId(null);
+    setFromPage(1);
+    setToPage(1);
+    setIsWorkspaceActive(false);
   }, []);
 
   // Xử lý thay đổi ô nhập dải trang
@@ -177,6 +198,7 @@ function App() {
       };
     });
 
+    setIsWorkspaceActive(true);
     setFiles(prev => [...prev, ...newItems]);
     if (newItems.length > 0) {
       setActiveFileId(prev => prev || newItems[0].id);
@@ -712,7 +734,7 @@ error message: ${finalErrorMsg || 'none'}`;
     processingRef.current = false;
   };
 
-  if (files.length === 0) {
+  if (!isWorkspaceActive) {
     return (
       <>
         <LandingPage 
@@ -802,7 +824,7 @@ error message: ${finalErrorMsg || 'none'}`;
         <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center px-4 md:px-8">
           <div className="flex items-center gap-3">
             <div 
-              onClick={handleReset}
+              onClick={goBackToHome}
               className="flex items-center gap-2 group cursor-pointer"
             >
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-sm">
@@ -835,7 +857,7 @@ error message: ${finalErrorMsg || 'none'}`;
             </button>
             
             <button
-              onClick={handleReset}
+              onClick={goBackToHome}
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-primary hover:bg-primary-hover text-white rounded-xl transition-all cursor-pointer shadow-sm"
             >
               <span>Trở về Trang chủ</span>
@@ -943,7 +965,7 @@ error message: ${finalErrorMsg || 'none'}`;
               file={activeFile} 
               allFiles={files} 
               onUpdateResult={handleUpdateResult} 
-              onReset={handleReset}
+              onReset={resetWorkspaceSession}
               ocrOptions={ocrOptions}
               config={config}
             />
