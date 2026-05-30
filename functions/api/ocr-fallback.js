@@ -46,12 +46,16 @@ export async function onRequestPost(context) {
 
     // Đóng gói dữ liệu vào FormData theo chuẩn tài liệu API OCR.space
     const formData = new FormData();
-    formData.append('base64Image', formattedBase64); // Tham số bắt buộc phải tên là base64Image
+    
+    // SỬA ĐỔI CỐT LÕI: Đưa các tham số cấu hình ngắn lên ĐẦU TIÊN
     formData.append('language', 'vie');              // Định dạng chuỗi 'vie' viết tắt cho tiếng Việt
     formData.append('isTable', 'true');              // Ép kiểu chuỗi 'true' để nhận diện bảng/cột
     formData.append('isOverlayRequired', 'false');   // Ép kiểu chuỗi 'false'
     formData.append('scale', 'true');                // Ép kiểu chuỗi 'true' để làm nét ảnh
     formData.append('OCREngine', '2');               // Bắt buộc sử dụng Engine 2 để hỗ trợ tiếng Việt
+
+    // ĐỂ THAM SỐ ẢNH NẶNG XUỐNG CUỐI CÙNG TUYỆT ĐỐI
+    formData.append('base64Image', formattedBase64); // Tham số bắt buộc phải tên là base64Image
 
     // Gửi request dạng multipart/form-data sang OCR.space
     // Tuyệt đối KHÔNG tự đặt 'Content-Type' trong headers để hệ thống tự sinh Boundary Header
