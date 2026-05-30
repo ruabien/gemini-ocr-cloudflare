@@ -40,11 +40,23 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 1. Tách bỏ tiền tố định dạng để lấy chuỗi Base64 thô (hỗ trợ cả jpeg, png, pdf, v.v.)
-    const cleanBase64 = image.replace(/^data:[^;]+;base64,/, "");
+    // 1. Tách bỏ tiền tố định dạng để lấy chuỗi Base64 thô (hỗ trợ cả data:image/...;base64, và data:application/pdf;base64,...)
+    const cleanBase64 = image.replace(/^data:image\/\w+;base64,/, "").replace(/^data:[^;]+;base64,/, "");
 
-    // 2. Sử dụng Buffer để chuyển đổi Base64 an toàn 100% trên Cloudflare Pages / Workers
-    const imageBuffer = Buffer.from(cleanBase64, 'base64');
+    // 2. Sử dụng Buffer để chuyển đổi Base64 an toàn 100% trên Cloudflare Pages / Workers (có fallback sang atob nếu cần)
+    let imageBuffer;
+    try {
+      imageBuffer = Buffer.from(cleanBase64, 'base64');
+    } catch (e) {
+      console.warn("Buffer.from không được hỗ trợ hoặc bị lỗi, sử dụng fallback atob...", e);
+      const binaryString = atob(cleanBase64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      imageBuffer = bytes;
+    }
 
     // Tạo đối tượng Blob nhị phân từ Buffer
     const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
