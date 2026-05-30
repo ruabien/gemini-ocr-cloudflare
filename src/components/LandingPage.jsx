@@ -697,6 +697,10 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
+                    <span><strong>Hỗ trợ dự phòng OCR.space (Bên thứ ba):</strong> Khi Gemini gặp lỗi bộ lọc trích dẫn (RECITATION), hệ thống hỗ trợ fallback riêng trang lỗi đó sang dịch vụ OCR.space qua HTTPS. Chỉ có hình ảnh của riêng trang lỗi được gửi đi, tuyệt đối không gửi toàn bộ tài liệu PDF của bạn sang bên thứ ba.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
                     <span><strong>Không ghi nhật ký:</strong> Hệ thống tuyệt đối không lưu trữ tệp tin của bạn, không ghi nhận nhật ký (log) nội dung văn bản OCR và không ghi log API Key.</span>
                   </li>
                   <li className="flex items-start gap-2">

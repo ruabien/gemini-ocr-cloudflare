@@ -33,8 +33,16 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
         return { label: 'Đang tách trang...', icon: <Loader2 size={16} className="animate-spin text-secondary" />, color: 'text-secondary', bar: 'bg-secondary/20', width: `${progress}%` };
       case 'processing': 
         return { label: `Đang xử lý... (${progress}%)`, icon: <Loader2 size={16} className="animate-spin text-primary" />, color: 'text-primary', bar: 'bg-primary', width: `${progress}%` };
-      case 'completed': 
-        return { label: 'Hoàn thành', icon: <CheckCircle2 size={16} className="text-success" />, color: 'text-success', bar: 'bg-success', width: '100%' };
+      case 'completed': {
+        const isFallback = file.metadata?.status === 'fallback';
+        return { 
+          label: isFallback ? 'Hoàn thành (Dự phòng)' : 'Hoàn thành', 
+          icon: <CheckCircle2 size={16} className={isFallback ? "text-secondary" : "text-success"} />, 
+          color: isFallback ? 'text-secondary' : 'text-success', 
+          bar: isFallback ? 'bg-secondary' : 'bg-success', 
+          width: '100%' 
+        };
+      }
       case 'error': 
         return { label: 'Lỗi', icon: <AlertCircle size={16} className="text-accent" />, color: 'text-accent', bar: 'bg-accent', width: '100%' };
       case 'waiting':

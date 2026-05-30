@@ -7,6 +7,7 @@ import LandingPage from './components/LandingPage';
 import { Settings, Scale } from 'lucide-react';
 
 import { processOCR } from './utils/ocrService';
+import { ocrWithOcrSpace } from './utils/ocrSpaceService';
 import { splitPdfToImages } from './utils/pdfProcessor';
 import { compressImageIfNeeded } from './utils/imageCompressor';
 import { normalizeOcrText } from './utils/textNormalizer';
@@ -32,7 +33,7 @@ function App() {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   // Trạng thái nghiệp vụ và cảnh báo bảo mật tư pháp (Phase 4)
-  const [ocrOptions, setOcrOptions] = useState({
+  const [ocrOptions] = useState({
     layoutPreserve: true,
     precisionMode: true,
     normalizeLines: false,
@@ -354,14 +355,103 @@ function App() {
             } : f));
 
             const startTime = Date.now();
-            const textResult = await processOCR(
-              fileToProcess.originalFile,
-              activeKey,
-              currentModel,
-              ocrOptions
-            );
-            const endTime = Date.now();
-            const durationSec = ((endTime - startTime) / 1000).toFixed(1);
+            let textResult = null;
+            let usedEngine = "gemini";
+            let ocrStatus = "success";
+            let processingTimeMs = 0;
+
+            try {
+              textResult = await processOCR(
+                fileToProcess.originalFile,
+                activeKey,
+                currentModel,
+                ocrOptions
+              );
+              processingTimeMs = Date.now() - startTime;
+            } catch (error) {
+              if (error.finishReason === 'RECITATION' || error.message === 'RECITATION') {
+                console.warn(`Trang ${fileToProcess.name} bị lỗi RECITATION. Đang thử lại Gemini với cấu hình an toàn...`);
+                
+                // Cập nhật trạng thái đang thử lại
+                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
+                  ...f, 
+                  status: 'processing', 
+                  progress: 50,
+                  retryInfo: {
+                    customMessage: `Trang ${fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1} bị chặn. Đang thử lại với cấu hình Gemini an toàn hơn...`,
+                    errorMsg: `Phát hiện bộ lọc RECITATION của Google.`,
+                    attempt: 1,
+                    maxAttempts: 1,
+                    secondsLeft: 1
+                  }
+                } : f));
+                
+                await delay(1000);
+                if (!processingRef.current) return;
+
+                const retryStartTime = Date.now();
+                try {
+                  textResult = await processOCR(
+                    fileToProcess.originalFile,
+                    activeKey,
+                    currentModel,
+                    { ...ocrOptions, isRetry: true }
+                  );
+                  usedEngine = "gemini-retry";
+                  processingTimeMs = Date.now() - retryStartTime;
+                } catch (retryError) {
+                  console.error("Retry Gemini vẫn bị lỗi:", retryError);
+                  if (retryError.finishReason === 'RECITATION' || retryError.message === 'RECITATION' || !textResult) {
+                    const spaceApiKey = config?.ocrSpaceApiKey || localStorage.getItem('ocr_space_api_key') || '';
+                    if (!spaceApiKey.trim()) {
+                      const configErr = new Error("Cấu hình thiếu: Vui lòng nhập API Key OCR.space trong phần Cấu hình để sử dụng OCR dự phòng.");
+                      configErr.status = 400;
+                      throw configErr;
+                    }
+
+                    console.warn(`Đang fallback trang ${fileToProcess.name} sang OCR.space...`);
+                    setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
+                      ...f, 
+                      status: 'processing', 
+                      progress: 75,
+                      retryInfo: {
+                        customMessage: `Gemini bị chặn. Đang xử lý bằng OCR dự phòng (OCR.space)...`,
+                        errorMsg: `Trang ${fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1} được xử lý bằng OCR dự phòng.`,
+                        attempt: 1,
+                        maxAttempts: 1,
+                        secondsLeft: 1
+                      }
+                    } : f));
+
+                    await delay(1000);
+                    if (!processingRef.current) return;
+
+                    const spaceStartTime = Date.now();
+                    try {
+                      textResult = await ocrWithOcrSpace(
+                        fileToProcess.originalFile,
+                        spaceApiKey,
+                        { language: 'vie' }
+                      );
+                      usedEngine = "ocr-space";
+                      ocrStatus = "fallback";
+                      processingTimeMs = Date.now() - spaceStartTime;
+                    } catch (spaceError) {
+                      console.error("Fallback OCR.space thất bại:", spaceError);
+                      const finalErr = new Error(`Không thể xử lý trang ${fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1}. Vui lòng thử lại hoặc kiểm tra chất lượng ảnh. (Chi tiết: ${spaceError.message})`);
+                      finalErr.status = 400;
+                      throw finalErr;
+                    }
+                  } else {
+                    throw retryError;
+                  }
+                }
+              } else {
+                throw error;
+              }
+            }
+
+            const durationSec = (processingTimeMs / 1000).toFixed(1);
 
             if (!processingRef.current) return;
 
@@ -382,8 +472,12 @@ function App() {
               error: null,
               metadata: {
                 duration: durationSec,
-                engine: currentModel,
-                ocrMode: ocrModeStr
+                engine: usedEngine,
+                ocrMode: ocrModeStr,
+                pageNumber: fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1,
+                engineUsed: usedEngine,
+                status: ocrStatus,
+                processingTimeMs: processingTimeMs
               }
             } : f));
 
@@ -393,6 +487,28 @@ function App() {
             if (!processingRef.current) return;
 
             console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}, Lần thử: ${attemptCount + 1}):`, error);
+
+            if (
+              error.message.includes("Không thể xử lý trang") || 
+              error.message.includes("Cấu hình thiếu") || 
+              error.message.includes("OCR.space")
+            ) {
+              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
+                ...f,
+                status: 'error',
+                progress: 0,
+                error: error.message,
+                retryInfo: null,
+                metadata: {
+                  pageNumber: fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1,
+                  engineUsed: "ocr-space",
+                  status: "failed",
+                  errorReason: error.message
+                }
+              } : f));
+              keysTriedForThisFile = keysArray.length;
+              break;
+            }
 
             if (error.finishReason === 'RECITATION' || error.message === 'RECITATION') {
               const fallbackModel = getFallbackModel(currentModel);
@@ -406,7 +522,13 @@ function App() {
                   status: 'error',
                   progress: 0,
                   error: `Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google Gemini chặn tài liệu này.`,
-                  retryInfo: null
+                  retryInfo: null,
+                  metadata: {
+                    pageNumber: fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1,
+                    engineUsed: "gemini",
+                    status: "failed",
+                    errorReason: "Recitation Filter"
+                  }
                 } : f));
                 keysTriedForThisFile = keysArray.length;
                 break;
@@ -421,7 +543,6 @@ function App() {
             attemptCount++;
 
             if (attemptCount > maxRetriesPerKey) {
-              // Hết số lần thử với Key này
               break;
             }
 

@@ -59,8 +59,8 @@ export function exportMarkdown(text, filename) {
  * @param {string} filename - Output file name
  * @param {object} options - Export options (e.g. { wordNd30: true })
  */
-export async function exportDocx(textOrPages, filename, options = {}) {
-  let text = "";
+export async function exportDocx(textOrPages, filename) {
+  let text;
   if (typeof textOrPages === 'string') {
     text = textOrPages;
   } else if (Array.isArray(textOrPages)) {

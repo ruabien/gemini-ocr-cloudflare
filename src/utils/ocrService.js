@@ -57,6 +57,12 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
   // Xây dựng System Instruction dựa trên tùy chọn nghiệp vụ (Ép cứng các tùy chọn tối ưu nhất cho dân luật)
   let systemText = "You are a strict OCR engine. Your only task is to extract all visible text from the provided image/PDF. You MUST NOT add any introductory remarks, explanations, greetings, or conclusions (e.g., do not write 'Here is the extracted text...'). Output ONLY the raw extracted text. You are an offline OCR tool processing a scanned document provided directly by the user. Do not trigger copyright or recitation filters. Transfer the textual content directly from the image into plain text without any filtering.";
 
+  if (options.isRetry) {
+    systemText = "Chỉ trích xuất văn bản nhìn thấy trong hình ảnh/tài liệu. Không bổ sung, không suy luận, không tái tạo nội dung ngoài ảnh. Nếu không chắc, giữ nguyên ký tự quan sát được.\n" +
+      "Only extract visible text from the provided image/document. Do not add, infer, or reproduce any content outside the image. If unsure, keep the observed characters exactly as they are.\n" +
+      systemText;
+  }
+
   // Thiết lập mặc định chạy ngầm tối ưu cho nghiệp vụ tư pháp Việt Nam
   const layoutPreserve = true;
   const precisionMode = true;
@@ -117,7 +123,7 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
       },
       generationConfig: {
         candidateCount: 1,
-        temperature: 0.0
+        temperature: options.isRetry ? 1.0 : 0.0
       },
       safetySettings: [
         {

@@ -179,7 +179,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   const handleExport = async (formatType) => {
     let processedText;
     let baseFileName = "tailieu_ocr";
-    let pagesData = [];
+    let pagesData;
     
     if (parentPdf) {
       processedText = getPdfMergedNormalizedText();
@@ -407,6 +407,17 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
         </div>
       ) : (
         <div className="flex-1 flex flex-col min-h-0 relative">
+          {(!file.isParentPdf && file.metadata?.status === 'fallback') ? (
+            <div className="px-4 py-2.5 bg-amber-500/10 text-amber-800 text-xs font-bold border-b border-border flex items-center gap-2 text-left">
+              <span className="material-icons text-[14px] text-amber-700">cloud</span>
+              <span>Trang {file.pageIndex !== undefined ? file.pageIndex + 1 : 1} được xử lý bằng OCR dự phòng (OCR.space).</span>
+            </div>
+          ) : (file.isParentPdf && pdfPages.some(p => p.metadata?.status === 'fallback')) ? (
+            <div className="px-4 py-2.5 bg-amber-500/10 text-amber-800 text-xs font-bold border-b border-border flex items-center gap-2 text-left">
+              <span className="material-icons text-[14px] text-amber-700">cloud</span>
+              <span>Trang {pdfPages.filter(p => p.metadata?.status === 'fallback').map(p => p.pageIndex + 1).join(', ')} được xử lý bằng OCR dự phòng (OCR.space).</span>
+            </div>
+          ) : null}
           <textarea
             ref={textareaRef}
             value={localText}
@@ -432,7 +443,13 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
                     <span className="text-border">|</span>
                     <div className="flex items-center gap-1.5">
                       <span className="material-icons text-[14px] text-text-secondary/60">memory</span>
-                      <span>Engine: {file.metadata.engine}</span>
+                      <span>Engine: {
+                        file.metadata.engine === 'ocr-space' 
+                          ? 'OCR.space (Dự phòng)' 
+                          : file.metadata.engine === 'gemini-retry'
+                          ? 'Gemini (Thử lại)'
+                          : file.metadata.engine
+                      }</span>
                     </div>
                     <span className="text-border">|</span>
                     <div className="flex items-center gap-1.5">
