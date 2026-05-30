@@ -16,15 +16,54 @@ const fileToBase64 = (file) => {
 };
 
 /**
+ * Hàm gọi đến OCR.space API khi gặp lỗi RECITATION từ Gemini
+ * @param {File} file 
+ * @returns {Promise<string>} Kết quả văn bản thô
+ */
+export const processPageWithOcrSpace = async (file) => {
+  const ocrSpaceKey = localStorage.getItem('ocr_space_api_key') || "K88587118288957";
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('apikey', ocrSpaceKey);
+  formData.append('language', 'vie');
+  formData.append('isOverlayRequired', 'false');
+
+  console.log("Đang gửi yêu cầu đến OCR.space API...");
+  const response = await fetch('https://api.ocr.space/parse/image', {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error(`OCR.space API trả về lỗi: HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (data.IsErroredOnProcessing) {
+    const errorDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Lỗi xử lý không xác định';
+    throw new Error(`OCR.space Error: ${errorDetails}`);
+  }
+
+  const text = data.ParsedResults?.[0]?.ParsedText;
+  if (text === undefined || text === null) {
+    throw new Error("OCR.space không trả về kết quả văn bản.");
+  }
+
+  return text;
+};
+
+/**
  * Hàm gọi trực tiếp API Google Gemini từ Client để chạy OCR (Direct Client-Side Fetch)
  * Giúp giải phóng hoàn toàn gánh nặng CORS và hạn mức payload trên Cloudflare Worker.
+ * Tự động rẽ nhánh sang OCR.space nếu bị chặn RECITATION.
  * @param {File} file - File ảnh hoặc PDF thô
  * @param {string} apiKey - API Key Gemini của người dùng
  * @param {string} modelName - Tên Model (ví dụ: gemini-2.5-flash)
- * @param {string} workerUrl - (Bỏ qua/Không dùng)
+ * @param {object} options - Các tùy chọn bổ sung
  * @returns {Promise<string>} Kết quả OCR gộp cuối cùng
  */
-export const processOCR = async (file, apiKey, modelName, options = {}) => {
+export const processPageWithGemini = async (file, apiKey, modelName, options = {}) => {
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
   let normalizedModel = modelName || 'gemini-2.5-flash';
@@ -143,14 +182,23 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
   if (!response.ok) {
     let errorMsg = `HTTP ${response.status}`;
     let isKeyInvalid = false;
+    let isRecitation = false;
     try {
       const errData = await response.json();
       errorMsg = errData?.error?.message || errorMsg;
+      if (errorMsg && errorMsg.toUpperCase().includes("RECITATION")) {
+        isRecitation = true;
+      }
       if (errorMsg.includes("API key not valid") || errorMsg.includes("key is invalid")) {
         isKeyInvalid = true;
       }
     } catch {
       // ignore
+    }
+
+    if (isRecitation) {
+      console.warn("Phát hiện lỗi chứa từ khóa RECITATION từ Gemini API. Chuyển hướng dự phòng sang OCR.space API...");
+      return await processPageWithOcrSpace(file);
     }
     
     let friendlyMessage = errorMsg;
@@ -172,17 +220,20 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
   const data = await response.json();
 
   if (data.candidates?.[0]?.finishReason === 'RECITATION') {
-    const err = new Error('RECITATION');
-    err.finishReason = 'RECITATION';
-    err.status = 400;
-    throw err;
+    console.warn("Phát hiện finishReason === 'RECITATION' từ Gemini API. Chuyển hướng dự phòng sang OCR.space API...");
+    return await processPageWithOcrSpace(file);
   }
 
   const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
   
   if (textResult === undefined || textResult === null) {
-
     const finishReason = data.candidates?.[0]?.finishReason;
+    
+    if (finishReason === 'RECITATION' || (finishReason && finishReason.toUpperCase().includes('RECITATION'))) {
+      console.warn(`Phát hiện finishReason '${finishReason}' chứa từ khóa RECITATION. Chuyển hướng dự phòng sang OCR.space API...`);
+      return await processPageWithOcrSpace(file);
+    }
+
     const blockReason = data.promptFeedback?.blockReason;
     const safetyRatings = data.candidates?.[0]?.safetyRatings;
     
@@ -205,4 +256,11 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
   }
 
   return textResult;
+};
+
+/**
+ * Hàm wrapper chính cho luồng OCR của hệ thống
+ */
+export const processOCR = async (file, apiKey, modelName, options = {}) => {
+  return await processPageWithGemini(file, apiKey, modelName, options);
 };
