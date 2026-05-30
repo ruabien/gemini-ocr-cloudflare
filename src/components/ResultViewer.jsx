@@ -217,7 +217,48 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
       if (formatType === 'txt') {
         exportTxt(cleanedText, `${baseFileName}_ocr.txt`);
       } else if (formatType === 'md') {
-        exportMarkdown(cleanedText, `${baseFileName}_ocr.md`);
+        const metadata = {
+          fileName: parentPdf 
+            ? (parentPdf.originalFile?.name || parentPdf.name || 'tailieu_ocr.pdf')
+            : isMultiImage 
+            ? `${baseFileName} (Gộp ${imageFiles.length} ảnh)`
+            : (file.originalFile?.name || file.name || 'tailieu_ocr.jpg'),
+          charCount: cleanedText.length
+        };
+
+        if (parentPdf) {
+          const uniqueEngines = [...new Set(pdfPages.map(p => p.metadata?.engine).filter(Boolean))];
+          metadata.engine = uniqueEngines.length > 0 
+            ? uniqueEngines.map(e => e === 'ocr-space' ? 'OCR.space' : e === 'gemini-retry' ? 'Gemini (Retry)' : 'Gemini').join(', ') 
+            : 'Gemini';
+
+          const totalDuration = pdfPages.reduce((acc, p) => acc + (parseFloat(p.metadata?.duration) || 0), 0).toFixed(1);
+          metadata.duration = totalDuration;
+
+          const uniqueModes = [...new Set(pdfPages.map(p => p.metadata?.ocrMode).filter(Boolean))];
+          metadata.ocrMode = uniqueModes.length > 0 ? uniqueModes.join(', ') : 'Mặc định';
+        } else if (isMultiImage) {
+          const uniqueEngines = [...new Set(imageFiles.map(p => p.metadata?.engine).filter(Boolean))];
+          metadata.engine = uniqueEngines.length > 0 
+            ? uniqueEngines.map(e => e === 'ocr-space' ? 'OCR.space' : e === 'gemini-retry' ? 'Gemini (Retry)' : 'Gemini').join(', ') 
+            : 'Gemini';
+
+          const totalDuration = imageFiles.reduce((acc, p) => acc + (parseFloat(p.metadata?.duration) || 0), 0).toFixed(1);
+          metadata.duration = totalDuration;
+
+          const uniqueModes = [...new Set(imageFiles.map(p => p.metadata?.ocrMode).filter(Boolean))];
+          metadata.ocrMode = uniqueModes.length > 0 ? uniqueModes.join(', ') : 'Mặc định';
+        } else {
+          metadata.engine = file.metadata?.engine === 'ocr-space' 
+            ? 'OCR.space' 
+            : file.metadata?.engine === 'gemini-retry' 
+            ? 'Gemini (Retry)' 
+            : file.metadata?.engine || 'Gemini';
+          metadata.duration = file.metadata?.duration || '0';
+          metadata.ocrMode = file.metadata?.ocrMode || 'Mặc định';
+        }
+
+        exportMarkdown(cleanedText, `${baseFileName}_ocr.md`, metadata);
       } else if (formatType === 'docx') {
         await exportDocx(pagesData, `${baseFileName}_ocr.docx`, ocrOptions || {});
       }
@@ -279,27 +320,39 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
             {isExportOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsExportOpen(false)}></div>
-                <div className="absolute right-0 mt-1.5 w-48 bg-surface border border-border rounded-xl shadow-lg py-1.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
+                <div className="absolute right-0 mt-1.5 w-64 bg-surface border border-border rounded-xl shadow-lg py-1.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150 text-left">
                   <button 
                     onClick={() => { handleExport('txt'); setIsExportOpen(false); }} 
-                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-background flex items-center gap-2 text-text-primary transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-background flex flex-col gap-0.5 text-text-primary transition-colors cursor-pointer"
+                    title="Văn bản thô, không định dạng"
                   >
-                    <FileText size={14} className="text-text-secondary/60" />
-                    <span>Tệp Văn bản (.txt)</span>
+                    <div className="flex items-center gap-2">
+                      <FileText size={14} className="text-text-secondary/60 shrink-0" />
+                      <span className="text-xs font-bold">Tệp Văn bản (.txt)</span>
+                    </div>
+                    <span className="pl-6 text-[10px] font-normal text-text-secondary">Văn bản thô, không định dạng.</span>
                   </button>
                   <button 
                     onClick={() => { handleExport('md'); setIsExportOpen(false); }} 
-                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-background flex items-center gap-2 text-text-primary transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-background flex flex-col gap-0.5 text-text-primary transition-colors cursor-pointer"
+                    title="Có tiêu đề, metadata và cấu trúc mục/điều cơ bản."
                   >
-                    <FileCode size={14} className="text-text-secondary/60" />
-                    <span>Tệp Markdown (.md)</span>
+                    <div className="flex items-center gap-2">
+                      <FileCode size={14} className="text-text-secondary/60 shrink-0" />
+                      <span className="text-xs font-bold">Tệp Markdown (.md)</span>
+                    </div>
+                    <span className="pl-6 text-[10px] font-normal text-text-secondary">Có tiêu đề, metadata và cấu trúc mục/điều cơ bản.</span>
                   </button>
                   <button 
                     onClick={() => { handleExport('docx'); setIsExportOpen(false); }} 
-                    className="w-full text-left px-4 py-2.5 text-xs font-bold hover:bg-background flex items-center gap-2 text-text-primary transition-colors"
+                    className="w-full text-left px-4 py-2 hover:bg-background flex flex-col gap-0.5 text-text-primary transition-colors cursor-pointer"
+                    title="Chuẩn hành chính Việt Nam (Nghị định 30/2020/NĐ-CP)"
                   >
-                    <File size={14} className="text-text-secondary/60" />
-                    <span>Tài liệu Word (.docx)</span>
+                    <div className="flex items-center gap-2">
+                      <File size={14} className="text-text-secondary/60 shrink-0" />
+                      <span className="text-xs font-bold">Tài liệu Word (.docx)</span>
+                    </div>
+                    <span className="pl-6 text-[10px] font-normal text-text-secondary">Chuẩn hành chính Việt Nam (Nghị định 30).</span>
                   </button>
                 </div>
               </>

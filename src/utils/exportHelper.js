@@ -39,16 +39,145 @@ export function exportTxt(text, filename) {
 }
 
 /**
+ * Chuyển đổi và định dạng văn bản OCR thô thành văn bản Markdown có cấu trúc
+ * @param {string} text - Văn bản gốc
+ * @param {object} metadata - Thông tin siêu dữ liệu
+ * @param {object} options - Các tùy chọn bổ sung
+ * @returns {string} Văn bản Markdown đã định dạng
+ */
+export function formatTextToMarkdown(text, metadata = {}) {
+  if (!text) return '';
+
+  // 1. Clean HTML comment blocks and image placeholders
+  let cleanedText = text
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\[IMAGE_PLACEHOLDER:.*?\]/g, '');
+
+  const rawLines = cleanedText.split(/\r?\n/);
+  const formattedLines = [];
+
+  // Helper functions
+  const isAllUppercase = (str) => {
+    const trimmed = str.trim();
+    if (!trimmed) return false;
+    // Phải chứa ít nhất một chữ cái (tiếng Việt hoặc tiếng Anh)
+    if (!/[a-zA-ZĂÂĐÊÔƠƯÁÀẢÃẠẮẰẲẴẶẤẦẨẪẬẾỀỂỄỆỐỒỔỖỘỚỜỞỠỢỨỪỬỮỰ]/.test(trimmed)) {
+      return false;
+    }
+    // Không kết thúc bằng dấu chấm, phẩy, hỏi, hoặc cảm thán của một câu văn thường
+    if (/[.,?!]$/.test(trimmed)) {
+      return false;
+    }
+    if (trimmed.length > 150) {
+      return false;
+    }
+    return trimmed === trimmed.toUpperCase();
+  };
+
+  const isDieuHeader = (str) => {
+    return /^Điều\s+\d+/i.test(str.trim());
+  };
+
+  const isMarkdownHeader = (str) => {
+    return /^#+\s+/.test(str.trim());
+  };
+
+  const isNumberedList = (str) => {
+    return /^\d+\.\s+/.test(str.trim());
+  };
+
+  const isLetterList = (str) => {
+    return /^[a-zđ]\)\s+/i.test(str.trim());
+  };
+
+  const isBulletList = (str) => {
+    return /^[-*+]\s+/.test(str.trim());
+  };
+
+  // Build metadata block
+  const metaLines = [];
+  metaLines.push('# Kết quả OCR');
+  metaLines.push('');
+  metaLines.push('## Thông tin xử lý');
+  metaLines.push(`- Tệp gốc: ${metadata.fileName || 'N/A'}`);
+  metaLines.push(`- Engine: ${metadata.engine || 'Gemini'}`);
+  metaLines.push(`- Thời gian: ${metadata.duration ? metadata.duration + 's' : 'N/A'}`);
+  metaLines.push(`- Số ký tự: ${metadata.charCount || text.length}`);
+  metaLines.push(`- Chế độ OCR: ${metadata.ocrMode || 'Mặc định'}`);
+  metaLines.push('');
+  metaLines.push('## Nội dung OCR');
+  metaLines.push('');
+
+  let lastAddedType = 'empty'; // 'empty', 'heading', 'list-item', 'paragraph'
+
+  const addLine = (lineText, type) => {
+    formattedLines.push(lineText);
+    lastAddedType = type;
+  };
+
+  const addEmptyLine = () => {
+    if (lastAddedType !== 'empty') {
+      formattedLines.push('');
+      lastAddedType = 'empty';
+    }
+  };
+
+  // Check if it's a single long line (e.g. paragraph without line breaks)
+  const isSingleLongLine = rawLines.length <= 2 && cleanedText.length > 200;
+  if (isSingleLongLine) {
+    addEmptyLine();
+    addLine(cleanedText.trim(), 'paragraph');
+  } else {
+    for (let i = 0; i < rawLines.length; i++) {
+      const rawLine = rawLines[i];
+      const trimmed = rawLine.trim();
+
+      if (!trimmed) {
+        addEmptyLine();
+        continue;
+      }
+
+      if (isMarkdownHeader(trimmed)) {
+        addEmptyLine();
+        addLine(trimmed, 'heading');
+      } else if (isDieuHeader(trimmed)) {
+        addEmptyLine();
+        addLine(`### ${trimmed}`, 'heading');
+      } else if (isAllUppercase(trimmed)) {
+        addEmptyLine();
+        addLine(`## ${trimmed}`, 'heading');
+      } else if (isLetterList(trimmed)) {
+        if (lastAddedType !== 'list-item') {
+          addEmptyLine();
+        }
+        addLine(`   - ${trimmed}`, 'list-item');
+      } else if (isNumberedList(trimmed) || isBulletList(trimmed)) {
+        if (lastAddedType !== 'list-item') {
+          addEmptyLine();
+        }
+        addLine(trimmed, 'list-item');
+      } else {
+        addEmptyLine();
+        addLine(trimmed, 'paragraph');
+      }
+    }
+  }
+
+  return metaLines.join('\n') + formattedLines.join('\n');
+}
+
+/**
  * Clean and export text to a Markdown file.
  * @param {string} text - Raw text to export
  * @param {string} filename - Target filename
+ * @param {object} metadata - Siêu dữ liệu bổ sung
  */
-export function exportMarkdown(text, filename) {
+export function exportMarkdown(text, filename, metadata = {}) {
   if (!text) {
     throw new Error("Không có nội dung để xuất file.");
   }
-  const cleanText = text.replace(/<!--[\s\S]*?-->/g, '').replace(/\[IMAGE_PLACEHOLDER:.*?\]/g, '');
-  const blob = new Blob(['\ufeff' + cleanText], { type: "text/markdown;charset=utf-8" });
+  const formattedMarkdown = formatTextToMarkdown(text, metadata);
+  const blob = new Blob(['\ufeff' + formattedMarkdown], { type: "text/markdown;charset=utf-8" });
   downloadBlob(blob, filename);
 }
 
