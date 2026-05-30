@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -41,20 +43,15 @@ export async function onRequestPost(context) {
     // 1. Tách bỏ tiền tố định dạng để lấy chuỗi Base64 thô (hỗ trợ cả jpeg, png, pdf, v.v.)
     const cleanBase64 = image.replace(/^data:[^;]+;base64,/, "");
 
-    // 2. Chuyển đổi chuỗi Base64 thô thành dữ liệu nhị phân (Binary Data) bằng cách ép kiểu sang Uint8Array
-    const binaryString = atob(cleanBase64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    // 2. Sử dụng Buffer để chuyển đổi Base64 an toàn 100% trên Cloudflare Pages / Workers
+    const imageBuffer = Buffer.from(cleanBase64, 'base64');
 
-    // Tạo một đối tượng Blob nhị phân chuẩn file ảnh jpeg
-    const imageBlob = new Blob([bytes], { type: 'image/jpeg' });
+    // Tạo đối tượng Blob nhị phân từ Buffer
+    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
 
     // 3. Đóng gói vào FormData chuẩn từ Server-side
     const formData = new FormData();
-    formData.append('file', imageBlob, 'screenshot.jpg'); // Đưa file nhị phân vào
+    formData.append('file', imageBlob, 'document.jpg');     // Đưa file nhị phân chuẩn vào
     formData.append('language', 'vie');                    // Chuỗi tham số chuẩn
     formData.append('isTable', 'true');                    // Giữ cấu trúc bảng biểu
     formData.append('isOverlayRequired', 'false');         // Không lấy dữ liệu đè lên
