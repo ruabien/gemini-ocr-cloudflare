@@ -160,26 +160,37 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
     }
     
     let friendlyMessage = errorMsg;
+    let code = "UNKNOWN";
+    
     if (response.status === 400 && isKeyInvalid) {
       friendlyMessage = "API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại cấu hình API Key của bạn.";
+      code = "INVALID_KEY";
     } else if (response.status === 429) {
       friendlyMessage = "Hạn mức API Key của bạn đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng đợi 1 phút hoặc đổi sang Key khác.";
+      code = "QUOTA_EXCEEDED";
     } else if (response.status === 403) {
       friendlyMessage = "Truy cập bị từ chối. API Key không có quyền sử dụng mô hình này hoặc kết nối bị chặn.";
+      code = "BLOCKED_REQUEST";
     } else if (response.status === 413) {
       friendlyMessage = "Tài liệu quá lớn so với giới hạn xử lý cho phép của API.";
+      code = "MALFORMED_REQUEST";
+    } else if (response.status === 400) {
+      friendlyMessage = `Yêu cầu không hợp lệ (Malformed Request): ${errorMsg}`;
+      code = "MALFORMED_REQUEST";
     }
     
     const err = new Error(friendlyMessage);
     err.status = response.status;
+    err.code = code;
     throw err;
   }
 
   const data = await response.json();
 
   if (data.candidates?.[0]?.finishReason === 'RECITATION') {
-    const err = new Error('RECITATION');
+    const err = new Error('Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google Gemini chặn tài liệu này.');
     err.finishReason = 'RECITATION';
+    err.code = 'RECITATION';
     err.status = 400;
     throw err;
   }
@@ -193,11 +204,17 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
     const safetyRatings = data.candidates?.[0]?.safetyRatings;
     
     let detailedError = 'Google API không trả về kết quả văn bản.';
+    let code = "NO_TEXT";
+    
     if (finishReason) {
       detailedError += ` (FinishReason: ${finishReason})`;
+      if (finishReason === 'SAFETY' || finishReason === 'RECITATION') {
+        code = finishReason;
+      }
     }
     if (blockReason) {
       detailedError += ` (BlockReason: ${blockReason})`;
+      code = "BLOCKED_REQUEST";
     }
     if (safetyRatings) {
       const blockedRatings = safetyRatings.filter(r => r.probability && r.probability !== 'NEGLIGIBLE');
@@ -207,6 +224,7 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
     }
     const err = new Error(detailedError);
     err.status = 400;
+    err.code = code;
     throw err;
   }
 

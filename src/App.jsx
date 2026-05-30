@@ -343,8 +343,78 @@ function App() {
       const maxRetriesPerKey = 3;
       let currentModel = config.model || 'gemini-2.5-flash';
 
+      let attemptIndex = 1;
+      const errorsBreakdown = [];
+      const pageNum = fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1;
+
+      const mapErrorCode = (engine, code) => {
+        const codeStr = String(code || 'UNKNOWN').toUpperCase();
+        if (engine === 'ocr-space') {
+          if (codeStr === 'INVALID_API_KEY') return 'invalid api key';
+          if (codeStr === 'E201_LANGUAGE_INVALID') return 'E201 language invalid';
+          if (codeStr === 'QUOTA_EXCEEDED') return 'quota exceeded';
+          if (codeStr === 'FILE_TOO_LARGE') return 'file too large';
+          if (codeStr === 'TIMEOUT') return 'timeout';
+          if (codeStr === 'NETWORK') return 'network';
+          return 'UNKNOWN';
+        } else {
+          // Gemini
+          if (codeStr === 'INVALID_KEY') return 'invalid key';
+          if (codeStr === 'QUOTA_EXCEEDED') return 'quota exceeded';
+          if (codeStr === 'RECITATION') return 'RECITATION';
+          if (codeStr === 'NETWORK') return 'network';
+          if (codeStr === 'BLOCKED_REQUEST') return 'blocked request';
+          if (codeStr === 'MALFORMED_REQUEST') return 'malformed request';
+          return 'UNKNOWN';
+        }
+      };
+
+      const logAttempt = (engine, keySource, page, retry, status, errorCode, errorMessage) => {
+        const finalErrorCode = status === 'failed' ? mapErrorCode(engine, errorCode) : '';
+        const finalErrorMsg = status === 'failed' ? (errorMessage || '') : '';
+        
+        // Exact log format requested
+        const attemptLog = `[OCR Attempt ${attemptIndex}]
+engine: ${engine}
+key source: ${keySource}
+page: ${page}
+retry: ${retry}
+status: ${status}
+error code: ${finalErrorCode || 'none'}
+error message: ${finalErrorMsg || 'none'}`;
+        
+        console.log(attemptLog);
+
+        errorsBreakdown.push({
+          attempt: attemptIndex,
+          engine: engine,
+          keySource: keySource,
+          code: finalErrorCode || 'UNKNOWN',
+          error: finalErrorMsg || ''
+        });
+
+        attemptIndex++;
+      };
+
+      const getBreakdownText = () => {
+        if (errorsBreakdown.length === 0) return "Đã xảy ra lỗi không xác định.";
+        const lines = errorsBreakdown
+          .filter(e => e.code !== 'success' && e.code !== 'none')
+          .map(e => {
+            let label = e.keySource;
+            if (label.includes("Gemini Key #")) {
+              label = label.replace("Gemini Key #", "Gemini #");
+            } else if (e.engine === 'ocr-space') {
+              label = "OCR.space";
+            }
+            return `${label}: ${e.code}${e.error ? ` (${e.error})` : ''}`;
+          });
+        return lines.join('\n');
+      };
+
       while (!success && keysTriedForThisFile < keysArray.length && processingRef.current) {
         const activeKey = keysArray[currentKeyIndex];
+        const keyLabel = `Gemini Key #${currentKeyIndex + 1}`;
         let attemptCount = 0;
 
         while (!success && attemptCount <= maxRetriesPerKey && processingRef.current) {
@@ -368,17 +438,23 @@ function App() {
                 ocrOptions
               );
               processingTimeMs = Date.now() - startTime;
+
+              logAttempt("gemini", keyLabel, pageNum, false, "success");
             } catch (error) {
-              if (error.finishReason === 'RECITATION' || error.message === 'RECITATION') {
+              const errorCode = error.code || (error.name === 'TypeError' ? 'NETWORK' : 'UNKNOWN');
+              const errorMsg = error.message;
+
+              logAttempt("gemini", keyLabel, pageNum, false, "failed", errorCode, errorMsg);
+
+              if (error.finishReason === 'RECITATION' || error.message === 'RECITATION' || error.code === 'RECITATION') {
                 console.warn(`Trang ${fileToProcess.name} bị lỗi RECITATION. Đang thử lại Gemini với cấu hình an toàn...`);
                 
-                // Cập nhật trạng thái đang thử lại
                 setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
                   ...f, 
                   status: 'processing', 
                   progress: 50,
                   retryInfo: {
-                    customMessage: `Trang ${fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1} bị chặn. Đang thử lại với cấu hình Gemini an toàn hơn...`,
+                    customMessage: `Trang ${pageNum} bị chặn. Đang thử lại với cấu hình Gemini an toàn hơn...`,
                     errorMsg: `Phát hiện bộ lọc RECITATION của Google.`,
                     attempt: 1,
                     maxAttempts: 1,
@@ -399,13 +475,20 @@ function App() {
                   );
                   usedEngine = "gemini-retry";
                   processingTimeMs = Date.now() - retryStartTime;
+                  logAttempt("gemini-retry", keyLabel, pageNum, true, "success");
                 } catch (retryError) {
+                  const retryErrorCode = retryError.code || (retryError.name === 'TypeError' ? 'NETWORK' : 'UNKNOWN');
+                  const retryErrorMsg = retryError.message;
+
+                  logAttempt("gemini-retry", keyLabel, pageNum, true, "failed", retryErrorCode, retryErrorMsg);
+
                   console.error("Retry Gemini vẫn bị lỗi:", retryError);
-                  if (retryError.finishReason === 'RECITATION' || retryError.message === 'RECITATION' || !textResult) {
+                  if (retryError.finishReason === 'RECITATION' || retryError.message === 'RECITATION' || retryError.code === 'RECITATION' || !textResult) {
                     const spaceApiKey = config?.ocrSpaceApiKey || localStorage.getItem('ocr_space_api_key') || '';
                     if (!spaceApiKey.trim()) {
                       const configErr = new Error("Cấu hình thiếu: Vui lòng nhập API Key OCR.space trong phần Cấu hình để sử dụng OCR dự phòng.");
-                      configErr.status = 400;
+                      configErr.code = "CONFIG_MISSING";
+                      logAttempt("ocr-space", "OCR.space Key", pageNum, false, "failed", "CONFIG_MISSING", configErr.message);
                       throw configErr;
                     }
 
@@ -416,7 +499,7 @@ function App() {
                       progress: 75,
                       retryInfo: {
                         customMessage: `Gemini bị chặn. Đang xử lý bằng OCR dự phòng (OCR.space)...`,
-                        errorMsg: `Trang ${fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1} được xử lý bằng OCR dự phòng.`,
+                        errorMsg: `Trang ${pageNum} được xử lý bằng OCR dự phòng.`,
                         attempt: 1,
                         maxAttempts: 1,
                         secondsLeft: 1
@@ -436,10 +519,15 @@ function App() {
                       usedEngine = "ocr-space";
                       ocrStatus = "fallback";
                       processingTimeMs = Date.now() - spaceStartTime;
+                      logAttempt("ocr-space", "OCR.space Key", pageNum, false, "success");
                     } catch (spaceError) {
-                      console.error("Fallback OCR.space thất bại:", spaceError);
-                      const finalErr = new Error(`Không thể xử lý trang ${fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1}. Vui lòng thử lại hoặc kiểm tra chất lượng ảnh. (Chi tiết: ${spaceError.message})`);
-                      finalErr.status = 400;
+                      const spaceErrorCode = spaceError.code || "UNKNOWN";
+                      const spaceErrorMsg = spaceError.message;
+
+                      logAttempt("ocr-space", "OCR.space Key", pageNum, false, "failed", spaceErrorCode, spaceErrorMsg);
+
+                      const finalErr = new Error(`Không thể xử lý trang ${pageNum}. Vui lòng thử lại hoặc kiểm tra chất lượng ảnh. (Chi tiết: ${spaceError.message})`);
+                      finalErr.code = spaceErrorCode;
                       throw finalErr;
                     }
                   } else {
@@ -474,7 +562,7 @@ function App() {
                 duration: durationSec,
                 engine: usedEngine,
                 ocrMode: ocrModeStr,
-                pageNumber: fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1,
+                pageNumber: pageNum,
                 engineUsed: usedEngine,
                 status: ocrStatus,
                 processingTimeMs: processingTimeMs
@@ -489,6 +577,7 @@ function App() {
             console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}, Lần thử: ${attemptCount + 1}):`, error);
 
             if (
+              error.code === "CONFIG_MISSING" || 
               error.message.includes("Không thể xử lý trang") || 
               error.message.includes("Cấu hình thiếu") || 
               error.message.includes("Lỗi cấu hình") || 
@@ -498,10 +587,10 @@ function App() {
                 ...f,
                 status: 'error',
                 progress: 0,
-                error: error.message,
+                error: getBreakdownText(),
                 retryInfo: null,
                 metadata: {
-                  pageNumber: fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1,
+                  pageNumber: pageNum,
                   engineUsed: "ocr-space",
                   status: "failed",
                   errorReason: error.message
@@ -511,7 +600,7 @@ function App() {
               break;
             }
 
-            if (error.finishReason === 'RECITATION' || error.message === 'RECITATION') {
+            if (error.finishReason === 'RECITATION' || error.message === 'RECITATION' || error.code === 'RECITATION') {
               const fallbackModel = getFallbackModel(currentModel);
               if (fallbackModel !== currentModel) {
                 console.warn(`Phát hiện lỗi bộ lọc RECITATION. Tự động hạ cấp mô hình từ ${currentModel} sang ${fallbackModel} và thử lại ngay lập tức.`);
@@ -522,10 +611,10 @@ function App() {
                   ...f,
                   status: 'error',
                   progress: 0,
-                  error: `Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google Gemini chặn tài liệu này.`,
+                  error: getBreakdownText(),
                   retryInfo: null,
                   metadata: {
-                    pageNumber: fileToProcess.pageIndex !== undefined ? fileToProcess.pageIndex + 1 : 1,
+                    pageNumber: pageNum,
                     engineUsed: "gemini",
                     status: "failed",
                     errorReason: "Recitation Filter"
@@ -576,7 +665,6 @@ function App() {
         keysTriedForThisFile++;
 
         if (keysTriedForThisFile < keysArray.length) {
-          // Còn Key dự phòng, xoay sang Key tiếp theo và thử lại ngay lập tức
           const oldKeyIndex = currentKeyIndex;
           currentKeyIndex = (currentKeyIndex + 1) % keysArray.length;
           
@@ -601,7 +689,7 @@ function App() {
             ...f,
             status: 'error',
             progress: 0,
-            error: `Đã thử hết cả ${keysArray.length} Keys nhưng đều thất bại. Hãy kiểm tra kết nối mạng hoặc tính hợp lệ của API Keys.`,
+            error: getBreakdownText(),
             retryInfo: null
           } : f));
         }
