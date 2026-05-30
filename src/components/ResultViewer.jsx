@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File, Trash2 } from 'lucide-react';
+import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode, File } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
@@ -87,14 +87,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
     );
   }
 
-  const handleClearResult = () => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa văn bản kết quả hiện tại?")) {
-      setLocalText("");
-      if (onUpdateResult) {
-        onUpdateResult(file.id, "");
-      }
-    }
-  };
+
 
   const handleCopy = async () => {
     if (!localText) return;
@@ -322,16 +315,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
             <span>{copied ? 'Đã sao chép' : 'Sao chép văn bản'}</span>
           </button>
         )}
-        {!file.isParentPdf && localText && (
-          <button
-            onClick={handleClearResult}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 h-10 px-3 text-xs font-bold btn-premium-danger rounded-xl transition-all cursor-pointer shadow-sm"
-            title="Xóa văn bản kết quả hiện tại"
-          >
-            <Trash2 size={14} className="shrink-0" />
-            <span>Xóa kết quả</span>
-          </button>
-        )}
+
       </div>
       </div>
       {/* Judicial Utility Bar */}
