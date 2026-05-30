@@ -42,13 +42,17 @@ export async function onRequestPost(context) {
 
     const ocrSpaceFormData = new FormData();
     ocrSpaceFormData.append('file', file);
-    ocrSpaceFormData.append('apikey', ocrSpaceKey);
     ocrSpaceFormData.append('language', 'vie');
+    ocrSpaceFormData.append('isTable', 'true');
     ocrSpaceFormData.append('isOverlayRequired', 'false');
+    ocrSpaceFormData.append('scale', 'true');
     ocrSpaceFormData.append('OCREngine', '2');
 
     const response = await fetch('https://api.ocr.space/parse/image', {
       method: 'POST',
+      headers: {
+        'apikey': ocrSpaceKey
+      },
       body: ocrSpaceFormData
     });
 
