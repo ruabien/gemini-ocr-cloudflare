@@ -1,30 +1,52 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+const getCorsHeaders = (request) => {
+  const origin = request.headers.get("Origin") || "";
+  const allowedOrigins = ["https://doc.hotro.online"];
+  
+  if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
+    return {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    };
+  }
+  
+  if (allowedOrigins.includes(origin)) {
+    return {
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    };
+  }
+  
+  return {
+    "Access-Control-Allow-Origin": "https://doc.hotro.online",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
 };
 
-export async function onRequestOptions() {
+export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders
+    headers: getCorsHeaders(context.request)
   });
 }
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  const corsHeaders = getCorsHeaders(request);
 
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    // Chế độ A: env.OCR_SPACE_API_KEY. Chế độ B: Client gửi apiKey qua formData.
-    const apiKey = env.OCR_SPACE_API_KEY || formData.get('apiKey');
+    const apiKey = env.OCR_SPACE_API_KEY;
 
     if (!apiKey || !apiKey.trim()) {
       return new Response(
         JSON.stringify({ 
-          error: 'CONFIG_MISSING', 
-          message: 'Cấu hình thiếu: Vui lòng cấu hình API Key OCR.space trên Server hoặc nhập trong phần Cấu hình.' 
+          success: false,
+          errorCode: 'OCR_SPACE_NOT_CONFIGURED', 
+          message: 'OCR dự phòng chưa được cấu hình.' 
         }), 
         {
           status: 400,

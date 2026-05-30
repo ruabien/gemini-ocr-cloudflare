@@ -44,6 +44,7 @@ function App() {
   useEffect(() => {
     window.openVideoModal = () => setIsVideoModalOpen(true);
     window.closeVideoModal = () => setIsVideoModalOpen(false);
+    localStorage.removeItem('ocr_space_api_key');
     return () => {
       delete window.openVideoModal;
       delete window.closeVideoModal;
@@ -485,8 +486,6 @@ error message: ${finalErrorMsg || 'none'}`;
 
                   console.error("Retry Gemini vẫn bị lỗi:", retryError);
                   if (retryError.finishReason === 'RECITATION' || retryError.message === 'RECITATION' || retryError.code === 'RECITATION' || !textResult) {
-                    const spaceApiKey = config?.ocrSpaceApiKey || localStorage.getItem('ocr_space_api_key') || '';
-
                     console.warn(`Đang fallback trang ${fileToProcess.name} sang OCR.space...`);
                     setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
                       ...f, 
@@ -508,7 +507,6 @@ error message: ${finalErrorMsg || 'none'}`;
                     try {
                       textResult = await ocrWithOcrSpace(
                         fileToProcess.originalFile,
-                        spaceApiKey,
                         { language: 'vie' }
                       );
                       usedEngine = "ocr-space";

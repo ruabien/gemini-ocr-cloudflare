@@ -10,8 +10,6 @@ export default function ApiConfig({ onConfigChange }) {
   const [showToast, setShowToast] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [licenseKey, setLicenseKey] = useState(() => localStorage.getItem('ocr_license_key') || '');
-  const [ocrSpaceApiKey, setOcrSpaceApiKey] = useState(() => localStorage.getItem('ocr_space_api_key') || '');
-  const [showSpaceKey, setShowSpaceKey] = useState(false);
 
   // States cho tính năng Kiểm tra Key
   const [isValidated, setIsValidated] = useState(() => {
@@ -49,20 +47,22 @@ export default function ApiConfig({ onConfigChange }) {
   }, []);
 
   useEffect(() => {
+    localStorage.removeItem('ocr_space_api_key');
+  }, []);
+
+  useEffect(() => {
     const savedKey = localStorage.getItem('ocr_api_key') || '';
     const savedModel = localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
     const savedLicense = localStorage.getItem('ocr_license_key') || '';
-    const savedSpaceKey = localStorage.getItem('ocr_space_api_key') || '';
-    if (apiKey === savedKey && modelName === savedModel && licenseKey === savedLicense && ocrSpaceApiKey === savedSpaceKey && onConfigChange) {
+    if (apiKey === savedKey && modelName === savedModel && licenseKey === savedLicense && onConfigChange) {
       onConfigChange({
         apiKey,
         model: modelName,
         workerUrl,
-        licenseKey,
-        ocrSpaceApiKey
+        licenseKey
       });
     }
-  }, [apiKey, modelName, workerUrl, licenseKey, ocrSpaceApiKey, onConfigChange]);
+  }, [apiKey, modelName, workerUrl, licenseKey, onConfigChange]);
 
   useEffect(() => {
     if (showToast) {
@@ -203,7 +203,6 @@ export default function ApiConfig({ onConfigChange }) {
     localStorage.setItem('ocr_api_key', apiKey);
     localStorage.setItem('ocr_model', modelName);
     localStorage.setItem('ocr_license_key', licenseKey);
-    localStorage.setItem('ocr_space_api_key', ocrSpaceApiKey);
     setIsSaved(true); // Đánh dấu đã lưu thành công
     setIsValidated(true);
     setShowToast(true);
@@ -213,14 +212,13 @@ export default function ApiConfig({ onConfigChange }) {
         apiKey,
         model: modelName,
         workerUrl,
-        licenseKey,
-        ocrSpaceApiKey
+        licenseKey
       });
     }
   };
 
   const handleClearConfig = () => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ cấu hình API Key, License Key và khóa OCR.space khỏi trình duyệt này không?")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa toàn bộ cấu hình API Key và License Key khỏi trình duyệt này không?")) {
       localStorage.removeItem('ocr_api_key');
       localStorage.removeItem('ocr_model');
       localStorage.removeItem('ocr_license_key');
@@ -228,7 +226,6 @@ export default function ApiConfig({ onConfigChange }) {
       setApiKey('');
       setModelName('gemini-2.5-flash');
       setLicenseKey('');
-      setOcrSpaceApiKey('');
       setIsValidated(false);
       setIsSaved(false);
       setValidationResults([]);
@@ -238,8 +235,7 @@ export default function ApiConfig({ onConfigChange }) {
           apiKey: '',
           model: 'gemini-2.5-flash',
           workerUrl: DEFAULT_WORKER_URL,
-          licenseKey: '',
-          ocrSpaceApiKey: ''
+          licenseKey: ''
         });
       }
       alert("Đã xóa sạch cấu hình lưu trên trình duyệt.");
@@ -328,39 +324,8 @@ export default function ApiConfig({ onConfigChange }) {
               </div>
             </div>
 
-            {/* OCR.space API Key field */}
-            <div className="md:col-span-6 flex flex-col gap-1.5 text-left">
-              <label className="text-xs font-bold text-text-secondary flex items-center gap-1">
-                <span>Khóa OCR.space API Key (Dự phòng):</span>
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-secondary/60 group-focus-within:text-primary">
-                  <span className="material-icons text-[16px]">cloud</span>
-                </div>
-                <input
-                  type={showSpaceKey ? "text" : "password"}
-                  placeholder="Nhập API Key dự phòng ocr.space"
-                  value={ocrSpaceApiKey}
-                  onChange={(e) => {
-                    setOcrSpaceApiKey(e.target.value);
-                    setIsSaved(false);
-                  }}
-                  disabled={isChecking}
-                  className="w-full h-10 pl-9 pr-10 bg-surface border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all font-medium text-text-primary placeholder-text-secondary/40 disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowSpaceKey(!showSpaceKey)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-secondary/60 hover:text-text-primary transition-colors"
-                  title={showSpaceKey ? "Ẩn Key" : "Hiện Key"}
-                >
-                  {showSpaceKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-            </div>
-
             {/* License Key Premium */}
-            <div className="md:col-span-6 flex flex-col gap-1.5 text-left">
+            <div className="md:col-span-12 flex flex-col gap-1.5 text-left">
               <label className="text-xs font-bold text-primary flex items-center gap-1">
                 <span>👑 Mã kích hoạt Premium:</span>
               </label>

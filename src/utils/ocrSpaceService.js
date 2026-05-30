@@ -5,7 +5,7 @@
  * @param {object} options - Các tùy chọn bổ sung (ví dụ: { language: 'vie' })
  * @returns {Promise<string>} Kết quả văn bản nhận diện được
  */
-export const ocrWithOcrSpace = async (fileOrBlob, apiKey, options = {}) => {
+export const ocrWithOcrSpace = async (fileOrBlob, options = {}) => {
   let lang = options.language || 'vie';
   // Không dùng language = "vi", "vi-VN", "vietnamese"
   if (lang === 'vi' || lang === 'vi-VN' || lang === 'vietnamese') {
@@ -17,9 +17,6 @@ export const ocrWithOcrSpace = async (fileOrBlob, apiKey, options = {}) => {
 
   const formData = new FormData();
   formData.append('file', fileOrBlob);
-  if (apiKey && apiKey.trim()) {
-    formData.append('apiKey', apiKey.trim());
-  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s client timeout
@@ -40,7 +37,7 @@ export const ocrWithOcrSpace = async (fileOrBlob, apiKey, options = {}) => {
         // ignore
       }
 
-      const errCode = errData.error || 'NETWORK';
+      const errCode = errData.errorCode || errData.error || 'NETWORK';
       const errMsg = errData.message || 'OCR dự phòng chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.';
 
       const err = new Error(errMsg);
