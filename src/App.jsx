@@ -133,24 +133,37 @@ function App() {
     }
   };
 
-  const handleFilesSelected = async (filesToImport) => {
+  const handleFilesSelected = (filesToImport) => {
     if (filesToImport.length === 0) return;
 
-    // 1. Thực hiện nén các ảnh trực tiếp nếu dung lượng > 1.5MB trước khi cho vào hàng đợi
-    const processedFiles = await Promise.all(
-      filesToImport.map(async (file) => {
-        try {
-          return await compressImageIfNeeded(file);
-        } catch (err) {
-          console.error("Lỗi khi nén ảnh nạp vào:", file.name, err);
-          return file; // Fallback
-        }
-      })
-    );
+    // Validate nhẹ trước khi đưa vào hàng đợi
+    const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    
+    const validatedFiles = filesToImport.filter(file => {
+      const type = file.type || '';
+      const name = (file.name || '').toLowerCase();
+      const isFormatValid = allowedTypes.some(t => type.toLowerCase().includes(t)) || 
+                            /\.(png|jpe?g|webp|pdf)$/i.test(name);
+      
+      if (!isFormatValid) {
+        alert(`Tệp "${file.name}" không được hỗ trợ. Chỉ hỗ trợ ảnh PNG, JPG, WEBP và PDF.`);
+        return false;
+      }
+      
+      if (file.size > MAX_SIZE) {
+        alert(`Tệp "${file.name}" quá lớn (tối đa 100MB). Vui lòng chọn tệp nhỏ hơn.`);
+        return false;
+      }
+      
+      return true;
+    });
 
-    const newItems = processedFiles.map(file => {
+    if (validatedFiles.length === 0) return;
+
+    const newItems = validatedFiles.map(file => {
       const id = Math.random().toString(36).substring(2, 9);
-      const isPdf = file.type === 'application/pdf';
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       return {
         id: id,
         name: file.name,
@@ -169,71 +182,62 @@ function App() {
       setActiveFileId(prev => prev || newItems[0].id);
     }
 
-    // Kích hoạt tách trang ngay cho các file PDF được chọn
-    for (const item of newItems) {
-      if (item.isParentPdf) {
-        (async () => {
-          try {
-            const pageImages = await splitPdfToImages(item.originalFile, (current, total) => {
+    // Thực hiện tách trang PDF bất đồng bộ ngoài call stack chính để tránh đơ giao diện
+    setTimeout(() => {
+      for (const item of newItems) {
+        if (item.isParentPdf) {
+          (async () => {
+            try {
+              const pageImages = await splitPdfToImages(item.originalFile, (current, total) => {
+                setFiles(prev => prev.map(f => f.id === item.id ? { 
+                  ...f, 
+                  progress: Math.round((current / total) * 100) 
+                } : f));
+              });
+
+              // Không nén song song ở đây. Việc nén sẽ được thực hiện tuần tự/on-the-fly trong processNext khi bắt đầu OCR
+              const pageItems = pageImages.map((imgFile, index) => {
+                return {
+                  id: Math.random().toString(36).substring(2, 9),
+                  name: imgFile.name,
+                  originalFile: imgFile,
+                  status: 'waiting',
+                  progress: 0,
+                  result: '',
+                  error: null,
+                  isPdfPage: true,
+                  parentPdfId: item.id,
+                  pageIndex: index
+                };
+              });
+
+              setFiles(prev => {
+                const parentIdx = prev.findIndex(f => f.id === item.id);
+                if (parentIdx === -1) return prev;
+
+                const updatedPrev = prev.map(f => f.id === item.id ? {
+                  ...f,
+                  status: 'waiting',
+                  progress: 0,
+                  totalPages: pageImages.length
+                } : f);
+
+                const newFiles = [...updatedPrev];
+                newFiles.splice(parentIdx + 1, 0, ...pageItems);
+                return newFiles;
+              });
+            } catch (err) {
+              console.error("Lỗi phân tách trang PDF:", err);
               setFiles(prev => prev.map(f => f.id === item.id ? { 
                 ...f, 
-                progress: Math.round((current / total) * 100) 
+                status: 'error', 
+                error: `Lỗi phân tách trang: ${err.message}` 
               } : f));
-            });
-
-            // 2. Thực hiện nén các trang ảnh PDF được tách ra nếu dung lượng > 1.5MB
-            const compressedPages = await Promise.all(
-              pageImages.map(async (pageImg) => {
-                try {
-                  return await compressImageIfNeeded(pageImg);
-                } catch (err) {
-                  console.error("Lỗi khi nén trang PDF:", pageImg.name, err);
-                  return pageImg; // Fallback
-                }
-              })
-            );
-
-            const pageItems = compressedPages.map((imgFile, index) => {
-              return {
-                id: Math.random().toString(36).substring(2, 9),
-                name: imgFile.name,
-                originalFile: imgFile,
-                status: 'waiting',
-                progress: 0,
-                result: '',
-                error: null,
-                isPdfPage: true,
-                parentPdfId: item.id,
-                pageIndex: index
-              };
-            });
-
-            setFiles(prev => {
-              const parentIdx = prev.findIndex(f => f.id === item.id);
-              if (parentIdx === -1) return prev;
-
-              const updatedPrev = prev.map(f => f.id === item.id ? {
-                ...f,
-                status: 'waiting',
-                progress: 0,
-                totalPages: pageImages.length
-              } : f);
-
-              const newFiles = [...updatedPrev];
-              newFiles.splice(parentIdx + 1, 0, ...pageItems);
-              return newFiles;
-            });
-          } catch (err) {
-            console.error("Lỗi phân tách trang PDF:", err);
-            setFiles(prev => prev.map(f => f.id === item.id ? { 
-              ...f, 
-              status: 'error', 
-              error: `Lỗi phân tách trang: ${err.message}` 
-            } : f));
-          }
-        })();
+            }
+          })();
+        }
       }
-    }
+    }, 50);
   };
 
   const handleRemoveFile = (id) => {
@@ -432,9 +436,16 @@ error message: ${finalErrorMsg || 'none'}`;
             let ocrStatus = "success";
             let processingTimeMs = 0;
 
+            let fileToOcr = fileToProcess.originalFile;
+            try {
+              fileToOcr = await compressImageIfNeeded(fileToOcr);
+            } catch (compressErr) {
+              console.error("Lỗi khi nén ảnh trước khi OCR:", compressErr);
+            }
+
             try {
               textResult = await processOCR(
-                fileToProcess.originalFile,
+                fileToOcr,
                 activeKey,
                 currentModel,
                 ocrOptions
@@ -470,7 +481,7 @@ error message: ${finalErrorMsg || 'none'}`;
                 const retryStartTime = Date.now();
                 try {
                   textResult = await processOCR(
-                    fileToProcess.originalFile,
+                    fileToOcr,
                     activeKey,
                     currentModel,
                     { ...ocrOptions, isRetry: true }
@@ -506,7 +517,7 @@ error message: ${finalErrorMsg || 'none'}`;
                     const spaceStartTime = Date.now();
                     try {
                       textResult = await ocrWithOcrSpace(
-                        fileToProcess.originalFile,
+                        fileToOcr,
                         { language: 'vie' }
                       );
                       usedEngine = "ocr-space";

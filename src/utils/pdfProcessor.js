@@ -73,6 +73,13 @@ export const splitPdfToImages = async (pdfFile, onProgress) => {
     // Tạo đối tượng File từ Blob vừa render
     const pageFile = new File([blob], `${baseName}_Trang_${i}.jpg`, { type: 'image/jpeg' });
     imageFiles.push(pageFile);
+
+    // Giải phóng bộ nhớ của canvas lập tức
+    canvas.width = 0;
+    canvas.height = 0;
+
+    // Yield cho giao diện render cập nhật
+    await new Promise((resolve) => setTimeout(resolve, 20));
   }
 
   return imageFiles;
