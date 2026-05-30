@@ -412,6 +412,7 @@ error message: ${finalErrorMsg || 'none'}`;
         return lines.join('\n');
       };
 
+
       while (!success && keysTriedForThisFile < keysArray.length && processingRef.current) {
         const activeKey = keysArray[currentKeyIndex];
         const keyLabel = `Gemini Key #${currentKeyIndex + 1}`;
@@ -485,12 +486,6 @@ error message: ${finalErrorMsg || 'none'}`;
                   console.error("Retry Gemini vẫn bị lỗi:", retryError);
                   if (retryError.finishReason === 'RECITATION' || retryError.message === 'RECITATION' || retryError.code === 'RECITATION' || !textResult) {
                     const spaceApiKey = config?.ocrSpaceApiKey || localStorage.getItem('ocr_space_api_key') || '';
-                    if (!spaceApiKey.trim()) {
-                      const configErr = new Error("Cấu hình thiếu: Vui lòng nhập API Key OCR.space trong phần Cấu hình để sử dụng OCR dự phòng.");
-                      configErr.code = "CONFIG_MISSING";
-                      logAttempt("ocr-space", "OCR.space Key", pageNum, false, "failed", "CONFIG_MISSING", configErr.message);
-                      throw configErr;
-                    }
 
                     console.warn(`Đang fallback trang ${fileToProcess.name} sang OCR.space...`);
                     setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
