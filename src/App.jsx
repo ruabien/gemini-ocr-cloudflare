@@ -491,6 +491,7 @@ function App() {
             if (
               error.message.includes("Không thể xử lý trang") || 
               error.message.includes("Cấu hình thiếu") || 
+              error.message.includes("Lỗi cấu hình") || 
               error.message.includes("OCR.space")
             ) {
               setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {

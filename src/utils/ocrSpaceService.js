@@ -10,10 +10,25 @@ export const ocrWithOcrSpace = async (fileOrBlob, apiKey, options = {}) => {
     throw new Error("Cấu hình thiếu: Vui lòng nhập API Key OCR.space trong phần Cấu hình.");
   }
 
+  let lang = options.language || 'vie';
+  // Không dùng language = "vi", "vi-VN", "vietnamese"
+  if (lang === 'vi' || lang === 'vi-VN' || lang === 'vietnamese') {
+    lang = 'vie';
+  }
+
+  // Log dev mode chỉ hiển thị language/engine đã dùng, không log API key hoặc nội dung tài liệu
+  console.log(`[OCR.space Dev Log] Kích hoạt Fallback OCR.space. Ngôn ngữ: ${lang}, OCREngine: ${lang === 'vie' ? '2' : '1'}`);
+
   const formData = new FormData();
   formData.append('apikey', apiKey);
-  formData.append('language', options.language || 'vie');
+  formData.append('language', lang);
   formData.append('isOverlayRequired', 'false');
+  
+  // Bắt buộc dùng OCREngine = 2 cho tiếng Việt
+  if (lang === 'vie') {
+    formData.append('OCREngine', '2');
+  }
+  
   formData.append('file', fileOrBlob);
 
   try {
@@ -24,7 +39,7 @@ export const ocrWithOcrSpace = async (fileOrBlob, apiKey, options = {}) => {
 
     if (!response.ok) {
       if (response.status === 403) {
-        throw new Error("API Key OCR.space không hợp lệ hoặc đã hết hạn.");
+        throw new Error("Lỗi cấu hình: API Key OCR.space không hợp lệ (HTTP 403).");
       }
       if (response.status === 413) {
         throw new Error("Kích thước tệp tin quá lớn so với giới hạn xử lý của OCR.space (tối đa 1MB với key miễn phí).");
@@ -34,7 +49,7 @@ export const ocrWithOcrSpace = async (fileOrBlob, apiKey, options = {}) => {
 
     const data = await response.json();
 
-    if (data.IsErroredOnProcessing) {
+    if (data.IsErroredOnProcessing || data.OCRExitCode === 99 || (data.ErrorMessage && String(data.ErrorMessage).includes("E201"))) {
       const errMsgs = Array.isArray(data.ErrorMessage) 
         ? data.ErrorMessage.join(', ') 
         : (data.ErrorMessage || "Lỗi xử lý hình ảnh.");
@@ -44,6 +59,15 @@ export const ocrWithOcrSpace = async (fileOrBlob, apiKey, options = {}) => {
         : (data.ErrorDetails || "");
 
       const fullError = `${errMsgs} ${errDetails}`.trim();
+
+      // Nếu OCR.space trả E201 (sai API Key), báo lỗi cấu hình lập tức
+      if (
+        fullError.includes("E201") || 
+        fullError.toLowerCase().includes("apikey is invalid") ||
+        fullError.toLowerCase().includes("api key is invalid")
+      ) {
+        throw new Error("Lỗi cấu hình: API Key OCR.space không hợp lệ hoặc không tìm thấy (E201). Vui lòng cấu hình lại.");
+      }
 
       if (
         fullError.toLowerCase().includes("limit") || 
