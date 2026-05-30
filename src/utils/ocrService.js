@@ -21,34 +21,42 @@ const fileToBase64 = (file) => {
  * @returns {Promise<string>} Kết quả văn bản thô
  */
 export const processPageWithOcrSpace = async (file) => {
-  // Chuyển đổi file sang chuỗi Data URL Base64
-  const base64Data = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-
-  console.log("Đang gửi yêu cầu JSON Base64 đến API fallback của Cloudflare (/api/ocr-fallback)...");
-  const response = await fetch('/api/ocr-fallback', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: base64Data })
-  });
-
-  if (!response.ok) {
-    let errorMsg = `HTTP ${response.status}`;
-    try {
-      const errData = await response.json();
-      errorMsg = errData.error || errorMsg;
-    } catch {
-      // ignore
-    }
-    throw new Error(`Lỗi fallback OCR: ${errorMsg}`);
+  // 1. Lấy Key ngầm từ Server
+  console.log("Đang lấy API Key OCR.space bảo mật từ Cloudflare Pages...");
+  const keyRes = await fetch('/api/ocr-key');
+  if (!keyRes.ok) {
+    throw new Error(`Không thể lấy API Key từ server: HTTP ${keyRes.status}`);
+  }
+  const { apiKey } = await keyRes.json();
+  if (!apiKey) {
+    throw new Error("Không tìm thấy OCR_SPACE_API_KEY trên môi trường server Cloudflare.");
   }
 
-  const data = await response.json();
+  // 2. Đóng gói FormData trực tiếp từ trình duyệt (Đảm bảo thứ tự tham số: cấu hình trước, file nặng sau cùng)
+  const formData = new FormData();
+  formData.append('language', 'vie');
+  formData.append('isTable', 'true');
+  formData.append('scale', 'true');
+  formData.append('isOverlayRequired', 'false');
+  formData.append('OCREngine', '2'); // Bắt buộc dùng Engine 2 để hỗ trợ tiếng Việt
+  formData.append('file', file);      // Sử dụng file nhị phân gốc cực nhẹ
+
+  console.log("Đang gửi yêu cầu trực tiếp từ trình duyệt đến OCR.space API...");
   
+  // 3. Bắn thẳng sang Server OCR.space từ trình duyệt
+  const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
+    method: 'POST',
+    headers: {
+      'apikey': apiKey
+    },
+    body: formData
+  });
+
+  if (!ocrResponse.ok) {
+    throw new Error(`OCR.space API trả về lỗi: HTTP ${ocrResponse.status}`);
+  }
+
+  const data = await ocrResponse.json();
   if (data.IsErroredOnProcessing) {
     const errorDetails = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Lỗi xử lý không xác định';
     throw new Error(`OCR.space Error: ${errorDetails}`);
