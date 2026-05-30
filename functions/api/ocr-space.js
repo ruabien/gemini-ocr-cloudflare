@@ -46,7 +46,7 @@ export async function onRequestPost(context) {
         JSON.stringify({ 
           success: false,
           errorCode: 'OCR_SPACE_NOT_CONFIGURED', 
-          message: 'OCR dự phòng chưa được cấu hình.' 
+          message: 'OCR.space chưa được cấu hình.' 
         }), 
         {
           status: 400,
@@ -145,7 +145,7 @@ export async function onRequestPost(context) {
         return new Response(
           JSON.stringify({ 
             error: 'TIMEOUT', 
-            message: 'OCR dự phòng quá thời gian phản hồi.' 
+            message: 'OCR.space quá thời gian phản hồi.' 
           }), 
           {
             status: 504,
@@ -156,7 +156,7 @@ export async function onRequestPost(context) {
       return new Response(
         JSON.stringify({ 
           error: 'NETWORK', 
-          message: 'OCR dự phòng chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.' 
+          message: 'OCR.space chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.' 
         }), 
         {
           status: 502,
@@ -167,7 +167,7 @@ export async function onRequestPost(context) {
 
     if (!response.ok) {
       let code = 'NETWORK';
-      let message = 'OCR dự phòng chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.';
+      let message = 'OCR.space chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.';
       if (response.status === 403) {
         code = 'INVALID_API_KEY';
         message = 'Lỗi cấu hình: API Key OCR.space không hợp lệ (HTTP 403).';
@@ -287,7 +287,7 @@ export async function onRequestPost(context) {
     return new Response(
       JSON.stringify({ 
         error: 'NETWORK', 
-        message: 'OCR dự phòng chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.' 
+        message: 'OCR.space chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.' 
       }), 
       {
         status: 500,

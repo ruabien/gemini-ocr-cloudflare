@@ -36,7 +36,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
       case 'completed': {
         const isFallback = file.metadata?.status === 'fallback';
         return { 
-          label: isFallback ? 'Hoàn thành (Dự phòng)' : 'Hoàn thành', 
+          label: 'Hoàn thành', 
           icon: <CheckCircle2 size={16} className={isFallback ? "text-secondary" : "text-success"} />, 
           color: isFallback ? 'text-secondary' : 'text-success', 
           bar: isFallback ? 'bg-secondary' : 'bg-success', 

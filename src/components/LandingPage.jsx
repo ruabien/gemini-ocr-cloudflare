@@ -697,7 +697,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Hỗ trợ dự phòng OCR.space (Bên thứ ba):</strong> OCR.space là dịch vụ OCR dự phòng do hệ thống cấu hình. Người dùng không cần nhập OCR.space API key. Chỉ trang bị lỗi khi Gemini không xử lý được mới được gửi sang OCR.space. Tuyệt đối không xử lý tài liệu mật, tối mật, tuyệt mật hoặc hồ sơ chưa được phép.</span>
+                    <span><strong>Hỗ trợ OCR.space (Bên thứ ba):</strong> OCR.space là dịch vụ OCR do hệ thống cấu hình. Người dùng không cần nhập OCR.space API key. Chỉ trang bị lỗi khi Gemini không xử lý được mới được gửi sang OCR.space. Tuyệt đối không xử lý tài liệu mật, tối mật, tuyệt mật hoặc hồ sơ chưa được phép.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 shrink-0 mt-0.5">•</span>

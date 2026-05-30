@@ -38,7 +38,7 @@ export const ocrWithOcrSpace = async (fileOrBlob, options = {}) => {
       }
 
       const errCode = errData.errorCode || errData.error || 'NETWORK';
-      const errMsg = errData.message || 'OCR dự phòng chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.';
+      const errMsg = errData.message || 'OCR.space chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.';
 
       const err = new Error(errMsg);
       err.code = errCode;
@@ -57,7 +57,7 @@ export const ocrWithOcrSpace = async (fileOrBlob, options = {}) => {
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      const err = new Error("OCR dự phòng quá thời gian phản hồi.");
+      const err = new Error("OCR.space quá thời gian phản hồi.");
       err.code = "TIMEOUT";
       throw err;
     }
@@ -65,7 +65,7 @@ export const ocrWithOcrSpace = async (fileOrBlob, options = {}) => {
       throw error;
     }
     // Lỗi mạng hoặc CORS không kết nối được
-    const err = new Error("OCR dự phòng chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.");
+    const err = new Error("OCR.space chưa kết nối được qua máy chủ. Vui lòng kiểm tra cấu hình OCR.space hoặc thử lại.");
     err.code = "NETWORK";
     throw err;
   }
