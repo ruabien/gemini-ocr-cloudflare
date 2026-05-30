@@ -38,26 +38,37 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Loại bỏ tiền tố Data URI (ví dụ: "data:image/jpeg;base64," hoặc "data:application/pdf;base64,")
+    // 1. Tách bỏ tiền tố định dạng để lấy chuỗi Base64 thô (hỗ trợ cả jpeg, png, pdf, v.v.)
     const cleanBase64 = image.replace(/^data:[^;]+;base64,/, "");
 
-    // Cấu hình các tham số bắt buộc hoàn toàn bằng Chuỗi (String) và mã hóa URL thủ công an toàn
-    const bodyPayload = [
-      `base64Image=${encodeURIComponent(cleanBase64)}`,
-      `language=${encodeURIComponent('vie')}`,
-      `isTable=${encodeURIComponent('true')}`,
-      `isOverlayRequired=${encodeURIComponent('false')}`,
-      `scale=${encodeURIComponent('true')}`,
-      `OCREngine=${encodeURIComponent('2')}`
-    ].join('&');
+    // 2. Chuyển đổi chuỗi Base64 thô thành dữ liệu nhị phân (Binary Data) bằng cách ép kiểu sang Uint8Array
+    const binaryString = atob(cleanBase64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
 
+    // Tạo một đối tượng Blob nhị phân chuẩn file ảnh jpeg
+    const imageBlob = new Blob([bytes], { type: 'image/jpeg' });
+
+    // 3. Đóng gói vào FormData chuẩn từ Server-side
+    const formData = new FormData();
+    formData.append('file', imageBlob, 'screenshot.jpg'); // Đưa file nhị phân vào
+    formData.append('language', 'vie');                    // Chuỗi tham số chuẩn
+    formData.append('isTable', 'true');                    // Giữ cấu trúc bảng biểu
+    formData.append('isOverlayRequired', 'false');         // Không lấy dữ liệu đè lên
+    formData.append('scale', 'true');                      // Làm nét ảnh nâng cao
+    formData.append('OCREngine', '2');                     // Bắt buộc để nhận diện tiếng Việt
+
+    // 4. Gửi request dạng multipart/form-data sang OCR.space
+    // Tuyệt đối KHÔNG tự đặt Content-Type trong headers, hãy để tự động sinh boundary
     const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
       method: 'POST',
       headers: {
-        'apikey': ocrSpaceKey,
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'apikey': ocrSpaceKey
       },
-      body: bodyPayload
+      body: formData
     });
 
     if (!ocrResponse.ok) {
