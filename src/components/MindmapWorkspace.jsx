@@ -21,9 +21,9 @@ const nodeTypes = {
 };
 
 export default function MindmapWorkspace({ ocrText, config, onClose }) {
-  const [selectedTemplate, setSelectedTemplate] = useState('hinh_su');
-  const [diagramType, setDiagramType] = useState('tong_the');
-  const [diagramFormat, setDiagramFormat] = useState('hình luồng');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [diagramType, setDiagramType] = useState('');
+  const [diagramFormat, setDiagramFormat] = useState('');
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -38,8 +38,13 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
   // Quản lý nguồn đầu vào của Sơ đồ tư duy
   const [showSourceModal, setShowSourceModal] = useState(true);
   const [inputText, setInputText] = useState('');
+  const [sourceName, setSourceName] = useState('');
   const [pasteText, setPasteText] = useState('');
   const fileInputRef = useRef(null);
+
+  // Trạng thái của máy trạng thái phân tích
+  const [status, setStatus] = useState('idle'); // 'idle' | 'source_selected' | 'config_ready' | 'generating' | 'generated' | 'error'
+  const [generatedConfig, setGeneratedConfig] = useState({ template: '', type: '', format: '' });
 
   // Bảng màu cho phép đổi màu sắc nhánh
   const colorsList = [
@@ -65,14 +70,27 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
   const handleGenerateMindmap = async (templateKey = selectedTemplate, type = diagramType, format = diagramFormat, textToUse = inputText) => {
     if (apiKeysPool.length === 0) {
       setGenerationError("Chưa cấu hình Gemini API Key. Vui lòng vào Cấu hình API để thêm key trước khi tạo sơ đồ.");
+      setStatus('error');
       return;
     }
     if (!textToUse || !textToUse.trim()) {
       setGenerationError("Không có dữ liệu văn bản để phân tích sơ đồ.");
+      setStatus('error');
+      return;
+    }
+    if (!templateKey || !type || !format) {
+      setGenerationError("Cấu hình sơ đồ tư duy không hợp lệ (thiếu mẫu vụ án, loại sơ đồ, hoặc hình thức).");
+      setStatus('error');
+      return;
+    }
+    if (textToUse.trim().length < 50) {
+      setGenerationError("Văn bản nguồn quá ngắn (tối thiểu 50 ký tự) để tạo sơ đồ.");
+      setStatus('error');
       return;
     }
 
     setIsGenerating(true);
+    setStatus('generating');
     setGenerationError(null);
     setSelectedNode(null);
 
@@ -85,6 +103,8 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
       const { nodes: flowNodes, edges: flowEdges } = convertJsonToFlow(parsedData, orientation);
       setNodes(flowNodes);
       setEdges(flowEdges);
+      setGeneratedConfig({ template: templateKey, type: type, format: format });
+      setStatus('generated');
     } catch (error) {
       console.error("Lỗi sinh sơ đồ:", error);
       
@@ -102,22 +122,61 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
       }
       
       setGenerationError(displayError);
+      setStatus('error');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Mở màn hình chọn nguồn dữ liệu ngay khi Workspace được mount
+  // Mở màn hình chọn nguồn dữ liệu ngay khi Workspace được mount hoặc nạp ocrText ban đầu
   useEffect(() => {
-    setShowSourceModal(true);
-  }, []);
+    if (ocrText && ocrText.trim()) {
+      if (ocrText.trim().length >= 50) {
+        setInputText(ocrText);
+        setSourceName("Kết quả OCR hiện tại");
+        setStatus('source_selected');
+        setShowSourceModal(false);
+      } else {
+        setShowSourceModal(true);
+        setStatus('idle');
+      }
+    } else {
+      setShowSourceModal(true);
+      setStatus('idle');
+    }
+  }, [ocrText]);
+
+  // Tự động chuyển đổi giữa source_selected và config_ready
+  useEffect(() => {
+    if (status === 'source_selected' || status === 'config_ready' || status === 'idle') {
+      const isConfigValid = 
+        inputText && 
+        inputText.trim().length >= 50 && 
+        selectedTemplate && 
+        selectedTemplate !== '' &&
+        diagramType && 
+        diagramType !== '' &&
+        diagramFormat && 
+        diagramFormat !== '';
+      
+      if (isConfigValid) {
+        if (status !== 'config_ready') setStatus('config_ready');
+      } else {
+        if (inputText && inputText.trim().length >= 50) {
+          if (status !== 'source_selected') setStatus('source_selected');
+        } else {
+          if (status !== 'idle') setStatus('idle');
+        }
+      }
+    }
+  }, [inputText, selectedTemplate, diagramType, diagramFormat, status]);
 
   // Xử lý Hủy/Đóng hộp thoại chọn nguồn
   const handleCancelSourceSelection = () => {
-    if (nodes.length === 0) {
-      onClose(); // Nếu chưa dựng sơ đồ thì đóng hẳn workspace
+    if (nodes.length === 0 && status !== 'source_selected' && status !== 'config_ready') {
+      onClose(); // Nếu chưa dựng sơ đồ và chưa nạp dữ liệu thì đóng hẳn workspace
     } else {
-      setShowSourceModal(false); // Nếu đã có sơ đồ, chỉ đóng popup chọn nguồn
+      setShowSourceModal(false); // Chỉ đóng popup chọn nguồn
     }
   };
 
@@ -139,9 +198,15 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
         alert("⚠️ Tệp tin văn bản trống. Vui lòng chọn tệp có nội dung.");
         return;
       }
+      if (text.trim().length < 50) {
+        alert("⚠️ Tệp văn bản quá ngắn (dưới 50 ký tự) để tạo sơ đồ. Vui lòng chọn tệp khác.");
+        return;
+      }
       setInputText(text);
+      setSourceName(`Tệp văn bản: ${file.name}`);
       setShowSourceModal(false);
-      handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, text);
+      setStatus('source_selected'); // Chuyển sang chọn cấu hình, không gọi AI ngay
+      alert("Đã nạp nội dung. Vui lòng chọn mẫu vụ án và loại sơ đồ trước khi tạo.");
     };
     reader.onerror = () => {
       alert("⚠️ Đọc tệp tin thất bại. Vui lòng thử lại.");
@@ -156,8 +221,10 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
       return;
     }
     setInputText(pasteText);
+    setSourceName("Nội dung dán trực tiếp");
     setShowSourceModal(false);
-    handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, pasteText);
+    setStatus('source_selected'); // Chuyển sang chọn cấu hình, không gọi AI ngay
+    alert("Đã nạp nội dung. Vui lòng chọn mẫu vụ án và loại sơ đồ trước khi tạo.");
   };
 
   // Xử lý sự kiện click vào Node
@@ -578,6 +645,12 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     }
   };
 
+  const isConfigModified = status === 'generated' && (
+    selectedTemplate !== generatedConfig.template ||
+    diagramType !== generatedConfig.type ||
+    diagramFormat !== generatedConfig.format
+  );
+
   const handleExportPNG = async () => {
     if (reactFlowWrapper.current) {
       try {
@@ -625,347 +698,496 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
                 <span className="text-[8px] bg-primary text-white font-extrabold px-1.5 py-0.5 rounded-sm normal-case tracking-normal">PREMIUM</span>
               </h2>
               <p className="text-[10px] text-slate-400 font-medium truncate max-w-[400px]">
-                {nodes.find(n => n.id === 'root')?.data?.label || 'Đang phân tích vụ án...'}
+                {status === 'idle' ? 'Chưa chọn dữ liệu nguồn' : 
+                 (status === 'source_selected' || status === 'config_ready') ? 'Đang thiết lập cấu hình sơ đồ vụ án' :
+                 status === 'generating' ? 'AI đang phân tích và tạo sơ đồ...' :
+                 nodes.find(n => n.id === 'root')?.data?.label || 'Sơ đồ tư duy vụ án'}
               </p>
             </div>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
-          {/* Template chọn loại án */}
-          <div className="flex flex-col text-left gap-0.5">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mẫu Vụ án</span>
-            <select
-              value={selectedTemplate}
-              disabled={isGenerating}
-              onChange={(e) => {
-                setSelectedTemplate(e.target.value);
-                handleGenerateMindmap(e.target.value, diagramType, diagramFormat);
-              }}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold"
-            >
-              <option value="hinh_su">Hình sự</option>
-              <option value="dan_su">Dân sự</option>
-              <option value="hanh_chinh">Hành chính</option>
-              <option value="hon_nhan">Hôn nhân & Gia đình</option>
-            </select>
-          </div>
+        {status === 'generated' && (
+          <div className="flex items-center gap-3">
+            {/* Template chọn loại án */}
+            <div className="flex flex-col text-left gap-0.5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mẫu Vụ án</span>
+              <select
+                value={selectedTemplate}
+                disabled={isGenerating}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold"
+              >
+                <option value="hinh_su">Hình sự</option>
+                <option value="dan_su">Dân sự</option>
+                <option value="hanh_chinh">Hành chính</option>
+                <option value="hon_nhan">Hôn nhân & Gia đình</option>
+                <option value="thi_hanh_an">Thi hành án</option>
+                <option value="tuy_chinh">Tùy chỉnh</option>
+              </select>
+            </div>
 
-          {/* Chọn Loại sơ đồ HD10 */}
-          <div className="flex flex-col text-left gap-0.5">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Loại sơ đồ (HD10)</span>
-            <select
-              value={diagramType}
-              disabled={isGenerating}
-              onChange={(e) => {
-                setDiagramType(e.target.value);
-                handleGenerateMindmap(selectedTemplate, e.target.value, diagramFormat);
-              }}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold max-w-[200px]"
-            >
-              <option value="tong_the">Sơ đồ tổng thể vụ án</option>
-              <option value="dien_bien">Sơ đồ diễn biến hành vi</option>
-              <option value="danh_gia_chung_cu">Sơ đồ đánh giá chứng cứ</option>
-              <option value="bi_can_hanh_vi">Sơ đồ bị can/bị cáo và hành vi</option>
-              <option value="buoc_toi_go_toi">Sơ đồ buộc tội - gỡ tội</option>
-              <option value="yeu_cau_dieu_tra">Sơ đồ yêu cầu điều tra bổ sung</option>
-              <option value="doi_chieu_chung_cu">Bảng đối chiếu lời khai/chứng cứ</option>
-            </select>
-          </div>
+            {/* Chọn Loại sơ đồ HD10 */}
+            <div className="flex flex-col text-left gap-0.5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Loại sơ đồ (HD10)</span>
+              <select
+                value={diagramType}
+                disabled={isGenerating}
+                onChange={(e) => setDiagramType(e.target.value)}
+                className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold max-w-[200px]"
+              >
+                <option value="tong_the">Sơ đồ tổng thể vụ án</option>
+                <option value="dien_bien">Sơ đồ diễn biến hành vi</option>
+                <option value="danh_gia_chung_cu">Sơ đồ đánh giá chứng cứ</option>
+                <option value="bi_can_hanh_vi">Sơ đồ bị can/bị cáo và hành vi</option>
+                <option value="buoc_toi_go_toi">Sơ đồ buộc tội - gỡ tội</option>
+                <option value="yeu_cau_dieu_tra">Sơ đồ yêu cầu điều tra bổ sung</option>
+                <option value="doi_chieu_chung_cu">Bảng đối chiếu lời khai/chứng cứ</option>
+              </select>
+            </div>
 
-          {/* Chọn Hình thức */}
-          <div className="flex flex-col text-left gap-0.5">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Hình thức</span>
-            <select
-              value={diagramFormat}
-              disabled={isGenerating}
-              onChange={(e) => {
-                setDiagramFormat(e.target.value);
-                // Với thay đổi hướng xoay, ta tự động re-layout mà không cần gọi lại AI
-                setTimeout(() => {
-                  handleAlignLayout();
-                }, 50);
-              }}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold"
-            >
-              <option value="hình luồng">Hình luồng (Ngang)</option>
-              <option value="đa luồng">Đa luồng (Dọc)</option>
-              <option value="hình cây">Hình cây (Dọc)</option>
-              <option value="ngang/dọc">Ngang/dọc/quy trình</option>
-              <option value="bảng biểu">Bảng biểu (Ngang)</option>
-            </select>
-          </div>
+            {/* Chọn Hình thức */}
+            <div className="flex flex-col text-left gap-0.5">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Hình thức</span>
+              <select
+                value={diagramFormat}
+                disabled={isGenerating}
+                onChange={(e) => setDiagramFormat(e.target.value)}
+                className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold"
+              >
+                <option value="hình cây">Hình cây</option>
+                <option value="hình luồng">Luồng</option>
+                <option value="đa luồng">Đa luồng</option>
+                <option value="ngang/dọc">Ngang/dọc/quy trình</option>
+                <option value="bảng biểu">Bảng biểu</option>
+              </select>
+            </div>
 
-          {/* Quick Layout Re-alignment */}
-          <button
-            onClick={handleAlignLayout}
-            disabled={isGenerating || nodes.length === 0}
-            className="flex items-center justify-center gap-1 h-9 px-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed mt-3.5"
-            title="Tự động xếp thẳng hàng các node theo hình thức đã chọn"
-          >
-            <Layout size={12} />
-            <span>Sắp xếp</span>
-          </button>
+            {/* Nút Tạo lại sơ đồ (chỉ hiển thị khi cấu hình thay đổi sau khi đã dựng sơ đồ thành công) */}
+            {isConfigModified && (
+              <button
+                onClick={() => handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, inputText)}
+                disabled={isGenerating}
+                className="flex items-center gap-1.5 h-9 px-3.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md animate-pulse active:scale-95 mt-3.5"
+                title="Cấu hình đã thay đổi. Click để tạo lại sơ đồ theo cấu hình mới."
+              >
+                <span className="material-icons text-[14px]">refresh</span>
+                <span>Tạo lại sơ đồ</span>
+              </button>
+            )}
 
-          <button
-            onClick={() => setShowSourceModal(true)}
-            disabled={isGenerating}
-            className="flex items-center justify-center gap-1.5 h-9 px-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-40 mt-3.5"
-            title="Thay đổi nguồn dữ liệu phân tích (OCR, Tải tệp, Dán văn bản)"
-          >
-            <span className="material-icons text-[14px]">swap_horiz</span>
-            <span>Đổi nguồn</span>
-          </button>
-
-          <div className="h-6 w-[1px] bg-slate-800 mx-1 mt-3.5"></div>
-
-          {/* Export options */}
-          <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1 mt-3.5">
+            {/* Quick Layout Re-alignment */}
             <button
-              onClick={handleExportPNG}
+              onClick={handleAlignLayout}
               disabled={isGenerating || nodes.length === 0}
-              className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40"
-              title="Xuất sơ đồ ra file ảnh PNG"
+              className="flex items-center justify-center gap-1 h-9 px-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed mt-3.5"
+              title="Tự động xếp thẳng hàng các node theo hình thức đã chọn"
             >
-              <span>PNG</span>
+              <Layout size={12} />
+              <span>Sắp xếp</span>
             </button>
+
             <button
-              onClick={handleExportPDF}
-              disabled={isGenerating || nodes.length === 0}
-              className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40"
-              title="Xuất sơ đồ ra bản vẽ PDF"
+              onClick={() => setShowSourceModal(true)}
+              disabled={isGenerating}
+              className="flex items-center justify-center gap-1.5 h-9 px-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-40 mt-3.5"
+              title="Thay đổi nguồn dữ liệu phân tích (OCR, Tải tệp, Dán văn bản)"
             >
-              <span>PDF</span>
+              <span className="material-icons text-[14px]">swap_horiz</span>
+              <span>Đổi nguồn</span>
             </button>
-            <button
-              onClick={handleExportPPTX}
-              disabled={isGenerating || nodes.length === 0}
-              className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold bg-primary hover:bg-primary-hover text-white rounded-lg transition-all cursor-pointer disabled:opacity-40"
-              title="Xuất sơ đồ ra 4 Slide PowerPoint trình chiếu HD10"
-            >
-              <span>PPTX</span>
-            </button>
+
+            <div className="h-6 w-[1px] bg-slate-800 mx-1 mt-3.5"></div>
+
+            {/* Export options */}
+            <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1 mt-3.5">
+              <button
+                onClick={handleExportPNG}
+                disabled={isGenerating || nodes.length === 0}
+                className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40"
+                title="Xuất sơ đồ ra file ảnh PNG"
+              >
+                <span>PNG</span>
+              </button>
+              <button
+                onClick={handleExportPDF}
+                disabled={isGenerating || nodes.length === 0}
+                className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40"
+                title="Xuất sơ đồ ra bản vẽ PDF"
+              >
+                <span>PDF</span>
+              </button>
+              <button
+                onClick={handleExportPPTX}
+                disabled={isGenerating || nodes.length === 0}
+                className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold bg-primary hover:bg-primary-hover text-white rounded-lg transition-all cursor-pointer disabled:opacity-40"
+                title="Xuất sơ đồ ra 4 Slide PowerPoint trình chiếu HD10"
+              >
+                <span>PPTX</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Workspace Frame */}
       <div className="flex-1 flex min-h-0 bg-slate-950 relative">
-        {/* React Flow Board Container */}
-        <div ref={reactFlowWrapper} className="flex-1 h-full relative">
-          {nodes.length > 0 && !isGenerating ? (
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              nodeTypes={nodeTypes}
-              onNodeClick={onNodeClick}
-              onPaneClick={onPaneClick}
-              fitView
-              minZoom={0.05}
-              maxZoom={2.0}
-            >
-              <Controls className="bg-slate-800 border border-slate-700 text-white rounded-xl shadow-md [&_button]:border-slate-700 [&_button]:bg-slate-800 hover:[&_button]:bg-slate-700" />
-              <Background color="#334155" gap={24} size={1} />
+        {(status === 'source_selected' || status === 'config_ready') ? (
+          /* Dashboard cấu hình trước khi tạo sơ đồ */
+          <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-950 overflow-y-auto">
+            <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col gap-6 font-sans text-white">
               
-              {/* Banner cảnh báo nghiệp vụ theo quy chuẩn HD10 */}
-              <Panel position="bottom-center" className="bg-slate-900/90 text-slate-400 border border-slate-800 rounded-xl px-5 py-2.5 max-w-[900px] text-center backdrop-blur-xs select-none shadow-xl mb-4">
-                <p className="text-[10px] leading-relaxed">
-                  ⚠️ <strong>Khuyến cáo nghiệp vụ:</strong> Sơ đồ do AI tạo chỉ là bản nháp hỗ trợ nghiên cứu hồ sơ. Người dùng phải tự kiểm tra, chỉnh sửa và chịu trách nhiệm về nội dung trước khi sử dụng báo cáo án hoặc trình chiếu. Công cụ chỉ mang tính sơ đồ hóa thông tin, không thay thế báo cáo đề xuất hay cáo trạng.
-                </p>
-              </Panel>
-            </ReactFlow>
-          ) : null}
-
-          {/* Loading Indicator */}
-          {isGenerating && (
-            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm">
-              <div className="flex flex-col items-center text-center max-w-sm px-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-6 animate-pulse scale-110">
-                  <Scale size={32} className="animate-bounce" />
-                </div>
-                <h4 className="font-extrabold text-lg text-white mb-2 tracking-wide uppercase">AI đang phân tích nghiệp vụ</h4>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                  Đang lập sơ đồ phân tầng (Cấp 1-2-3) theo đúng Hướng dẫn 10/HD-VKSTC, phân bổ các nhóm bị can, chứng cứ và câu hỏi làm rõ...
-                </p>
-                <div className="w-48 bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-primary h-full rounded-full w-2/3 animate-[scan_2s_infinite_ease-in-out]"></div>
+              {/* Step Header */}
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0">1</div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-slate-200">Cấu hình & Tạo sơ đồ tư duy</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">Nạp dữ liệu nguồn thành công. Vui lòng thiết lập thông số để tạo sơ đồ tư duy nghiệp vụ.</p>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Error Message Display */}
-          {generationError && !isGenerating && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md text-left text-slate-300 mx-4">
-                <div className="flex items-center gap-2 mb-3 text-red-500 font-bold">
-                  <span className="material-icons text-[20px]">warning</span>
-                  <h4 className="text-sm">Lỗi Khởi Tạo Sơ Đồ</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                {/* Cấu hình */}
+                <div className="space-y-4">
+                  <h4 className="font-bold text-[10px] uppercase tracking-wider text-slate-400">Tham số cấu hình</h4>
+                  
+                  {/* Mẫu Vụ án */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-300 font-bold">Mẫu Vụ án / Nghiệp vụ:</label>
+                    <select
+                      value={selectedTemplate}
+                      onChange={(e) => setSelectedTemplate(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-white font-semibold outline-none cursor-pointer"
+                    >
+                      <option value="" disabled>-- Chọn mẫu vụ án --</option>
+                      <option value="hinh_su">Hình sự</option>
+                      <option value="dan_su">Dân sự</option>
+                      <option value="hanh_chinh">Hành chính</option>
+                      <option value="hon_nhan">Hôn nhân & Gia đình</option>
+                      <option value="thi_hanh_an">Thi hành án</option>
+                      <option value="tuy_chinh">Tùy chỉnh</option>
+                    </select>
+                  </div>
+
+                  {/* Loại sơ đồ */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-300 font-bold">Loại Sơ đồ (Theo Hướng dẫn 10):</label>
+                    <select
+                      value={diagramType}
+                      onChange={(e) => setDiagramType(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-white font-semibold outline-none cursor-pointer"
+                    >
+                      <option value="" disabled>-- Chọn loại sơ đồ --</option>
+                      <option value="tong_the">Sơ đồ tổng thể vụ án</option>
+                      <option value="dien_bien">Sơ đồ diễn biến hành vi</option>
+                      <option value="danh_gia_chung_cu">Sơ đồ đánh giá chứng cứ</option>
+                      <option value="bi_can_hanh_vi">Sơ đồ bị can/bị cáo và hành vi</option>
+                      <option value="buoc_toi_go_toi">Sơ đồ buộc tội - gỡ tội</option>
+                      <option value="yeu_cau_dieu_tra">Sơ đồ yêu cầu điều tra bổ sung</option>
+                      <option value="doi_chieu_chung_cu">Bảng đối chiếu lời khai/chứng cứ</option>
+                    </select>
+                  </div>
+
+                  {/* Hình thức */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-300 font-bold">Hình thức hiển thị:</label>
+                    <select
+                      value={diagramFormat}
+                      onChange={(e) => setDiagramFormat(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-white font-semibold outline-none cursor-pointer"
+                    >
+                      <option value="" disabled>-- Chọn hình thức --</option>
+                      <option value="hình cây">Hình cây</option>
+                      <option value="hình luồng">Luồng</option>
+                      <option value="đa luồng">Đa luồng</option>
+                      <option value="ngang/dọc">Ngang/dọc/quy trình</option>
+                      <option value="bảng biểu">Bảng biểu</option>
+                    </select>
+                  </div>
                 </div>
-                <p className="text-xs leading-relaxed text-slate-400 mb-4 whitespace-pre-wrap bg-slate-950 p-4 rounded-xl font-mono border border-slate-800">
-                  {generationError}
-                </p>
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => handleGenerateMindmap()}
-                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <RefreshCw size={12} />
-                    <span>Thử lại lần nữa</span>
-                  </button>
-                  <button
-                    onClick={onClose}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
-                  >
-                    Đóng
-                  </button>
+
+                {/* Preview */}
+                <div className="space-y-4 flex flex-col">
+                  <div className="flex flex-col gap-1 text-[11px] shrink-0 text-slate-400">
+                    <div>
+                      <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Nguồn dữ liệu:</span>{' '}
+                      <span className="text-slate-200 font-semibold">{sourceName || 'Chưa xác định'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Dung lượng:</span>{' '}
+                      <span className="text-slate-200 font-semibold">{inputText ? inputText.length.toLocaleString() : 0} ký tự</span>
+                    </div>
+                  </div>
+
+                  <h4 className="font-bold text-[10px] uppercase tracking-wider text-slate-400 shrink-0">
+                    Xem trước nội dung (500 - 1000 ký tự đầu):
+                  </h4>
+
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex-1 min-h-[180px] max-h-[220px] overflow-y-auto text-[11px] text-slate-400 leading-relaxed whitespace-pre-wrap select-text">
+                    {inputText ? inputText.substring(0, 1000) : ''}
+                    {inputText && inputText.length > 1000 && <span className="text-primary font-bold">... [Còn tiếp {inputText.length - 1000} ký tự]</span>}
+                  </div>
+
+                  {(!inputText || inputText.trim().length < 50) && (
+                    <div className="bg-amber-950/20 border border-amber-900/50 rounded-xl p-3 text-[10px] text-amber-500 leading-normal flex items-start gap-1.5 shrink-0">
+                      <span className="material-icons text-[14px]">warning</span>
+                      <span>Cảnh báo: Nội dung văn bản quá ngắn. Hãy bổ sung tối thiểu 50 ký tự để AI phân tích tốt nhất.</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Sidebar Panel for Node Editing (Glassmorphic Slide-in) */}
-        <div className={`w-80 h-full border-l border-slate-800 bg-slate-900/90 backdrop-blur-md text-white flex flex-col shrink-0 transition-all duration-300 ${
-          selectedNode ? 'translate-x-0' : 'translate-x-full absolute right-0'
-        }`}>
-          {selectedNode ? (
-            <div className="flex-1 flex flex-col p-5 overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-5 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Edit3 size={16} className="text-primary" />
-                  <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-300">
-                    Hiệu chỉnh Node
-                  </h3>
-                </div>
+              {/* Footer hành động */}
+              <div className="border-t border-slate-800 pt-5 mt-3 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
                 <button
-                  onClick={() => setSelectedNode(null)}
-                  className="text-slate-500 hover:text-slate-300 p-1 hover:bg-slate-800 rounded transition-all cursor-pointer"
+                  onClick={() => setShowSourceModal(true)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
                 >
-                  <X size={16} />
+                  <span className="material-icons text-[14px]">swap_horiz</span>
+                  <span>Chọn nguồn dữ liệu khác</span>
+                </button>
+
+                <button
+                  onClick={() => handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, inputText)}
+                  disabled={isGenerating || !inputText || inputText.trim().length < 50 || !selectedTemplate || !diagramType || !diagramFormat}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-primary hover:bg-primary-hover disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg active:scale-95 uppercase tracking-wider text-center"
+                >
+                  <span className="material-icons text-[16px]">insights</span>
+                  <span>🚀 Tạo sơ đồ báo cáo án</span>
                 </button>
               </div>
 
-              {/* Node Metadata Summary Info */}
-              <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-800/80 mb-5 text-xs text-slate-400 shrink-0">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span>Cấp bậc Node:</span>
-                  <span className="font-bold text-white uppercase text-[9px] tracking-wider px-1.5 py-0.5 rounded bg-slate-800">
-                    {selectedNode.id === 'root' ? 'Tổng thể (Từ gốc)' : 
-                     selectedNode.data.nodeType === 'category' ? 'Nhánh L1' : 
-                     selectedNode.data.nodeType === 'subBranch' ? 'Nhánh L2' : 
-                     selectedNode.data.isPlaceholder ? 'Placeholder' : 'Nhánh L3 (Chi tiết)'}
-                  </span>
-                </div>
-              </div>
+            </div>
+          </div>
+        ) : (
+          /* Khung làm việc sơ đồ và hiệu chỉnh gốc */
+          <>
+            {/* React Flow Board Container */}
+            <div ref={reactFlowWrapper} className="flex-1 h-full relative">
+              {nodes.length > 0 && !isGenerating ? (
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  nodeTypes={nodeTypes}
+                  onNodeClick={onNodeClick}
+                  onPaneClick={onPaneClick}
+                  fitView
+                  minZoom={0.05}
+                  maxZoom={2.0}
+                >
+                  <Controls className="bg-slate-800 border border-slate-700 text-white rounded-xl shadow-md [&_button]:border-slate-700 [&_button]:bg-slate-800 hover:[&_button]:bg-slate-700" />
+                  <Background color="#334155" gap={24} size={1} />
+                  
+                  {/* Banner cảnh báo nghiệp vụ theo quy chuẩn HD10 */}
+                  <Panel position="bottom-center" className="bg-slate-900/90 text-slate-400 border border-slate-800 rounded-xl px-5 py-2.5 max-w-[900px] text-center backdrop-blur-xs select-none shadow-xl mb-4">
+                    <p className="text-[10px] leading-relaxed">
+                      ⚠️ <strong>Khuyến cáo nghiệp vụ:</strong> Sơ đồ do AI tạo chỉ là bản nháp hỗ trợ nghiên cứu hồ sơ. Người dùng phải tự kiểm tra, chỉnh sửa và chịu trách nhiệm về nội dung trước khi sử dụng báo cáo án hoặc trình chiếu. Công cụ chỉ mang tính sơ đồ hóa thông tin, không thay thế báo cáo đề xuất hay cáo trạng.
+                    </p>
+                  </Panel>
+                </ReactFlow>
+              ) : null}
 
-              {/* Nhóm chọn màu sắc nhánh */}
-              <div className="mb-5 shrink-0">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Màu sắc nhánh:
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {colorsList.map((c) => (
+              {/* Loading Indicator */}
+              {isGenerating && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm">
+                  <div className="flex flex-col items-center text-center max-w-sm px-6">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-6 animate-pulse scale-110">
+                      <Scale size={32} className="animate-bounce" />
+                    </div>
+                    <h4 className="font-extrabold text-lg text-white mb-2 tracking-wide uppercase">AI đang phân tích nghiệp vụ</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                      Đang lập sơ đồ phân tầng (Cấp 1-2-3) theo đúng Hướng dẫn 10/HD-VKSTC, phân bổ các nhóm bị can, chứng cứ và câu hỏi làm rõ...
+                    </p>
+                    <div className="w-48 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-primary h-full rounded-full w-2/3 animate-[scan_2s_infinite_ease-in-out]"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Message Display */}
+              {generationError && !isGenerating && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90">
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md text-left text-slate-300 mx-4">
+                    <div className="flex items-center gap-2 mb-3 text-red-500 font-bold">
+                      <span className="material-icons text-[20px]">warning</span>
+                      <h4 className="text-sm">Lỗi Khởi Tạo Sơ Đồ</h4>
+                    </div>
+                    <p className="text-xs leading-relaxed text-slate-400 mb-4 whitespace-pre-wrap bg-slate-950 p-4 rounded-xl font-mono border border-slate-800">
+                      {generationError}
+                    </p>
+                    <div className="flex justify-end gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleGenerateMindmap()}
+                        className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <RefreshCw size={12} />
+                        <span>Thử lại lần nữa</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setGenerationError(null);
+                          setStatus('source_selected');
+                        }}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                      >
+                        Quay lại cấu hình
+                      </button>
+                      <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                      >
+                        Đóng
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar Panel for Node Editing (Glassmorphic Slide-in) */}
+            <div className={`w-80 h-full border-l border-slate-800 bg-slate-900/90 backdrop-blur-md text-white flex flex-col shrink-0 transition-all duration-300 ${
+              selectedNode ? 'translate-x-0' : 'translate-x-full absolute right-0'
+            }`}>
+              {selectedNode ? (
+                <div className="flex-1 flex flex-col p-5 overflow-y-auto">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-5 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Edit3 size={16} className="text-primary" />
+                      <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-300">
+                        Hiệu chỉnh Node
+                      </h3>
+                    </div>
                     <button
-                      key={c.hex}
-                      onClick={() => handleColorChange(c.hex)}
-                      className={`w-6 h-6 rounded-full border transition-all cursor-pointer hover:scale-110 active:scale-90 ${
-                        selectedNode.data.accentColor === c.hex
-                          ? 'ring-2 ring-offset-2 ring-primary border-white scale-105'
-                          : 'border-slate-800'
-                      }`}
-                      style={{ backgroundColor: c.hex }}
-                      title={c.name}
+                      onClick={() => setSelectedNode(null)}
+                      className="text-slate-500 hover:text-slate-300 p-1 hover:bg-slate-800 rounded transition-all cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  {/* Node Metadata Summary Info */}
+                  <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-800/80 mb-5 text-xs text-slate-400 shrink-0">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span>Cấp bậc Node:</span>
+                      <span className="font-bold text-white uppercase text-[9px] tracking-wider px-1.5 py-0.5 rounded bg-slate-800">
+                        {selectedNode.id === 'root' ? 'Tổng thể (Từ gốc)' : 
+                         selectedNode.data.nodeType === 'category' ? 'Nhánh L1' : 
+                         selectedNode.data.nodeType === 'subBranch' ? 'Nhánh L2' : 
+                         selectedNode.data.isPlaceholder ? 'Placeholder' : 'Nhánh L3 (Chi tiết)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Nhóm chọn màu sắc nhánh */}
+                  <div className="mb-5 shrink-0">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      Màu sắc nhánh:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {colorsList.map((c) => (
+                        <button
+                          key={c.hex}
+                          onClick={() => handleColorChange(c.hex)}
+                          className={`w-6 h-6 rounded-full border transition-all cursor-pointer hover:scale-110 active:scale-90 ${
+                            selectedNode.data.accentColor === c.hex
+                              ? 'ring-2 ring-offset-2 ring-primary border-white scale-105'
+                              : 'border-slate-800'
+                          }`}
+                          style={{ backgroundColor: c.hex }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Text Label Area Input */}
+                  <div className="mb-4 shrink-0">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      Nội dung hiển thị (Tiêu đề):
+                    </label>
+                    {selectedNode.id === 'root' || selectedNode.data.nodeType === 'category' ? (
+                      <input
+                        type="text"
+                        value={selectedNode.data.label}
+                        onChange={handleLabelChange}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-2.5 text-xs text-white font-semibold outline-none transition-all"
+                      />
+                    ) : (
+                      <textarea
+                        value={selectedNode.data.label}
+                        onChange={handleLabelChange}
+                        rows={3}
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-300 font-medium outline-none resize-none transition-all"
+                        placeholder="Nhập nội dung chi tiết..."
+                      />
+                    )}
+                  </div>
+
+                  {/* Thêm Ghi chú (Note) */}
+                  <div className="mb-4 shrink-0">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                      📝 Ghi chú riêng:
+                    </label>
+                    <textarea
+                      value={selectedNode.data.note || ''}
+                      onChange={handleNoteChange}
+                      rows={2}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-400 font-medium outline-none resize-none transition-all"
+                      placeholder="Thêm ghi chú nghiệp vụ hoặc lý giải..."
                     />
-                  ))}
+                  </div>
+
+                  {/* Thêm Tài liệu/Chứng cứ liên quan (Evidence) */}
+                  <div className="mb-6 flex-1 min-h-0 flex flex-col">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 shrink-0">
+                      📎 Tài liệu chứng cứ liên quan:
+                    </label>
+                    <textarea
+                      value={selectedNode.data.evidence || ''}
+                      onChange={handleEvidenceChange}
+                      className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-400 font-medium outline-none resize-none transition-all"
+                      placeholder="Liên kết số bút lục hoặc tên tài liệu chứng cứ..."
+                    />
+                  </div>
+
+                  {/* Node Operations Action Bar */}
+                  <div className="border-t border-slate-800 pt-5 space-y-3 shrink-0">
+                    {/* Nút Thêm node con (cho node category hoặc subBranch) */}
+                    {(selectedNode.data.nodeType === 'category' || selectedNode.data.nodeType === 'subBranch') && (
+                      <button
+                        onClick={handleAddChildNode}
+                        className="w-full flex items-center justify-center gap-2 h-11 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
+                      >
+                        <PlusCircle size={14} />
+                        <span>Thêm nhánh con cấp dưới</span>
+                      </button>
+                    )}
+
+                    {/* Nút Xóa node (chỉ cho các node con L2/L3) */}
+                    {selectedNode.id !== 'root' && !selectedNode.id.startsWith('cat-') && (
+                      <button
+                        onClick={handleDeleteNode}
+                        className="w-full flex items-center justify-center gap-2 h-11 bg-red-950/40 border border-red-900/60 hover:bg-red-900/40 text-red-400 text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95"
+                      >
+                        <Trash2 size={14} />
+                        <span>Xóa khỏi sơ đồ</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              {/* Text Label Area Input */}
-              <div className="mb-4 shrink-0">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Nội dung hiển thị (Tiêu đề):
-                </label>
-                {selectedNode.id === 'root' || selectedNode.data.nodeType === 'category' ? (
-                  <input
-                    type="text"
-                    value={selectedNode.data.label}
-                    onChange={handleLabelChange}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-2.5 text-xs text-white font-semibold outline-none transition-all"
-                  />
-                ) : (
-                  <textarea
-                    value={selectedNode.data.label}
-                    onChange={handleLabelChange}
-                    rows={3}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-300 font-medium outline-none resize-none transition-all"
-                    placeholder="Nhập nội dung chi tiết..."
-                  />
-                )}
-              </div>
-
-              {/* Thêm Ghi chú (Note) */}
-              <div className="mb-4 shrink-0">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  📝 Ghi chú riêng:
-                </label>
-                <textarea
-                  value={selectedNode.data.note || ''}
-                  onChange={handleNoteChange}
-                  rows={2}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-400 font-medium outline-none resize-none transition-all"
-                  placeholder="Thêm ghi chú nghiệp vụ hoặc lý giải..."
-                />
-              </div>
-
-              {/* Thêm Tài liệu/Chứng cứ liên quan (Evidence) */}
-              <div className="mb-6 flex-1 min-h-0 flex flex-col">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 shrink-0">
-                  📎 Tài liệu chứng cứ liên quan:
-                </label>
-                <textarea
-                  value={selectedNode.data.evidence || ''}
-                  onChange={handleEvidenceChange}
-                  className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-400 font-medium outline-none resize-none transition-all"
-                  placeholder="Liên kết số bút lục hoặc tên tài liệu chứng cứ..."
-                />
-              </div>
-
-              {/* Node Operations Action Bar */}
-              <div className="border-t border-slate-800 pt-5 space-y-3 shrink-0">
-                {/* Nút Thêm node con (cho node category hoặc subBranch) */}
-                {(selectedNode.data.nodeType === 'category' || selectedNode.data.nodeType === 'subBranch') && (
-                  <button
-                    onClick={handleAddChildNode}
-                    className="w-full flex items-center justify-center gap-2 h-11 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
-                  >
-                    <PlusCircle size={14} />
-                    <span>Thêm nhánh con cấp dưới</span>
-                  </button>
-                )}
-
-                {/* Nút Xóa node (chỉ cho các node con L2/L3) */}
-                {selectedNode.id !== 'root' && !selectedNode.id.startsWith('cat-') && (
-                  <button
-                    onClick={handleDeleteNode}
-                    className="w-full flex items-center justify-center gap-2 h-11 bg-red-950/40 border border-red-900/60 hover:bg-red-900/40 text-red-400 text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95"
-                  >
-                    <Trash2 size={14} />
-                    <span>Xóa khỏi sơ đồ</span>
-                  </button>
-                )}
-              </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-xs font-medium p-6 text-center">
+                  <span className="material-icons text-[40px] opacity-35 mb-3">touch_app</span>
+                  <p>Chọn một Node trên sơ đồ để hiệu chỉnh nội dung, ghi chú, chứng cứ, đổi màu sắc hoặc thêm con.</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-xs font-medium p-6 text-center">
-              <span className="material-icons text-[40px] opacity-35 mb-3">touch_app</span>
-              <p>Chọn một Node trên sơ đồ để hiệu chỉnh nội dung, ghi chú, chứng cứ, đổi màu sắc hoặc thêm con.</p>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Màn hình chọn nguồn dữ liệu (Source Selector Modal) */}
@@ -1004,7 +1226,8 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
                     if (ocrText && ocrText.trim()) {
                       setInputText(ocrText);
                       setShowSourceModal(false);
-                      handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, ocrText);
+                      setStatus('source_selected');
+                      alert("Đã nạp nội dung. Vui lòng chọn mẫu vụ án và loại sơ đồ trước khi tạo.");
                     }
                   }}
                   className={`border rounded-xl p-4 cursor-pointer transition-all flex flex-col gap-2 ${
