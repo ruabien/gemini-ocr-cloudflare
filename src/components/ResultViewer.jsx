@@ -416,7 +416,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
                 <AlertCircle size={24} />
               </div>
               <h4 className="font-bold text-base mb-2 text-text-primary">
-                {file.retryInfo.customMessage ? "Hệ thống đang chuyển Key" : "Google Gemini gặp lỗi"}
+                {file.retryInfo.customMessage && file.retryInfo.customMessage.includes("OCR.space")
+                  ? "Đang thử OCR.space..."
+                  : file.retryInfo.customMessage
+                    ? "Hệ thống đang chuyển Key"
+                    : "Google Gemini gặp lỗi"}
               </h4>
               <p className="text-xs text-text-secondary mb-4 whitespace-pre-wrap font-mono bg-background p-2.5 rounded-lg border border-border max-h-[150px] overflow-auto">
                 {file.retryInfo.errorMsg}

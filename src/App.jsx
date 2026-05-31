@@ -586,7 +586,7 @@ error message: ${finalErrorMsg || 'none'}`;
                         status: 'processing', 
                         progress: 75,
                         retryInfo: {
-                          customMessage: `Gemini bị chặn. Đang xử lý bằng OCR.space...`,
+                          customMessage: `Gemini bị chặn. Đang thử OCR.space...`,
                           errorMsg: `Trang ${pageNum} được xử lý bằng OCR.space.`,
                           attempt: 1,
                           maxAttempts: 1,
