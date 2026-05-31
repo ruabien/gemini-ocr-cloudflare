@@ -57,62 +57,284 @@ const DIAGRAM_TYPES = {
 };
 
 const MAIN_INSTRUCTION = `
-Bạn là một Kiểm sát viên cao cấp dày dạn kinh nghiệm nghiệp vụ của Viện kiểm sát nhân dân tối cao Việt Nam.
-Hãy phân tích văn bản hồ sơ vụ án được cung cấp (OCR từ các tài liệu tố tụng) và trích xuất thành dữ liệu cấu trúc sơ đồ tư duy phân tầng tuân thủ nghiêm ngặt Hướng dẫn số 10/HD-VKSTC năm 2024.
+Bạn là hệ thống phân tích hồ sơ tư pháp chuyên nghiệp, đóng vai trò là một Kiểm sát viên cao cấp dày dạn kinh nghiệm nghiệp vụ của Viện kiểm sát nhân dân tối cao Việt Nam.
 
-BẮT BUỘC sinh dữ liệu dạng JSON hợp lệ tuân thủ schema dưới đây. 
-KHÔNG thêm bất kỳ văn bản giải thích, lời chào hỏi hay đánh dấu markdown nào bên ngoài JSON. Chỉ trả về một chuỗi JSON có thể phân tích bằng JSON.parse().
+Nhiệm vụ:
+Phân tích văn bản OCR được cung cấp (từ tài liệu tố tụng, hồ sơ vụ án) và trích xuất thành dữ liệu cấu trúc sơ đồ tư duy phân tầng tuân thủ Hướng dẫn số 10/HD-VKSTC năm 2024.
 
-CẤU TRÚC JSON SCHEMA BẮT BUỘC:
+Quy tắc bắt buộc về định dạng đầu ra:
+- Phải trả về DUY NHẤT một chuỗi JSON hợp lệ.
+- KHÔNG dùng markdown (KHÔNG được bao quanh bằng \`\`\`json hay \`\`\`).
+- KHÔNG giải thích, không thêm text chào hỏi trước/sau JSON.
+- Nếu thiếu dữ liệu hoặc thông tin không rõ ràng, sử dụng null hoặc [] cho các mảng.
+- Đảm bảo trích xuất thông tin ngắn gọn, súc tích và đúng thuật ngữ pháp lý.
+
+CẤU TRÚC SCHEMA JSON BẮT BUỘC:
 {
-  "centralKeyword": "Từ khóa trung tâm / Tên vụ án chính thức (ví dụ: Vụ án Trộm cắp tài sản tại Công ty X)",
-  "branches": [
+  "caseTitle": "Tên vụ án chính thức (ví dụ: Vụ án Trộm cắp tài sản tại Công ty X)",
+  "caseType": "Hình sự / Dân sự / Hành chính / Hôn nhân và gia đình",
+  "centralKeyword": "Từ khóa trung tâm để vẽ sơ đồ",
+  "diagramType": "tree",
+  "nodes": [
     {
-      "label": "Tên nhánh cấp 1 (Tầng 1 - Danh mục thông tin chính)",
-      "color": "Mã màu HEX gợi ý cho nhánh này (ví dụ: #1E8E5A, #2F5FA7, #D97706, #7C3AED, #DB2777, #475569)",
-      "subBranches": [
-        {
-          "label": "Tên nhánh cấp 2 (Tầng 2 - Chi tiết phân loại hoặc sự kiện)",
-          "note": "Ghi chú giải thích cho nhánh cấp 2 (nếu có, ví dụ: Nhân thân chưa có tiền án tiền sự)",
-          "evidence": "Tài liệu chứng cứ liên quan đến nhánh cấp 2 này (ví dụ: Biên bản bắt quả tang BL 45)",
-          "subBranches": [
-            {
-              "label": "Tên nhánh cấp 3 (Tầng 3 - Dữ liệu cụ thể, lời khai, chi tiết hành vi)",
-              "note": "Ghi chú giải thích cho nhánh cấp 3 (nếu có)",
-              "evidence": "Tài liệu chứng cứ liên quan đến nhánh cấp 3 này (nếu tìm thấy)"
-            }
-          ]
-        }
-      ],
-      "questions": [
-        "Câu hỏi nghiệp vụ cần làm rõ dưới nhánh danh mục này (nếu có)"
-      ],
-      "note": "Ghi chú chung cho danh mục cấp 1 này (nếu có)"
+      "id": "Mã ID duy nhất (ví dụ: node_1, node_2, node_2_1...)",
+      "parentId": "Mã ID của node cha (null nếu là nhánh cấp 1 / category chính)",
+      "label": "Nhãn hiển thị ngắn gọn",
+      "level": 1,
+      "note": "Ghi chú giải thích thêm (nếu có)",
+      "evidence": "Tài liệu chứng cứ liên kết (nếu có)",
+      "color": "Mã màu HEX gợi ý (chỉ dành cho các node level 1, ví dụ: #163A70, #2F5FA7, #1E8E5A)"
     }
+  ],
+  "timeline": [
+    {
+      "time": "Mốc thời gian (ngày, tháng, giờ)",
+      "event": "Chi tiết diễn biến chính",
+      "evidence": "Bút lục hoặc tài liệu chứng cứ"
+    }
+  ],
+  "issuesToClarify": [
+    "Câu hỏi nghiệp vụ cần làm rõ"
   ]
 }
 
-QUY TẮC PHÂN LOẠI CỦA ÁN HÌNH SỰ (ƯU TIÊN):
-Với án hình sự, cấu trúc nhánh cấp 1 phải ưu tiên các nhóm thông tin trọng tâm sau:
-1. Bị can/bị cáo (Họ tên, tuổi, nhân thân, tư cách)
+QUY TẮC PHÂN LOẠI CỦA ÁN HÌNH SỰ (ƯU TIÊN TRONG DANH SÁCH NODES):
+Trong mảng "nodes", các node Level 1 (parentId = null) phải ưu tiên các nhóm thông tin trọng tâm sau của Hướng dẫn 10:
+1. Bị can/bị cáo (Họ tên, tuổi, nhân thân, vai trò)
 2. Hành vi phạm tội (Mô tả hành động phạm tội cốt lõi)
 3. Thời gian, địa điểm (Cụ thể xảy ra sự việc)
 4. Công cụ/phương tiện (Hung khí, xe cộ, thiết bị sử dụng)
 5. Hậu quả, thiệt hại (Vật chất, sức khỏe, tính mạng, xã hội)
-6. Chứng cứ buộc tội (Lời khai nhận, nhân chứng, kết quả giám định pháp y, tang vật)
-7. Chứng cứ gỡ tội (Tự vệ, chứng cứ ngoại phạm, lời khai giảm nhẹ)
+6. Chứng cứ buộc tội (Lời khai nhận, nhân chứng, vật chứng, kết quả giám định)
+7. Chứng cứ gỡ tội (Lời khai giảm nhẹ, chứng cứ ngoại phạm)
 8. Tội danh, điều luật (Điều khoản áp dụng trong Bộ luật Hình sự)
-9. Tình tiết tăng nặng/giảm nhẹ (Thành khẩn khai báo, tự nguyện bồi thường, tái phạm)
+9. Tình tiết tăng nặng/giảm nhẹ (Thành khẩn khai báo, tự nguyện bồi thường...)
 10. Vấn đề cần điều tra bổ sung (Các tình tiết chưa rõ, cần xác minh)
-
-LƯU Ý:
-- Tự động điều chỉnh cấu trúc nhánh theo Loại sơ đồ được yêu cầu ở trên để đáp ứng mục tiêu phân tích.
-- Nếu thông tin thiếu hụt hoặc mờ trong văn bản OCR, hãy để trống hoặc mảng rỗng. KHÔNG tự bịa ra thông tin.
-- Nội dung hiển thị phải ngắn gọn, súc tích và đúng thuật ngữ pháp lý tố tụng Việt Nam.
 `;
 
 /**
- * Gọi API Gemini để sinh sơ đồ tư duy vụ án theo Hướng dẫn 10
+ * Phân tích cú pháp JSON cực kỳ mạnh mẽ với nhiều giai đoạn fallback
+ */
+export const robustParseJson = (rawText) => {
+  if (!rawText || !rawText.trim()) {
+    throw new Error("EMPTY_RESPONSE");
+  }
+
+  const rawLength = rawText.length;
+  console.log(`[Dev Log] Raw response length: ${rawLength}`);
+
+  let cleaned = rawText.trim();
+
+  // Giai đoạn 1: Parse JSON trực tiếp
+  try {
+    const res = JSON.parse(cleaned);
+    console.log("[Dev Log] Parse Stage 1 (Direct JSON.parse): SUCCESS");
+    return res;
+  } catch (err) {
+    console.log(`[Dev Log] Parse Stage 1 Failed: ${err.message}. Tiến hành dọn dẹp markdown...`);
+  }
+
+  // Giai đoạn 2: Loại bỏ markdown fenced code blocks (```json ... ```)
+  if (cleaned.includes("```")) {
+    const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (match && match[1]) {
+      const temp = match[1].trim();
+      try {
+        const res = JSON.parse(temp);
+        console.log("[Dev Log] Parse Stage 2 (Markdown block cleanup): SUCCESS");
+        return res;
+      } catch (err) {
+        console.log(`[Dev Log] Parse Stage 2 Failed: ${err.message}. Tiến hành Regex block...`);
+      }
+    }
+  }
+
+  // Giai đoạn 3: Trích xuất khối JSON đầu tiên qua Regex {}
+  const jsonMatch = cleaned.match(/(\{[\s\S]*\})/);
+  if (jsonMatch && jsonMatch[1]) {
+    const extracted = jsonMatch[1].trim();
+    try {
+      const res = JSON.parse(extracted);
+      console.log("[Dev Log] Parse Stage 3 (Regex block extraction): SUCCESS");
+      return res;
+    } catch (err) {
+      console.log(`[Dev Log] Parse Stage 3 Failed: ${err.message}. Thử nghiệm các thao tác sửa lỗi thủ công...`);
+
+      // Giai đoạn 4: Sửa các lỗi JSON phổ biến (như dấu phẩy thừa ở cuối mảng/đối tượng)
+      try {
+        const repaired = extracted.replace(/,\s*([\]}])/g, '$1');
+        const res = JSON.parse(repaired);
+        console.log("[Dev Log] Parse Stage 4 (Manual repairs cleanup): SUCCESS");
+        return res;
+      } catch (repairErr) {
+        console.log(`[Dev Log] Parse Stage 4 Failed: ${repairErr.message}`);
+      }
+    }
+  }
+
+  throw new Error("JSON_PARSING_FAILED");
+};
+
+/**
+ * Chuẩn hóa schema, bổ sung các trường mặc định nếu thiếu hoặc sai định dạng
+ */
+export const normalizeSchema = (data) => {
+  if (!data || typeof data !== 'object') {
+    data = {};
+  }
+
+  const missingFields = [];
+  if (!data.centralKeyword) missingFields.push("centralKeyword");
+  if (!data.caseTitle) missingFields.push("caseTitle");
+  if (!data.caseType) missingFields.push("caseType");
+  if (!data.nodes) missingFields.push("nodes");
+  if (!data.timeline) missingFields.push("timeline");
+  if (!data.issuesToClarify) missingFields.push("issuesToClarify");
+
+  if (missingFields.length > 0) {
+    console.log(`[Dev Log] Thiếu một số trường trong schema: ${missingFields.join(", ")}. Đang tự động bổ sung default...`);
+  }
+
+  const normalized = {
+    caseTitle: data.caseTitle || data.centralKeyword || "Sơ đồ tư duy vụ án",
+    caseType: data.caseType || "Hình sự",
+    centralKeyword: data.centralKeyword || data.caseTitle || "Sơ đồ tư duy vụ án",
+    diagramType: data.diagramType || "tree",
+    nodes: Array.isArray(data.nodes) ? data.nodes : [],
+    timeline: Array.isArray(data.timeline) ? data.timeline : [],
+    issuesToClarify: Array.isArray(data.issuesToClarify) ? data.issuesToClarify : []
+  };
+
+  // Chuẩn hóa từng node trong danh sách
+  normalized.nodes = normalized.nodes.map((node, index) => {
+    if (!node || typeof node !== 'object') {
+      return {
+        id: `node_${index}`,
+        parentId: null,
+        label: "Nội dung trống",
+        level: 1,
+        note: "",
+        evidence: "",
+        color: null
+      };
+    }
+
+    let lvl = 1;
+    if (typeof node.level === 'number') {
+      lvl = node.level;
+    } else if (node.parentId) {
+      lvl = 2; // Dự đoán cấp 2 nếu có parentId
+    }
+
+    return {
+      id: node.id || `node_${index}`,
+      parentId: node.parentId === undefined ? null : node.parentId,
+      label: node.label || "Nội dung trống",
+      level: lvl,
+      note: node.note || "",
+      evidence: node.evidence || "",
+      color: node.color || null
+    };
+  });
+
+  // Nếu danh sách node hoàn toàn trống rỗng, sinh khung xương (skeleton) mặc định
+  if (normalized.nodes.length === 0) {
+    console.log("[Dev Log] Danh sách nodes rỗng. Tự động sinh khung xương sơ đồ mặc định.");
+    normalized.nodes = [
+      { id: "cat-bican", parentId: null, label: "Bị can / Bị cáo", level: 1, color: "#163A70" },
+      { id: "cat-hanhvi", parentId: null, label: "Hành vi phạm tội", level: 1, color: "#2F5FA7" },
+      { id: "cat-chungcu-buoc", parentId: null, label: "Chứng cứ buộc tội", level: 1, color: "#C62828" },
+      { id: "cat-chungcu-go", parentId: null, label: "Chứng cứ gỡ tội / giảm nhẹ", level: 1, color: "#1E8E5A" },
+      { id: "cat-yeucau", parentId: null, label: "Vấn đề cần làm rõ / Yêu cầu điều tra", level: 1, color: "#D97706" }
+    ];
+  }
+
+  return normalized;
+};
+
+/**
+ * Tái cấu trúc từ định dạng JSON phẳng (flat) sang định dạng lồng cấp (nested tree branches)
+ */
+export const reconstructBranchesFromFlat = (flatData) => {
+  const nodes = flatData.nodes || [];
+  const issuesToClarify = flatData.issuesToClarify || [];
+  
+  // Lấy các node cấp 1 (parentId rỗng hoặc 'root' hoặc level = 1)
+  const l1Nodes = nodes.filter(n => !n.parentId || n.parentId === 'root' || n.level === 1);
+  
+  const branches = l1Nodes.map((l1, l1Idx) => {
+    // Lấy con cấp 2
+    const l2Nodes = nodes.filter(n => n.parentId === l1.id);
+    const subBranches = l2Nodes.map(l2 => {
+      // Lấy con cấp 3
+      const l3Nodes = nodes.filter(n => n.parentId === l2.id);
+      const subSubBranches = l3Nodes.map(l3 => ({
+        label: l3.label || '',
+        note: l3.note || '',
+        evidence: l3.evidence || ''
+      }));
+      
+      return {
+        label: l2.label || '',
+        note: l2.note || '',
+        evidence: l2.evidence || '',
+        subBranches: subSubBranches
+      };
+    });
+    
+    // Gắn câu hỏi nghiệp vụ vào danh mục đầu tiên nếu có
+    let questions = [];
+    if (l1Idx === 0 && issuesToClarify.length > 0) {
+      questions = issuesToClarify;
+    }
+    
+    return {
+      label: l1.label || '',
+      color: l1.color || '#163A70',
+      note: l1.note || '',
+      subBranches: subBranches,
+      questions: questions
+    };
+  });
+
+  // Tự động dựng nhánh diễn biến thời gian từ timeline nếu nhánh này chưa tồn tại trong nodes
+  const hasTimelineBranch = l1Nodes.some(n => /thời gian|diễn biến|hành vi|tiến trình|sự việc/i.test(n.label || ''));
+  if (!hasTimelineBranch && flatData.timeline && flatData.timeline.length > 0) {
+    const timelineSubBranches = flatData.timeline.map(t => ({
+      label: t.time || t.date || 'Mốc thời gian',
+      note: t.event || '',
+      evidence: t.evidence || '',
+      subBranches: []
+    }));
+    branches.push({
+      label: 'Diễn biến hành vi phạm tội',
+      color: '#D97706',
+      note: 'Dòng thời gian sự việc',
+      subBranches: timelineSubBranches,
+      questions: []
+    });
+  }
+
+  // Tự động dựng nhánh câu hỏi nghiệp vụ từ issuesToClarify nếu chưa được gán
+  const hasQuestionsBranch = l1Nodes.some(n => /yêu cầu|yêu cầu điều tra|cần làm rõ|vấn đề cần làm rõ/i.test(n.label || ''));
+  if (!hasQuestionsBranch && issuesToClarify.length > 0 && !branches.some(b => b.questions && b.questions.length > 0)) {
+    branches.push({
+      label: 'Vấn đề cần làm rõ & Yêu cầu điều tra',
+      color: '#C62828',
+      note: 'Câu hỏi nghiệp vụ của Kiểm sát viên',
+      subBranches: [],
+      questions: issuesToClarify
+    });
+  }
+
+  return {
+    centralKeyword: flatData.centralKeyword || flatData.caseTitle || 'Sơ đồ tư duy vụ án',
+    branches: branches
+  };
+};
+
+/**
+ * Gọi API Gemini để sinh sơ đồ tư duy vụ án theo Hướng dẫn 10 (Sửa đổi bền bỉ)
  */
 export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, modelName, diagramType = 'tong_the', diagramFormat = 'hình luồng') => {
   if (!apiKeysPool || apiKeysPool.length === 0) {
@@ -148,7 +370,7 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
   let success = false;
   let keyIndex = 0;
   let lastError = null;
-  let resultText = null;
+  let parsedData = null;
 
   while (!success && keyIndex < apiKeysPool.length) {
     const currentKey = apiKeysPool[keyIndex];
@@ -156,16 +378,20 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
       ? `${currentKey.substring(0, 6)}...${currentKey.substring(currentKey.length - 4)}` 
       : currentKey;
 
-    let isRetryAttempt = false;
+    let isRecitationRetry = false;
+    let isFormatRetry = false;
     
-    // Vòng lặp thử lại nội bộ khi dính bộ lọc RECITATION
     while (true) {
       try {
-        console.log(`[Mindmap Gen] Thử dùng Key #${keyIndex + 1} (${maskedKey}) - Lần thử: ${isRetryAttempt ? 'Diễn giải tránh bộ lọc' : 'Mặc định'}`);
+        console.log(`[Mindmap Gen] Thử dùng Key #${keyIndex + 1} (${maskedKey}) - Recitation Retry: ${isRecitationRetry}, Format Retry: ${isFormatRetry}`);
         
         let activePrompt = fullPrompt;
-        if (isRetryAttempt) {
+        if (isRecitationRetry) {
           activePrompt = `LƯU Ý: Diễn giải lại (paraphrase) mọi thông tin trích xuất, không chép nguyên văn từ hồ sơ gốc để tránh bộ lọc bản quyền.\n\n${fullPrompt}`;
+        }
+        
+        if (isFormatRetry) {
+          activePrompt = `CẢNH BÁO: Phản hồi trước của bạn bị sai format hoặc thiếu trường schema bắt buộc. Vui lòng CHỈ trả về chuỗi JSON chính xác khớp 100% schema mẫu. KHÔNG markdown, KHÔNG text giải thích trước sau.\n\n${fullPrompt}`;
         }
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${currentKey}`, {
@@ -177,7 +403,7 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
             }],
             generationConfig: {
               responseMimeType: "application/json",
-              temperature: isRetryAttempt ? 0.7 : 0.1
+              temperature: (isRecitationRetry || isFormatRetry) ? 0.7 : 0.1
             }
           })
         });
@@ -221,11 +447,11 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
         const data = await response.json();
 
         if (data.candidates?.[0]?.finishReason === 'RECITATION') {
-          if (!isRetryAttempt) {
+          if (!isRecitationRetry) {
             console.warn(`[Mindmap Gen] Dính bộ lọc RECITATION của Google. Tiến hành thử lại với prompt diễn giải...`);
-            isRetryAttempt = true;
+            isRecitationRetry = true;
             await new Promise(r => setTimeout(r, 1000));
-            continue; // Thử lại với cấu hình diễn giải
+            continue;
           } else {
             const err = new Error("Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google chặn tài liệu này.");
             err.code = "RECITATION";
@@ -233,18 +459,33 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
           }
         }
 
-        resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!resultText) {
           const err = new Error("AI không phân tích được hồ sơ (Google API không trả về văn bản).");
           err.code = "NO_TEXT_RETURNED";
           throw err;
         }
 
-        success = true;
-        break; // Thoát vòng lặp thử lại nội bộ
+        // Thực hiện parse và normalize bằng parser cực kỳ mạnh mẽ
+        try {
+          const parsed = robustParseJson(resultText);
+          parsedData = normalizeSchema(parsed);
+          success = true;
+          break; // Thành công! Thoát vòng lặp thử lại nội bộ
+        } catch (parseErr) {
+          console.warn(`[Dev Log] Phân tích cú pháp thất bại tại Stage: ${parseErr.message}`);
+          if (!isFormatRetry) {
+            console.warn(`[Mindmap Gen] Thử lại định dạng (Retry format) 1 lần trên cùng key hiện tại...`);
+            isFormatRetry = true;
+            await new Promise(r => setTimeout(r, 1000));
+            continue;
+          } else {
+            throw new Error("AI_FORMAT_REPEATED_FAILURE", { cause: parseErr });
+          }
+        }
       } catch (err) {
         lastError = err;
-        break; // Thoát vòng lặp thử lại nội bộ để chuyển sang Key tiếp theo
+        break; // Thoát vòng lặp để chuyển sang Key khác
       }
     }
 
@@ -254,24 +495,15 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
   }
 
   if (!success) {
-    throw lastError || new Error("Đã thử tất cả các API Key nhưng đều thất bại.");
+    console.error("[Mindmap Gen] Lỗi chi tiết cuối cùng:", lastError);
+    // Trả về thông báo lỗi thân thiện tuyệt đối theo yêu cầu
+    const friendlyErr = new Error("AI chưa thể dựng sơ đồ từ hồ sơ này. Vui lòng thử lại hoặc dùng hồ sơ rõ ràng hơn.");
+    friendlyErr.code = "AI_GENERATION_FAILED";
+    friendlyErr.originalError = lastError;
+    throw friendlyErr;
   }
 
-  // Làm sạch và phân tích chuỗi JSON trả về
-  try {
-    let cleanedJsonText = resultText.trim();
-    if (cleanedJsonText.startsWith("```json")) {
-      cleanedJsonText = cleanedJsonText.replace(/^```json/, "").replace(/```$/, "").trim();
-    } else if (cleanedJsonText.startsWith("```")) {
-      cleanedJsonText = cleanedJsonText.replace(/^```/, "").replace(/```$/, "").trim();
-    }
-    return JSON.parse(cleanedJsonText);
-  } catch (parseErr) {
-    console.error("Lỗi phân tích cú pháp JSON AI:", parseErr);
-    const err = new Error("AI không phân tích được hồ sơ (Phản hồi từ Gemini không đúng định dạng sơ đồ vụ án).");
-    err.code = "JSON_PARSE_ERROR";
-    throw err;
-  }
+  return parsedData;
 };
 
 /**
@@ -281,10 +513,16 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
 export const convertJsonToFlow = (jsonData, orientation = 'horizontal') => {
   if (!jsonData) return { nodes: [], edges: [] };
 
+  // Tự động nhận diện và chuyển đổi cấu trúc phẳng sang lồng cấp nếu cần
+  let data = jsonData;
+  if (jsonData && Array.isArray(jsonData.nodes)) {
+    data = reconstructBranchesFromFlat(jsonData);
+  }
+
   // 1. Phác thảo cấu trúc cây lồng trong bộ nhớ
-  const rootLabel = jsonData.centralKeyword || 'Sơ đồ tư duy vụ án';
+  const rootLabel = data.centralKeyword || 'Sơ đồ tư duy vụ án';
   
-  const rawBranches = jsonData.branches || [];
+  const rawBranches = data.branches || [];
   
   // Dựng cây phân tầng đệ quy
   const buildTree = (rawBranch, branchIdx, parentAccentColor = null) => {
