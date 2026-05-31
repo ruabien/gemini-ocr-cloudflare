@@ -4,7 +4,7 @@ import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode } f
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
-export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions, config, onOpenMindmap }) {
+export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions, config }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -20,17 +20,6 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
       return;
     }
     await handleExport('docx');
-  };
-
-  const handleOpenMindmapWorkspace = () => {
-    const premiumKey = config?.licenseKey || localStorage.getItem('ocr_license_key') || '';
-    if (!premiumKey.trim()) {
-      setIsPremiumPopupOpen(true);
-      return;
-    }
-    if (onOpenMindmap) {
-      onOpenMindmap(processedTextStr);
-    }
   };
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
@@ -375,11 +364,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
       </div>
       </div>
       {/* Judicial Utility Bar */}
-      {file && (
+      {localText && (
         <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-background/20">
           <span className="text-[10px] font-bold text-text-secondary/60 uppercase tracking-wider shrink-0 select-none mr-2">Tiện ích tư pháp:</span>
           
-          {localText && !file.isParentPdf && (
+          {!file.isParentPdf && (
             <>
               <button
                 onClick={handleDetectCaseNumber}
@@ -408,16 +397,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
             title={isOcrEmpty ? "Không có dữ liệu văn bản để xuất" : "Xuất Word chuyên nghiệp chuẩn Nghị định 30 (Premium)"}
           >
             <span className="material-icons text-[14px]">workspace_premium</span>
-            <span>👑 Xuất Word Chuẩn NĐ 30</span>
-          </button>
-
-          <button
-            onClick={handleOpenMindmapWorkspace}
-            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 uppercase tracking-wider"
-            title="Tự động phân tích và vẽ sơ đồ tư duy báo cáo án (Premium)"
-          >
-            <span className="material-icons text-[14px]">insights</span>
-            <span>👑 Tạo sơ đồ báo cáo án</span>
+            <span>👑 Xuất Word Chuẩn Nghị định 30</span>
+            <span className="ml-1 text-[9px] bg-primary text-white font-extrabold px-1 py-0.5 rounded-sm">PRO</span>
           </button>
         </div>
       )}
