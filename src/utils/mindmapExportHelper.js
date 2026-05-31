@@ -112,9 +112,6 @@ export const exportToPdf = async (reactFlowElement, fileName = 'sodo_mindmap.pdf
   }
 };
 
-/**
- * Xuất cấu trúc thông tin vụ án ra slide PowerPoint (.pptx) để báo cáo/trình chiếu
- */
 export const exportToPptx = async (jsonData, fileName = 'baocao_an_slides.pptx') => {
   if (!jsonData) {
     throw new Error("Không có dữ liệu vụ án để xuất slide.");
@@ -124,130 +121,170 @@ export const exportToPptx = async (jsonData, fileName = 'baocao_an_slides.pptx')
     const pres = new PptxGenJS();
     pres.layout = 'LAYOUT_16x9';
 
-    // Định nghĩa bảng màu thiết kế
-    const primaryColor = '163A70';   // Navy đậm uy nghiêm
-    const secondaryColor = '2F5FA7'; // Blue chuyên nghiệp
-    const accentColor = 'C62828';    // Red pháp lý
-    const textColor = '1F2937';      // Xám đậm dễ đọc
+    // Bảng màu thiết kế nghiệp vụ
+    const primaryColor = '163A70';   // Navy đậm
+    const secondaryColor = '2F5FA7'; // Blue
+    const accentColor = 'C62828';    // Red
+    const textColor = '1F2937';      // Xám tối
     const white = 'FFFFFF';
 
-    // Hàm tiện ích: Thêm tiêu đề trang slide chuẩn nghiệp vụ
+    // Helper: Thêm tiêu đề slide chuẩn VKS
     const addSlideHeader = (slide, titleText) => {
-      // Tiêu đề
       slide.addText(titleText.toUpperCase(), {
         x: 0.6,
-        y: 0.4,
+        y: 0.3,
         w: 9.0,
-        h: 0.6,
-        fontSize: 20,
+        h: 0.5,
+        fontSize: 18,
         bold: true,
         color: primaryColor,
         fontFace: 'Arial'
       });
 
-      // Đường kẻ trang trí ngăn cách
       slide.addShape(pres.ShapeType.rect, {
         x: 0.6,
-        y: 1.0,
+        y: 0.8,
         w: 12.1,
         h: 0.03,
         fill: { color: secondaryColor }
       });
     };
 
-    // SLIDE 1: Trang bìa báo cáo án
+    // ==========================================
+    // SLIDE 1: SƠ ĐỒ TỔNG THỂ VỤ ÁN
+    // ==========================================
     const slide1 = pres.addSlide();
-    slide1.background = { color: primaryColor };
+    slide1.background = { color: 'F8FAFC' };
 
-    // Tên vụ án
-    slide1.addText(jsonData.caseTitle || 'BÁO CÁO SƠ ĐỒ TƯ DUY VỤ ÁN', {
-      x: 0.8,
-      y: 1.8,
-      w: 11.7,
-      h: 1.6,
-      fontSize: 32,
-      bold: true,
-      color: white,
-      align: 'center',
-      fontFace: 'Arial'
-    });
+    // Header Slide 1
+    addSlideHeader(slide1, jsonData.caseTitle || 'Sơ đồ tổng thể vụ án');
 
-    // Phân loại và xuất xứ
-    slide1.addText(`LOẠI VỤ ÁN: ${jsonData.caseType ? jsonData.caseType.toUpperCase() : 'CHƯA XÁC ĐỊNH'}\nBáo cáo trực quan phục vụ công tác nghiệp vụ xét xử`, {
-      x: 0.8,
-      y: 3.8,
-      w: 11.7,
-      h: 1.0,
-      fontSize: 14,
-      color: '94A3B8', // slate-400
-      align: 'center',
-      fontFace: 'Arial'
-    });
+    const branches = jsonData.branches || [];
 
-    // SLIDE 2: Đương sự & Thành phần tham gia
-    const slide2 = pres.addSlide();
-    addSlideHeader(slide2, 'Đương sự & Thành phần tham gia');
+    // Vẽ các L1 branches dạng thẻ lưới (Grid cards)
+    // Tối đa 6 cards trên slide (2 hàng x 3 cột) để giữ slide sạch đẹp
+    const maxCards = 6;
+    const cardsToDraw = branches.slice(0, maxCards);
 
-    if (jsonData.parties && jsonData.parties.length > 0) {
-      const rows = jsonData.parties.map(p => [
-        { text: p.role || 'Đương sự', options: { bold: true, color: primaryColor } },
-        { text: p.name || 'Không rõ', options: { bold: true } },
-        { text: p.detail || 'Không có thông tin bổ sung' }
-      ]);
+    const cols = 3;
+    const cardW = 3.8;
+    const cardH = 1.9;
+    const startX = 0.6;
+    const startY = 1.1;
+    const gapX = 0.35;
+    const gapY = 0.3;
 
-      slide2.addTable([
-        [
-          { text: 'Vai trò tố tụng', options: { fill: primaryColor, color: white, bold: true } },
-          { text: 'Họ và tên', options: { fill: primaryColor, color: white, bold: true } },
-          { text: 'Nhân thân / Chi tiết liên quan', options: { fill: primaryColor, color: white, bold: true } }
-        ],
-        ...rows
-      ], {
-        x: 0.6,
-        y: 1.3,
-        w: 12.1,
-        rowH: 0.45,
-        border: { pt: 1, color: 'E2E8F0' },
-        fontSize: 11,
-        fontFace: 'Arial',
-        valign: 'middle'
+    cardsToDraw.forEach((branch, idx) => {
+      const row = Math.floor(idx / cols);
+      const col = idx % cols;
+      const x = startX + col * (cardW + gapX);
+      const y = startY + row * (cardH + gapY);
+      const branchColor = (branch.color || '#163A70').replace('#', '');
+
+      // Vẽ hình nền trắng của thẻ
+      slide1.addShape(pres.ShapeType.roundRect, {
+        x, y, w: cardW, h: cardH,
+        fill: { color: white },
+        line: { color: 'E2E8F0', width: 1 }
       });
-    } else {
-      slide2.addText('⚠️ Cần bổ sung thông tin các bên đương sự tham gia tố tụng.', {
-        x: 0.6,
-        y: 1.5,
-        w: 12.1,
-        fontSize: 14,
-        color: accentColor,
-        italic: true,
+
+      // Vẽ thanh màu bên trái biểu diễn nhóm
+      slide1.addShape(pres.ShapeType.rect, {
+        x, y, w: 0.1, h: cardH,
+        fill: { color: branchColor }
+      });
+
+      // Tên nhánh L1
+      slide1.addText(branch.label || 'Danh mục', {
+        x: x + 0.2,
+        y: y + 0.15,
+        w: cardW - 0.3,
+        h: 0.35,
+        fontSize: 12,
+        bold: true,
+        color: branchColor,
         fontFace: 'Arial'
+      });
+
+      // Trích xuất 2 con L2 đại diện hiển thị tóm tắt trong thẻ
+      let summaryText;
+      if (branch.subBranches && branch.subBranches.length > 0) {
+        summaryText = branch.subBranches
+          .slice(0, 2)
+          .map(sb => `• ${sb.label}`)
+          .join('\n');
+      } else if (branch.note) {
+        summaryText = `Ghi chú: ${branch.note}`;
+      } else {
+        summaryText = "• Chưa có dữ liệu chi tiết";
+      }
+
+      slide1.addText(summaryText, {
+        x: x + 0.2,
+        y: y + 0.5,
+        w: cardW - 0.3,
+        h: cardH - 0.6,
+        fontSize: 10,
+        color: textColor,
+        fontFace: 'Arial',
+        valign: 'top'
+      });
+    });
+
+    // ==========================================
+    // SLIDE 2: TIMELINE / DIỄN BIẾN HÀNH VI
+    // ==========================================
+    const slide2 = pres.addSlide();
+    addSlideHeader(slide2, 'Dòng thời gian & Diễn biến hành vi');
+
+    // Tìm nhánh liên quan đến diễn biến hành vi/thời gian
+    const timelineBranch = branches.find(b => 
+      /thời gian|diễn biến|hành vi|tiến trình|sự việc/i.test(b.label || '')
+    );
+
+    let timelineItems = [];
+    if (timelineBranch && timelineBranch.subBranches) {
+      timelineBranch.subBranches.forEach(sb => {
+        timelineItems.push({ time: sb.label, desc: sb.note || sb.evidence || '' });
+        if (sb.subBranches) {
+          sb.subBranches.forEach(sub3 => {
+            timelineItems.push({ time: '', desc: `${sub3.label}${sub3.note ? ` (${sub3.note})` : ''}` });
+          });
+        }
       });
     }
 
-    // SLIDE 3: Tiến trình & Dòng thời gian sự việc
-    const slide3 = pres.addSlide();
-    addSlideHeader(slide3, 'Dòng thời gian & Diễn biến sự việc');
+    // Fallback: nếu không tìm thấy nhánh chuyên dụng, lấy diễn biến từ L2 các nhánh khác
+    if (timelineItems.length === 0) {
+      branches.forEach(b => {
+        if (b.subBranches) {
+          b.subBranches.slice(0, 2).forEach(sb => {
+            timelineItems.push({ time: b.label, desc: sb.label });
+          });
+        }
+      });
+    }
 
-    if (jsonData.timeline && jsonData.timeline.length > 0) {
-      let currentY = 1.3;
-      jsonData.timeline.slice(0, 6).forEach((t) => {
-        // Vẽ cột mốc thời gian nổi bật
-        slide3.addText(`• [${t.date || 'Thời gian'}]`, {
-          x: 0.6,
+    if (timelineItems.length > 0) {
+      let currentY = 1.1;
+      timelineItems.slice(0, 6).forEach((item) => {
+        // Cột mốc
+        slide2.addText(item.time ? `• ${item.time}` : '  └─', {
+          x: 0.8,
           y: currentY,
-          w: 2.5,
+          w: 2.8,
           h: 0.5,
           fontSize: 12,
-          bold: true,
-          color: secondaryColor,
+          bold: !!item.time,
+          color: item.time ? secondaryColor : '64748B',
           fontFace: 'Arial'
         });
 
-        // Vẽ nội dung sự kiện
-        slide3.addText(t.event || 'Mô tả sự kiện', {
-          x: 3.1,
+        // Diễn biến chi tiết
+        slide2.addText(item.desc || 'Mô tả chi tiết sự việc', {
+          x: 3.7,
           y: currentY,
-          w: 9.6,
+          w: 9.0,
           h: 0.5,
           fontSize: 11,
           color: textColor,
@@ -257,194 +294,191 @@ export const exportToPptx = async (jsonData, fileName = 'baocao_an_slides.pptx')
         currentY += 0.65;
       });
     } else {
-      slide3.addText('⚠️ Cần bổ sung diễn biến quá trình sự việc.', {
+      slide2.addText('⚠️ Cần bổ sung diễn biến quá trình sự việc.', {
         x: 0.6,
         y: 1.5,
         w: 12.1,
-        fontSize: 14,
+        fontSize: 13,
         color: accentColor,
         italic: true,
         fontFace: 'Arial'
       });
     }
 
-    // SLIDE 4: Yêu cầu & Quan điểm tranh chấp
+    // ==========================================
+    // SLIDE 3: CHỨNG CỨ BUỘC TỘI - GỠ TỘI
+    // ==========================================
+    const slide3 = pres.addSlide();
+    addSlideHeader(slide3, 'Đánh giá Chứng cứ Buộc tội - Gỡ tội');
+
+    // Tìm nhánh buộc tội & gỡ tội
+    const buocToiBranch = branches.find(b => /buộc tội|cáo trạng|phạm tội|tang vật/i.test(b.label || ''));
+    const goToiBranch = branches.find(b => /gỡ tội|bào chữa|giảm nhẹ|ngoại phạm/i.test(b.label || ''));
+
+    let buocToiList = [];
+    if (buocToiBranch && buocToiBranch.subBranches) {
+      buocToiList = buocToiBranch.subBranches.map(sb => {
+        let text = sb.label;
+        if (sb.evidence) text += ` (Chứng cứ: ${sb.evidence})`;
+        return text;
+      });
+    }
+
+    let goToiList = [];
+    if (goToiBranch && goToiBranch.subBranches) {
+      goToiList = goToiBranch.subBranches.map(sb => {
+        let text = sb.label;
+        if (sb.evidence) text += ` (Chứng cứ: ${sb.evidence})`;
+        return text;
+      });
+    }
+
+    // Fallback: nếu rỗng, lấy từ nhánh chứng cứ chung và phân tách tự động
+    if (buocToiList.length === 0 && goToiList.length === 0) {
+      const evidenceBranch = branches.find(b => /chứng cứ|tài liệu/i.test(b.label || ''));
+      if (evidenceBranch && evidenceBranch.subBranches) {
+        evidenceBranch.subBranches.forEach((sb, idx) => {
+          if (idx % 2 === 0) {
+            buocToiList.push(sb.label);
+          } else {
+            goToiList.push(sb.label);
+          }
+        });
+      }
+    }
+
+    // Cột bên trái: Buộc tội
+    slide3.addText('CHỨNG CỨ BUỘC TỘI (CÔNG TỐ)', {
+      x: 0.6,
+      y: 1.1,
+      w: 5.8,
+      h: 0.4,
+      fontSize: 13,
+      bold: true,
+      color: accentColor,
+      fontFace: 'Arial'
+    });
+
+    slide3.addShape(pres.ShapeType.rect, {
+      x: 0.6, y: 1.45, w: 5.8, h: 0.02,
+      fill: { color: accentColor }
+    });
+
+    if (buocToiList.length > 0) {
+      let bY = 1.6;
+      buocToiList.slice(0, 5).forEach((text) => {
+        slide3.addText(`• ${text}`, {
+          x: 0.6, y: bY, w: 5.8, h: 0.65,
+          fontSize: 10.5, color: textColor, fontFace: 'Arial',
+          valign: 'top'
+        });
+        bY += 0.7;
+      });
+    } else {
+      slide3.addText('Chưa có thông tin chứng cứ buộc tội.', { x: 0.6, y: 1.6, w: 5.8, fontSize: 11, italic: true, color: '64748B' });
+    }
+
+    // Cột bên phải: Gỡ tội
+    slide3.addText('CHỨNG CỨ GỠ TỘI / GIẢM NHẸ', {
+      x: 6.9,
+      y: 1.1,
+      w: 5.8,
+      h: 0.4,
+      fontSize: 13,
+      bold: true,
+      color: '1E8E5A', // Xanh lục
+      fontFace: 'Arial'
+    });
+
+    slide3.addShape(pres.ShapeType.rect, {
+      x: 6.9, y: 1.45, w: 5.8, h: 0.02,
+      fill: { color: '1E8E5A' }
+    });
+
+    if (goToiList.length > 0) {
+      let gY = 1.6;
+      goToiList.slice(0, 5).forEach((text) => {
+        slide3.addText(`• ${text}`, {
+          x: 6.9, y: gY, w: 5.8, h: 0.65,
+          fontSize: 10.5, color: textColor, fontFace: 'Arial',
+          valign: 'top'
+        });
+        gY += 0.7;
+      });
+    } else {
+      slide3.addText('Chưa có thông tin chứng cứ gỡ tội.', { x: 6.9, y: 1.6, w: 5.8, fontSize: 11, italic: true, color: '64748B' });
+    }
+
+    // ==========================================
+    // SLIDE 4: VẤN ĐỀ CẦN LÀM RÕ / ĐỀ XUẤT
+    // ==========================================
     const slide4 = pres.addSlide();
-    addSlideHeader(slide4, 'Yêu cầu & Quan điểm của các bên');
+    addSlideHeader(slide4, 'Vấn đề cần làm rõ & Đề xuất nghiệp vụ');
 
-    if (jsonData.claims && jsonData.claims.length > 0) {
-      let currentY = 1.3;
-      jsonData.claims.slice(0, 5).forEach((c) => {
-        slide4.addText(`- ${c.party || 'Chủ thể'}:`, {
-          x: 0.6,
-          y: currentY,
-          w: 3.0,
-          h: 0.6,
-          fontSize: 12,
-          bold: true,
-          color: primaryColor,
-          fontFace: 'Arial'
-        });
+    // Tập hợp tất cả các câu hỏi ghi nhận trong JSON
+    let allQuestions = [];
+    branches.forEach(b => {
+      if (b.questions && b.questions.length > 0) {
+        allQuestions.push(...b.questions);
+      }
+    });
 
-        slide4.addText(c.content || 'Nội dung quan điểm', {
-          x: 3.6,
-          y: currentY,
-          w: 9.1,
-          h: 0.6,
-          fontSize: 11,
-          color: textColor,
-          fontFace: 'Arial'
-        });
-
-        currentY += 0.75;
-      });
-    } else {
-      slide4.addText('⚠️ Cần bổ sung yêu cầu tố cáo/khởi kiện và lập luận của các bên.', {
-        x: 0.6,
-        y: 1.5,
-        w: 12.1,
-        fontSize: 14,
-        color: accentColor,
-        italic: true,
-        fontFace: 'Arial'
-      });
+    // Lấy thêm từ nhánh Yêu cầu điều tra bổ sung
+    const reqBranch = branches.find(b => /yêu cầu|điều tra|bổ sung|cần làm rõ|đề xuất/i.test(b.label || ''));
+    let proposalsList = [];
+    if (reqBranch && reqBranch.subBranches) {
+      proposalsList = reqBranch.subBranches.map(sb => sb.label);
     }
 
-    // SLIDE 5: Vấn đề pháp lý mấu chốt
-    const slide5 = pres.addSlide();
-    addSlideHeader(slide5, 'Các vấn đề pháp lý mấu chốt');
+    if (allQuestions.length === 0 && proposalsList.length === 0) {
+      // Fallback: nếu rỗng, lấy từ nhánh quyết định phán quyết
+      const decisionBranch = branches.find(b => /quyết định|giải quyết|phán quyết/i.test(b.label || ''));
+      if (decisionBranch && decisionBranch.subBranches) {
+        proposalsList = decisionBranch.subBranches.map(sb => sb.label);
+      }
+    }
 
-    if (jsonData.legalIssues && jsonData.legalIssues.length > 0) {
-      let currentY = 1.3;
-      jsonData.legalIssues.slice(0, 4).forEach((issueObj, i) => {
-        slide5.addText(`Vấn đề ${i + 1}: ${issueObj.issue || 'Nội dung tranh chấp'}`, {
-          x: 0.6,
-          y: currentY,
-          w: 12.1,
-          h: 0.4,
-          fontSize: 13,
-          bold: true,
-          color: primaryColor,
-          fontFace: 'Arial'
+    // Hiển thị danh sách câu hỏi cần làm rõ
+    slide4.addText('CÂU HỎI NGHIỆP VỤ CẦN LÀM RÕ:', {
+      x: 0.6, y: 1.1, w: 5.8, h: 0.4,
+      fontSize: 12, bold: true, color: accentColor, fontFace: 'Arial'
+    });
+
+    if (allQuestions.length > 0) {
+      let qY = 1.5;
+      allQuestions.slice(0, 5).forEach((q) => {
+        slide4.addText(`❓ ${q}`, {
+          x: 0.6, y: qY, w: 5.8, h: 0.6,
+          fontSize: 11, color: textColor, fontFace: 'Arial',
+          valign: 'top'
         });
-        currentY += 0.35;
-
-        if (issueObj.description) {
-          slide5.addText(`Lập luận nghiên cứu: ${issueObj.description}`, {
-            x: 0.8,
-            y: currentY,
-            w: 11.9,
-            h: 0.4,
-            fontSize: 11.5,
-            italic: true,
-            color: textColor,
-            fontFace: 'Arial'
-          });
-          currentY += 0.55;
-        } else {
-          currentY += 0.15;
-        }
+        qY += 0.65;
       });
     } else {
-      slide5.addText('⚠️ Cần bổ sung các vấn đề pháp lý cần tranh biện tại tòa.', {
-        x: 0.6,
-        y: 1.5,
-        w: 12.1,
-        fontSize: 14,
-        color: accentColor,
-        italic: true,
-        fontFace: 'Arial'
-      });
+      slide4.addText('Không phát hiện câu hỏi cần làm rõ thêm.', { x: 0.6, y: 1.5, w: 5.8, fontSize: 11, italic: true, color: '64748B' });
     }
 
-    // SLIDE 6: Chứng cứ & Tài liệu hồ sơ
-    const slide6 = pres.addSlide();
-    addSlideHeader(slide6, 'Hệ thống chứng cứ & Tài liệu vụ án');
+    // Hiển thị đề xuất hướng giải quyết/yêu cầu điều tra
+    slide4.addText('ĐỀ XUẤT HƯỚNG XỬ LÝ / YÊU CẦU ĐIỀU TRA:', {
+      x: 6.9, y: 1.1, w: 5.8, h: 0.4,
+      fontSize: 12, bold: true, color: primaryColor, fontFace: 'Arial'
+    });
 
-    if (jsonData.evidence && jsonData.evidence.length > 0) {
-      const rows = jsonData.evidence.slice(0, 6).map(e => [
-        { text: e.name || 'Chứng cứ', options: { bold: true } },
-        { text: e.source || '-' },
-        { text: e.value || '-', options: { color: secondaryColor, italic: true } }
-      ]);
-
-      slide6.addTable([
-        [
-          { text: 'Tài liệu / Vật chứng', options: { fill: primaryColor, color: white, bold: true } },
-          { text: 'Nguồn cung cấp / Thu thập', options: { fill: primaryColor, color: white, bold: true } },
-          { text: 'Giá trị chứng minh tố tụng', options: { fill: primaryColor, color: white, bold: true } }
-        ],
-        ...rows
-      ], {
-        x: 0.6,
-        y: 1.3,
-        w: 12.1,
-        rowH: 0.45,
-        border: { pt: 1, color: 'E2E8F0' },
-        fontSize: 10.5,
-        fontFace: 'Arial',
-        valign: 'middle'
-      });
-    } else {
-      slide6.addText('⚠️ Cần bổ sung danh mục chứng cứ hồ sơ vụ án.', {
-        x: 0.6,
-        y: 1.5,
-        w: 12.1,
-        fontSize: 14,
-        color: accentColor,
-        italic: true,
-        fontFace: 'Arial'
-      });
-    }
-
-    // SLIDE 7: Hướng giải quyết & Căn cứ áp dụng
-    const slide7 = pres.addSlide();
-    addSlideHeader(slide7, 'Quyết định tuyên án & Đề xuất giải quyết');
-
-    if (jsonData.decision && jsonData.decision.length > 0) {
-      let currentY = 1.3;
-      jsonData.decision.slice(0, 5).forEach((d) => {
-        slide7.addText(`✔ ${d.point || 'Mô tả phán quyết'}`, {
-          x: 0.6,
-          y: currentY,
-          w: 12.1,
-          h: 0.5,
-          fontSize: 12,
-          bold: true,
-          color: primaryColor,
-          fontFace: 'Arial'
+    if (proposalsList.length > 0) {
+      let pY = 1.5;
+      proposalsList.slice(0, 5).forEach((p) => {
+        slide4.addText(`✔ ${p}`, {
+          x: 6.9, y: pY, w: 5.8, h: 0.6,
+          fontSize: 11, color: textColor, fontFace: 'Arial',
+          valign: 'top'
         });
-        currentY += 0.45;
-
-        if (d.basis) {
-          slide7.addText(`Căn cứ pháp lý: ${d.basis}`, {
-            x: 0.9,
-            y: currentY,
-            w: 11.8,
-            h: 0.35,
-            fontSize: 11,
-            italic: true,
-            color: '1E8E5A', // Xanh lục success
-            fontFace: 'Arial'
-          });
-          currentY += 0.55;
-        } else {
-          currentY += 0.15;
-        }
+        pY += 0.65;
       });
     } else {
-      slide7.addText('⚠️ Cần bổ sung phần đề xuất áp dụng pháp luật và hướng phán quyết.', {
-        x: 0.6,
-        y: 1.5,
-        w: 12.1,
-        fontSize: 14,
-        color: accentColor,
-        italic: true,
-        fontFace: 'Arial'
-      });
+      slide4.addText('Không phát hiện đề xuất hoặc yêu cầu nghiệp vụ bổ sung.', { x: 6.9, y: 1.5, w: 5.8, fontSize: 11, italic: true, color: '64748B' });
     }
 
-    // Lưu file trình chiếu PowerPoint
+    // Lưu PowerPoint
     await pres.writeFile({ fileName: fileName });
   } catch (error) {
     console.error("Lỗi khi xuất slide PPTX:", error);

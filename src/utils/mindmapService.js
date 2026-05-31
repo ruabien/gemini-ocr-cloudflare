@@ -1,116 +1,120 @@
 /**
- * Service to generate case mindmap data from OCR text using Google Gemini
+ * Service to generate case mindmap data from OCR text according to Hướng dẫn 10/HD-VKSTC (2024)
  */
 
-// Prompt templates for different case types
-const PROMPTS = {
-  hinh_su: `Bạn là một chuyên gia pháp lý và Kiểm sát viên cao cấp của Việt Nam. 
-Hãy phân tích văn bản hồ sơ vụ án Hình sự (OCR từ tài liệu tố tụng như Cáo trạng, Bản án, Quyết định khởi tố...) dưới đây và trích xuất thông tin thành cấu trúc sơ đồ tư duy.
-
-Hãy tập trung làm rõ:
-- Tên vụ án hình sự và các tội danh khởi tố/xét xử.
-- Thông tin chi tiết về các bị cáo (Họ tên, nhân thân, vai trò chủ mưu/đồng phạm) và bị hại/người liên quan.
-- Dòng thời gian chi tiết của hành vi phạm tội và diễn tiến tố tụng.
-- Quan điểm truy tố của Viện kiểm sát và lập luận bào chữa của bị cáo/luật sư.
-- Các vấn đề pháp lý mấu chốt tranh chấp (Ví dụ: Định tội danh, xác định trị giá tài sản, độ tuổi chịu trách nhiệm hình sự, phòng vệ chính đáng, lỗi cố ý/vô ý...).
-- Danh mục chứng cứ quan trọng (Kết luận giám định, Biên bản khám nghiệm, Lời khai bị cáo, Vật chứng thu giữ...) và giá trị chứng minh của chúng.
-- Quyết định hoặc mức hình phạt tuyên/đề xuất và các căn cứ pháp lý áp dụng.`,
-
-  dan_su: `Bạn là một chuyên gia pháp lý và Thẩm phán chuyên nghiệp về án Dân sự tại Việt Nam.
-Hãy phân tích văn bản hồ sơ vụ án Dân sự (OCR từ tài liệu như Đơn khởi tố, Bản án, Biên bản hòa giải...) dưới đây và trích xuất thông tin thành cấu trúc sơ đồ tư duy.
-
-Hãy tập trung làm rõ:
-- Tên vụ án dân sự (Ví dụ: Tranh chấp hợp đồng đặt cọc, Tranh chấp quyền sử dụng đất...).
-- Đương sự tham gia: Nguyên đơn, Bị đơn, Người có quyền lợi nghĩa vụ liên quan (Họ tên, tư cách tố tụng).
-- Dòng thời gian giao dịch dân sự, phát sinh tranh chấp và quá trình thụ lý.
-- Yêu cầu khởi kiện của Nguyên đơn và Ý kiến phản đối/Yêu cầu phản tố của Bị đơn.
-- Các vấn đề pháp lý mấu chốt tranh chấp (Ví dụ: Hiệu lực hợp đồng, thời hiệu khởi kiện, xác định lỗi gây thiệt hại, nguồn gốc đất...).
-- Các chứng cứ tài liệu các bên giao nộp (Hợp đồng, Biên lai nhận tiền, Giấy chứng nhận quyền sử dụng đất, Kết quả định giá...) và giá trị chứng minh.
-- Quyết định phán quyết của Tòa án hoặc phương án giải quyết đề xuất và căn cứ pháp lý áp dụng.`,
-
-  hanh_chinh: `Bạn là một chuyên gia pháp lý và Thẩm phán chuyên nghiệp về án Hành chính tại Việt Nam.
-Hãy phân tích văn bản hồ sơ vụ án Hành chính (OCR từ tài liệu như Đơn khởi kiện hành chính, Bản án sơ thẩm, Quyết định hành chính bị kiện...) dưới đây và trích xuất thông tin thành cấu trúc sơ đồ tư duy.
-
-Hãy tập trung làm rõ:
-- Tên vụ án hành chính (Ví dụ: Khiếu kiện quyết định thu hồi đất, Khiếu kiện quyết định xử phạt vi phạm hành chính...).
-- Đương sự tham gia: Người khởi kiện (Cá nhân/Tổ chức), Người bị kiện (Cơ quan hành chính/Người có thẩm quyền), Người liên quan.
-- Dòng thời gian ban hành quyết định hành chính, thực hiện hành vi hành chính và tiến trình khởi kiện.
-- Yêu cầu khởi kiện (Yêu cầu hủy quyết định hành chính, đòi bồi thường thiệt hại...) và ý kiến giải trình của Người bị kiện.
-- Các vấn đề pháp lý mấu chốt tranh chấp (Ví dụ: Thẩm quyền ban hành, trình tự thủ tục ban hành, tính hợp pháp về mặt nội dung của quyết định...).
-- Chứng cứ tài liệu (Hồ sơ thanh tra, Biên bản vi phạm, Quy hoạch sử dụng đất...) và giá trị chứng minh.
-- Quyết định phán quyết của Tòa án (Hủy bỏ quyết định hành chính, bác đơn, v.v.) và căn cứ pháp lý áp dụng.`,
-
-  hon_nhan: `Bạn là một chuyên gia pháp lý chuyên sâu về Luật Hôn nhân & Gia đình tại Việt Nam.
-Hãy phân tích văn bản hồ sơ vụ án Hôn nhân và Gia đình (OCR từ tài liệu như Đơn ly hôn, Bản án, Biên bản hòa giải...) dưới đây và trích xuất thông tin thành cấu trúc sơ đồ tư duy.
-
-Hãy tập trung làm rõ:
-- Tên vụ án Hôn nhân và Gia đình (Ví dụ: Tranh chấp ly hôn, chia tài sản và quyền nuôi con...).
-- Đương sự tham gia: Vợ, Chồng, Người có quyền lợi liên quan (ví dụ: người nhận ủy quyền, chủ nợ chung).
-- Dòng thời gian quan hệ hôn nhân (Đăng ký kết hôn, bắt đầu ly thân, mâu thuẫn đỉnh điểm).
-- Yêu cầu, quan điểm của Vợ và Chồng về 3 trụ cột: Quan hệ hôn nhân (Đồng ý hay không đồng ý ly hôn), Con chung & cấp dưỡng, Tài sản chung & Nợ chung.
-- Các vấn đề pháp lý mấu chốt (Ví dụ: Xác định tài sản chung hay tài sản riêng, quyền nuôi con dưới 36 tháng tuổi, nguyện vọng con trên 7 tuổi...).
-- Chứng cứ tài liệu giao nộp (Đăng ký kết hôn, Giấy khai sinh của con, Giấy chứng nhận quyền sở hữu nhà đất, Giấy nợ...) và giá trị chứng minh.
-- Quyết định phán quyết của Tòa án (Chấp nhận ly hôn, giao con cho ai, chia tài sản ra sao...) và căn cứ pháp lý áp dụng.`
+// Định nghĩa 7 loại sơ đồ theo Hướng dẫn 10
+const DIAGRAM_TYPES = {
+  tong_the: {
+    name: 'Sơ đồ tổng thể vụ án',
+    instruction: `Tập trung vào tổng quan toàn bộ vụ án. Sắp xếp sơ đồ để làm rõ:
+- Bị can/bị cáo, tội danh khởi tố và điều luật áp dụng.
+- Dòng diễn biến sự kiện chính.
+- Hệ thống chứng cứ buộc tội cốt lõi và lập luận của các bên.
+- Quyết định hoặc đề xuất xử lý và các vấn đề pháp lý cần lưu ý.`
+  },
+  dien_bien: {
+    name: 'Sơ đồ diễn biến hành vi',
+    instruction: `Tập trung sâu vào diễn tiến hành vi phạm tội theo trình tự thời gian. Sắp xếp để làm rõ:
+- Chuỗi các sự kiện xảy ra từ khi chuẩn bị phạm tội, thực hiện phạm tội đến khi kết thúc và xóa dấu vết.
+- Thời gian, địa điểm cụ thể của từng hành vi.
+- Vai trò và hành động của từng bị can/bị cáo tại mỗi mốc thời gian.
+- Sự tương thích giữa diễn biến lời khai và chứng cứ thực tế tại hiện trường.`
+  },
+  danh_gia_chung_cu: {
+    name: 'Sơ đồ đánh giá chứng cứ',
+    instruction: `Tập trung vào tính hợp pháp, tính xác thực và tính liên quan của hệ thống chứng cứ. Phân tích:
+- Danh mục chứng cứ: lời khai bị can, biên bản khám nghiệm, kết luận giám định, vật chứng, lời khai nhân chứng.
+- Đánh giá độ tin cậy của từng nguồn chứng cứ.
+- Các mâu thuẫn giữa các chứng cứ với nhau và hướng giải quyết mâu thuẫn.`
+  },
+  bi_can_hanh_vi: {
+    name: 'Sơ đồ bị can/bị cáo và hành vi',
+    instruction: `Tập trung vào mối quan hệ cá nhân của từng bị can và hành vi phạm tội cụ thể của họ. Sắp xếp để làm rõ:
+- Lý lịch, nhân thân và vai trò của từng bị can (chủ mưu, thực hành, giúp sức).
+- Hành vi phạm tội tương ứng với tội danh của từng người.
+- Tình tiết tăng nặng, giảm nhẹ trách nhiệm hình sự của từng cá nhân.`
+  },
+  buoc_toi_go_toi: {
+    name: 'Sơ đồ buộc tội - gỡ tội',
+    instruction: `Tạo thế đối chiếu song song giữa quan điểm của Viện kiểm sát và Bên bào chữa. Làm rõ:
+- Cánh buộc tội: Chứng cứ buộc tội, các tình tiết định khung tăng nặng, lập luận cáo trạng.
+- Cánh gỡ tội: Chứng cứ gỡ tội, các tình tiết giảm nhẹ, lý do bào chữa của bị cáo/luật sư, các điểm nghi ngờ chưa rõ.`
+  },
+  yeu_cau_dieu_tra: {
+    name: 'Sơ đồ yêu cầu điều tra bổ sung',
+    instruction: `Tập trung vào những thiếu sót của hồ sơ và các yêu cầu nghiệp vụ của Kiểm sát viên. Phác thảo:
+- Những tình tiết quan trọng chưa được làm rõ hoặc mâu thuẫn.
+- Các yêu cầu điều tra bổ sung cụ thể gửi Cơ quan điều tra (ví dụ: thực nghiệm hiện trường, giám định lại, đối chất).
+- Căn cứ pháp lý để yêu cầu điều tra bổ sung.`
+  },
+  doi_chieu_chung_cu: {
+    name: 'Bảng đối chiếu lời khai/chứng cứ',
+    instruction: `Trực quan hóa đối chiếu lời khai của các bị can với nhau, bị can với bị hại, nhân chứng hoặc các chứng cứ vật chất. Chỉ rõ:
+- Những lời khai trùng khớp.
+- Những lời khai bất nhất, mâu thuẫn nghiêm trọng.
+- Chứng cứ khách quan (dữ liệu camera, dấu vết vân tay, v.v.) dùng để kiểm chứng lời khai nào.`
+  }
 };
 
 const MAIN_INSTRUCTION = `
-Hãy phân tích văn bản hồ sơ vụ án được cung cấp và xuất ra kết quả duy nhất dưới dạng JSON hợp lệ tuân thủ nghiêm ngặt Schema dưới đây.
+Bạn là một Kiểm sát viên cao cấp dày dạn kinh nghiệm nghiệp vụ của Viện kiểm sát nhân dân tối cao Việt Nam.
+Hãy phân tích văn bản hồ sơ vụ án được cung cấp (OCR từ các tài liệu tố tụng) và trích xuất thành dữ liệu cấu trúc sơ đồ tư duy phân tầng tuân thủ nghiêm ngặt Hướng dẫn số 10/HD-VKSTC năm 2024.
+
+BẮT BUỘC sinh dữ liệu dạng JSON hợp lệ tuân thủ schema dưới đây. 
 KHÔNG thêm bất kỳ văn bản giải thích, lời chào hỏi hay đánh dấu markdown nào bên ngoài JSON. Chỉ trả về một chuỗi JSON có thể phân tích bằng JSON.parse().
 
 CẤU TRÚC JSON SCHEMA BẮT BUỘC:
 {
-  "caseTitle": "Tên vụ án / Tiêu đề chính xác (ví dụ: Vụ án Nguyễn Văn A trộm cắp tài sản)",
-  "caseType": "Hình sự / Dân sự / Hành chính / Hôn nhân và gia đình",
-  "parties": [
+  "centralKeyword": "Từ khóa trung tâm / Tên vụ án chính thức (ví dụ: Vụ án Trộm cắp tài sản tại Công ty X)",
+  "branches": [
     {
-      "name": "Tên đương sự / cá nhân / tổ chức",
-      "role": "Vai trò tố tụng (Bị cáo, Bị hại, Nguyên đơn, Bị đơn, Người có quyền lợi nghĩa vụ liên quan, Vợ, Chồng, v.v.)",
-      "detail": "Tóm tắt thông tin nhân thân hoặc đặc điểm quan trọng (nếu có)"
-    }
-  ],
-  "timeline": [
-    {
-      "date": "Ngày/Tháng/Năm hoặc mốc thời gian cụ thể của sự kiện",
-      "event": "Mô tả ngắn gọn sự kiện xảy ra"
-    }
-  ],
-  "claims": [
-    {
-      "party": "Đương sự hoặc Cơ quan đề xuất (Viện kiểm sát, Nguyên đơn, Bị đơn, Vợ, Chồng, v.v.)",
-      "content": "Nội dung yêu cầu, cáo cáo trạng hoặc quan điểm tóm tắt"
-    }
-  ],
-  "legalIssues": [
-    {
-      "issue": "Tóm tắt ngắn gọn vấn đề pháp lý mấu chốt cần giải quyết",
-      "description": "Chi tiết lập luận pháp lý hoặc điểm mâu thuẫn cần làm rõ"
-    }
-  ],
-  "evidence": [
-    {
-      "name": "Tên tài liệu chứng cứ, vật chứng hoặc tài liệu xác minh",
-      "source": "Cơ quan hoặc đương sự thu thập/cung cấp (nếu có)",
-      "value": "Giá trị chứng minh (ví dụ: Chứng minh tội phạm, Chứng minh quyền sở hữu riêng, Chứng minh năng lực nuôi con, v.v.)"
-    }
-  ],
-  "decision": [
-    {
-      "point": "Quyết định tuyên án hoặc đề xuất hướng giải quyết cụ thể",
-      "basis": "Căn cứ pháp lý áp dụng (ví dụ: Khoản 1 Điều 173 Bộ luật Hình sự)"
+      "label": "Tên nhánh cấp 1 (Tầng 1 - Danh mục thông tin chính)",
+      "color": "Mã màu HEX gợi ý cho nhánh này (ví dụ: #1E8E5A, #2F5FA7, #D97706, #7C3AED, #DB2777, #475569)",
+      "subBranches": [
+        {
+          "label": "Tên nhánh cấp 2 (Tầng 2 - Chi tiết phân loại hoặc sự kiện)",
+          "note": "Ghi chú giải thích cho nhánh cấp 2 (nếu có, ví dụ: Nhân thân chưa có tiền án tiền sự)",
+          "evidence": "Tài liệu chứng cứ liên quan đến nhánh cấp 2 này (ví dụ: Biên bản bắt quả tang BL 45)",
+          "subBranches": [
+            {
+              "label": "Tên nhánh cấp 3 (Tầng 3 - Dữ liệu cụ thể, lời khai, chi tiết hành vi)",
+              "note": "Ghi chú giải thích cho nhánh cấp 3 (nếu có)",
+              "evidence": "Tài liệu chứng cứ liên quan đến nhánh cấp 3 này (nếu tìm thấy)"
+            }
+          ]
+        }
+      ],
+      "questions": [
+        "Câu hỏi nghiệp vụ cần làm rõ dưới nhánh danh mục này (nếu có)"
+      ],
+      "note": "Ghi chú chung cho danh mục cấp 1 này (nếu có)"
     }
   ]
 }
 
-LƯU Ý QUAN TRỌNG:
-- Nếu một mục nào đó không tìm thấy thông tin hoặc thông tin quá mờ/thiếu hụt trong văn bản OCR, hãy để mảng rỗng [] hoặc giá trị chuỗi rỗng "" cho mục đó. KHÔNG tự chế tác thông tin giả mạo.
-- Output phải là JSON hoàn toàn bằng tiếng Việt chính quy, ngắn gọn, súc tích và chính xác về mặt pháp lý.
+QUY TẮC PHÂN LOẠI CỦA ÁN HÌNH SỰ (ƯU TIÊN):
+Với án hình sự, cấu trúc nhánh cấp 1 phải ưu tiên các nhóm thông tin trọng tâm sau:
+1. Bị can/bị cáo (Họ tên, tuổi, nhân thân, tư cách)
+2. Hành vi phạm tội (Mô tả hành động phạm tội cốt lõi)
+3. Thời gian, địa điểm (Cụ thể xảy ra sự việc)
+4. Công cụ/phương tiện (Hung khí, xe cộ, thiết bị sử dụng)
+5. Hậu quả, thiệt hại (Vật chất, sức khỏe, tính mạng, xã hội)
+6. Chứng cứ buộc tội (Lời khai nhận, nhân chứng, kết quả giám định pháp y, tang vật)
+7. Chứng cứ gỡ tội (Tự vệ, chứng cứ ngoại phạm, lời khai giảm nhẹ)
+8. Tội danh, điều luật (Điều khoản áp dụng trong Bộ luật Hình sự)
+9. Tình tiết tăng nặng/giảm nhẹ (Thành khẩn khai báo, tự nguyện bồi thường, tái phạm)
+10. Vấn đề cần điều tra bổ sung (Các tình tiết chưa rõ, cần xác minh)
+
+LƯU Ý:
+- Tự động điều chỉnh cấu trúc nhánh theo Loại sơ đồ được yêu cầu ở trên để đáp ứng mục tiêu phân tích.
+- Nếu thông tin thiếu hụt hoặc mờ trong văn bản OCR, hãy để trống hoặc mảng rỗng. KHÔNG tự bịa ra thông tin.
+- Nội dung hiển thị phải ngắn gọn, súc tích và đúng thuật ngữ pháp lý tố tụng Việt Nam.
 `;
 
 /**
- * Gọi API Gemini để sinh sơ đồ tư duy vụ án từ văn bản OCR với cơ chế quay vòng khóa (Key Rotation)
- * và tự động thử lại khi dính bộ lọc Recitation.
+ * Gọi API Gemini để sinh sơ đồ tư duy vụ án theo Hướng dẫn 10
  */
-export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, modelName) => {
+export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, modelName, diagramType = 'tong_the', diagramFormat = 'hình luồng') => {
   if (!apiKeysPool || apiKeysPool.length === 0) {
     const err = new Error("Chưa cấu hình Gemini API Key. Vui lòng vào Cấu hình API để thêm key trước khi tạo sơ đồ.");
     err.code = "CONFIG_MISSING";
@@ -129,8 +133,18 @@ export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, mod
     normalizedModel = 'gemini-2.5-pro';
   }
 
-  const basePrompt = PROMPTS[templateKey] || PROMPTS.hinh_su;
-  
+  // Lấy chỉ dẫn cụ thể cho loại sơ đồ được chọn
+  const typeConfig = DIAGRAM_TYPES[diagramType] || DIAGRAM_TYPES.tong_the;
+  const systemText = `
+Bạn đang xử lý yêu cầu lập: **${typeConfig.name}** dưới hình thức: **${diagramFormat}**.
+Chỉ dẫn phân tích sơ đồ chuyên biệt:
+${typeConfig.instruction}
+
+Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templateKey === 'hanh_chinh' ? 'Hành chính' : templateKey === 'hon_nhan' ? 'Hôn nhân & Gia đình' : 'Hình sự (Quy chuẩn Hướng dẫn 10)'}.
+  `;
+
+  const fullPrompt = `${systemText}\n\n${MAIN_INSTRUCTION}\n\nVĂN BẢN OCR CẦN PHÂN TÍCH:\n${ocrText}`;
+
   let success = false;
   let keyIndex = 0;
   let lastError = null;
@@ -144,24 +158,22 @@ export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, mod
 
     let isRetryAttempt = false;
     
-    // Vòng lặp thử lại nội bộ của Key hiện tại (ví dụ khi dính RECITATION)
+    // Vòng lặp thử lại nội bộ khi dính bộ lọc RECITATION
     while (true) {
       try {
-        console.log(`[Mindmap Gen] Thử dùng Key #${keyIndex + 1} (${maskedKey}) - Lần thử: ${isRetryAttempt ? 'Diễn giải lại' : 'Mặc định'}`);
+        console.log(`[Mindmap Gen] Thử dùng Key #${keyIndex + 1} (${maskedKey}) - Lần thử: ${isRetryAttempt ? 'Diễn giải tránh bộ lọc' : 'Mặc định'}`);
         
-        let activePrompt = basePrompt;
+        let activePrompt = fullPrompt;
         if (isRetryAttempt) {
-          activePrompt = basePrompt + "\nLƯU Ý QUAN TRỌNG: Vui lòng tự diễn đạt lại (paraphrase) mọi thông tin trích xuất, tuyệt đối không chép nguyên văn các đoạn văn dài để tránh kích hoạt bộ lọc bản quyền (copyright/recitation filter) của hệ thống.";
+          activePrompt = `LƯU Ý: Diễn giải lại (paraphrase) mọi thông tin trích xuất, không chép nguyên văn từ hồ sơ gốc để tránh bộ lọc bản quyền.\n\n${fullPrompt}`;
         }
-
-        const fullPrompt = `${activePrompt}\n\n${MAIN_INSTRUCTION}\n\nVĂN BẢN OCR CẦN PHÂN TÍCH:\n${ocrText}`;
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${currentKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{
-              parts: [{ text: fullPrompt }]
+              parts: [{ text: activePrompt }]
             }],
             generationConfig: {
               responseMimeType: "application/json",
@@ -210,7 +222,7 @@ export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, mod
 
         if (data.candidates?.[0]?.finishReason === 'RECITATION') {
           if (!isRetryAttempt) {
-            console.warn(`[Mindmap Gen] Phát hiện bộ lọc RECITATION của Google trên Key #${keyIndex + 1}. Đang thử lại với prompt diễn giải...`);
+            console.warn(`[Mindmap Gen] Dính bộ lọc RECITATION của Google. Tiến hành thử lại với prompt diễn giải...`);
             isRetryAttempt = true;
             await new Promise(r => setTimeout(r, 1000));
             continue; // Thử lại với cấu hình diễn giải
@@ -229,16 +241,15 @@ export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, mod
         }
 
         success = true;
-        break; // Kết thúc vòng lặp thử lại nội bộ
+        break; // Thoát vòng lặp thử lại nội bộ
       } catch (err) {
         lastError = err;
-        // Nếu dính lỗi mạng hoặc lỗi API cấu hình/quota, chuyển sang Key khác ngay lập tức
-        break; // Thoát vòng lặp thử lại nội bộ của Key này
+        break; // Thoát vòng lặp thử lại nội bộ để chuyển sang Key tiếp theo
       }
     }
 
     if (!success) {
-      keyIndex++; // Đổi sang khóa dự phòng tiếp theo
+      keyIndex++;
     }
   }
 
@@ -264,178 +275,167 @@ export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, mod
 };
 
 /**
- * Thuật toán Layout Cây Ngang tự động (Horizontal Tree Layout)
- * Chuyển đổi dữ liệu JSON vụ án thành danh sách Nodes và Edges của React Flow
+ * Thuật toán Layout Cây Tự do (Hỗ trợ xoay trục Ngang / Dọc)
+ * Chuyển đổi dữ liệu JSON lồng 3 cấp thành Nodes và Edges của React Flow
  */
-export const convertJsonToFlow = (jsonData) => {
+export const convertJsonToFlow = (jsonData, orientation = 'horizontal') => {
   if (!jsonData) return { nodes: [], edges: [] };
 
-  // 1. Xây dựng cấu trúc cây chuẩn trong bộ nhớ
-  const tree = {
-    id: 'root',
-    label: jsonData.caseTitle || 'Chưa xác định tên vụ án',
-    type: 'caseRoot',
-    children: [
-      {
-        id: 'cat-caseType',
-        label: 'Phân loại vụ án',
-        type: 'category',
-        categoryType: 'caseType',
-        children: jsonData.caseType ? [{ id: 'det-caseType-1', label: jsonData.caseType, type: 'detail', categoryType: 'caseType' }] : []
-      },
-      {
-        id: 'cat-parties',
-        label: 'Đương sự / Thành phần tham gia',
-        type: 'category',
-        categoryType: 'parties',
-        children: (jsonData.parties && jsonData.parties.length > 0)
-          ? jsonData.parties.map((p, idx) => ({
-              id: `det-parties-${idx}`,
-              label: `${p.role ? `${p.role}: ` : ''}${p.name || ''}${p.detail ? ` (${p.detail})` : ''}`,
+  // 1. Phác thảo cấu trúc cây lồng trong bộ nhớ
+  const rootLabel = jsonData.centralKeyword || 'Sơ đồ tư duy vụ án';
+  
+  const rawBranches = jsonData.branches || [];
+  
+  // Dựng cây phân tầng đệ quy
+  const buildTree = (rawBranch, branchIdx, parentAccentColor = null) => {
+    const accentColor = rawBranch.color || parentAccentColor || '#163A70';
+    
+    const children = [];
+    
+    // Thêm các nhánh cấp 2 (Tầng 2)
+    if (rawBranch.subBranches && rawBranch.subBranches.length > 0) {
+      rawBranch.subBranches.forEach((sub2, idx2) => {
+        const sub2Children = [];
+        
+        // Thêm các nhánh cấp 3 (Tầng 3)
+        if (sub2.subBranches && sub2.subBranches.length > 0) {
+          sub2.subBranches.forEach((sub3, idx3) => {
+            sub2Children.push({
+              id: `det-${branchIdx}-${idx2}-${idx3}`,
+              label: sub3.label,
               type: 'detail',
-              categoryType: 'parties'
-            }))
-          : []
-      },
-      {
-        id: 'cat-timeline',
-        label: 'Dòng thời gian sự việc',
-        type: 'category',
-        categoryType: 'timeline',
-        children: (jsonData.timeline && jsonData.timeline.length > 0)
-          ? jsonData.timeline.map((t, idx) => ({
-              id: `det-timeline-${idx}`,
-              label: `${t.date ? `[${t.date}]: ` : ''}${t.event || ''}`,
-              type: 'detail',
-              categoryType: 'timeline'
-            }))
-          : []
-      },
-      {
-        id: 'cat-claims',
-        label: 'Yêu cầu / Quan điểm các bên',
-        type: 'category',
-        categoryType: 'claims',
-        children: (jsonData.claims && jsonData.claims.length > 0)
-          ? jsonData.claims.map((c, idx) => ({
-              id: `det-claims-${idx}`,
-              label: `${c.party ? `[${c.party}]: ` : ''}${c.content || ''}`,
-              type: 'detail',
-              categoryType: 'claims'
-            }))
-          : []
-      },
-      {
-        id: 'cat-legalIssues',
-        label: 'Vấn đề pháp lý mấu chốt',
-        type: 'category',
-        categoryType: 'legalIssues',
-        children: (jsonData.legalIssues && jsonData.legalIssues.length > 0)
-          ? jsonData.legalIssues.map((i, idx) => ({
-              id: `det-legalIssues-${idx}`,
-              label: `${i.issue || ''}${i.description ? ` (${i.description})` : ''}`,
-              type: 'detail',
-              categoryType: 'legalIssues'
-            }))
-          : []
-      },
-      {
-        id: 'cat-evidence',
-        label: 'Chứng cứ / Tài liệu quan trọng',
-        type: 'category',
-        categoryType: 'evidence',
-        children: (jsonData.evidence && jsonData.evidence.length > 0)
-          ? jsonData.evidence.map((e, idx) => ({
-              id: `det-evidence-${idx}`,
-              label: `${e.name || ''}${e.source ? ` (Nguồn: ${e.source})` : ''}${e.value ? ` - ${e.value}` : ''}`,
-              type: 'detail',
-              categoryType: 'evidence'
-            }))
-          : []
-      },
-      {
-        id: 'cat-decision',
-        label: 'Đề xuất / Quyết định phán quyết',
-        type: 'category',
-        categoryType: 'decision',
-        children: (jsonData.decision && jsonData.decision.length > 0)
-          ? jsonData.decision.map((d, idx) => ({
-              id: `det-decision-${idx}`,
-              label: `${d.point || ''}${d.basis ? ` [Cơ sở: ${d.basis}]` : ''}`,
-              type: 'detail',
-              categoryType: 'decision'
-            }))
-          : []
-      }
-    ]
-  };
-
-  // Áp dụng quy tắc "Cần bổ sung" khi danh mục bị rỗng
-  tree.children.forEach(cat => {
-    if (cat.children.length === 0) {
-      cat.children.push({
-        id: `det-${cat.categoryType}-placeholder`,
-        label: '⚠️ Cần bổ sung dữ liệu',
-        type: 'placeholder',
-        categoryType: cat.categoryType
+              accentColor: accentColor,
+              note: sub3.note || '',
+              evidence: sub3.evidence || '',
+              children: []
+            });
+          });
+        }
+        
+        children.push({
+          id: `sub-${branchIdx}-${idx2}`,
+          label: sub2.label,
+          type: 'subBranch',
+          accentColor: accentColor,
+          note: sub2.note || '',
+          evidence: sub2.evidence || '',
+          children: sub2Children
+        });
       });
     }
-  });
 
-  // 2. Tính toán độ cao cây con (Subtree Height) đệ quy để phục vụ thuật toán layout
-  const NODE_HEIGHT = 80; // Chiều cao cơ bản của một node
-  const VERTICAL_GAP = 20; // Khoảng cách dọc giữa các node anh em
-
-  const computeSubtreeHeight = (node) => {
-    if (!node.children || node.children.length === 0) {
-      node.subtreeHeight = NODE_HEIGHT;
-      return NODE_HEIGHT;
+    // Thêm node Câu hỏi cần làm rõ như một nhánh con phụ nếu có
+    if (rawBranch.questions && rawBranch.questions.length > 0) {
+      children.push({
+        id: `q-${branchIdx}`,
+        label: `❓ Câu hỏi cần làm rõ:\n` + rawBranch.questions.map(q => `• ${q}`).join('\n'),
+        type: 'detail',
+        accentColor: '#C62828', // Đỏ nổi bật cho câu hỏi
+        note: '',
+        evidence: '',
+        children: []
+      });
     }
-    let childrenHeightSum = 0;
-    node.children.forEach(child => {
-      childrenHeightSum += computeSubtreeHeight(child);
-    });
-    node.subtreeHeight = Math.max(NODE_HEIGHT, childrenHeightSum + (node.children.length - 1) * VERTICAL_GAP);
-    return node.subtreeHeight;
+
+    // Nếu không có bất kỳ con nào, tự động chèn node placeholder "Cần bổ sung"
+    if (children.length === 0) {
+      children.push({
+        id: `det-${branchIdx}-placeholder`,
+        label: '⚠️ Cần bổ sung dữ liệu',
+        type: 'placeholder',
+        accentColor: accentColor,
+        isPlaceholder: true,
+        children: []
+      });
+    }
+
+    return {
+      id: `cat-${branchIdx}`,
+      label: rawBranch.label,
+      type: 'category',
+      accentColor: accentColor,
+      note: rawBranch.note || '',
+      children: children
+    };
   };
 
-  computeSubtreeHeight(tree);
+  const tree = {
+    id: 'root',
+    label: rootLabel,
+    type: 'caseRoot',
+    accentColor: '#163A70',
+    children: rawBranches.map((br, idx) => buildTree(br, idx))
+  };
 
-  // 3. Phân bổ tọa độ X và Y đệ quy (Root bên trái, phát triển sang phải)
+  // Nếu hoàn toàn không có nhánh cấp 1 nào, thêm placeholder cho toàn sơ đồ
+  if (tree.children.length === 0) {
+    tree.children.push({
+      id: 'cat-placeholder',
+      label: '⚠️ Sơ đồ trống',
+      type: 'placeholder',
+      accentColor: '#e11d48',
+      isPlaceholder: true,
+      children: []
+    });
+  }
+
+  // 2. Tính toán độ rộng/cao vùng phân cấp đệ quy
+  // Hướng ngang (horizontal): tính chiều cao (vertical size)
+  // Hướng dọc (vertical): tính chiều rộng (horizontal size)
+  const NODE_HEIGHT = 80;
+  const NODE_WIDTH = 280;
+  const GAP = 20;
+
+  const LEAF_SIZE = orientation === 'horizontal' ? NODE_HEIGHT + 10 : NODE_WIDTH + 20;
+
+  const computeSubtreeSize = (node) => {
+    if (!node.children || node.children.length === 0) {
+      node.subtreeSize = LEAF_SIZE;
+      return LEAF_SIZE;
+    }
+    let total = 0;
+    node.children.forEach(child => {
+      total += computeSubtreeSize(child);
+    });
+    node.subtreeSize = Math.max(LEAF_SIZE, total + (node.children.length - 1) * GAP);
+    return node.subtreeSize;
+  };
+
+  computeSubtreeSize(tree);
+
+  // 3. Phân bổ tọa độ X và Y đệ quy dựa trên hướng xoay trục
   const nodes = [];
   const edges = [];
-  const HORIZONTAL_SPACING = 340; // Khoảng cách ngang giữa các cấp bậc
+  
+  const HORIZONTAL_SPACING = 340; // Khoảng cách cấp độ ngang
+  const VERTICAL_SPACING = 180;   // Khoảng cách cấp độ dọc
 
-  // Mảng định nghĩa màu sắc chủ đạo cho từng Category
-  const categoryColors = {
-    caseType: '#2f5fa7',     // Xanh lam
-    parties: '#1e8e5a',      // Xanh lục
-    timeline: '#d97706',     // Amber / Cam
-    claims: '#7c3aed',       // Tím
-    legalIssues: '#db2777',  // Hồng đậm
-    evidence: '#475569',     // Slate xám
-    decision: '#059669'      // Xanh ngọc lục bảo
-  };
+  const assignPositions = (node, parentId, depth, offsetStart) => {
+    const size = node.subtreeSize;
+    const center = offsetStart + size / 2;
 
-  const assignPositions = (node, parentId, x, yStart) => {
-    const yCenter = yStart + node.subtreeHeight / 2;
-
-    // Chọn màu viền hoặc màu nền đặc trưng
-    const catType = node.categoryType || 'default';
-    const accentColor = categoryColors[catType] || '#163A70';
+    let x, y;
+    if (orientation === 'horizontal') {
+      x = depth * HORIZONTAL_SPACING + 50;
+      y = center - NODE_HEIGHT / 2;
+    } else {
+      x = center - NODE_WIDTH / 2;
+      y = depth * VERTICAL_SPACING + 50;
+    }
 
     nodes.push({
       id: node.id,
       type: 'customMindmapNode',
       data: {
         label: node.label,
-        nodeType: node.type, // 'caseRoot', 'category', 'detail', 'placeholder'
-        categoryType: catType,
-        accentColor: accentColor,
-        isPlaceholder: node.type === 'placeholder'
+        nodeType: node.type, // 'caseRoot', 'category', 'subBranch', 'detail', 'placeholder'
+        accentColor: node.accentColor,
+        note: node.note || '',
+        evidence: node.evidence || '',
+        orientation: orientation,
+        isPlaceholder: !!node.isPlaceholder
       },
-      // Căn giữa node dựa trên chiều cao thực tế
-      position: { x, y: yCenter - NODE_HEIGHT / 2 },
+      position: { x, y }
     });
 
     if (parentId) {
@@ -444,25 +444,24 @@ export const convertJsonToFlow = (jsonData) => {
         source: parentId,
         target: node.id,
         type: 'smoothstep',
-        animated: node.type === 'placeholder',
+        animated: !!node.isPlaceholder,
         style: {
-          stroke: node.type === 'placeholder' ? '#e11d48' : '#cbd5e1',
-          strokeWidth: node.type === 'placeholder' ? 2 : 1.5,
+          stroke: node.isPlaceholder ? '#e11d48' : '#cbd5e1',
+          strokeWidth: node.isPlaceholder ? 2 : 1.5,
         }
       });
     }
 
     if (node.children && node.children.length > 0) {
-      let currentY = yStart;
+      let currentOffset = offsetStart;
       node.children.forEach(child => {
-        assignPositions(child, node.id, x + HORIZONTAL_SPACING, currentY);
-        currentY += child.subtreeHeight + VERTICAL_GAP;
+        assignPositions(child, node.id, depth + 1, currentOffset);
+        currentOffset += child.subtreeSize + GAP;
       });
     }
   };
 
-  // Bắt đầu từ tọa độ X=50, Y=50
-  assignPositions(tree, null, 50, 50);
+  assignPositions(tree, null, 0, 50);
 
   return { nodes, edges };
 };

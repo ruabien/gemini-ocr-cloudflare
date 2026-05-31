@@ -5,7 +5,8 @@ import {
   Controls,
   Background,
   useNodesState,
-  useEdgesState
+  useEdgesState,
+  Panel
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -21,6 +22,9 @@ const nodeTypes = {
 
 export default function MindmapWorkspace({ ocrText, config, onClose }) {
   const [selectedTemplate, setSelectedTemplate] = useState('hinh_su');
+  const [diagramType, setDiagramType] = useState('tong_the');
+  const [diagramFormat, setDiagramFormat] = useState('hình luồng');
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [generationError, setGenerationError] = useState(null);
@@ -31,12 +35,18 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
 
   const reactFlowWrapper = useRef(null);
 
-  // Danh sách các Template
-  const templates = [
-    { key: 'hinh_su', name: 'Hình sự', icon: 'gavel' },
-    { key: 'dan_su', name: 'Dân sự', icon: 'balance' },
-    { key: 'hanh_chinh', name: 'Hành chính', icon: 'account_balance' },
-    { key: 'hon_nhan', name: 'Hôn nhân & Gia đình', icon: 'favorite' }
+
+
+  // Bảng màu cho phép đổi màu sắc nhánh
+  const colorsList = [
+    { hex: '#163A70', name: 'Navy' },
+    { hex: '#2F5FA7', name: 'Blue' },
+    { hex: '#1E8E5A', name: 'Lục' },
+    { hex: '#D97706', name: 'Cam' },
+    { hex: '#7C3AED', name: 'Tím' },
+    { hex: '#DB2777', name: 'Hồng' },
+    { hex: '#C62828', name: 'Đỏ' },
+    { hex: '#475569', name: 'Slate' }
   ];
 
   // Lấy danh sách API Keys từ cấu hình hiện tại hoặc localStorage (dùng chung nguồn với OCR)
@@ -48,7 +58,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
   const modelName = config?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
 
   // Thực hiện phân tích vụ án và sinh sơ đồ tư duy bằng Gemini
-  const handleGenerateMindmap = async (templateKey = selectedTemplate) => {
+  const handleGenerateMindmap = async (templateKey = selectedTemplate, type = diagramType, format = diagramFormat) => {
     if (apiKeysPool.length === 0) {
       setGenerationError("Chưa cấu hình Gemini API Key. Vui lòng vào Cấu hình API để thêm key trước khi tạo sơ đồ.");
       return;
@@ -60,10 +70,11 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
 
     try {
       // 1. Gọi API Gemini lấy kết quả trích xuất dạng JSON thông qua cơ chế rotation
-      const parsedData = await generateCaseMindmap(ocrText, templateKey, apiKeysPool, modelName);
+      const parsedData = await generateCaseMindmap(ocrText, templateKey, apiKeysPool, modelName, type, format);
 
       // 2. Chuyển đổi dữ liệu JSON thành Nodes & Edges và áp dụng thuật toán layout
-      const { nodes: flowNodes, edges: flowEdges } = convertJsonToFlow(parsedData);
+      const orientation = (format === 'hình cây' || format === 'đa luồng') ? 'vertical' : 'horizontal';
+      const { nodes: flowNodes, edges: flowEdges } = convertJsonToFlow(parsedData, orientation);
       setNodes(flowNodes);
       setEdges(flowEdges);
     } catch (error) {
@@ -91,7 +102,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
   // Tự động kích hoạt tạo sơ đồ lần đầu khi mở Workspace
   useEffect(() => {
     if (ocrText && ocrText.trim()) {
-      handleGenerateMindmap();
+      handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -105,34 +116,106 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     setSelectedNode(null);
   }, []);
 
-  // Sửa chữ trong Node được chọn
+  // Sửa chữ hiển thị của Node
   const handleLabelChange = (e) => {
     if (!selectedNode) return;
     const newLabel = e.target.value;
 
-    // Cập nhật nhãn trong danh sách nodes của React Flow
     setNodes((nds) =>
       nds.map((n) => {
         if (n.id === selectedNode.id) {
           return {
             ...n,
-            data: {
-              ...n.data,
-              label: newLabel,
-            },
+            data: { ...n.data, label: newLabel },
           };
         }
         return n;
       })
     );
 
-    // Cập nhật selectedNode để đồng bộ input
     setSelectedNode((prev) => ({
       ...prev,
-      data: {
-        ...prev.data,
-        label: newLabel,
-      },
+      data: { ...prev.data, label: newLabel },
+    }));
+  };
+
+  // Sửa ghi chú (Note) của Node
+  const handleNoteChange = (e) => {
+    if (!selectedNode) return;
+    const newNote = e.target.value;
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === selectedNode.id) {
+          return {
+            ...n,
+            data: { ...n.data, note: newNote },
+          };
+        }
+        return n;
+      })
+    );
+
+    setSelectedNode((prev) => ({
+      ...prev,
+      data: { ...prev.data, note: newNote },
+    }));
+  };
+
+  // Sửa tài liệu chứng cứ (Evidence) của Node
+  const handleEvidenceChange = (e) => {
+    if (!selectedNode) return;
+    const newEvidence = e.target.value;
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === selectedNode.id) {
+          return {
+            ...n,
+            data: { ...n.data, evidence: newEvidence },
+          };
+        }
+        return n;
+      })
+    );
+
+    setSelectedNode((prev) => ({
+      ...prev,
+      data: { ...prev.data, evidence: newEvidence },
+    }));
+  };
+
+  // Đổi màu sắc nhánh cho Node được chọn
+  const handleColorChange = (hexColor) => {
+    if (!selectedNode) return;
+
+    // Đổi màu cho chính node được chọn và toàn bộ các node con nằm trong cây con của nó
+    const getChildNodeIds = (nodeId) => {
+      const childIds = edges.filter((e) => e.source === nodeId).map((e) => e.target);
+      let subChildIds = [];
+      childIds.forEach((cid) => {
+        subChildIds.push(...getChildNodeIds(cid));
+      });
+      return [...childIds, ...subChildIds];
+    };
+
+    const targetNodeIds = [selectedNode.id, ...getChildNodeIds(selectedNode.id)];
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (targetNodeIds.includes(n.id)) {
+          return {
+            ...n,
+            data: { ...n.data, accentColor: hexColor },
+          };
+        }
+        return n;
+      })
+    );
+
+    setSelectedNode((prev) => ({
+      ...prev,
+      data: { ...prev.data, accentColor: hexColor },
     }));
   };
 
@@ -147,19 +230,16 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     const nodeId = selectedNode.id;
     const parentEdge = edges.find((e) => e.target === nodeId);
 
-    // 1. Loại bỏ node khỏi danh sách nodes
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-    // 2. Loại bỏ edges nối với node này
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
 
-    // 3. Nếu danh mục cha không còn con nào, tự động tạo node "Cần bổ sung"
+    // Nếu danh mục cha không còn con nào, tự động tạo node "Cần bổ sung"
     if (parentEdge) {
       const parentId = parentEdge.source;
       const otherChildren = edges.filter((e) => e.source === parentId && e.target !== nodeId);
 
       if (otherChildren.length === 0) {
-        const catType = parentId.replace('cat-', '');
-        const placeholderId = `det-${catType}-placeholder`;
+        const placeholderId = `${parentId}-placeholder`;
 
         setNodes((nds) => [
           ...nds,
@@ -169,9 +249,11 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
             data: {
               label: '⚠️ Cần bổ sung dữ liệu',
               nodeType: 'placeholder',
-              categoryType: catType,
-              isPlaceholder: true,
               accentColor: selectedNode.data.accentColor,
+              note: '',
+              evidence: '',
+              orientation: selectedNode.data.orientation,
+              isPlaceholder: true,
             },
             position: { x: selectedNode.position.x, y: selectedNode.position.y },
           },
@@ -194,79 +276,85 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     setSelectedNode(null);
   };
 
-  // Thêm Node con dưới Node Danh mục được chọn
+  // Thêm Node con dưới Node được chọn (chỉ hỗ trợ thêm dưới category hoặc subBranch)
   const handleAddChildNode = () => {
     if (!selectedNode) return;
-    if (!selectedNode.id.startsWith('cat-')) {
-      alert("⚠️ Chỉ được thêm thông tin con dưới các Danh mục chính (Cấp 2).");
+    const nodeType = selectedNode.data.nodeType;
+    if (nodeType !== 'category' && nodeType !== 'subBranch') {
+      alert("⚠️ Chỉ hỗ trợ cấu trúc 3 tầng: Danh mục (Cấp 1) -> Nhánh con (Cấp 2) -> Chi tiết (Cấp 3). Vui lòng chọn nhánh L1 hoặc L2 để thêm.");
       return;
     }
 
-    const catId = selectedNode.id;
-    const catType = catId.replace('cat-', '');
+    const parentId = selectedNode.id;
+    const isL1 = nodeType === 'category';
+    const childType = isL1 ? 'subBranch' : 'detail';
 
-    // Kiểm tra xem có node placeholder "Cần bổ sung" nào đang tồn tại không
-    const placeholderId = `det-${catType}-placeholder`;
+    // Tạo ID cho con mới
+    const newId = `node-${childType}-${Math.random().toString(36).substring(2, 9)}`;
+
+    // Tìm và loại bỏ placeholder nếu có
+    const placeholderId = `${parentId}-placeholder`;
     const hasPlaceholder = nodes.some((n) => n.id === placeholderId);
 
-    const newId = `det-${catType}-${Math.random().toString(36).substring(2, 9)}`;
-
-    // Tạo text gợi ý ban đầu dựa trên danh mục
-    let initialText = "Nội dung thông tin mới";
-    if (catType === 'parties') initialText = "Vai trò: Họ và tên";
-    else if (catType === 'timeline') initialText = "[Thời gian]: Mô tả sự kiện";
-    else if (catType === 'claims') initialText = "[Chủ thể]: Nội dung yêu cầu/quan điểm";
-    else if (catType === 'legalIssues') initialText = "Vấn đề: Mô tả tranh chấp pháp lý";
-    else if (catType === 'evidence') initialText = "Tên chứng cứ (Nguồn): Giá trị chứng minh";
-    else if (catType === 'decision') initialText = "Quyết định: Điều khoản áp dụng";
-
-    // Tính toán tọa độ Y phù hợp (đặt ở dưới cùng các con hiện có của danh mục đó)
-    const childX = selectedNode.position.x + 340;
-    const siblingIds = edges.filter((e) => e.source === catId).map((e) => e.target);
-    const siblingNodes = nodes.filter((n) => siblingIds.includes(n.id) && n.id !== placeholderId);
-
+    // Tính toán tọa độ đặt con
+    const isVertical = selectedNode.data.orientation === 'vertical';
+    
+    let childX = selectedNode.position.x;
     let childY = selectedNode.position.y;
-    if (siblingNodes.length > 0) {
-      const maxY = Math.max(...siblingNodes.map((n) => n.position.y));
-      childY = maxY + 100; // Chiều cao node + gap
+    
+    if (isVertical) {
+      childY = selectedNode.position.y + 180;
+    } else {
+      childX = selectedNode.position.x + 340;
     }
 
-    // 1. Xóa placeholder nếu có
+    const siblingIds = edges.filter((e) => e.source === parentId).map((e) => e.target);
+    const siblingNodes = nodes.filter((n) => siblingIds.includes(n.id) && n.id !== placeholderId);
+
+    if (siblingNodes.length > 0) {
+      if (isVertical) {
+        const maxX = Math.max(...siblingNodes.map((n) => n.position.x));
+        childX = maxX + 300;
+      } else {
+        const maxY = Math.max(...siblingNodes.map((n) => n.position.y));
+        childY = maxY + 100;
+      }
+    }
+
     if (hasPlaceholder) {
       setNodes((nds) => nds.filter((n) => n.id !== placeholderId));
       setEdges((eds) => eds.filter((e) => e.target !== placeholderId));
-      childY = selectedNode.position.y;
+      if (isVertical) childX = selectedNode.position.x;
+      else childY = selectedNode.position.y;
     }
 
-    // 2. Thêm Node mới
     const newNode = {
       id: newId,
       type: 'customMindmapNode',
       data: {
-        label: initialText,
-        nodeType: 'detail',
-        categoryType: catType,
+        label: isL1 ? 'Nhánh cấp 2 mới' : 'Nội dung chi tiết mới',
+        nodeType: childType,
         accentColor: selectedNode.data.accentColor,
+        note: '',
+        evidence: '',
+        orientation: selectedNode.data.orientation,
         isPlaceholder: false,
       },
       position: { x: childX, y: childY },
     };
 
     setNodes((nds) => [...nds, newNode]);
-
-    // 3. Thêm Edge kết nối
     setEdges((eds) => [
       ...eds,
       {
-        id: `edge-${catId}-${newId}`,
-        source: catId,
+        id: `edge-${parentId}-${newId}`,
+        source: parentId,
         target: newId,
         type: 'smoothstep',
         style: { stroke: '#cbd5e1', strokeWidth: 1.5 },
       },
     ]);
 
-    // Tự động focus vào node mới tạo để chỉnh sửa nhanh
     setTimeout(() => {
       setSelectedNode(newNode);
     }, 50);
@@ -277,197 +365,160 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     const rootNode = nodes.find((n) => n.id === 'root');
     if (!rootNode) return;
 
-    // Hàm đệ quy xây dựng cây từ danh sách Nodes/Edges
+    const orientation = (diagramFormat === 'hình cây' || diagramFormat === 'đa luồng') ? 'vertical' : 'horizontal';
+
     const buildSubtree = (nodeId) => {
       const node = nodes.find((n) => n.id === nodeId);
       const childIds = edges.filter((e) => e.source === nodeId).map((e) => e.target);
-      // Sắp xếp các con theo Y hiện tại để giữ thứ tự kéo thả của người dùng
       const sortedChildNodes = nodes
         .filter((n) => childIds.includes(n.id))
-        .sort((a, b) => a.position.y - b.position.y);
+        .sort((a, b) => orientation === 'horizontal' ? a.position.y - b.position.y : a.position.x - b.position.x);
 
       return {
         id: node.id,
         label: node.data.label,
         type: node.data.nodeType,
-        categoryType: node.data.categoryType,
+        accentColor: node.data.accentColor,
+        note: node.data.note,
+        evidence: node.data.evidence,
+        isPlaceholder: node.data.isPlaceholder,
         children: sortedChildNodes.map((c) => buildSubtree(c.id)),
       };
     };
 
     const tree = buildSubtree('root');
 
-    // Chạy lại thuật toán layout
     const NODE_HEIGHT = 80;
-    const VERTICAL_GAP = 20;
-    const HORIZONTAL_SPACING = 340;
+    const NODE_WIDTH = 280;
+    const GAP = 20;
+    const LEAF_SIZE = orientation === 'horizontal' ? NODE_HEIGHT + 10 : NODE_WIDTH + 20;
 
-    const computeSubtreeHeight = (node) => {
+    const computeSubtreeSize = (node) => {
       if (!node.children || node.children.length === 0) {
-        node.subtreeHeight = NODE_HEIGHT;
-        return NODE_HEIGHT;
+        node.subtreeSize = LEAF_SIZE;
+        return LEAF_SIZE;
       }
-      let childrenHeightSum = 0;
+      let total = 0;
       node.children.forEach((child) => {
-        childrenHeightSum += computeSubtreeHeight(child);
+        total += computeSubtreeSize(child);
       });
-      node.subtreeHeight = Math.max(NODE_HEIGHT, childrenHeightSum + (node.children.length - 1) * VERTICAL_GAP);
-      return node.subtreeHeight;
+      node.subtreeSize = Math.max(LEAF_SIZE, total + (node.children.length - 1) * GAP);
+      return node.subtreeSize;
     };
 
-    computeSubtreeHeight(tree);
+    computeSubtreeSize(tree);
 
     const updatedNodes = [];
+    const HORIZONTAL_SPACING = 340;
+    const VERTICAL_SPACING = 180;
 
-    const assignPositions = (node, x, yStart) => {
-      const yCenter = yStart + node.subtreeHeight / 2;
+    const assignPositions = (node, depth, offsetStart) => {
+      const size = node.subtreeSize;
+      const center = offsetStart + size / 2;
+
+      let x, y;
+      if (orientation === 'horizontal') {
+        x = depth * HORIZONTAL_SPACING + 50;
+        y = center - NODE_HEIGHT / 2;
+      } else {
+        x = center - NODE_WIDTH / 2;
+        y = depth * VERTICAL_SPACING + 50;
+      }
+
       const existingNode = nodes.find((n) => n.id === node.id);
-
       if (existingNode) {
         updatedNodes.push({
           ...existingNode,
-          position: { x, y: yCenter - NODE_HEIGHT / 2 },
+          data: {
+            ...existingNode.data,
+            orientation: orientation
+          },
+          position: { x, y },
         });
       }
 
       if (node.children && node.children.length > 0) {
-        let currentY = yStart;
+        let currentOffset = offsetStart;
         node.children.forEach((child) => {
-          assignPositions(child, x + HORIZONTAL_SPACING, currentY);
-          currentY += child.subtreeHeight + VERTICAL_GAP;
+          assignPositions(child, depth + 1, currentOffset);
+          currentOffset += child.subtreeSize + GAP;
         });
       }
     };
 
-    assignPositions(tree, 50, 50);
+    assignPositions(tree, 0, 50);
     setNodes(updatedNodes);
-    alert("⚡ Đã sắp xếp và căn chỉnh lại sơ đồ tự động.");
+    alert("⚡ Đã sắp xếp và căn chỉnh lại sơ đồ theo hình thức đã chọn.");
   };
 
-  // Reconstruct JSON từ Nodes/Edges để phục vụ xuất slide PowerPoint PPTX
+  // Xuất PowerPoint chuẩn 4 Slide theo Hướng dẫn 10
   const handleExportPPTX = async () => {
     try {
       const rootNode = nodes.find((n) => n.id === 'root');
       if (!rootNode) return;
 
-      const getDetailsForCategory = (catId) => {
-        const childIds = edges.filter((e) => e.source === catId).map((e) => e.target);
-        return nodes
-          .filter((n) => childIds.includes(n.id) && !n.data.isPlaceholder)
-          .map((n) => n.data.label);
-      };
 
-      const caseTypeLabel = getDetailsForCategory('cat-caseType')[0] || '';
 
-      // Tái cấu trúc cấu trúc dữ liệu theo schema ban đầu
+      // Tìm các L1 branches từ các edge nối với root
+      const l1Edges = edges.filter(e => e.source === 'root');
+      const l1Nodes = nodes
+        .filter(n => l1Edges.some(e => e.target === n.id))
+        .sort((a, b) => a.position.y - b.position.y);
+
+      const reconstructedBranches = l1Nodes.map(l1 => {
+        const color = l1.data.accentColor;
+        
+        // Nhánh cấp 2
+        const l2Edges = edges.filter(e => e.source === l1.id);
+        const l2Nodes = nodes
+          .filter(n => l2Edges.some(e => e.target === n.id) && !n.id.startsWith('q-') && !n.data.isPlaceholder)
+          .sort((a, b) => a.position.y - b.position.y);
+
+        // Lấy câu hỏi L1
+        const qNode = nodes.find(n => l2Edges.some(e => e.target === n.id) && n.id.startsWith('q-'));
+        let questions = [];
+        if (qNode) {
+          const qLines = qNode.data.label.split('\n').slice(1);
+          questions = qLines.map(l => l.replace(/^•\s*/, '').trim()).filter(Boolean);
+        }
+
+        const subBranches = l2Nodes.map(l2 => {
+          // Nhánh cấp 3
+          const l3Edges = edges.filter(e => e.source === l2.id);
+          const l3Nodes = nodes
+            .filter(n => l3Edges.some(e => e.target === n.id) && !n.data.isPlaceholder)
+            .sort((a, b) => a.position.y - b.position.y);
+
+          const l3Branches = l3Nodes.map(l3 => ({
+            label: l3.data.label,
+            note: l3.data.note,
+            evidence: l3.data.evidence
+          }));
+
+          return {
+            label: l2.data.label,
+            note: l2.data.note,
+            evidence: l2.data.evidence,
+            subBranches: l3Branches
+          };
+        });
+
+        return {
+          label: l1.data.label,
+          color: color,
+          note: l1.data.note,
+          questions: questions,
+          subBranches: subBranches
+        };
+      });
+
       const reconstructedJson = {
         caseTitle: rootNode.data.label,
-        caseType: caseTypeLabel,
-        parties: getDetailsForCategory('cat-parties').map((label) => {
-          const colonIdx = label.indexOf(':');
-          let role = 'Đương sự';
-          let name = label;
-          let detail = '';
-
-          if (colonIdx !== -1) {
-            role = label.substring(0, colonIdx).trim();
-            const afterColon = label.substring(colonIdx + 1).trim();
-            // Kiểm tra thông tin trong ngoặc đơn
-            const bracketIdx = afterColon.indexOf('(');
-            if (bracketIdx !== -1) {
-              name = afterColon.substring(0, bracketIdx).trim();
-              detail = afterColon.substring(bracketIdx + 1, afterColon.lastIndexOf(')')).trim();
-            } else {
-              name = afterColon;
-            }
-          }
-          return { name, role, detail };
-        }),
-        timeline: getDetailsForCategory('cat-timeline').map((label) => {
-          const startBracket = label.indexOf('[');
-          const endBracket = label.indexOf(']');
-          let date = '';
-          let event = label;
-
-          if (startBracket !== -1 && endBracket !== -1) {
-            date = label.substring(startBracket + 1, endBracket).trim();
-            event = label.substring(endBracket + 1).trim();
-            if (event.startsWith(':')) {
-              event = event.substring(1).trim();
-            }
-          }
-          return { date, event };
-        }),
-        claims: getDetailsForCategory('cat-claims').map((label) => {
-          const startBracket = label.indexOf('[');
-          const endBracket = label.indexOf(']');
-          let party = 'Các bên';
-          let content = label;
-
-          if (startBracket !== -1 && endBracket !== -1) {
-            party = label.substring(startBracket + 1, endBracket).trim();
-            content = label.substring(endBracket + 1).trim();
-            if (content.startsWith(':')) {
-              content = content.substring(1).trim();
-            }
-          }
-          return { party, content };
-        }),
-        legalIssues: getDetailsForCategory('cat-legalIssues').map((label) => {
-          const colonIdx = label.indexOf(':');
-          let issue = label;
-          let description = '';
-
-          if (colonIdx !== -1) {
-            issue = label.substring(0, colonIdx).trim();
-            description = label.substring(colonIdx + 1).trim();
-          }
-          return { issue, description };
-        }),
-        evidence: getDetailsForCategory('cat-evidence').map((label) => {
-          // Phân tách "Tên chứng cứ (Nguồn) - Giá trị"
-          let name;
-          let source = '';
-          let value = '';
-
-          const dashIdx = label.indexOf(' - ');
-          let nameSourcePart = label;
-          if (dashIdx !== -1) {
-            nameSourcePart = label.substring(0, dashIdx).trim();
-            value = label.substring(dashIdx + 3).trim();
-          }
-
-          const startBracket = nameSourcePart.indexOf('(');
-          if (startBracket !== -1) {
-            name = nameSourcePart.substring(0, startBracket).trim();
-            source = nameSourcePart.substring(startBracket + 1, nameSourcePart.lastIndexOf(')')).trim();
-            if (source.startsWith('Nguồn:')) {
-              source = source.substring(6).trim();
-            }
-          } else {
-            name = nameSourcePart;
-          }
-
-          return { name, source, value };
-        }),
-        decision: getDetailsForCategory('cat-decision').map((label) => {
-          const bracketIdx = label.indexOf('[');
-          let point = label;
-          let basis = '';
-
-          if (bracketIdx !== -1) {
-            point = label.substring(0, bracketIdx).trim();
-            basis = label.substring(bracketIdx + 1, label.lastIndexOf(']')).trim();
-            if (basis.startsWith('Cơ sở:')) {
-              basis = basis.substring(6).trim();
-            }
-          }
-          return { point, basis };
-        }),
+        branches: reconstructedBranches
       };
 
       const safeFileName = rootNode.data.label.replace(/[^a-zA-Z0-9\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, '').replace(/\s+/g, '_');
-      await exportToPptx(reconstructedJson, `bao_cao_an_${safeFileName || 'so_do'}.pptx`);
+      await exportToPptx(reconstructedJson, `bao_cao_an_hd10_${safeFileName || 'so_do'}.pptx`);
     } catch (err) {
       alert("Lỗi khi xuất slide PPTX: " + err.message);
     }
@@ -513,11 +564,11 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
           </button>
           <div className="h-6 w-[1px] bg-slate-800"></div>
           <div className="flex items-center gap-2">
-            <span className="material-icons text-primary text-[24px]">workspace_premium</span>
+            <span className="material-icons text-primary text-[24px]">insights</span>
             <div>
               <h2 className="text-sm font-extrabold uppercase tracking-widest text-primary flex items-center gap-1.5">
-                👑 Sơ đồ tư duy báo cáo án
-                <span className="text-[9px] bg-primary text-white font-extrabold px-1 py-0.5 rounded-sm normal-case tracking-normal">PREMIUM</span>
+                👑 Sơ đồ tư duy theo Hướng dẫn 10/HD-VKSTC
+                <span className="text-[8px] bg-primary text-white font-extrabold px-1.5 py-0.5 rounded-sm normal-case tracking-normal">PREMIUM</span>
               </h2>
               <p className="text-[10px] text-slate-400 font-medium truncate max-w-[400px]">
                 {nodes.find(n => n.id === 'root')?.data?.label || 'Đang phân tích vụ án...'}
@@ -527,48 +578,90 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          {/* Template Selector dropdown */}
-          <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-xl p-1">
-            {templates.map((tpl) => (
-              <button
-                key={tpl.key}
-                disabled={isGenerating}
-                onClick={() => {
-                  setSelectedTemplate(tpl.key);
-                  handleGenerateMindmap(tpl.key);
-                }}
-                className={`flex items-center gap-1 h-8 px-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                  selectedTemplate === tpl.key
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
-                }`}
-              >
-                <span className="material-icons text-[14px]">{tpl.icon}</span>
-                <span>{tpl.name}</span>
-              </button>
-            ))}
+        <div className="flex items-center gap-3">
+          {/* Template chọn loại án */}
+          <div className="flex flex-col text-left gap-0.5">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Mẫu Vụ án</span>
+            <select
+              value={selectedTemplate}
+              disabled={isGenerating}
+              onChange={(e) => {
+                setSelectedTemplate(e.target.value);
+                handleGenerateMindmap(e.target.value, diagramType, diagramFormat);
+              }}
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold"
+            >
+              <option value="hinh_su">Hình sự</option>
+              <option value="dan_su">Dân sự</option>
+              <option value="hanh_chinh">Hành chính</option>
+              <option value="hon_nhan">Hôn nhân & Gia đình</option>
+            </select>
           </div>
 
-          <div className="h-6 w-[1px] bg-slate-800 mx-1"></div>
+          {/* Chọn Loại sơ đồ HD10 */}
+          <div className="flex flex-col text-left gap-0.5">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Loại sơ đồ (HD10)</span>
+            <select
+              value={diagramType}
+              disabled={isGenerating}
+              onChange={(e) => {
+                setDiagramType(e.target.value);
+                handleGenerateMindmap(selectedTemplate, e.target.value, diagramFormat);
+              }}
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold max-w-[200px]"
+            >
+              <option value="tong_the">Sơ đồ tổng thể vụ án</option>
+              <option value="dien_bien">Sơ đồ diễn biến hành vi</option>
+              <option value="danh_gia_chung_cu">Sơ đồ đánh giá chứng cứ</option>
+              <option value="bi_can_hanh_vi">Sơ đồ bị can/bị cáo và hành vi</option>
+              <option value="buoc_toi_go_toi">Sơ đồ buộc tội - gỡ tội</option>
+              <option value="yeu_cau_dieu_tra">Sơ đồ yêu cầu điều tra bổ sung</option>
+              <option value="doi_chieu_chung_cu">Bảng đối chiếu lời khai/chứng cứ</option>
+            </select>
+          </div>
+
+          {/* Chọn Hình thức */}
+          <div className="flex flex-col text-left gap-0.5">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Hình thức</span>
+            <select
+              value={diagramFormat}
+              disabled={isGenerating}
+              onChange={(e) => {
+                setDiagramFormat(e.target.value);
+                // Với thay đổi hướng xoay, ta tự động re-layout mà không cần gọi lại AI
+                setTimeout(() => {
+                  handleAlignLayout();
+                }, 50);
+              }}
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold"
+            >
+              <option value="hình luồng">Hình luồng (Ngang)</option>
+              <option value="đa luồng">Đa luồng (Dọc)</option>
+              <option value="hình cây">Hình cây (Dọc)</option>
+              <option value="ngang/dọc">Ngang/dọc/quy trình</option>
+              <option value="bảng biểu">Bảng biểu (Ngang)</option>
+            </select>
+          </div>
 
           {/* Quick Layout Re-alignment */}
           <button
             onClick={handleAlignLayout}
             disabled={isGenerating || nodes.length === 0}
-            className="flex items-center justify-center gap-1.5 h-10 px-3.5 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Tự động xếp thẳng hàng các node sau khi kéo thả"
+            className="flex items-center justify-center gap-1 h-9 px-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed mt-3.5"
+            title="Tự động xếp thẳng hàng các node theo hình thức đã chọn"
           >
-            <Layout size={14} />
-            <span>Sắp xếp lại</span>
+            <Layout size={12} />
+            <span>Sắp xếp</span>
           </button>
 
-          {/* Export Dropdown options */}
-          <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1">
+          <div className="h-6 w-[1px] bg-slate-800 mx-1 mt-3.5"></div>
+
+          {/* Export options */}
+          <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl p-1 mt-3.5">
             <button
               onClick={handleExportPNG}
               disabled={isGenerating || nodes.length === 0}
-              className="flex items-center gap-1 h-8 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40"
               title="Xuất sơ đồ ra file ảnh PNG"
             >
               <span>PNG</span>
@@ -576,7 +669,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
             <button
               onClick={handleExportPDF}
               disabled={isGenerating || nodes.length === 0}
-              className="flex items-center gap-1 h-8 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-all cursor-pointer disabled:opacity-40"
               title="Xuất sơ đồ ra bản vẽ PDF"
             >
               <span>PDF</span>
@@ -584,11 +677,10 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
             <button
               onClick={handleExportPPTX}
               disabled={isGenerating || nodes.length === 0}
-              className="flex items-center gap-1.5 h-8 px-3 text-xs font-bold bg-primary hover:bg-primary-hover text-white rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Xuất cấu trúc vụ án ra slide trình chiếu PowerPoint"
+              className="flex items-center gap-1 h-7 px-2.5 text-xs font-bold bg-primary hover:bg-primary-hover text-white rounded-lg transition-all cursor-pointer disabled:opacity-40"
+              title="Xuất sơ đồ ra 4 Slide PowerPoint trình chiếu HD10"
             >
-              <span className="material-icons text-[14px]">slideshow</span>
-              <span>Xuất PPTX (Slide)</span>
+              <span>PPTX</span>
             </button>
           </div>
         </div>
@@ -608,11 +700,18 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
               onNodeClick={onNodeClick}
               onPaneClick={onPaneClick}
               fitView
-              minZoom={0.1}
+              minZoom={0.05}
               maxZoom={2.0}
             >
               <Controls className="bg-slate-800 border border-slate-700 text-white rounded-xl shadow-md [&_button]:border-slate-700 [&_button]:bg-slate-800 hover:[&_button]:bg-slate-700" />
               <Background color="#334155" gap={24} size={1} />
+              
+              {/* Banner cảnh báo nghiệp vụ theo quy chuẩn HD10 */}
+              <Panel position="bottom-center" className="bg-slate-900/90 text-slate-400 border border-slate-800 rounded-xl px-5 py-2.5 max-w-[900px] text-center backdrop-blur-xs select-none shadow-xl mb-4">
+                <p className="text-[10px] leading-relaxed">
+                  ⚠️ <strong>Khuyến cáo nghiệp vụ:</strong> Sơ đồ do AI tạo chỉ là bản nháp hỗ trợ nghiên cứu hồ sơ. Người dùng phải tự kiểm tra, chỉnh sửa và chịu trách nhiệm về nội dung trước khi sử dụng báo cáo án hoặc trình chiếu. Công cụ chỉ mang tính sơ đồ hóa thông tin, không thay thế báo cáo đề xuất hay cáo trạng.
+                </p>
+              </Panel>
             </ReactFlow>
           ) : null}
 
@@ -620,13 +719,12 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
           {isGenerating && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm">
               <div className="flex flex-col items-center text-center max-w-sm px-6">
-                {/* Scale legal logo animation */}
                 <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-6 animate-pulse scale-110">
                   <Scale size={32} className="animate-bounce" />
                 </div>
-                <h4 className="font-extrabold text-lg text-white mb-2 tracking-wide uppercase">AI đang phân tích vụ án</h4>
+                <h4 className="font-extrabold text-lg text-white mb-2 tracking-wide uppercase">AI đang phân tích nghiệp vụ</h4>
                 <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                  Đang tiến hành trích xuất thực thể đương sự, thiết lập dòng thời gian, tổng hợp chứng cứ và xây dựng sơ đồ tư duy tương tác...
+                  Đang lập sơ đồ phân tầng (Cấp 1-2-3) theo đúng Hướng dẫn 10/HD-VKSTC, phân bổ các nhóm bị can, chứng cứ và câu hỏi làm rõ...
                 </p>
                 <div className="w-48 bg-slate-800 rounded-full h-1.5 overflow-hidden">
                   <div className="bg-primary h-full rounded-full w-2/3 animate-[scan_2s_infinite_ease-in-out]"></div>
@@ -671,8 +769,8 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
           selectedNode ? 'translate-x-0' : 'translate-x-full absolute right-0'
         }`}>
           {selectedNode ? (
-            <div className="flex-1 flex flex-col p-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-5">
+            <div className="flex-1 flex flex-col p-5 overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-5 shrink-0">
                 <div className="flex items-center gap-2">
                   <Edit3 size={16} className="text-primary" />
                   <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-300">
@@ -688,66 +786,104 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
               </div>
 
               {/* Node Metadata Summary Info */}
-              <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-800/80 mb-5 text-xs text-slate-400">
+              <div className="bg-slate-950/60 rounded-xl p-3.5 border border-slate-800/80 mb-5 text-xs text-slate-400 shrink-0">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span>Loại Node:</span>
-                  <span className="font-bold text-white uppercase text-[10px] tracking-wider px-1.5 py-0.5 rounded bg-slate-800">
-                    {selectedNode.data.nodeType === 'caseRoot' ? 'Vụ Án (Gốc)' : 
-                     selectedNode.data.nodeType === 'category' ? 'Danh mục' : 
-                     selectedNode.data.nodeType === 'placeholder' ? 'Bổ sung' : 'Chi tiết'}
+                  <span>Cấp bậc Node:</span>
+                  <span className="font-bold text-white uppercase text-[9px] tracking-wider px-1.5 py-0.5 rounded bg-slate-800">
+                    {selectedNode.id === 'root' ? 'Tổng thể (Từ gốc)' : 
+                     selectedNode.data.nodeType === 'category' ? 'Nhánh L1' : 
+                     selectedNode.data.nodeType === 'subBranch' ? 'Nhánh L2' : 
+                     selectedNode.data.isPlaceholder ? 'Placeholder' : 'Nhánh L3 (Chi tiết)'}
                   </span>
                 </div>
-                {selectedNode.data.categoryType !== 'default' && (
-                  <div className="flex items-center justify-between">
-                    <span>Phân nhánh:</span>
-                    <span 
-                      className="font-bold text-white text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{ backgroundColor: selectedNode.data.accentColor }}
-                    >
-                      {selectedNode.data.categoryType}
-                    </span>
-                  </div>
-                )}
+              </div>
+
+              {/* Nhóm chọn màu sắc nhánh */}
+              <div className="mb-5 shrink-0">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Màu sắc nhánh:
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {colorsList.map((c) => (
+                    <button
+                      key={c.hex}
+                      onClick={() => handleColorChange(c.hex)}
+                      className={`w-6 h-6 rounded-full border transition-all cursor-pointer hover:scale-110 active:scale-90 ${
+                        selectedNode.data.accentColor === c.hex
+                          ? 'ring-2 ring-offset-2 ring-primary border-white scale-105'
+                          : 'border-slate-800'
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
               </div>
 
               {/* Text Label Area Input */}
-              <div className="mb-6 flex-1 min-h-0 flex flex-col">
+              <div className="mb-4 shrink-0">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Nội dung hiển thị:
+                  Nội dung hiển thị (Tiêu đề):
                 </label>
-                {selectedNode.id === 'root' || selectedNode.id.startsWith('cat-') ? (
-                  // Node Cha: Input text đơn giản
+                {selectedNode.id === 'root' || selectedNode.data.nodeType === 'category' ? (
                   <input
                     type="text"
                     value={selectedNode.data.label}
                     onChange={handleLabelChange}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4.5 py-3 text-sm text-white font-semibold outline-none transition-all"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-2.5 text-xs text-white font-semibold outline-none transition-all"
                   />
                 ) : (
-                  // Node chi tiết: Cho phép gõ textarea nhiều chữ
                   <textarea
                     value={selectedNode.data.label}
                     onChange={handleLabelChange}
-                    className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-4.5 text-xs leading-relaxed text-slate-300 font-medium outline-none resize-none transition-all"
+                    rows={3}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-300 font-medium outline-none resize-none transition-all"
                     placeholder="Nhập nội dung chi tiết..."
                   />
                 )}
               </div>
 
+              {/* Thêm Ghi chú (Note) */}
+              <div className="mb-4 shrink-0">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  📝 Ghi chú riêng:
+                </label>
+                <textarea
+                  value={selectedNode.data.note || ''}
+                  onChange={handleNoteChange}
+                  rows={2}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-400 font-medium outline-none resize-none transition-all"
+                  placeholder="Thêm ghi chú nghiệp vụ hoặc lý giải..."
+                />
+              </div>
+
+              {/* Thêm Tài liệu/Chứng cứ liên quan (Evidence) */}
+              <div className="mb-6 flex-1 min-h-0 flex flex-col">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 shrink-0">
+                  📎 Tài liệu chứng cứ liên quan:
+                </label>
+                <textarea
+                  value={selectedNode.data.evidence || ''}
+                  onChange={handleEvidenceChange}
+                  className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-400 font-medium outline-none resize-none transition-all"
+                  placeholder="Liên kết số bút lục hoặc tên tài liệu chứng cứ..."
+                />
+              </div>
+
               {/* Node Operations Action Bar */}
-              <div className="border-t border-slate-800 pt-5 space-y-3">
-                {/* Nút Thêm node con (chỉ cho node Danh mục) */}
-                {selectedNode.data.nodeType === 'category' && (
+              <div className="border-t border-slate-800 pt-5 space-y-3 shrink-0">
+                {/* Nút Thêm node con (cho node category hoặc subBranch) */}
+                {(selectedNode.data.nodeType === 'category' || selectedNode.data.nodeType === 'subBranch') && (
                   <button
                     onClick={handleAddChildNode}
                     className="w-full flex items-center justify-center gap-2 h-11 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
                   >
                     <PlusCircle size={14} />
-                    <span>Thêm thông tin con</span>
+                    <span>Thêm nhánh con cấp dưới</span>
                   </button>
                 )}
 
-                {/* Nút Xóa node (chỉ cho node Chi tiết / Placeholder) */}
+                {/* Nút Xóa node (chỉ cho các node con L2/L3) */}
                 {selectedNode.id !== 'root' && !selectedNode.id.startsWith('cat-') && (
                   <button
                     onClick={handleDeleteNode}
@@ -762,7 +898,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-xs font-medium p-6 text-center">
               <span className="material-icons text-[40px] opacity-35 mb-3">touch_app</span>
-              <p>Chọn một Node trên sơ đồ để hiệu chỉnh nội dung, thêm con hoặc xóa node.</p>
+              <p>Chọn một Node trên sơ đồ để hiệu chỉnh nội dung, ghi chú, chứng cứ, đổi màu sắc hoặc thêm con.</p>
             </div>
           )}
         </div>
