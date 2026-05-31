@@ -4,6 +4,7 @@ import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
 import LandingPage from './components/LandingPage';
+import CustomExtractorModal from './components/CustomExtractorModal';
 import { Settings, Scale } from 'lucide-react';
 
 import { processOCR } from './utils/ocrService';
@@ -32,6 +33,7 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isCustomExtractorOpen, setIsCustomExtractorOpen] = useState(false);
 
   // Trạng thái nghiệp vụ và cảnh báo bảo mật tư pháp (Phase 4)
   const [ocrOptions] = useState({
@@ -1053,6 +1055,7 @@ error message: ${finalErrorMsg || 'none'}`;
               onReset={resetWorkspaceSession}
               ocrOptions={ocrOptions}
               config={config}
+              onOpenCustomExtractor={() => setIsCustomExtractorOpen(true)}
             />
             
             {/* ApiConfig Collapsible in Workspace */}
@@ -1135,6 +1138,15 @@ error message: ${finalErrorMsg || 'none'}`;
           </div>
         </div>
       )}
+
+      {/* Custom Extractor Modal */}
+      <CustomExtractorModal 
+        isOpen={isCustomExtractorOpen} 
+        onClose={() => setIsCustomExtractorOpen(false)} 
+        activeFile={activeFile} 
+        allFiles={files} 
+        config={config} 
+      />
 
     </div>
   );

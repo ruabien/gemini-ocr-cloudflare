@@ -4,7 +4,7 @@ import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode } f
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
 
-export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions, config }) {
+export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions, config, onOpenCustomExtractor }) {
   const [copied, setCopied] = useState(false);
   const [localText, setLocalText] = useState("");
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -13,13 +13,28 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   const [exportError, setExportError] = useState(null);
   const [isPremiumPopupOpen, setIsPremiumPopupOpen] = useState(false);
 
-  const handlePremiumWordExport = async () => {
+  const isPremiumFeatureEnabled = () => {
+    if (import.meta.env.VITE_ENABLE_PREMIUM_TEST === 'true') return true;
     const premiumKey = config?.licenseKey || localStorage.getItem('ocr_license_key') || '';
-    if (!premiumKey.trim()) {
+    return premiumKey.trim().length > 0;
+  };
+
+  const handlePremiumWordExport = async () => {
+    if (!isPremiumFeatureEnabled()) {
       setIsPremiumPopupOpen(true);
       return;
     }
     await handleExport('docx');
+  };
+
+  const handleCustomExtractionClick = () => {
+    if (!isPremiumFeatureEnabled()) {
+      setIsPremiumPopupOpen(true);
+      return;
+    }
+    if (onOpenCustomExtractor) {
+      onOpenCustomExtractor();
+    }
   };
 
   const imageFiles = allFiles ? allFiles.filter(f => !f.isParentPdf && !f.isPdfPage) : [];
@@ -398,6 +413,17 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
           >
             <span className="material-icons text-[14px]">workspace_premium</span>
             <span>👑 Xuất Word Chuẩn Nghị định 30</span>
+            <span className="ml-1 text-[9px] bg-primary text-white font-extrabold px-1 py-0.5 rounded-sm">PRO</span>
+          </button>
+          
+          <button
+            onClick={handleCustomExtractionClick}
+            disabled={isOcrEmpty}
+            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+            title={isOcrEmpty ? "Không có dữ liệu văn bản để trích xuất" : "Trích xuất các trường dữ liệu pháp lý tùy chỉnh bằng AI (Premium)"}
+          >
+            <span className="material-icons text-[14px]">table_rows</span>
+            <span>👑 Trích xuất dữ liệu tùy chỉnh</span>
             <span className="ml-1 text-[9px] bg-primary text-white font-extrabold px-1 py-0.5 rounded-sm">PRO</span>
           </button>
         </div>

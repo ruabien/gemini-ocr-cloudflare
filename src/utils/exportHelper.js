@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
+import * as XLSX from 'xlsx';
 
 /**
  * Helper to download a Blob object on the client side and clean up memory immediately
@@ -311,4 +312,50 @@ export async function exportDocx(textOrPages, filename) {
   const blob = await Packer.toBlob(doc);
   const mimeBlob = new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
   downloadBlob(mimeBlob, filename);
+}
+
+/**
+ * Xuất dữ liệu trích xuất ra file Excel (.xlsx)
+ * @param {Array} rows - Mảng chứa dữ liệu các file, mỗi file là một đối tượng chứa các giá trị trích xuất
+ * @param {Array} fields - Mảng các trường cấu hình
+ * @param {string} filename - Tên file xuất ra
+ * @param {boolean} includeFileName - Có thêm cột Tên file ở đầu hay không
+ */
+export function exportToExcel(rows, fields, filename = 'Du_lieu_trich_xuat.xlsx', includeFileName = false) {
+  // Sắp xếp các trường theo thứ tự
+  const sortedFields = [...fields].sort((a, b) => (a.order || 0) - (b.order || 0));
+  
+  // Tạo mảng dữ liệu cho SheetJS
+  const headers = [];
+  if (includeFileName) {
+    headers.push('Tên tệp');
+  }
+  sortedFields.forEach(f => {
+    headers.push(f.label || f.id);
+  });
+
+  const sheetData = [headers];
+
+  rows.forEach(row => {
+    const rowData = [];
+    if (includeFileName) {
+      rowData.push(row._fileName || 'N/A');
+    }
+    sortedFields.forEach(f => {
+      let val = row[f.id];
+      if (val === undefined || val === null) {
+        val = '';
+      }
+      rowData.push(val);
+    });
+    sheetData.push(rowData);
+  });
+
+  // Tạo worksheet và workbook
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Du lieu trich xuat');
+  
+  // Ghi file
+  XLSX.writeFile(workbook, filename);
 }
