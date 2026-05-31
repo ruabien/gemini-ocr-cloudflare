@@ -375,11 +375,11 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
       </div>
       </div>
       {/* Judicial Utility Bar */}
-      {localText && (
+      {file && (
         <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-border bg-background/20">
           <span className="text-[10px] font-bold text-text-secondary/60 uppercase tracking-wider shrink-0 select-none mr-2">Tiện ích tư pháp:</span>
           
-          {!file.isParentPdf && (
+          {localText && !file.isParentPdf && (
             <>
               <button
                 onClick={handleDetectCaseNumber}
@@ -413,9 +413,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
 
           <button
             onClick={handleOpenMindmapWorkspace}
-            disabled={isOcrEmpty}
-            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
-            title={isOcrEmpty ? "Không có dữ liệu văn bản để lập sơ đồ" : "Tự động phân tích và vẽ sơ đồ tư duy báo cáo án (Premium)"}
+            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 uppercase tracking-wider"
+            title="Tự động phân tích và vẽ sơ đồ tư duy báo cáo án (Premium)"
           >
             <span className="material-icons text-[14px]">insights</span>
             <span>👑 Tạo sơ đồ báo cáo án</span>

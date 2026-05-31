@@ -35,7 +35,11 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
 
   const reactFlowWrapper = useRef(null);
 
-
+  // Quản lý nguồn đầu vào của Sơ đồ tư duy
+  const [showSourceModal, setShowSourceModal] = useState(true);
+  const [inputText, setInputText] = useState('');
+  const [pasteText, setPasteText] = useState('');
+  const fileInputRef = useRef(null);
 
   // Bảng màu cho phép đổi màu sắc nhánh
   const colorsList = [
@@ -58,9 +62,13 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
   const modelName = config?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
 
   // Thực hiện phân tích vụ án và sinh sơ đồ tư duy bằng Gemini
-  const handleGenerateMindmap = async (templateKey = selectedTemplate, type = diagramType, format = diagramFormat) => {
+  const handleGenerateMindmap = async (templateKey = selectedTemplate, type = diagramType, format = diagramFormat, textToUse = inputText) => {
     if (apiKeysPool.length === 0) {
       setGenerationError("Chưa cấu hình Gemini API Key. Vui lòng vào Cấu hình API để thêm key trước khi tạo sơ đồ.");
+      return;
+    }
+    if (!textToUse || !textToUse.trim()) {
+      setGenerationError("Không có dữ liệu văn bản để phân tích sơ đồ.");
       return;
     }
 
@@ -70,7 +78,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
 
     try {
       // 1. Gọi API Gemini lấy kết quả trích xuất dạng JSON thông qua cơ chế rotation
-      const parsedData = await generateCaseMindmap(ocrText, templateKey, apiKeysPool, modelName, type, format);
+      const parsedData = await generateCaseMindmap(textToUse, templateKey, apiKeysPool, modelName, type, format);
 
       // 2. Chuyển đổi dữ liệu JSON thành Nodes & Edges và áp dụng thuật toán layout
       const orientation = (format === 'hình cây' || format === 'đa luồng') ? 'vertical' : 'horizontal';
@@ -99,12 +107,58 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     }
   };
 
-  // Tự động kích hoạt tạo sơ đồ lần đầu khi mở Workspace
+  // Mở màn hình chọn nguồn dữ liệu ngay khi Workspace được mount
   useEffect(() => {
-    if (ocrText && ocrText.trim()) {
-      handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat);
+    setShowSourceModal(true);
+  }, []);
+
+  // Xử lý Hủy/Đóng hộp thoại chọn nguồn
+  const handleCancelSourceSelection = () => {
+    if (nodes.length === 0) {
+      onClose(); // Nếu chưa dựng sơ đồ thì đóng hẳn workspace
+    } else {
+      setShowSourceModal(false); // Nếu đã có sơ đồ, chỉ đóng popup chọn nguồn
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  };
+
+  // Xử lý khi tải file văn bản lên
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'txt' && ext !== 'md') {
+      alert("⚠️ Định dạng tệp không được hỗ trợ. Chỉ hỗ trợ .txt hoặc .md");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target.result;
+      if (!text || !text.trim()) {
+        alert("⚠️ Tệp tin văn bản trống. Vui lòng chọn tệp có nội dung.");
+        return;
+      }
+      setInputText(text);
+      setShowSourceModal(false);
+      handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, text);
+    };
+    reader.onerror = () => {
+      alert("⚠️ Đọc tệp tin thất bại. Vui lòng thử lại.");
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  // Xử lý khi dán văn bản trực tiếp
+  const handlePasteSubmit = () => {
+    if (!pasteText || pasteText.trim().length < 50) {
+      alert("⚠️ Nội dung dán quá ngắn. Vui lòng nhập nội dung chi tiết hơn (tối thiểu 50 ký tự) để AI phân tích chính xác.");
+      return;
+    }
+    setInputText(pasteText);
+    setShowSourceModal(false);
+    handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, pasteText);
+  };
 
   // Xử lý sự kiện click vào Node
   const onNodeClick = useCallback((event, node) => {
@@ -654,6 +708,16 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
             <span>Sắp xếp</span>
           </button>
 
+          <button
+            onClick={() => setShowSourceModal(true)}
+            disabled={isGenerating}
+            className="flex items-center justify-center gap-1.5 h-9 px-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-40 mt-3.5"
+            title="Thay đổi nguồn dữ liệu phân tích (OCR, Tải tệp, Dán văn bản)"
+          >
+            <span className="material-icons text-[14px]">swap_horiz</span>
+            <span>Đổi nguồn</span>
+          </button>
+
           <div className="h-6 w-[1px] bg-slate-800 mx-1 mt-3.5"></div>
 
           {/* Export options */}
@@ -903,6 +967,147 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
           )}
         </div>
       </div>
+
+      {/* Màn hình chọn nguồn dữ liệu (Source Selector Modal) */}
+      {showSourceModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 backdrop-blur-md animate-fade-in font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 text-white shadow-2xl mx-4 relative flex flex-col max-h-[90%] overflow-hidden">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-5 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="material-icons text-primary text-[22px]">source</span>
+                <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-200">
+                  Chọn nguồn dữ liệu sơ đồ tư duy
+                </h3>
+              </div>
+              <button
+                onClick={handleCancelSourceSelection}
+                className="text-slate-500 hover:text-slate-300 p-1 hover:bg-slate-800 rounded transition-all cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto space-y-5 pr-1">
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Vui lòng chọn nguồn văn bản hồ sơ để AI phân tích nghiệp vụ và khởi tạo sơ đồ tư duy báo cáo án.
+              </p>
+
+              {/* Source Option Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                {/* Option A: OCR Result */}
+                <div 
+                  onClick={() => {
+                    if (ocrText && ocrText.trim()) {
+                      setInputText(ocrText);
+                      setShowSourceModal(false);
+                      handleGenerateMindmap(selectedTemplate, diagramType, diagramFormat, ocrText);
+                    }
+                  }}
+                  className={`border rounded-xl p-4 cursor-pointer transition-all flex flex-col gap-2 ${
+                    ocrText && ocrText.trim()
+                      ? 'border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 hover:border-primary/50'
+                      : 'border-slate-800/40 bg-slate-950/10 opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`material-icons text-[18px] ${ocrText && ocrText.trim() ? 'text-primary' : 'text-slate-500'}`}>description</span>
+                    <span className="font-bold text-xs">Kết quả OCR hiện tại</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-normal">
+                    {ocrText && ocrText.trim() 
+                      ? `Sử dụng văn bản bóc tách từ hồ sơ đang mở (${ocrText.trim().length.toLocaleString()} ký tự).`
+                      : 'Chưa có dữ liệu văn bản OCR từ giao diện chính.'}
+                  </p>
+                  {ocrText && ocrText.trim() && (
+                    <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded self-start mt-1 font-semibold uppercase">Khả dụng</span>
+                  )}
+                </div>
+
+                {/* Option B: Upload File */}
+                <div 
+                  onClick={() => {
+                    if (fileInputRef.current) fileInputRef.current.click();
+                  }}
+                  className="border border-slate-800 bg-slate-950/40 hover:bg-slate-950/80 hover:border-primary/50 rounded-xl p-4 cursor-pointer transition-all flex flex-col gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="material-icons text-primary text-[18px]">upload_file</span>
+                    <span className="font-bold text-xs">Tải file văn bản</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-normal">
+                    Tải tệp văn bản từ máy tính của bạn (hỗ trợ định dạng .txt, .md).
+                  </p>
+                  <span className="text-[8px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded self-start mt-1 font-semibold uppercase">TXT, MD</span>
+                  <input 
+                    type="file" 
+                    accept=".txt,.md" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                  />
+                </div>
+
+              </div>
+
+              {/* Option C: Paste Content Pane */}
+              <div className="border border-slate-800 bg-slate-950/20 rounded-xl p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="material-icons text-primary text-[18px]">content_paste</span>
+                    <span className="font-bold text-xs">Dán nội dung trực tiếp</span>
+                  </div>
+                  {pasteText.trim().length > 0 && (
+                    <button 
+                      onClick={() => setPasteText('')}
+                      className="text-[10px] text-red-400 hover:text-red-300 font-semibold cursor-pointer border-none bg-transparent outline-none"
+                    >
+                      Xóa nội dung
+                    </button>
+                  )}
+                </div>
+                
+                <textarea
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  rows={6}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl p-3 text-xs leading-relaxed text-slate-300 font-medium outline-none resize-none transition-all placeholder:text-slate-600"
+                  placeholder="Dán nội dung bản án, báo cáo, cáo trạng hoặc tài liệu hồ sơ tại đây... (Tối thiểu 50 ký tự để AI phân tích tốt)"
+                />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    Số ký tự: <strong className={pasteText.trim().length >= 50 ? 'text-green-500' : 'text-amber-500'}>{pasteText.length.toLocaleString()}</strong> / 50 tối thiểu
+                  </span>
+                  
+                  <button
+                    onClick={handlePasteSubmit}
+                    disabled={pasteText.trim().length < 50}
+                    className="bg-primary hover:bg-primary-hover disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-bold px-4 py-2 rounded-lg transition-all cursor-pointer"
+                  >
+                    Xác nhận & Tạo sơ đồ
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-slate-800 pt-4 mt-5 flex justify-end gap-2 shrink-0">
+              <button
+                onClick={handleCancelSourceSelection}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
