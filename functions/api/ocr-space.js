@@ -100,24 +100,48 @@ function isRotatableError(res) {
     return true;
   }
 
+  // Lỗi HTTP 403 Forbidden (thường là API key sai hoặc bị chặn) -> cho phép xoay key tiếp theo!
+  if (status === 403) {
+    return true;
+  }
+
   const errStr = `${code} ${message} ${fullError}`.toLowerCase();
 
-  // 1. E201 (Không xoay khi gặp lỗi cấu hình E201 như language invalid hoặc key invalid)
-  if (errStr.includes("e201")) {
+  // 1. Nếu lỗi là language invalid / E201 language parameter invalid -> fail fast (KHÔNG xoay key)
+  if (
+    code === 'E201_LANGUAGE_INVALID' ||
+    errStr.includes("language invalid") ||
+    errStr.includes("lang invalid") ||
+    errStr.includes("language parameter")
+  ) {
     return false;
   }
 
-  // 2. File too large
+  // 2. File too large -> fail fast (KHÔNG xoay key)
   if (code === 'FILE_TOO_LARGE' || errStr.includes("size") || errStr.includes("large") || errStr.includes("too big")) {
     return false;
   }
 
-  // 3. Language invalid
-  if (code === 'E201_LANGUAGE_INVALID' || errStr.includes("language invalid") || errStr.includes("lang invalid")) {
-    return false;
+  // 3. Nếu lỗi là invalid API key / API key không hợp lệ -> ĐƯỢC xoay sang key tiếp theo
+  if (
+    code === 'INVALID_API_KEY' ||
+    errStr.includes("apikey is invalid") ||
+    errStr.includes("api key is invalid") ||
+    errStr.includes("apikey is not valid")
+  ) {
+    return true;
   }
 
-  // 4. Quota exceeded
+  // Nếu gặp E201 tổng quát: nếu nó chứa E201 nhưng không phải là Language invalid (đã được lọc ở trên),
+  // thì đó là E201 API key invalid. Do đó được xoay key!
+  if (errStr.includes("e201")) {
+    if (errStr.includes("language") || errStr.includes("lang")) {
+      return false;
+    }
+    return true;
+  }
+
+  // 4. Quota exceeded -> ĐƯỢC PHÉP xoay key
   if (
     code === 'QUOTA_EXCEEDED' ||
     errStr.includes("limit") ||
@@ -128,12 +152,12 @@ function isRotatableError(res) {
     return true;
   }
 
-  // 5. Too many requests / Rate limit
+  // 5. Too many requests / Rate limit -> ĐƯỢC PHÉP xoay key
   if (errStr.includes("too many requests") || errStr.includes("rate limit") || errStr.includes("rate-limit")) {
     return true;
   }
 
-  // 6. Temporary unavailable
+  // 6. Temporary unavailable -> ĐƯỢC PHÉP xoay key
   if (errStr.includes("temporary unavailable") || errStr.includes("temporarily unavailable") || errStr.includes("service unavailable")) {
     return true;
   }
