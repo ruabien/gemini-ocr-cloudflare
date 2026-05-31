@@ -28,12 +28,21 @@ export const loadPdfJs = () => {
  * @param {Function} onProgress - Callback báo cáo tiến trình (currentPage, totalPages)
  * @returns {Promise<File[]>} Mảng các đối tượng File ảnh JPEG tương ứng từng trang
  */
-export const splitPdfToImages = async (pdfFile, onProgress) => {
+export const splitPdfToImages = async (pdfFile, onProgress, options = {}) => {
+  const signal = options.signal;
   const pdfjsLib = await loadPdfJs();
   
+  if (signal && signal.aborted) {
+    throw new Error("Tác vụ phân tách PDF bị hủy.");
+  }
+
   // Đọc file thành ArrayBuffer để PDF.js xử lý trực tiếp trên trình duyệt
   const arrayBuffer = await pdfFile.arrayBuffer();
   
+  if (signal && signal.aborted) {
+    throw new Error("Tác vụ phân tách PDF bị hủy.");
+  }
+
   // Nạp tài liệu PDF
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdf = await loadingTask.promise;
@@ -43,6 +52,10 @@ export const splitPdfToImages = async (pdfFile, onProgress) => {
   const baseName = pdfFile.name.replace(/\.[^/.]+$/, "");
 
   for (let i = 1; i <= numPages; i++) {
+    if (signal && signal.aborted) {
+      throw new Error("Tác vụ phân tách PDF bị hủy.");
+    }
+
     if (onProgress) {
       onProgress(i, numPages);
     }
@@ -59,16 +72,40 @@ export const splitPdfToImages = async (pdfFile, onProgress) => {
     canvas.height = viewport.height;
     const context = canvas.getContext('2d');
 
+    if (signal && signal.aborted) {
+      canvas.width = 0;
+      canvas.height = 0;
+      throw new Error("Tác vụ phân tách PDF bị hủy.");
+    }
+
     // Tiến hành render trang PDF lên canvas
     await page.render({
       canvasContext: context,
       viewport: viewport
     }).promise;
 
+    if (signal && signal.aborted) {
+      canvas.width = 0;
+      canvas.height = 0;
+      throw new Error("Tác vụ phân tách PDF bị hủy.");
+    }
+
     // Chuyển nội dung canvas thành Blob định dạng jpeg
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.9); // Chất lượng 90%
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (signal && signal.aborted) {
+          reject(new Error("Tác vụ phân tách PDF bị hủy."));
+        } else {
+          resolve(b);
+        }
+      }, 'image/jpeg', 0.9); // Chất lượng 90%
     });
+
+    if (signal && signal.aborted) {
+      canvas.width = 0;
+      canvas.height = 0;
+      throw new Error("Tác vụ phân tách PDF bị hủy.");
+    }
 
     // Tạo đối tượng File từ Blob vừa render
     const pageFile = new File([blob], `${baseName}_Trang_${i}.jpg`, { type: 'image/jpeg' });

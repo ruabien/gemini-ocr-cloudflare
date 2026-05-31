@@ -58,6 +58,8 @@ function App() {
 
   const processingRef = useRef(false);
   const filesRef = useRef([]);
+  const activeSessionIdRef = useRef(0);
+  const abortControllerRef = useRef(null);
 
   // Cập nhật filesRef để truy cập đồng bộ dữ liệu mới nhất trong vòng lặp bất đồng bộ
   useEffect(() => {
@@ -90,6 +92,14 @@ function App() {
       const confirmReset = window.confirm("Đang xử lý tài liệu. Bạn có chắc muốn làm mới phiên OCR hiện tại?");
       if (!confirmReset) return false;
     }
+    
+    // Tăng Session ID và hủy bất kỳ tác vụ chạy ngầm nào
+    activeSessionIdRef.current += 1;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
     processingRef.current = false;
     setIsProcessing(false);
     setFiles([]);
@@ -105,6 +115,14 @@ function App() {
       const confirmHome = window.confirm("Đang xử lý tài liệu. Bạn có chắc muốn trở về trang chủ?");
       if (!confirmHome) return;
     }
+    
+    // Tăng Session ID và hủy bất kỳ tác vụ chạy ngầm nào
+    activeSessionIdRef.current += 1;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
     processingRef.current = false;
     setIsProcessing(false);
     setFiles([]);
@@ -204,6 +222,15 @@ function App() {
       setActiveFileId(prev => prev || newItems[0].id);
     }
 
+    // Tăng Session ID và hủy bất kỳ tác vụ chạy ngầm nào của phiên cũ
+    activeSessionIdRef.current += 1;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const currentSessionId = activeSessionIdRef.current;
+    const currentSignal = abortControllerRef.current.signal;
+
     // Thực hiện tách trang PDF bất đồng bộ ngoài call stack chính để tránh đơ giao diện
     setTimeout(() => {
       for (const item of newItems) {
@@ -211,11 +238,14 @@ function App() {
           (async () => {
             try {
               const pageImages = await splitPdfToImages(item.originalFile, (current, total) => {
+                if (currentSessionId !== activeSessionIdRef.current) return;
                 setFiles(prev => prev.map(f => f.id === item.id ? { 
                   ...f, 
                   progress: Math.round((current / total) * 100) 
                 } : f));
-              });
+              }, { signal: currentSignal });
+
+              if (currentSessionId !== activeSessionIdRef.current) return;
 
               // Không nén song song ở đây. Việc nén sẽ được thực hiện tuần tự/on-the-fly trong processNext khi bắt đầu OCR
               const pageItems = pageImages.map((imgFile, index) => {
@@ -234,6 +264,7 @@ function App() {
               });
 
               setFiles(prev => {
+                if (currentSessionId !== activeSessionIdRef.current) return prev;
                 const parentIdx = prev.findIndex(f => f.id === item.id);
                 if (parentIdx === -1) return prev;
 
@@ -249,6 +280,7 @@ function App() {
                 return newFiles;
               });
             } catch (err) {
+              if (currentSessionId !== activeSessionIdRef.current) return;
               console.error("Lỗi phân tách trang PDF:", err);
               setFiles(prev => prev.map(f => f.id === item.id ? { 
                 ...f, 
@@ -280,6 +312,8 @@ function App() {
   };
 
   const startOcrProcessing = async () => {
+    if (isProcessing || processingRef.current) return;
+
     if (!config || !config.apiKey) {
       setIsSettingsOpen(true);
       return;
@@ -294,6 +328,13 @@ function App() {
     setIsProcessing(true);
     processingRef.current = true;
     setMobileTab('result'); // Tự động chuyển sang tab kết quả khi bắt đầu xử lý
+
+    // Setup abortControllerRef if not already active, and extract currentSignal and currentSessionId
+    if (!abortControllerRef.current) {
+      abortControllerRef.current = new AbortController();
+    }
+    const currentSignal = abortControllerRef.current.signal;
+    const currentSessionId = activeSessionIdRef.current;
 
     // Chọn danh sách ID được phép xử lý
     let allowedIds = [];
@@ -345,25 +386,32 @@ function App() {
 
     const processNext = async () => {
       if (!processingRef.current) return;
+      if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
 
       const fileToProcess = filesRef.current.find(f => allowedIds.includes(f.id) && f.status === 'waiting');
       if (!fileToProcess) {
-        setIsProcessing(false);
-        processingRef.current = false;
+        if (currentSessionId === activeSessionIdRef.current) {
+          setIsProcessing(false);
+          processingRef.current = false;
+        }
         return;
       }
 
       setActiveFileId(fileToProcess.id);
 
-      setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
-        ...f, 
-        status: 'processing', 
-        progress: 20, 
-        error: null,
-        retryInfo: null
-      } : f));
+      setFiles(prev => {
+        if (currentSessionId !== activeSessionIdRef.current) return prev;
+        return prev.map(f => f.id === fileToProcess.id ? { 
+          ...f, 
+          status: 'processing', 
+          progress: 20, 
+          error: null,
+          retryInfo: null
+        } : f);
+      });
 
       await delay(50);
+      if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
 
       let success = false;
       let keysTriedForThisFile = 0;
@@ -439,18 +487,20 @@ error message: ${finalErrorMsg || 'none'}`;
         return lines.join('\n');
       };
 
-
-      while (!success && keysTriedForThisFile < keysArray.length && processingRef.current) {
+      while (!success && keysTriedForThisFile < keysArray.length && processingRef.current && currentSessionId === activeSessionIdRef.current && !currentSignal.aborted) {
         const activeKey = keysArray[currentKeyIndex];
         const keyLabel = `Gemini Key #${currentKeyIndex + 1}`;
         let attemptCount = 0;
 
-        while (!success && attemptCount <= maxRetriesPerKey && processingRef.current) {
+        while (!success && attemptCount <= maxRetriesPerKey && processingRef.current && currentSessionId === activeSessionIdRef.current && !currentSignal.aborted) {
           try {
-            setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
-              ...f, 
-              progress: Math.min(90, 20 + attemptCount * 20) 
-            } : f));
+            setFiles(prev => {
+              if (currentSessionId !== activeSessionIdRef.current) return prev;
+              return prev.map(f => f.id === fileToProcess.id ? { 
+                ...f, 
+                progress: Math.min(90, 20 + attemptCount * 20) 
+              } : f);
+            });
 
             const startTime = Date.now();
             let textResult = null;
@@ -465,17 +515,21 @@ error message: ${finalErrorMsg || 'none'}`;
               console.error("Lỗi khi nén ảnh trước khi OCR:", compressErr);
             }
 
+            if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
+
             try {
               textResult = await processOCR(
                 fileToOcr,
                 activeKey,
                 currentModel,
-                ocrOptions
+                { ...ocrOptions, signal: currentSignal }
               );
               processingTimeMs = Date.now() - startTime;
 
               logAttempt("gemini", keyLabel, pageNum, false, "success");
             } catch (error) {
+              if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
+
               const errorCode = error.code || (error.name === 'TypeError' ? 'NETWORK' : 'UNKNOWN');
               const errorMsg = error.message;
 
@@ -484,21 +538,24 @@ error message: ${finalErrorMsg || 'none'}`;
               if (error.finishReason === 'RECITATION' || error.message === 'RECITATION' || error.code === 'RECITATION') {
                 console.warn(`Trang ${fileToProcess.name} bị lỗi RECITATION. Đang thử lại Gemini với cấu hình an toàn...`);
                 
-                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
-                  ...f, 
-                  status: 'processing', 
-                  progress: 50,
-                  retryInfo: {
-                    customMessage: `Trang ${pageNum} bị chặn. Đang thử lại với cấu hình Gemini an toàn hơn...`,
-                    errorMsg: `Phát hiện bộ lọc RECITATION của Google.`,
-                    attempt: 1,
-                    maxAttempts: 1,
-                    secondsLeft: 1
-                  }
-                } : f));
+                setFiles(prev => {
+                  if (currentSessionId !== activeSessionIdRef.current) return prev;
+                  return prev.map(f => f.id === fileToProcess.id ? { 
+                    ...f, 
+                    status: 'processing', 
+                    progress: 50,
+                    retryInfo: {
+                      customMessage: `Trang ${pageNum} bị chặn. Đang thử lại với cấu hình Gemini an toàn hơn...`,
+                      errorMsg: `Phát hiện bộ lọc RECITATION của Google.`,
+                      attempt: 1,
+                      maxAttempts: 1,
+                      secondsLeft: 1
+                    }
+                  } : f);
+                });
                 
                 await delay(1000);
-                if (!processingRef.current) return;
+                if (!processingRef.current || currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
 
                 const retryStartTime = Date.now();
                 try {
@@ -506,12 +563,14 @@ error message: ${finalErrorMsg || 'none'}`;
                     fileToOcr,
                     activeKey,
                     currentModel,
-                    { ...ocrOptions, isRetry: true }
+                    { ...ocrOptions, isRetry: true, signal: currentSignal }
                   );
                   usedEngine = "gemini-retry";
                   processingTimeMs = Date.now() - retryStartTime;
                   logAttempt("gemini-retry", keyLabel, pageNum, true, "success");
                 } catch (retryError) {
+                  if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
+
                   const retryErrorCode = retryError.code || (retryError.name === 'TypeError' ? 'NETWORK' : 'UNKNOWN');
                   const retryErrorMsg = retryError.message;
 
@@ -520,33 +579,38 @@ error message: ${finalErrorMsg || 'none'}`;
                   console.error("Retry Gemini vẫn bị lỗi:", retryError);
                   if (retryError.finishReason === 'RECITATION' || retryError.message === 'RECITATION' || retryError.code === 'RECITATION' || !textResult) {
                     console.warn(`Đang fallback trang ${fileToProcess.name} sang OCR.space...`);
-                    setFiles(prev => prev.map(f => f.id === fileToProcess.id ? { 
-                      ...f, 
-                      status: 'processing', 
-                      progress: 75,
-                      retryInfo: {
-                        customMessage: `Gemini bị chặn. Đang xử lý bằng OCR.space...`,
-                        errorMsg: `Trang ${pageNum} được xử lý bằng OCR.space.`,
-                        attempt: 1,
-                        maxAttempts: 1,
-                        secondsLeft: 1
-                      }
-                    } : f));
+                    setFiles(prev => {
+                      if (currentSessionId !== activeSessionIdRef.current) return prev;
+                      return prev.map(f => f.id === fileToProcess.id ? { 
+                        ...f, 
+                        status: 'processing', 
+                        progress: 75,
+                        retryInfo: {
+                          customMessage: `Gemini bị chặn. Đang xử lý bằng OCR.space...`,
+                          errorMsg: `Trang ${pageNum} được xử lý bằng OCR.space.`,
+                          attempt: 1,
+                          maxAttempts: 1,
+                          secondsLeft: 1
+                        }
+                      } : f);
+                    });
 
                     await delay(1000);
-                    if (!processingRef.current) return;
+                    if (!processingRef.current || currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
 
                     const spaceStartTime = Date.now();
                     try {
                       textResult = await ocrWithOcrSpace(
                         fileToOcr,
-                        { language: 'vie' }
+                        { language: 'vie', signal: currentSignal }
                       );
                       usedEngine = "ocr-space";
                       ocrStatus = "fallback";
                       processingTimeMs = Date.now() - spaceStartTime;
                       logAttempt("ocr-space", "OCR.space Key", pageNum, false, "success");
                     } catch (spaceError) {
+                      if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
+
                       const spaceErrorCode = spaceError.code || "UNKNOWN";
                       const spaceErrorMsg = spaceError.message;
 
@@ -567,7 +631,7 @@ error message: ${finalErrorMsg || 'none'}`;
 
             const durationSec = (processingTimeMs / 1000).toFixed(1);
 
-            if (!processingRef.current) return;
+            if (!processingRef.current || currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
 
             // Build a list of active OCR modes for metadata display
             const activeOptionsList = [];
@@ -577,28 +641,31 @@ error message: ${finalErrorMsg || 'none'}`;
             if (ocrOptions.legalOptimize) activeOptionsList.push("Tối ưu pháp lý");
             const ocrModeStr = activeOptionsList.join(", ") || "Mặc định";
 
-            setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-              ...f,
-              status: 'completed',
-              progress: 100,
-              result: normalizeOcrText(textResult),
-              retryInfo: null,
-              error: null,
-              metadata: {
-                duration: durationSec,
-                engine: usedEngine,
-                ocrMode: ocrModeStr,
-                pageNumber: pageNum,
-                engineUsed: usedEngine,
-                status: ocrStatus,
-                processingTimeMs: processingTimeMs
-              }
-            } : f));
+            setFiles(prev => {
+              if (currentSessionId !== activeSessionIdRef.current) return prev;
+              return prev.map(f => f.id === fileToProcess.id ? {
+                ...f,
+                status: 'completed',
+                progress: 100,
+                result: normalizeOcrText(textResult),
+                retryInfo: null,
+                error: null,
+                metadata: {
+                  duration: durationSec,
+                  engine: usedEngine,
+                  ocrMode: ocrModeStr,
+                  pageNumber: pageNum,
+                  engineUsed: usedEngine,
+                  status: ocrStatus,
+                  processingTimeMs: processingTimeMs
+                }
+              } : f);
+            });
 
             success = true;
 
           } catch (error) {
-            if (!processingRef.current) return;
+            if (!processingRef.current || currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
 
             console.error(`Lỗi OCR với trang ${fileToProcess.name} (Key Index: ${currentKeyIndex}, Lần thử: ${attemptCount + 1}):`, error);
 
@@ -609,19 +676,22 @@ error message: ${finalErrorMsg || 'none'}`;
               error.message.includes("Lỗi cấu hình") || 
               error.message.includes("OCR.space")
             ) {
-              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-                ...f,
-                status: 'error',
-                progress: 0,
-                error: getBreakdownText(),
-                retryInfo: null,
-                metadata: {
-                  pageNumber: pageNum,
-                  engineUsed: "ocr-space",
-                  status: "failed",
-                  errorReason: error.message
-                }
-              } : f));
+              setFiles(prev => {
+                if (currentSessionId !== activeSessionIdRef.current) return prev;
+                return prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  status: 'error',
+                  progress: 0,
+                  error: getBreakdownText(),
+                  retryInfo: null,
+                  metadata: {
+                    pageNumber: pageNum,
+                    engineUsed: "ocr-space",
+                    status: "failed",
+                    errorReason: error.message
+                  }
+                } : f);
+              });
               keysTriedForThisFile = keysArray.length;
               break;
             }
@@ -633,19 +703,22 @@ error message: ${finalErrorMsg || 'none'}`;
                 currentModel = fallbackModel;
                 continue;
               } else {
-                setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-                  ...f,
-                  status: 'error',
-                  progress: 0,
-                  error: getBreakdownText(),
-                  retryInfo: null,
-                  metadata: {
-                    pageNumber: pageNum,
-                    engineUsed: "gemini",
-                    status: "failed",
-                    errorReason: "Recitation Filter"
-                  }
-                } : f));
+                setFiles(prev => {
+                  if (currentSessionId !== activeSessionIdRef.current) return prev;
+                  return prev.map(f => f.id === fileToProcess.id ? {
+                    ...f,
+                    status: 'error',
+                    progress: 0,
+                    error: getBreakdownText(),
+                    retryInfo: null,
+                    metadata: {
+                      pageNumber: pageNum,
+                      engineUsed: "gemini",
+                      status: "failed",
+                      errorReason: "Recitation Filter"
+                    }
+                  } : f);
+                });
                 keysTriedForThisFile = keysArray.length;
                 break;
               }
@@ -667,18 +740,21 @@ error message: ${finalErrorMsg || 'none'}`;
             const customMessage = `Lỗi xảy ra. Đang tự động thử lại lần ${attemptCount}/${maxRetriesPerKey} với Key hiện tại...`;
 
             for (let sec = delaySeconds; sec > 0; sec--) {
-              if (!processingRef.current) return;
-              setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-                ...f,
-                status: 'processing',
-                retryInfo: {
-                  customMessage: customMessage,
-                  errorMsg: displayError,
-                  attempt: attemptCount,
-                  maxAttempts: maxRetriesPerKey,
-                  secondsLeft: sec
-                }
-              } : f));
+              if (!processingRef.current || currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
+              setFiles(prev => {
+                if (currentSessionId !== activeSessionIdRef.current) return prev;
+                return prev.map(f => f.id === fileToProcess.id ? {
+                  ...f,
+                  status: 'processing',
+                  retryInfo: {
+                    customMessage: customMessage,
+                    errorMsg: displayError,
+                    attempt: attemptCount,
+                    maxAttempts: maxRetriesPerKey,
+                    secondsLeft: sec
+                  }
+                } : f);
+              });
               await delay(1000);
             }
           }
@@ -696,42 +772,51 @@ error message: ${finalErrorMsg || 'none'}`;
           
           console.warn(`Key Index ${oldKeyIndex} thất bại. Chuyển sang Key Index ${currentKeyIndex} dự phòng...`);
           
-          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-            ...f,
-            status: 'processing',
-            retryInfo: {
-              customMessage: `Key lỗi. Đang đổi sang Key dự phòng (${keysTriedForThisFile + 1}/${keysArray.length})...`,
-              errorMsg: `Chuyển khóa tự động không trì hoãn.`,
-              attempt: 0,
-              maxAttempts: maxRetriesPerKey,
-              secondsLeft: 1
-            }
-          } : f));
+          setFiles(prev => {
+            if (currentSessionId !== activeSessionIdRef.current) return prev;
+            return prev.map(f => f.id === fileToProcess.id ? {
+              ...f,
+              status: 'processing',
+              retryInfo: {
+                customMessage: `Key lỗi. Đang đổi sang Key dự phòng (${keysTriedForThisFile + 1}/${keysArray.length})...`,
+                errorMsg: `Chuyển khóa tự động không trì hoãn.`,
+                attempt: 0,
+                maxAttempts: maxRetriesPerKey,
+                secondsLeft: 1
+              }
+            } : f);
+          });
           
           await delay(500);
         } else {
           // Thử hết tất cả các Key và đều thất bại
-          setFiles(prev => prev.map(f => f.id === fileToProcess.id ? {
-            ...f,
-            status: 'error',
-            progress: 0,
-            error: getBreakdownText(),
-            retryInfo: null
-          } : f));
+          setFiles(prev => {
+            if (currentSessionId !== activeSessionIdRef.current) return prev;
+            return prev.map(f => f.id === fileToProcess.id ? {
+              ...f,
+              status: 'error',
+              progress: 0,
+              error: getBreakdownText(),
+              retryInfo: null
+            } : f);
+          });
         }
       }
 
-      if (processingRef.current) {
+      if (processingRef.current && currentSessionId === activeSessionIdRef.current && !currentSignal.aborted) {
         // Nghỉ nhẹ giữa các trang để an toàn
         await delay(1500);
+        if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
         await processNext();
       }
     };
 
     await processNext();
 
-    setIsProcessing(false);
-    processingRef.current = false;
+    if (currentSessionId === activeSessionIdRef.current) {
+      setIsProcessing(false);
+      processingRef.current = false;
+    }
   };
 
   if (!isWorkspaceActive) {

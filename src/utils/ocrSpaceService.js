@@ -21,6 +21,16 @@ export const ocrWithOcrSpace = async (fileOrBlob, options = {}) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s client timeout
 
+  if (options.signal) {
+    if (options.signal.aborted) {
+      controller.abort();
+    } else {
+      options.signal.addEventListener('abort', () => {
+        controller.abort();
+      });
+    }
+  }
+
   try {
     const response = await fetch('/api/ocr-space', {
       method: 'POST',
