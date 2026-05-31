@@ -11,7 +11,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { Scale, Edit3, Trash2, PlusCircle, Layout, X, RefreshCw } from 'lucide-react';
-import { generateCaseMindmap, convertJsonToFlow } from '../utils/mindmapService';
+import { generateCaseMindmap, convertJsonToFlow, getDagreLayout } from '../utils/mindmapService';
 import { exportToPng, exportToPdf, exportToPptx } from '../utils/mindmapExportHelper';
 import CustomMindmapNode from './CustomMindmapNode';
 
@@ -24,6 +24,8 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [diagramType, setDiagramType] = useState('');
   const [diagramFormat, setDiagramFormat] = useState('');
+  const [activeTheme, setActiveTheme] = useState('classic_judicial');
+  const [isFullscreenMode, setIsFullscreenMode] = useState(false);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -100,7 +102,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
 
       // 2. Chuyển đổi dữ liệu JSON thành Nodes & Edges và áp dụng thuật toán layout
       const orientation = (format === 'hình cây' || format === 'đa luồng') ? 'vertical' : 'horizontal';
-      const { nodes: flowNodes, edges: flowEdges } = convertJsonToFlow(parsedData, orientation);
+      const { nodes: flowNodes, edges: flowEdges } = convertJsonToFlow(parsedData, orientation, activeTheme);
       setNodes(flowNodes);
       setEdges(flowEdges);
       setGeneratedConfig({ template: templateKey, type: type, format: format });
@@ -126,6 +128,52 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Lắng nghe phím Esc để thoát chế độ trình chiếu
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreenMode) {
+        setIsFullscreenMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreenMode]);
+
+  const handleThemeChange = (newTheme) => {
+    setActiveTheme(newTheme);
+    setNodes((nds) => nds.map((n) => ({
+      ...n,
+      data: { ...n.data, theme: newTheme }
+    })));
+    
+    // Đồng thời cập nhật edges class và style mới của theme
+    setEdges((eds) => eds.map((e) => {
+      let edgeColor;
+      // Tìm target node để lấy accent color
+      const targetNode = nodes.find(n => n.id === e.target);
+      const accentColor = targetNode?.data?.accentColor || '#163A70';
+      const isPlaceholder = !!targetNode?.data?.isPlaceholder;
+      
+      if (newTheme === 'investigation_board') {
+        edgeColor = isPlaceholder ? '#ef4444' : '#b91c1c';
+      } else if (newTheme === 'executive_summary') {
+        edgeColor = isPlaceholder ? '#ef4444' : '#18181b';
+      } else {
+        edgeColor = isPlaceholder ? '#ef4444' : accentColor;
+      }
+      
+      return {
+        ...e,
+        className: `${newTheme}-edge`,
+        animated: isPlaceholder || (newTheme === 'presentation_pro'),
+        style: {
+          ...e.style,
+          stroke: edgeColor
+        }
+      };
+    }));
   };
 
   // Mở màn hình chọn nguồn dữ liệu ngay khi Workspace được mount hoặc nạp ocrText ban đầu
@@ -481,95 +529,14 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     }, 50);
   };
 
-  // Căn chỉnh bố cục đẹp lại (Reset / Align Layout)
+  // Căn chỉnh bố cục đẹp lại (Reset / Align Layout bằng Dagre)
   const handleAlignLayout = () => {
-    const rootNode = nodes.find((n) => n.id === 'root');
-    if (!rootNode) return;
-
-    const orientation = (diagramFormat === 'hình cây' || diagramFormat === 'đa luồng') ? 'vertical' : 'horizontal';
-
-    const buildSubtree = (nodeId) => {
-      const node = nodes.find((n) => n.id === nodeId);
-      const childIds = edges.filter((e) => e.source === nodeId).map((e) => e.target);
-      const sortedChildNodes = nodes
-        .filter((n) => childIds.includes(n.id))
-        .sort((a, b) => orientation === 'horizontal' ? a.position.y - b.position.y : a.position.x - b.position.x);
-
-      return {
-        id: node.id,
-        label: node.data.label,
-        type: node.data.nodeType,
-        accentColor: node.data.accentColor,
-        note: node.data.note,
-        evidence: node.data.evidence,
-        isPlaceholder: node.data.isPlaceholder,
-        children: sortedChildNodes.map((c) => buildSubtree(c.id)),
-      };
-    };
-
-    const tree = buildSubtree('root');
-
-    const NODE_HEIGHT = 80;
-    const NODE_WIDTH = 280;
-    const GAP = 20;
-    const LEAF_SIZE = orientation === 'horizontal' ? NODE_HEIGHT + 10 : NODE_WIDTH + 20;
-
-    const computeSubtreeSize = (node) => {
-      if (!node.children || node.children.length === 0) {
-        node.subtreeSize = LEAF_SIZE;
-        return LEAF_SIZE;
-      }
-      let total = 0;
-      node.children.forEach((child) => {
-        total += computeSubtreeSize(child);
-      });
-      node.subtreeSize = Math.max(LEAF_SIZE, total + (node.children.length - 1) * GAP);
-      return node.subtreeSize;
-    };
-
-    computeSubtreeSize(tree);
-
-    const updatedNodes = [];
-    const HORIZONTAL_SPACING = 340;
-    const VERTICAL_SPACING = 180;
-
-    const assignPositions = (node, depth, offsetStart) => {
-      const size = node.subtreeSize;
-      const center = offsetStart + size / 2;
-
-      let x, y;
-      if (orientation === 'horizontal') {
-        x = depth * HORIZONTAL_SPACING + 50;
-        y = center - NODE_HEIGHT / 2;
-      } else {
-        x = center - NODE_WIDTH / 2;
-        y = depth * VERTICAL_SPACING + 50;
-      }
-
-      const existingNode = nodes.find((n) => n.id === node.id);
-      if (existingNode) {
-        updatedNodes.push({
-          ...existingNode,
-          data: {
-            ...existingNode.data,
-            orientation: orientation
-          },
-          position: { x, y },
-        });
-      }
-
-      if (node.children && node.children.length > 0) {
-        let currentOffset = offsetStart;
-        node.children.forEach((child) => {
-          assignPositions(child, depth + 1, currentOffset);
-          currentOffset += child.subtreeSize + GAP;
-        });
-      }
-    };
-
-    assignPositions(tree, 0, 50);
-    setNodes(updatedNodes);
-    alert("⚡ Đã sắp xếp và căn chỉnh lại sơ đồ theo hình thức đã chọn.");
+    if (nodes.length === 0) return;
+    const direction = (diagramFormat === 'hình cây' || diagramFormat === 'đa luồng') ? 'TB' : 'LR';
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(nodes, edges, direction, activeTheme);
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+    alert("✨ Đã tối ưu bố cục tự động bằng Dagre Layout.");
   };
 
   // Xuất PowerPoint chuẩn 4 Slide theo Hướng dẫn 10
@@ -905,6 +872,21 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
                       <option value="bảng biểu">Bảng biểu</option>
                     </select>
                   </div>
+
+                  {/* Giao diện Theme */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-300 font-bold">Giao diện (Theme):</label>
+                    <select
+                      value={activeTheme}
+                      onChange={(e) => handleThemeChange(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-white font-semibold outline-none cursor-pointer"
+                    >
+                      <option value="classic_judicial">⚖️ Cổ điển Tư pháp (Judicial)</option>
+                      <option value="presentation_pro">🎬 Trình chiếu Hiện đại (Pro Glow)</option>
+                      <option value="investigation_board">📌 Bảng điều tra phá án (Cork Board)</option>
+                      <option value="executive_summary">📝 Báo cáo Tóm tắt (High Contrast)</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Preview */}
@@ -964,7 +946,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
           /* Khung làm việc sơ đồ và hiệu chỉnh gốc */
           <>
             {/* React Flow Board Container */}
-            <div ref={reactFlowWrapper} className="flex-1 h-full relative">
+            <div ref={reactFlowWrapper} className={`flex-1 h-full relative theme-board ${activeTheme}`}>
               {nodes.length > 0 && !isGenerating ? (
                 <ReactFlow
                   nodes={nodes}
@@ -979,7 +961,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
                   maxZoom={2.0}
                 >
                   <Controls className="bg-slate-800 border border-slate-700 text-white rounded-xl shadow-md [&_button]:border-slate-700 [&_button]:bg-slate-800 hover:[&_button]:bg-slate-700" />
-                  <Background color="#334155" gap={24} size={1} />
+                  <Background color={activeTheme === 'executive_summary' ? '#cbd5e1' : '#334155'} gap={24} size={1} />
                   
                   {/* Banner cảnh báo nghiệp vụ theo quy chuẩn HD10 */}
                   <Panel position="bottom-center" className="bg-slate-900/90 text-slate-400 border border-slate-800 rounded-xl px-5 py-2.5 max-w-[900px] text-center backdrop-blur-xs select-none shadow-xl mb-4">
@@ -989,6 +971,47 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
                   </Panel>
                 </ReactFlow>
               ) : null}
+
+              {/* Floating controls panel when in presentation/fullscreen mode */}
+              {isFullscreenMode && (
+                <div className="absolute bottom-6 right-6 z-50 flex items-center gap-3 bg-slate-900/90 border border-slate-800 backdrop-blur-md px-4 py-3 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] select-none animate-fade-in text-white">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Chủ đề:</span>
+                    <select
+                      value={activeTheme}
+                      onChange={(e) => handleThemeChange(e.target.value)}
+                      className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none cursor-pointer focus:border-primary font-semibold"
+                    >
+                      <option value="classic_judicial">⚖️ Cổ điển Tư pháp</option>
+                      <option value="presentation_pro">🎬 Trình chiếu Hiện đại</option>
+                      <option value="investigation_board">📌 Bảng điều tra</option>
+                      <option value="executive_summary">📝 Báo cáo Tóm tắt</option>
+                    </select>
+                  </div>
+                  
+                  <div className="h-6 w-[1px] bg-slate-800"></div>
+
+                  <button
+                    onClick={handleAlignLayout}
+                    className="flex items-center gap-1.5 h-8 px-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    title="Tối ưu lại bố cục tự động"
+                  >
+                    <Layout size={12} />
+                    <span>Tối ưu bố cục</span>
+                  </button>
+
+                  <div className="h-6 w-[1px] bg-slate-800"></div>
+
+                  <button
+                    onClick={() => setIsFullscreenMode(false)}
+                    className="flex items-center gap-1.5 h-8 px-3 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md"
+                    title="Thoát chế độ trình chiếu (Esc)"
+                  >
+                    <span className="material-icons text-[14px]">fullscreen_exit</span>
+                    <span>Thoát</span>
+                  </button>
+                </div>
+              )}
 
               {/* Loading Indicator */}
               {isGenerating && (
@@ -1050,7 +1073,7 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
 
             {/* Sidebar Panel for Node Editing (Glassmorphic Slide-in) */}
             <div className={`w-80 h-full border-l border-slate-800 bg-slate-900/90 backdrop-blur-md text-white flex flex-col shrink-0 transition-all duration-300 ${
-              selectedNode ? 'translate-x-0' : 'translate-x-full absolute right-0'
+              isFullscreenMode ? 'hidden' : (selectedNode ? 'translate-x-0' : 'translate-x-full absolute right-0')
             }`}>
               {selectedNode ? (
                 <div className="flex-1 flex flex-col p-5 overflow-y-auto">

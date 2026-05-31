@@ -276,3 +276,99 @@ body {
   from, to { color: transparent; }
   50% { color: var(--color-secondary); }
 }
+
+/* ==========================================
+   THEME STYLES FOR PREMIUM MINDMAP WORKSPACE
+   ========================================== */
+
+/* 1. Classic Judicial Theme (Default light/slate grey board, navy/gold text) */
+.theme-board.classic_judicial {
+  background-color: #0f172a !important; /* Slate 900 for premium container */
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+
+/* 2. Presentation Pro Theme (Very dark Vercel-like board, glowing nodes & edges) */
+.theme-board.presentation_pro {
+  background-color: #030712 !important; /* Dark black */
+  background-image: 
+    radial-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 0),
+    radial-gradient(rgba(56, 189, 248, 0.1) 1.5px, transparent 0) !important;
+  background-size: 32px 32px !important;
+  background-position: 0 0, 16px 16px !important;
+}
+
+/* 3. Investigation Board (Sepia/cork board style) */
+.theme-board.investigation_board {
+  background-color: #ebdcb9 !important; /* Cork board */
+  background-image: 
+    radial-gradient(rgba(139, 90, 43, 0.15) 1px, transparent 1px),
+    linear-gradient(to right, rgba(139, 90, 43, 0.05) 1px, transparent 1px) !important;
+  background-size: 20px 20px !important;
+}
+
+/* 4. Executive Summary Theme (High contrast pure white, thin grid lines) */
+.theme-board.executive_summary {
+  background-color: #ffffff !important;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px) !important;
+  background-size: 20px 20px !important;
+}
+
+/* Connectors and Edge Animations */
+.custom-edge-path {
+  stroke-dasharray: 6 4;
+  animation: edgeFlow 20s linear infinite;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+/* Flow animation for custom edges */
+@keyframes edgeFlow {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Glowing connections in Presentation Pro */
+.presentation-pro-edge path {
+  stroke-dasharray: 6 3;
+  animation: edgeFlow 15s linear infinite;
+}
+
+/* Red yarn in Investigation Board */
+.investigation-board-edge path {
+  stroke-dasharray: 0 !important;
+  animation: none !important;
+  stroke: #b91c1c !important; /* Crimson Red string */
+  stroke-width: 2.5px !important;
+}
+
+/* Sharp lines in Executive Summary */
+.executive-summary-edge path {
+  stroke-dasharray: 0 !important;
+  animation: none !important;
+  stroke: #18181b !important; /* Charcoal Black */
+  stroke-width: 1.5px !important;
+}
+
+/* Custom Node reveal animation */
+.custom-node-reveal {
+  animation: nodeReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes nodeReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

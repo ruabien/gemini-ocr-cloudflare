@@ -1,6 +1,7 @@
 /**
  * Service to generate case mindmap data from OCR text according to Hướng dẫn 10/HD-VKSTC (2024)
  */
+import dagre from 'dagre';
 
 // Định nghĩa 7 loại sơ đồ theo Hướng dẫn 10
 const DIAGRAM_TYPES = {
@@ -515,7 +516,7 @@ Mẫu án nghiệp vụ chính: ${templateKey === 'dan_su' ? 'Dân sự' : templ
  * Thuật toán Layout Cây Tự do (Hỗ trợ xoay trục Ngang / Dọc)
  * Chuyển đổi dữ liệu JSON lồng 3 cấp thành Nodes và Edges của React Flow
  */
-export const convertJsonToFlow = (jsonData, orientation = 'horizontal') => {
+export const convertJsonToFlow = (jsonData, orientation = 'horizontal', theme = 'classic_judicial') => {
   if (!jsonData) return { nodes: [], edges: [] };
 
   // Tự động nhận diện và chuyển đổi cấu trúc phẳng sang lồng cấp nếu cần
@@ -649,6 +650,7 @@ export const convertJsonToFlow = (jsonData, orientation = 'horizontal') => {
   // 3. Phân bổ tọa độ X và Y đệ quy dựa trên hướng xoay trục
   const nodes = [];
   const edges = [];
+  let seqIndex = 0;
   
   const HORIZONTAL_SPACING = 340; // Khoảng cách cấp độ ngang
   const VERTICAL_SPACING = 180;   // Khoảng cách cấp độ dọc
@@ -676,7 +678,9 @@ export const convertJsonToFlow = (jsonData, orientation = 'horizontal') => {
         note: node.note || '',
         evidence: node.evidence || '',
         orientation: orientation,
-        isPlaceholder: !!node.isPlaceholder
+        isPlaceholder: !!node.isPlaceholder,
+        depth: depth,
+        seqIndex: seqIndex++
       },
       position: { x, y }
     });
@@ -706,5 +710,114 @@ export const convertJsonToFlow = (jsonData, orientation = 'horizontal') => {
 
   assignPositions(tree, null, 0, 50);
 
-  return { nodes, edges };
+  // Áp dụng Dagre Layout để có khoảng cách tối ưu và tránh chồng đè node
+  const layoutDirection = orientation === 'horizontal' ? 'LR' : 'TB';
+  return getDagreLayout(nodes, edges, layoutDirection, theme);
 };
+
+/**
+ * Hàm layout tối ưu hóa bằng thư viện Dagre
+ */
+export const getDagreLayout = (nodes, edges, direction = 'LR', theme = 'classic_judicial') => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+  const isHorizontal = direction === 'LR';
+  
+  // Thiết lập khoảng cách thông minh
+  dagreGraph.setGraph({ 
+    rankdir: direction, 
+    ranksep: isHorizontal ? 120 : 100, // Khoảng cách giữa các tầng
+    nodesep: isHorizontal ? 40 : 60,   // Khoảng cách giữa các node cùng cấp
+  });
+
+  nodes.forEach((node) => {
+    // Xác định kích thước node để Dagre tính toán bao quanh
+    let width = 280;
+    let height = 80;
+    
+    if (node.data.nodeType === 'caseRoot') {
+      width = 320;
+      height = 100;
+    } else if (node.data.nodeType === 'subBranch') {
+      width = 240;
+      height = 70;
+    }
+    
+    // Nếu có ghi chú hoặc chứng cứ, tăng chiều cao tính toán để tránh chồng đè nét vẽ
+    if (node.data.note || node.data.evidence) {
+      height += 40;
+    }
+    
+    dagreGraph.setNode(node.id, { width, height });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    
+    let width = 280;
+    let height = 80;
+    if (node.data.nodeType === 'caseRoot') {
+      width = 320;
+      height = 100;
+    } else if (node.data.nodeType === 'subBranch') {
+      width = 240;
+      height = 70;
+    }
+    
+    if (node.data.note || node.data.evidence) {
+      height += 40;
+    }
+
+    // Căn giữa node dựa trên tọa độ Dagre
+    const x = nodeWithPosition.x - width / 2;
+    const y = nodeWithPosition.y - height / 2;
+    
+    // Cập nhật hướng xoay trục tương ứng
+    const updatedOrientation = direction === 'LR' ? 'horizontal' : 'vertical';
+    
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        orientation: updatedOrientation,
+        theme: theme
+      },
+      position: { x, y },
+    };
+  });
+
+  // Đổi các edges sang dạng mặc định (bezier) và áp dụng style cao cấp
+  const styledEdges = edges.map(edge => {
+    const targetNode = nodes.find(n => n.id === edge.target);
+    const accentColor = targetNode?.data?.accentColor || '#163A70';
+    const isPlaceholder = !!targetNode?.data?.isPlaceholder;
+    
+    // Determine edge color based on theme
+    let edgeColor = accentColor;
+    if (theme === 'investigation_board') {
+      edgeColor = '#b91c1c'; // Crimson yarn
+    } else if (theme === 'executive_summary') {
+      edgeColor = '#18181b'; // Charcoal
+    }
+
+    return {
+      ...edge,
+      type: 'default', // Smooth curved bezier
+      animated: isPlaceholder || (theme === 'presentation_pro'),
+      className: `${theme}-edge`,
+      style: {
+        stroke: isPlaceholder ? '#ef4444' : edgeColor,
+        strokeWidth: isPlaceholder ? 2 : 2.5,
+      }
+    };
+  });
+
+  return { nodes: layoutedNodes, edges: styledEdges };
+}
