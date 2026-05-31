@@ -107,14 +107,19 @@ LƯU Ý QUAN TRỌNG:
 `;
 
 /**
- * Gọi API Gemini để sinh sơ đồ tư duy vụ án từ văn bản OCR
+ * Gọi API Gemini để sinh sơ đồ tư duy vụ án từ văn bản OCR với cơ chế quay vòng khóa (Key Rotation)
+ * và tự động thử lại khi dính bộ lọc Recitation.
  */
-export const generateCaseMindmap = async (ocrText, templateKey, apiKey, modelName) => {
-  if (!apiKey) {
-    throw new Error("Không tìm thấy API Key Gemini. Vui lòng thiết lập API Key trong cài đặt.");
+export const generateCaseMindmap = async (ocrText, templateKey, apiKeysPool, modelName) => {
+  if (!apiKeysPool || apiKeysPool.length === 0) {
+    const err = new Error("Chưa cấu hình Gemini API Key. Vui lòng vào Cấu hình API để thêm key trước khi tạo sơ đồ.");
+    err.code = "CONFIG_MISSING";
+    throw err;
   }
   if (!ocrText || !ocrText.trim()) {
-    throw new Error("Không có dữ liệu văn bản OCR để phân tích sơ đồ.");
+    const err = new Error("Không có dữ liệu văn bản OCR để phân tích sơ đồ.");
+    err.code = "NO_TEXT";
+    throw err;
   }
 
   let normalizedModel = modelName || 'gemini-2.5-flash';
@@ -125,54 +130,136 @@ export const generateCaseMindmap = async (ocrText, templateKey, apiKey, modelNam
   }
 
   const basePrompt = PROMPTS[templateKey] || PROMPTS.hinh_su;
-  const fullPrompt = `${basePrompt}\n\n${MAIN_INSTRUCTION}\n\nVĂN BẢN OCR CẦN PHÂN TÍCH:\n${ocrText}`;
+  
+  let success = false;
+  let keyIndex = 0;
+  let lastError = null;
+  let resultText = null;
 
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: fullPrompt }]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1
-        }
-      })
-    });
+  while (!success && keyIndex < apiKeysPool.length) {
+    const currentKey = apiKeysPool[keyIndex];
+    const maskedKey = currentKey.length > 8 
+      ? `${currentKey.substring(0, 6)}...${currentKey.substring(currentKey.length - 4)}` 
+      : currentKey;
 
-    if (!response.ok) {
-      let errorMsg = `HTTP ${response.status}`;
+    let isRetryAttempt = false;
+    
+    // Vòng lặp thử lại nội bộ của Key hiện tại (ví dụ khi dính RECITATION)
+    while (true) {
       try {
-        const errData = await response.json();
-        errorMsg = errData?.error?.message || errorMsg;
-      } catch {
-        // ignore
+        console.log(`[Mindmap Gen] Thử dùng Key #${keyIndex + 1} (${maskedKey}) - Lần thử: ${isRetryAttempt ? 'Diễn giải lại' : 'Mặc định'}`);
+        
+        let activePrompt = basePrompt;
+        if (isRetryAttempt) {
+          activePrompt = basePrompt + "\nLƯU Ý QUAN TRỌNG: Vui lòng tự diễn đạt lại (paraphrase) mọi thông tin trích xuất, tuyệt đối không chép nguyên văn các đoạn văn dài để tránh kích hoạt bộ lọc bản quyền (copyright/recitation filter) của hệ thống.";
+        }
+
+        const fullPrompt = `${activePrompt}\n\n${MAIN_INSTRUCTION}\n\nVĂN BẢN OCR CẦN PHÂN TÍCH:\n${ocrText}`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${currentKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: fullPrompt }]
+            }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: isRetryAttempt ? 0.7 : 0.1
+            }
+          })
+        });
+
+        if (!response.ok) {
+          let errorMsg = `HTTP ${response.status}`;
+          let isKeyInvalid = false;
+          try {
+            const errData = await response.json();
+            errorMsg = errData?.error?.message || errorMsg;
+            if (errorMsg.includes("API key not valid") || errorMsg.includes("key is invalid")) {
+              isKeyInvalid = true;
+            }
+          } catch {
+            // ignore
+          }
+
+          let friendlyMessage = errorMsg;
+          let code = "UNKNOWN";
+
+          if (response.status === 400 && isKeyInvalid) {
+            friendlyMessage = "Gemini API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại trong Cấu hình API.";
+            code = "INVALID_KEY";
+          } else if (response.status === 429) {
+            friendlyMessage = "Hạn mức API Key của bạn đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng đợi 1 phút hoặc đổi sang Key khác.";
+            code = "QUOTA_EXCEEDED";
+          } else if (response.status === 403) {
+            friendlyMessage = "Truy cập bị từ chối. API Key không có quyền sử dụng mô hình này hoặc kết nối bị chặn.";
+            code = "BLOCKED_REQUEST";
+          } else if (response.status === 400) {
+            friendlyMessage = `Yêu cầu không hợp lệ: ${errorMsg}`;
+            code = "MALFORMED";
+          }
+
+          const err = new Error(friendlyMessage);
+          err.code = code;
+          err.status = response.status;
+          throw err;
+        }
+
+        const data = await response.json();
+
+        if (data.candidates?.[0]?.finishReason === 'RECITATION') {
+          if (!isRetryAttempt) {
+            console.warn(`[Mindmap Gen] Phát hiện bộ lọc RECITATION của Google trên Key #${keyIndex + 1}. Đang thử lại với prompt diễn giải...`);
+            isRetryAttempt = true;
+            await new Promise(r => setTimeout(r, 1000));
+            continue; // Thử lại với cấu hình diễn giải
+          } else {
+            const err = new Error("Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google chặn tài liệu này.");
+            err.code = "RECITATION";
+            throw err;
+          }
+        }
+
+        resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!resultText) {
+          const err = new Error("AI không phân tích được hồ sơ (Google API không trả về văn bản).");
+          err.code = "NO_TEXT_RETURNED";
+          throw err;
+        }
+
+        success = true;
+        break; // Kết thúc vòng lặp thử lại nội bộ
+      } catch (err) {
+        lastError = err;
+        // Nếu dính lỗi mạng hoặc lỗi API cấu hình/quota, chuyển sang Key khác ngay lập tức
+        break; // Thoát vòng lặp thử lại nội bộ của Key này
       }
-      throw new Error(`Lỗi từ máy chủ Google API: ${errorMsg}`);
     }
 
-    const data = await response.json();
-    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!textResult) {
-      throw new Error("Google AI không trả về dữ liệu kết quả phân tích.");
+    if (!success) {
+      keyIndex++; // Đổi sang khóa dự phòng tiếp theo
     }
+  }
 
-    // Làm sạch và phân tích chuỗi JSON trả về
-    let cleanedJsonText = textResult.trim();
+  if (!success) {
+    throw lastError || new Error("Đã thử tất cả các API Key nhưng đều thất bại.");
+  }
+
+  // Làm sạch và phân tích chuỗi JSON trả về
+  try {
+    let cleanedJsonText = resultText.trim();
     if (cleanedJsonText.startsWith("```json")) {
       cleanedJsonText = cleanedJsonText.replace(/^```json/, "").replace(/```$/, "").trim();
     } else if (cleanedJsonText.startsWith("```")) {
       cleanedJsonText = cleanedJsonText.replace(/^```/, "").replace(/```$/, "").trim();
     }
-
-    const parsedData = JSON.parse(cleanedJsonText);
-    return parsedData;
-  } catch (error) {
-    console.error("Lỗi khi sinh sơ đồ tư duy:", error);
-    throw error;
+    return JSON.parse(cleanedJsonText);
+  } catch (parseErr) {
+    console.error("Lỗi phân tích cú pháp JSON AI:", parseErr);
+    const err = new Error("AI không phân tích được hồ sơ (Phản hồi từ Gemini không đúng định dạng sơ đồ vụ án).");
+    err.code = "JSON_PARSE_ERROR";
+    throw err;
   }
 };
 

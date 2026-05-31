@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -39,14 +39,18 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     { key: 'hon_nhan', name: 'Hôn nhân & Gia đình', icon: 'favorite' }
   ];
 
-  // Khởi tạo API Key và Model
-  const apiKey = config?.apiKey || localStorage.getItem('ocr_space_api_key') || '';
-  const modelName = config?.model || 'gemini-2.5-flash';
+  // Lấy danh sách API Keys từ cấu hình hiện tại hoặc localStorage (dùng chung nguồn với OCR)
+  const apiKeysPool = useMemo(() => {
+    const rawKeys = config?.apiKey || localStorage.getItem('ocr_api_key') || '';
+    return rawKeys.split(',').map(k => k.trim()).filter(Boolean);
+  }, [config?.apiKey]);
+
+  const modelName = config?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
 
   // Thực hiện phân tích vụ án và sinh sơ đồ tư duy bằng Gemini
   const handleGenerateMindmap = async (templateKey = selectedTemplate) => {
-    if (!apiKey) {
-      setGenerationError("Không tìm thấy API Key Gemini. Vui lòng kiểm tra lại cấu hình API Key trong mục cài đặt.");
+    if (apiKeysPool.length === 0) {
+      setGenerationError("Chưa cấu hình Gemini API Key. Vui lòng vào Cấu hình API để thêm key trước khi tạo sơ đồ.");
       return;
     }
 
@@ -55,8 +59,8 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
     setSelectedNode(null);
 
     try {
-      // 1. Gọi API Gemini lấy kết quả trích xuất dạng JSON
-      const parsedData = await generateCaseMindmap(ocrText, templateKey, apiKey, modelName);
+      // 1. Gọi API Gemini lấy kết quả trích xuất dạng JSON thông qua cơ chế rotation
+      const parsedData = await generateCaseMindmap(ocrText, templateKey, apiKeysPool, modelName);
 
       // 2. Chuyển đổi dữ liệu JSON thành Nodes & Edges và áp dụng thuật toán layout
       const { nodes: flowNodes, edges: flowEdges } = convertJsonToFlow(parsedData);
@@ -64,7 +68,21 @@ export default function MindmapWorkspace({ ocrText, config, onClose }) {
       setEdges(flowEdges);
     } catch (error) {
       console.error("Lỗi sinh sơ đồ:", error);
-      setGenerationError(error.message || "Đã xảy ra lỗi không xác định trong quá trình phân tích AI.");
+      
+      let displayError = error.message;
+      if (error.code === 'CONFIG_MISSING') {
+        displayError = "Chưa cấu hình Gemini API Key. Vui lòng vào Cấu hình API để thêm key trước khi tạo sơ đồ.";
+      } else if (error.code === 'INVALID_KEY' || error.message.includes("API key not valid") || error.message.includes("key is invalid")) {
+        displayError = "Gemini API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại trong Cấu hình API.";
+      } else if (error.code === 'QUOTA_EXCEEDED') {
+        displayError = "Hạn mức API Key của bạn đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng đợi 1 phút hoặc đổi sang Key khác.";
+      } else if (error.code === 'BLOCKED_REQUEST') {
+        displayError = "Truy cập bị từ chối. API Key không có quyền sử dụng mô hình này hoặc kết nối bị chặn.";
+      } else if (error.code === 'RECITATION') {
+        displayError = "Không thể tạo sơ đồ tư duy do bộ lọc trích dẫn (Recitation Filter) của Google chặn tài liệu này.";
+      }
+      
+      setGenerationError(displayError);
     } finally {
       setIsGenerating(false);
     }
