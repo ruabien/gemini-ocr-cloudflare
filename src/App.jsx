@@ -4,6 +4,7 @@ import FileDropzone from './components/FileDropzone';
 import QueueList from './components/QueueList';
 import ResultViewer from './components/ResultViewer';
 import LandingPage from './components/LandingPage';
+import MindmapWorkspace from './components/MindmapWorkspace';
 import { Settings, Scale } from 'lucide-react';
 
 import { processOCR } from './utils/ocrService';
@@ -32,6 +33,8 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState('queue'); // 'queue' hoặc 'result'
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isMindmapOpen, setIsMindmapOpen] = useState(false);
+  const [mindmapText, setMindmapText] = useState('');
 
   // Trạng thái nghiệp vụ và cảnh báo bảo mật tư pháp (Phase 4)
   const [ocrOptions] = useState({
@@ -1053,6 +1056,10 @@ error message: ${finalErrorMsg || 'none'}`;
               onReset={resetWorkspaceSession}
               ocrOptions={ocrOptions}
               config={config}
+              onOpenMindmap={(text) => {
+                setMindmapText(text);
+                setIsMindmapOpen(true);
+              }}
             />
             
             {/* ApiConfig Collapsible in Workspace */}
@@ -1134,6 +1141,14 @@ error message: ${finalErrorMsg || 'none'}`;
             </div>
           </div>
         </div>
+      )}
+
+      {isMindmapOpen && (
+        <MindmapWorkspace
+          ocrText={mindmapText}
+          config={config}
+          onClose={() => setIsMindmapOpen(false)}
+        />
       )}
 
     </div>
