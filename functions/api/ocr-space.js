@@ -46,30 +46,12 @@ function getAvailableOcrSpaceKeys(env) {
     keys.push({ key: env.OCR_SPACE_API_KEY.trim(), name: "OCR_SPACE_API_KEY" });
   }
 
-  // 2. Thử các key đánh số OCR_SPACE_API_KEY_1, OCR_SPACE_API_KEY_2...
-  for (let i = 1; i <= 50; i++) {
-    const val = env[`OCR_SPACE_API_KEY_${i}`];
-    if (val && typeof val === 'string' && val.trim()) {
-      keys.push({ key: val.trim(), name: `OCR_SPACE_API_KEY_${i}` });
-    }
+  // 2. Thử các key OCR_SPACE_API_KEY_1 và OCR_SPACE_API_KEY_2
+  if (env.OCR_SPACE_API_KEY_1 && env.OCR_SPACE_API_KEY_1.trim()) {
+    keys.push({ key: env.OCR_SPACE_API_KEY_1.trim(), name: "OCR_SPACE_API_KEY_1" });
   }
-
-  // 3. Quét động các key khác bắt đầu bằng OCR_SPACE_API_KEY_ trong env
-  try {
-    for (const key of Object.keys(env)) {
-      if (key.startsWith("OCR_SPACE_API_KEY_")) {
-        const indexStr = key.replace("OCR_SPACE_API_KEY_", "");
-        const index = parseInt(indexStr, 10);
-        if (!isNaN(index) && index > 50) {
-          const val = env[key];
-          if (val && typeof val === 'string' && val.trim()) {
-            keys.push({ key: val.trim(), name: key });
-          }
-        }
-      }
-    }
-  } catch {
-    // Bỏ qua lỗi trong môi trường không hỗ trợ Object.keys(env)
+  if (env.OCR_SPACE_API_KEY_2 && env.OCR_SPACE_API_KEY_2.trim()) {
+    keys.push({ key: env.OCR_SPACE_API_KEY_2.trim(), name: "OCR_SPACE_API_KEY_2" });
   }
 
   // Loại bỏ các key trùng lặp
@@ -222,10 +204,8 @@ export async function onRequestPost(context) {
 
     const keys = getAvailableOcrSpaceKeys(env);
 
-    // Log dev mode: số lượng key được load, thứ tự index, không log actual secret
-    console.log(`[OCR.space Key Pool Info]
-Loaded keys count: ${keys.length}
-Index order: ${keys.map((k, idx) => `${idx}: ${k.name}`).join(', ')}`);
+    // Log dev mode: số lượng key được load
+    console.log(`[OCR.space Key Pool Info] Loaded keys count: ${keys.length}`);
 
     if (keys.length === 0) {
       return new Response(
@@ -432,17 +412,14 @@ Index order: ${keys.map((k, idx) => `${idx}: ${k.name}`).join(', ')}`);
       const keyObj = keys[currentIndex];
       keyIndexUsed = currentIndex;
 
+      // Log dev mode: key index đang thử
+      console.log(`[OCR.space Attempt] keyIndex: ${currentIndex}`);
+
       const res = await runOcrWithKey(keyObj, currentLanguage);
 
       if (res.success) {
         success = true;
         finalResult = res.text;
-
-        // Log Dev mode
-        console.log(`[OCR.space Attempt]
-keyIndex: ${currentIndex} (${keyObj.name})
-status: success
-reason: none`);
 
         // Ghi nhớ key thành công tiếp theo để tối ưu round-robin
         lastSuccessfulKeyIndex = (currentIndex + 1) % totalKeys;
@@ -451,11 +428,8 @@ reason: none`);
         retryCount++;
         failReasons.push(`Key #${currentIndex} (${keyObj.name}): ${res.code} - ${res.message}`);
 
-        // Log Dev mode
-        console.log(`[OCR.space Attempt]
-keyIndex: ${currentIndex} (${keyObj.name})
-status: failed
-reason: ${res.code} (${res.message})`);
+        // Log dev mode: reason fail (nếu fail)
+        console.log(`[OCR.space Attempt Failed] keyIndex: ${currentIndex}, reason: ${res.code} (${res.message})`);
 
         // Kiểm tra xem lỗi này có được phép xoay sang key khác không
         const rotatable = isRotatableError(res);

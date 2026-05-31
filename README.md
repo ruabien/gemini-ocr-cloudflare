@@ -23,11 +23,9 @@
 
 | Tên biến môi trường (Environment Variable) | Mô tả |
 |---|---|
-| `OCR_SPACE_API_KEY_1` | API key OCR.space thứ 1 |
-| `OCR_SPACE_API_KEY_2` | API key OCR.space thứ 2 |
-| `OCR_SPACE_API_KEY_3` | API key OCR.space thứ 3 |
-| `OCR_SPACE_API_KEY_4` ... | Bạn có thể thêm không giới hạn các key khác bằng cách đánh số tăng dần |
-| `OCR_SPACE_API_KEY` | *(Tùy chọn)* Key mặc định/cũ (sẽ được ưu tiên làm key đầu tiên trong danh sách) |
+| `OCR_SPACE_API_KEY` | API Key OCR.space chính / mặc định (Được ưu tiên load đầu tiên) |
+| `OCR_SPACE_API_KEY_1` | API Key OCR.space thứ 2 |
+| `OCR_SPACE_API_KEY_2` | API Key OCR.space thứ 3 |
 
 5. Nhấn **Save** để lưu cấu hình. Các thay đổi sẽ có hiệu lực trong lần triển khai (Deploy) tiếp theo.
 
