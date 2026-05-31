@@ -198,6 +198,11 @@ export async function onRequestPost(context) {
 
     const keys = getAvailableOcrSpaceKeys(env);
 
+    // Log dev mode: số lượng key được load, thứ tự index, không log actual secret
+    console.log(`[OCR.space Key Pool Info]
+Loaded keys count: ${keys.length}
+Index order: ${keys.map((k, idx) => `${idx}: ${k.name}`).join(', ')}`);
+
     if (keys.length === 0) {
       return new Response(
         JSON.stringify({ 
