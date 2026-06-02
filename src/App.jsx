@@ -8,6 +8,7 @@ import CustomExtractorModal from './components/CustomExtractorModal';
 import { Settings, Scale } from 'lucide-react';
 
 import { processOCR } from './utils/ocrService';
+import { GeminiKeyManager } from './utils/geminiKeyManager';
 import { ocrWithOcrSpace } from './utils/ocrSpaceService';
 import { splitPdfToImages } from './utils/pdfProcessor';
 import { compressImageIfNeeded } from './utils/imageCompressor';
@@ -316,12 +317,7 @@ function App() {
   const startOcrProcessing = async () => {
     if (isProcessing || processingRef.current) return;
 
-    if (!config || !config.apiKey) {
-      setIsSettingsOpen(true);
-      return;
-    }
-
-    const keysArray = config.apiKey.split(',').map(k => k.trim()).filter(Boolean);
+    const keysArray = GeminiKeyManager.getKeys(config);
     if (keysArray.length === 0) {
       setIsSettingsOpen(true);
       return;
@@ -418,7 +414,7 @@ function App() {
       let success = false;
       let keysTriedForThisFile = 0;
       const maxRetriesPerKey = 3;
-      let currentModel = config.model || 'gemini-2.5-flash';
+      let currentModel = GeminiKeyManager.getModel(config);
 
       let attemptIndex = 1;
       const errorsBreakdown = [];

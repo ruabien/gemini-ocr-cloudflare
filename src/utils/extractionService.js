@@ -1,3 +1,5 @@
+import { GeminiKeyManager } from './geminiKeyManager';
+
 /**
  * Service trích xuất dữ liệu có cấu trúc từ văn bản OCR sử dụng Google Gemini API.
  */
@@ -11,13 +13,22 @@
  * @returns {Promise<object>} Dữ liệu JSON đã được trích xuất
  */
 export const extractStructuredData = async (ocrText, template, config, options = {}) => {
-  const apiKey = config?.apiKey || localStorage.getItem('ocr_api_key') || '';
-  if (!apiKey) {
-    throw new Error("Vui lòng nhập API Key trong phần Cấu hình API trước khi trích xuất.");
+  // Đồng bộ nguồn key: Ưu tiên config state, nếu rỗng thì fallback đọc trực tiếp localStorage theo yêu cầu 7
+  let rawApiKey = config?.apiKey || '';
+  if (!rawApiKey.trim()) {
+    rawApiKey = localStorage.getItem('ocr_api_key') || '';
   }
 
-  let modelName = config?.model || 'gemini-2.5-flash';
-  // Chuẩn hóa tên model tương tự ocrService
+  // Chuẩn hóa parser key bằng Regex để xử lý dấu phẩy, dấu chấm phẩy, xuống dòng và khoảng trắng
+  const keysArray = GeminiKeyManager.parseGeminiKeys(rawApiKey);
+  const baseModelName = GeminiKeyManager.getModel(config);
+
+  if (keysArray.length === 0) {
+    throw new Error("Chưa cấu hình Gemini API Key.");
+  }
+
+  let modelName = baseModelName;
+  // Chuẩn hóa tên mô hình tương tự ocrService
   if (modelName === 'gemini-1.5-flash' || modelName === 'gemini-1.5-flash-latest') {
     modelName = 'gemini-2.5-flash';
   } else if (modelName === 'gemini-1.5-pro' || modelName === 'gemini-1.5-pro-latest') {
@@ -61,65 +72,125 @@ VĂN BẢN OCR:
 ${ocrText}
 """`;
 
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: options.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: promptText }
-            ]
-          }
-        ],
-        systemInstruction: {
-          parts: [
-            { text: systemText }
-          ]
-        },
-        generationConfig: {
-          candidateCount: 1,
-          temperature: 0.0,
-          responseMimeType: "application/json"
-        },
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-        ]
-      })
-    });
+  const errorsBreakdown = [];
+  const maxRetriesPerKey = 3;
 
-    if (!response.ok) {
-      let errorMsg = `HTTP ${response.status}`;
+  // Thử tuần tự từng key trong danh sách (rotation)
+  for (let keyIdx = 0; keyIdx < keysArray.length; keyIdx++) {
+    const apiKey = keysArray[keyIdx];
+    let attempt = 0;
+
+    // Retry tối đa 3 lần với mỗi key
+    while (attempt <= maxRetriesPerKey) {
+      // Dev log an toàn trước khi gọi Gemini theo đúng yêu cầu số 2
+      console.log(`[Structured Extraction]
+feature: structured-extraction
+rawApiKey exists: ${!!rawApiKey}
+rawApiKey length: ${rawApiKey.length}
+parsedKeys count: ${keysArray.length}
+current key index: ${keyIdx}
+current key length: ${apiKey.length}
+modelName: ${modelName}`);
+
       try {
-        const errData = await response.json();
-        errorMsg = errData?.error?.message || errorMsg;
-      } catch {
-        // ignore
+        // Bắt buộc dùng encodeURIComponent cho key riêng lẻ khi truyền vào URL theo yêu cầu 6
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: options.signal,
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: promptText }
+                ]
+              }
+            ],
+            systemInstruction: {
+              parts: [
+                { text: systemText }
+              ]
+            },
+            generationConfig: {
+              candidateCount: 1,
+              temperature: 0.0,
+              responseMimeType: "application/json"
+            },
+            safetySettings: [
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          let errorMsg = `HTTP ${response.status}`;
+          try {
+            const errData = await response.json();
+            errorMsg = errData?.error?.message || errorMsg;
+          } catch {
+            // ignore
+          }
+          const err = new Error(errorMsg);
+          err.status = response.status;
+          throw err;
+        }
+
+        const data = await response.json();
+        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!textResponse) {
+          throw new Error("Gemini API không trả về kết quả hoặc bị chặn do chính sách nội dung.");
+        }
+
+        // Parse JSON an toàn
+        const parsedResult = parseStructuredResponse(textResponse);
+
+        // Dev log thành công
+        console.log(`[Structured Extraction]
+feature: structured-extraction
+status: success
+key index: ${keyIdx}`);
+
+        return parsedResult;
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw error;
+        }
+
+        attempt++;
+        // Định dạng lỗi thân thiện thông qua GeminiKeyManager (Yêu cầu 7)
+        const friendlyError = GeminiKeyManager.formatFriendlyError(error);
+        const errorDetail = `Gemini Key #${keyIdx + 1}: ${friendlyError.message}`;
+
+        // Dev log thất bại theo đúng format
+        console.log(`[Structured Extraction]
+feature: structured-extraction
+status: failed - attempt ${attempt} error: ${friendlyError.message} (Key Index: ${keyIdx})`);
+
+        // Nếu Key sai/hỏng (INVALID_KEY), dừng ngay lập tức việc retry với key này và đổi sang key sau (Yêu cầu 9)
+        if (friendlyError.code === "INVALID_KEY") {
+          errorsBreakdown.push(errorDetail);
+          break;
+        }
+
+        // Nếu hết lượt retry với key này mà vẫn lỗi, lưu lỗi vào danh sách breakdown
+        if (attempt > maxRetriesPerKey) {
+          errorsBreakdown.push(errorDetail);
+        }
+
+        // Trì hoãn luỹ tiến trước khi thử lại
+        if (attempt <= maxRetriesPerKey) {
+          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+        }
       }
-      throw new Error(`Lỗi từ Gemini API: ${errorMsg}`);
     }
-
-    const data = await response.json();
-    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!textResponse) {
-      throw new Error("Gemini API không trả về kết quả hoặc bị chặn do chính sách nội dung.");
-    }
-
-    // Parse JSON an toàn
-    return parseStructuredResponse(textResponse);
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      throw error;
-    }
-    console.error("Lỗi trích xuất thông tin nghiệp vụ:", error);
-    throw new Error(`Quá trình trích xuất thất bại: ${error.message}`, { cause: error });
   }
+
+  // Ném lỗi breakdown chi tiết nếu tất cả thất bại theo yêu cầu 8
+  throw new Error(`Quá trình trích xuất thất bại:\n${errorsBreakdown.join('\n')}`);
 };
 
 /**
@@ -130,7 +201,6 @@ ${ocrText}
 const parseStructuredResponse = (rawText) => {
   let cleaned = rawText.trim();
   
-  // Hỗ trợ trường hợp AI bọc JSON trong markdown code block (```json ... ```) dù đã set responseMimeType
   if (cleaned.startsWith("```")) {
     const jsonMatch = cleaned.match(/```(?:json)?([\s\S]*?)```/);
     if (jsonMatch && jsonMatch[1]) {
@@ -142,7 +212,6 @@ const parseStructuredResponse = (rawText) => {
     return JSON.parse(cleaned);
   } catch (parseError) {
     console.warn("Lần parse JSON đầu tiên thất bại, thử trích xuất bằng RegExp...", parseError);
-    // Cố gắng tìm phần ngoặc nhọn đầu tiên và cuối cùng
     const braceMatch = cleaned.match(/\{[\s\S]*\}/);
     if (braceMatch) {
       try {
