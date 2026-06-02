@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
-import { exportTxt, exportMarkdown, exportDocx } from '../utils/exportHelper';
+import { exportTxt, exportMarkdown, exportDocx, exportWordNghiDinh30 } from '../utils/exportHelper';
 
 export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions, config, onOpenCustomExtractor }) {
   const [copied, setCopied] = useState(false);
@@ -20,11 +20,41 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   };
 
   const handlePremiumWordExport = async () => {
+    const textToCheck = getProcessedText();
+    if (!textToCheck || !textToCheck.trim()) {
+      alert("Chưa có nội dung OCR để xuất Word.");
+      return;
+    }
     if (!isPremiumFeatureEnabled()) {
       setIsPremiumPopupOpen(true);
       return;
     }
-    await handleExport('docx');
+
+    let baseFileName = "";
+    if (parentPdf) {
+      const originalName = parentPdf.originalFile?.name || parentPdf.name || '';
+      baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+    } else if (isMultiImage) {
+      const firstImageFile = imageFiles[0];
+      if (firstImageFile) {
+        const originalName = firstImageFile.originalFile?.name || firstImageFile.name || '';
+        baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+      }
+    } else {
+      const originalName = file?.originalFile?.name || file?.name || '';
+      baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
+    }
+
+    const exportFilename = baseFileName 
+      ? `${baseFileName}_nghi_dinh_30.docx` 
+      : 'ket_qua_ocr_nghi_dinh_30.docx';
+
+    try {
+      await exportWordNghiDinh30(textToCheck, exportFilename);
+    } catch (error) {
+      console.error("Lỗi xuất file Word Nghị định 30:", error);
+      alert(`Lỗi xuất file: ${error.message}`);
+    }
   };
 
   const handleCustomExtractionClick = () => {
@@ -407,9 +437,8 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
           
           <button
             onClick={handlePremiumWordExport}
-            disabled={isOcrEmpty}
-            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
-            title={isOcrEmpty ? "Không có dữ liệu văn bản để xuất" : "Xuất Word chuyên nghiệp chuẩn Nghị định 30 (Premium)"}
+            className="flex items-center gap-1.5 h-8 px-2.5 text-[11px] font-bold bg-primary/10 border border-primary/20 hover:bg-primary hover:text-white text-primary transition-all rounded-lg cursor-pointer shadow-xs active:scale-95 uppercase tracking-wider"
+            title="Xuất Word chuyên nghiệp chuẩn Nghị định 30 (Premium)"
           >
             <span className="material-icons text-[14px]">workspace_premium</span>
             <span>👑 Xuất Word Chuẩn Nghị định 30</span>

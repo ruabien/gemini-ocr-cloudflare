@@ -359,3 +359,86 @@ export function exportToExcel(rows, fields, filename = 'Du_lieu_trich_xuat.xlsx'
   // Ghi file
   XLSX.writeFile(workbook, filename);
 }
+
+/**
+ * Xuất văn bản OCR ra tệp Word (.docx) sạch chuẩn Nghị định 30
+ * @param {string} ocrText - Văn bản OCR
+ * @param {string} filename - Tên tệp tin xuất ra
+ */
+export async function exportWordNghiDinh30(ocrText, filename = 'ket_qua_ocr_nghi_dinh_30.docx') {
+  if (!ocrText || !ocrText.trim()) {
+    throw new Error("Chưa có nội dung OCR để xuất Word.");
+  }
+
+  // 1. Tách văn bản thành các dòng và lọc bỏ dòng rỗng dư thừa
+  const rawLines = ocrText.split(/\r?\n/);
+  const docParagraphs = [];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+    if (!line) continue; // Bỏ qua dòng rỗng
+
+    // 2. Tạo mỗi dòng thành một Paragraph
+    // Áp dụng định dạng chuẩn: Times New Roman, size 14 (size: 28), line spacing single, spacing before/after 6pt
+    docParagraphs.push(new Paragraph({
+      children: [
+        new TextRun({
+          text: line,
+          font: "Times New Roman",
+          size: 28 // 14pt
+        })
+      ],
+      alignment: AlignmentType.JUSTIFIED,
+      spacing: {
+        before: 120, // 6pt
+        after: 120,  // 6pt
+        line: 240,   // Single line spacing
+        lineRule: "auto"
+      }
+    }));
+  }
+
+  if (docParagraphs.length === 0) {
+    docParagraphs.push(new Paragraph({
+      children: [new TextRun({ text: "", font: "Times New Roman", size: 28 })]
+    }));
+  }
+
+  // 3. Dựng tài liệu với kích thước lề chuẩn Nghị định 30 (Top/Bottom 2cm, Left 3cm, Right 2cm)
+  // Quy đổi đơn vị twips: 1 cm ≈ 567 twips
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: {
+          size: {
+            width: 11906,
+            height: 16838
+          },
+          margin: {
+            top: 1134,
+            bottom: 1134,
+            left: 1701,
+            right: 1134
+          }
+        }
+      },
+      children: docParagraphs
+    }]
+  });
+
+  // 4. Ghi và tải file
+  const blob = await Packer.toBlob(doc);
+  const mimeBlob = new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  
+  const url = window.URL.createObjectURL(mimeBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 100);
+}
