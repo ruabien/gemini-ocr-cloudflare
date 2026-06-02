@@ -62,8 +62,12 @@ export const splitPdfToImages = async (pdfFile, onProgress, options = {}) => {
 
     const page = await pdf.getPage(i);
     
-    // Sử dụng tỉ lệ scale = 2.0 để ảnh xuất ra có độ nét cao, hỗ trợ OCR tốt hơn
-    const scale = 2.0;
+    // Tính toán tỷ lệ scale động để giới hạn chiều lớn nhất ở mức 2000px
+    // Giúp tối ưu bộ nhớ GPU/RAM và tránh làm treo trình duyệt với PDF độ phân giải cao
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
+    const maxDim = Math.max(unscaledViewport.width, unscaledViewport.height);
+    const targetMaxDim = 2000;
+    const scale = maxDim > targetMaxDim ? targetMaxDim / maxDim : 2.0;
     const viewport = page.getViewport({ scale });
 
     // Tạo canvas tạm thời để vẽ trang PDF lên đó
@@ -115,8 +119,9 @@ export const splitPdfToImages = async (pdfFile, onProgress, options = {}) => {
     canvas.width = 0;
     canvas.height = 0;
 
-    // Yield cho giao diện render cập nhật
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    // Yield cho UI thread cập nhật mượt mà
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 
   return imageFiles;

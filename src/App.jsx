@@ -178,13 +178,13 @@ function App() {
   const handleFilesSelected = (filesToImport) => {
     if (filesToImport.length === 0) return;
 
-    // Validate nhẹ trước khi đưa vào hàng đợi
-    const MAX_SIZE = 100 * 1024 * 1024; // 100MB
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    
+    // Validate kích thước tệp tin theo Yêu cầu 9
     const validatedFiles = filesToImport.filter(file => {
       const type = file.type || '';
       const name = (file.name || '').toLowerCase();
+      const isPdf = name.endsWith('.pdf') || type === 'application/pdf';
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+      
       const isFormatValid = allowedTypes.some(t => type.toLowerCase().includes(t)) || 
                             /\.(png|jpe?g|webp|pdf)$/i.test(name);
       
@@ -193,8 +193,10 @@ function App() {
         return false;
       }
       
-      if (file.size > MAX_SIZE) {
-        alert(`Tệp "${file.name}" quá lớn (tối đa 100MB). Vui lòng chọn tệp nhỏ hơn.`);
+      const limitBytes = isPdf ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+      const limitName = isPdf ? "20MB đối với PDF" : "10MB đối với ảnh";
+      if (file.size > limitBytes) {
+        alert(`Tệp "${file.name}" quá lớn. Kích thước tối đa cho phép là ${limitName}.`);
         return false;
       }
       
@@ -202,6 +204,12 @@ function App() {
     });
 
     if (validatedFiles.length === 0) return;
+
+    // Ngăn chặn re-upload khi đang processing
+    if (isProcessing) {
+      alert("Hệ thống đang xử lý OCR. Vui lòng đợi quá trình hiện tại hoàn tất.");
+      return;
+    }
 
     const newItems = validatedFiles.map(file => {
       const id = Math.random().toString(36).substring(2, 9);
@@ -225,7 +233,7 @@ function App() {
       setActiveFileId(prev => prev || newItems[0].id);
     }
 
-    // Tăng Session ID và hủy bất kỳ tác vụ chạy ngầm nào của phiên cũ
+    // Tăng Session ID và hủy tác vụ chạy ngầm cũ (chống memory leak)
     activeSessionIdRef.current += 1;
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -234,64 +242,68 @@ function App() {
     const currentSessionId = activeSessionIdRef.current;
     const currentSignal = abortControllerRef.current.signal;
 
-    // Thực hiện tách trang PDF bất đồng bộ ngoài call stack chính để tránh đơ giao diện
-    setTimeout(() => {
+    // Thực hiện tách trang PDF tuần tự (Concurrency = 1) để tránh treo bộ nhớ/GPU
+    setTimeout(async () => {
       for (const item of newItems) {
+        // Nếu phiên làm việc đã thay đổi hoặc bị huỷ, dừng ngay lập tức
+        if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) {
+          break;
+        }
+
         if (item.isParentPdf) {
-          (async () => {
-            try {
-              const pageImages = await splitPdfToImages(item.originalFile, (current, total) => {
-                if (currentSessionId !== activeSessionIdRef.current) return;
-                setFiles(prev => prev.map(f => f.id === item.id ? { 
-                  ...f, 
-                  progress: Math.round((current / total) * 100) 
-                } : f));
-              }, { signal: currentSignal });
-
-              if (currentSessionId !== activeSessionIdRef.current) return;
-
-              // Không nén song song ở đây. Việc nén sẽ được thực hiện tuần tự/on-the-fly trong processNext khi bắt đầu OCR
-              const pageItems = pageImages.map((imgFile, index) => {
-                return {
-                  id: Math.random().toString(36).substring(2, 9),
-                  name: imgFile.name,
-                  originalFile: imgFile,
-                  status: 'waiting',
-                  progress: 0,
-                  result: '',
-                  error: null,
-                  isPdfPage: true,
-                  parentPdfId: item.id,
-                  pageIndex: index
-                };
-              });
-
-              setFiles(prev => {
-                if (currentSessionId !== activeSessionIdRef.current) return prev;
-                const parentIdx = prev.findIndex(f => f.id === item.id);
-                if (parentIdx === -1) return prev;
-
-                const updatedPrev = prev.map(f => f.id === item.id ? {
-                  ...f,
-                  status: 'waiting',
-                  progress: 0,
-                  totalPages: pageImages.length
-                } : f);
-
-                const newFiles = [...updatedPrev];
-                newFiles.splice(parentIdx + 1, 0, ...pageItems);
-                return newFiles;
-              });
-            } catch (err) {
-              if (currentSessionId !== activeSessionIdRef.current) return;
-              console.error("Lỗi phân tách trang PDF:", err);
+          try {
+            const pageImages = await splitPdfToImages(item.originalFile, (current, total) => {
+              if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) return;
               setFiles(prev => prev.map(f => f.id === item.id ? { 
                 ...f, 
-                status: 'error', 
-                error: `Lỗi phân tách trang: ${err.message}` 
+                progress: Math.round((current / total) * 100) 
               } : f));
+            }, { signal: currentSignal });
+
+            if (currentSessionId !== activeSessionIdRef.current || currentSignal.aborted) {
+              break;
             }
-          })();
+
+            const pageItems = pageImages.map((imgFile, index) => {
+              return {
+                id: Math.random().toString(36).substring(2, 9),
+                name: imgFile.name,
+                originalFile: imgFile,
+                status: 'waiting',
+                progress: 0,
+                result: '',
+                error: null,
+                isPdfPage: true,
+                parentPdfId: item.id,
+                pageIndex: index
+              };
+            });
+
+            setFiles(prev => {
+              if (currentSessionId !== activeSessionIdRef.current) return prev;
+              const parentIdx = prev.findIndex(f => f.id === item.id);
+              if (parentIdx === -1) return prev;
+
+              const updatedPrev = prev.map(f => f.id === item.id ? {
+                ...f,
+                status: 'completed', // Đánh dấu đã tách thành công
+                progress: 100,
+                totalPages: pageImages.length
+              } : f);
+
+              const newFiles = [...updatedPrev];
+              newFiles.splice(parentIdx + 1, 0, ...pageItems);
+              return newFiles;
+            });
+          } catch (err) {
+            if (currentSessionId !== activeSessionIdRef.current) return;
+            console.error("Lỗi phân tách trang PDF:", err);
+            setFiles(prev => prev.map(f => f.id === item.id ? { 
+              ...f, 
+              status: 'error', 
+              error: `Lỗi phân tách trang: ${err.message}` 
+            } : f));
+          }
         }
       }
     }, 50);
@@ -975,7 +987,7 @@ error message: ${finalErrorMsg || 'none'}`;
             
             {/* Compact Drag & Drop upload */}
             <div className="bg-surface p-3 rounded-2xl border border-border shadow-sm">
-              <FileDropzone onFilesSelected={handleFilesSelected} isCompact={true} />
+              <FileDropzone onFilesSelected={handleFilesSelected} isCompact={true} disabled={isProcessing} />
             </div>
             
             {/* Queue List card */}

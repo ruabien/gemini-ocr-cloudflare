@@ -1,34 +1,37 @@
 import { useState, useRef } from 'react';
 
-export default function FileDropzone({ onFilesSelected, isCompact = false }) {
+export default function FileDropzone({ onFilesSelected, isCompact = false, disabled = false }) {
   const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleDragEnter = (e) => {
+    if (disabled) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(true);
   };
 
   const handleDragLeave = (e) => {
+    if (disabled) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
   };
 
   const handleDragOver = (e) => {
+    if (disabled) return;
     e.preventDefault();
     e.stopPropagation();
   };
 
   const handleDrop = (e) => {
+    if (disabled) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFiles = e.dataTransfer.files;
-      // Dùng setTimeout giải phóng luồng chính lập tức
       setTimeout(() => {
         handleFiles(droppedFiles);
       }, 0);
@@ -36,9 +39,9 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
   };
 
   const handleChange = (e) => {
+    if (disabled) return;
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = e.target.files;
-      // Dùng setTimeout để hộp thoại đóng ngay lập tức, không gây treo luồng vẽ chính
       setTimeout(() => {
         handleFiles(selectedFiles);
       }, 0);
@@ -46,13 +49,15 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
   };
 
   const handleFiles = (fileList) => {
+    if (disabled) return;
     const filesArray = Array.from(fileList);
-    const MAX_SIZE = 100 * 1024 * 1024; // 100MB
     const rejectedFiles = [];
     
     const validFiles = filesArray.filter(file => {
       const type = file.type || '';
       const name = (file.name || '').toLowerCase();
+      const isPdf = name.endsWith('.pdf') || type === 'application/pdf';
+      
       const isFormatValid = (
         type === 'image/jpeg' || 
         type === 'image/png' || 
@@ -66,12 +71,16 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
       );
       
       if (!isFormatValid) {
-        rejectedFiles.push({ name: file.name, reason: "Định dạng không hỗ trợ" });
+        rejectedFiles.push({ name: file.name, reason: "Định dạng không hỗ trợ (Chỉ nhận PDF, JPG, PNG, WEBP)" });
         return false;
       }
+
+      // Giới hạn file: ảnh tối đa 10MB, PDF tối đa 20MB theo Yêu cầu 9
+      const limitBytes = isPdf ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+      const limitName = isPdf ? "20 MB (PDF)" : "10 MB (Ảnh)";
       
-      if (file.size > MAX_SIZE) {
-        rejectedFiles.push({ name: file.name, reason: "Kích thước vượt quá 100MB" });
+      if (file.size > limitBytes) {
+        rejectedFiles.push({ name: file.name, reason: `Kích thước vượt quá ${limitName}` });
         return false;
       }
       
@@ -80,7 +89,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
     
     if (rejectedFiles.length > 0) {
       const errorList = rejectedFiles.map(f => `- ${f.name}: ${f.reason}`).join('\n');
-      alert(`Một số tệp bị từ chối:\n${errorList}`);
+      alert(`Một số tệp không hợp lệ:\n${errorList}`);
     }
     
     if (validFiles.length > 0 && onFilesSelected) {
@@ -96,18 +105,20 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
     return (
       <>
         <label
-          htmlFor="compact-file-input"
-          className={`relative block w-full bg-background border border-dashed rounded-2xl p-4 transition-all duration-300 cursor-pointer group select-none text-center ${
-            isDragActive 
-              ? 'border-primary bg-primary/5 scale-[1.01]' 
-              : 'border-border hover:border-primary hover:bg-surface'
+          htmlFor={disabled ? undefined : "compact-file-input"}
+          className={`relative block w-full bg-background border border-dashed rounded-2xl p-4 transition-all duration-300 group select-none text-center ${
+            disabled 
+              ? 'opacity-40 border-border bg-background cursor-not-allowed'
+              : isDragActive 
+                ? 'border-primary bg-primary/5 scale-[1.01] cursor-pointer' 
+                : 'border-border hover:border-primary hover:bg-surface cursor-pointer'
           }`}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
-          {isDragActive && (
+          {isDragActive && !disabled && (
             <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
               <div className="scanning-line"></div>
             </div>
@@ -119,22 +130,29 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
             </div>
             <div className="text-left min-w-0">
               <p className="text-xs font-bold text-text-primary truncate">
-                {isDragActive ? 'Thả file vào đây...' : 'Kéo thả hoặc chạm để thêm tài liệu'}
+                {disabled 
+                  ? 'Đang xử lý OCR, vui lòng đợi...' 
+                  : isDragActive 
+                    ? 'Thả file vào đây...' 
+                    : 'Kéo thả hoặc chạm để thêm tài liệu'}
               </p>
-              <p className="text-[10px] text-text-secondary/80 font-medium">PDF, JPG, PNG, WEBP tối đa 100MB</p>
+              <p className="text-[10px] text-text-secondary/80 font-medium">Ảnh tối đa 10MB, PDF tối đa 20MB</p>
             </div>
           </div>
         </label>
 
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleChange}
-          accept=".pdf,.jpg,.jpeg,.png,.webp"
-          multiple
-          id="compact-file-input"
-          className="hidden"
-        />
+        {!disabled && (
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleChange}
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            multiple
+            id="compact-file-input"
+            className="hidden"
+            disabled={disabled}
+          />
+        )}
       </>
     );
   }
@@ -142,19 +160,20 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
   return (
     <>
       <label
-        htmlFor="hero-file-input"
-        className={`relative block w-full bg-surface border-2 border-dashed rounded-2xl p-10 md:p-12 transition-all duration-300 cursor-pointer group shadow-[0_4px_24px_rgba(22,58,112,0.03)] select-none text-center ${
-          isDragActive 
-            ? 'border-primary bg-primary/5 scale-[1.01]' 
-            : 'border-border hover:border-primary hover:bg-background/50'
+        htmlFor={disabled ? undefined : "hero-file-input"}
+        className={`relative block w-full bg-surface border-2 border-dashed rounded-2xl p-10 md:p-12 transition-all duration-300 group shadow-[0_4px_24px_rgba(22,58,112,0.03)] select-none text-center ${
+          disabled 
+            ? 'opacity-40 border-border bg-background cursor-not-allowed'
+            : isDragActive 
+              ? 'border-primary bg-primary/5 scale-[1.01] cursor-pointer' 
+              : 'border-border hover:border-primary hover:bg-background/50 cursor-pointer'
         }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {/* Scanner Animation */}
-        {isDragActive && (
+        {isDragActive && !disabled && (
           <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
             <div className="scanning-line"></div>
           </div>
@@ -166,28 +185,34 @@ export default function FileDropzone({ onFilesSelected, isCompact = false }) {
           </div>
           <div className="space-y-2">
             <p className="font-bold text-lg sm:text-xl text-text-primary leading-tight">
-              {isDragActive ? 'Thả file của bạn để bắt đầu...' : 'Kéo thả hoặc chạm để tải file lên'}
+              {disabled 
+                ? 'Đang xử lý OCR, vui lòng đợi...' 
+                : isDragActive 
+                  ? 'Thả file của bạn để bắt đầu...' 
+                  : 'Kéo thả hoặc chạm để tải file lên'}
             </p>
             <p className="text-xs sm:text-sm text-text-secondary font-medium max-w-sm mx-auto leading-relaxed">
-              Hỗ trợ hình ảnh chụp tài liệu dạng JPG, PNG, WEBP hoặc tệp văn bản PDF scan nhiều trang
+              Hỗ trợ hình ảnh chụp tài liệu dạng JPG, PNG, WEBP (tối đa 10MB) hoặc tệp văn bản PDF scan (tối đa 20MB)
             </p>
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-background border border-border rounded-lg text-xs font-semibold text-text-secondary">
-            <span>Giới hạn file: 100 MB</span>
+            <span>Giới hạn: Ảnh 10MB | PDF 20MB</span>
           </div>
         </div>
       </label>
 
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleChange}
-        accept=".pdf,.jpg,.jpeg,.png,.webp"
-        multiple
-        id="hero-file-input"
-        className="hidden"
-      />
+      {!disabled && (
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleChange}
+          accept=".pdf,.jpg,.jpeg,.png,.webp"
+          multiple
+          id="hero-file-input"
+          className="hidden"
+          disabled={disabled}
+        />
+      )}
     </>
   );
 }
-
