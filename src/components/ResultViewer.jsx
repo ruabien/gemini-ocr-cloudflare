@@ -14,6 +14,16 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   const [exportError, setExportError] = useState(null);
   const [isPremiumPopupOpen, setIsPremiumPopupOpen] = useState(false);
   const [isWordExportModalOpen, setIsWordExportModalOpen] = useState(false);
+  const [selectedExportOption, setSelectedExportOption] = useState('original');
+  const downloadBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (isWordExportModalOpen) {
+      setTimeout(() => {
+        downloadBtnRef.current?.focus();
+      }, 100);
+    }
+  }, [isWordExportModalOpen]);
 
   const isPremiumFeatureEnabled = () => {
     if (import.meta.env.VITE_ENABLE_PREMIUM_TEST === 'true') return true;
@@ -72,6 +82,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
       setIsPremiumPopupOpen(true);
       return;
     }
+    setSelectedExportOption('original');
     setIsWordExportModalOpen(true);
   };
 
@@ -801,36 +812,55 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
 
               {/* Grid Options */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Official Export Column */}
-                <div className="border border-border rounded-2xl p-5 bg-background/30 hover:border-text-secondary/20 transition-all flex flex-col justify-between gap-4">
+                {/* Official Export Column (Nguyên bản) */}
+                <div 
+                  onClick={() => setSelectedExportOption('original')}
+                  className={`border rounded-2xl p-5 transition-all flex flex-col justify-between gap-4 cursor-pointer ${
+                    selectedExportOption === 'original' 
+                      ? 'border-primary ring-2 ring-primary/10 bg-primary/5 shadow-sm' 
+                      : 'border-border bg-background/30 hover:border-text-secondary/20'
+                  }`}
+                >
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-text-primary">
                       <span className="material-icons text-[20px] text-text-secondary">gavel</span>
-                      <h5 className="font-bold text-sm">Xuất Word chính thức</h5>
+                      <h5 className="font-bold text-sm">Nguyên bản</h5>
                     </div>
                     <p className="text-[11px] text-text-secondary leading-relaxed">
-                      Giữ nguyên toàn bộ nội dung văn bản OCR nguyên bản. Thích hợp cho việc lưu trữ nội bộ hoặc nộp hồ sơ chính thức.
+                      Giữ nguyên toàn bộ nội dung văn bản OCR. Thích hợp cho lưu trữ nội bộ hoặc sử dụng nghiệp vụ.
                     </p>
                   </div>
                   
                   <button
-                    onClick={() => executeWordExport(false)}
-                    className="w-full h-10 flex items-center justify-center gap-1.5 px-4 text-xs font-bold bg-surface hover:bg-border text-text-primary border border-border rounded-xl transition-all cursor-pointer shadow-sm active:scale-95 mt-2"
+                    ref={downloadBtnRef}
+                    onClick={(e) => { e.stopPropagation(); executeWordExport(false); }}
+                    className={`w-full h-10 flex items-center justify-center gap-1.5 px-4 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm active:scale-95 mt-2 focus:ring-2 focus:ring-primary focus:outline-none ${
+                      selectedExportOption === 'original'
+                        ? 'bg-primary text-white hover:bg-primary-hover border-0'
+                        : 'bg-surface hover:bg-border text-text-primary border border-border'
+                    }`}
                   >
                     <span className="material-icons text-[14px]">download</span>
-                    <span>Tải file chính thức</span>
+                    <span>Tải file nguyên bản</span>
                   </button>
                 </div>
 
-                {/* Anonymized Export Column */}
-                <div className="border border-primary/30 rounded-2xl p-5 bg-primary/5 hover:border-primary/50 transition-all flex flex-col justify-between gap-4">
+                {/* Anonymized Export Column (Ẩn danh) */}
+                <div 
+                  onClick={() => setSelectedExportOption('anonymized')}
+                  className={`border rounded-2xl p-5 transition-all flex flex-col justify-between gap-4 cursor-pointer ${
+                    selectedExportOption === 'anonymized' 
+                      ? 'border-primary ring-2 ring-primary/10 bg-primary/5 shadow-sm' 
+                      : 'border-border bg-background/30 hover:border-text-secondary/20'
+                  }`}
+                >
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-primary">
                       <span className="material-icons text-[20px]">security</span>
-                      <h5 className="font-bold text-sm">Xuất Word ẩn danh</h5>
+                      <h5 className="font-bold text-sm">Ẩn danh</h5>
                     </div>
                     <p className="text-[11px] text-text-secondary leading-relaxed">
-                      Tự động che/mã hóa các thông tin nhạy cảm (tên người, địa danh, CCCD, SĐT, email) trước khi xuất file.
+                      Tự động che/mã hóa thông tin đương sự và dữ liệu nhạy cảm trước khi xuất file.
                     </p>
 
                     {/* Stats Preview */}
@@ -856,8 +886,12 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
                   </div>
 
                   <button
-                    onClick={() => executeWordExport(true)}
-                    className="w-full h-10 flex items-center justify-center gap-1.5 px-4 text-xs font-bold btn-premium-primary text-white rounded-xl transition-all cursor-pointer shadow-md active:scale-95 mt-2"
+                    onClick={(e) => { e.stopPropagation(); executeWordExport(true); }}
+                    className={`w-full h-10 flex items-center justify-center gap-1.5 px-4 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md active:scale-95 mt-2 focus:ring-2 focus:ring-primary focus:outline-none ${
+                      selectedExportOption === 'anonymized'
+                        ? 'bg-primary text-white hover:bg-primary-hover border-0'
+                        : 'bg-surface hover:bg-border text-text-primary border border-border'
+                    }`}
                   >
                     <span className="material-icons text-[14px]">vpn_key</span>
                     <span>Tải file ẩn danh</span>
