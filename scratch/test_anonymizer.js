@@ -1,35 +1,34 @@
 /* eslint-disable */
 import { anonymizeLegalText, anonymizeLegalTextDetailed } from '../src/utils/anonymizer.js';
 
-const input = `Ông Nguyễn Văn Hùng, sinh năm 1980, CCCD 001203004567, trú tại xã Minh Khai, huyện Thanh Trì, thành phố Hà Nội.
-Bà Trần Thị Mai, số điện thoại 0912345678.`;
+const input = `Thẩm phán Nguyễn Văn Bình, Kiểm sát viên Trần Thị Mai tham gia phiên tòa. Bị cáo Nguyễn Văn Hùng và bị hại Lê Văn Cường có mặt.`;
+const expected = `Thẩm phán Nguyễn Văn Bình, Kiểm sát viên Trần Thị Mai tham gia phiên tòa. Bị cáo Nguyễn Văn A và bị hại Nguyễn Văn B có mặt.`;
 
-const expected = `Ông Nguyễn Văn A, sinh năm 1980, CCCD 001203004XXX, trú tại xã X, huyện Y, thành phố Z.
-Bà Nguyễn Văn B, số điện thoại 0912345XXX.`;
+const input2 = `Thẩm phán Nguyễn Văn Bình tham gia tố tụng. Bị cáo Nguyễn Văn Hùng có CCCD 001203004567, trú tại xã Minh Khai, thành phố Hà Nội. Kiểm sát viên Trần Thị Mai có số điện thoại 0912345678.`;
+const expected2 = `Thẩm phán Nguyễn Văn Bình tham gia tố tụng. Bị cáo Nguyễn Văn A có CCCD 001203004XXX, trú tại xã X, thành phố Z. Kiểm sát viên Trần Thị Mai có số điện thoại 0912345XXX.`;
 
 console.log("=== THỬ NGHIỆM ẨN DANH VĂN BẢN PHÁP LÝ ===");
-console.log("\n[INPUT REAL]:");
+console.log("\n[TEST 1] [INPUT]:");
 console.log(input);
 
 const detailed = anonymizeLegalTextDetailed(input);
 const output = detailed.text;
+console.log("[TEST 1] [OUTPUT ACTUAL]:", output);
 
-console.log("\n[OUTPUT ACTUAL]:");
-console.log(output);
+const isMatch1 = output.trim() === expected.trim();
+console.log("[TEST 1] [KẾT QUẢ]:", isMatch1 ? "✅ THÀNH CÔNG" : "❌ THẤT BẠI");
 
-console.log("\n[OUTPUT EXPECTED]:");
-console.log(expected);
+console.log("\n[TEST 2] [INPUT]:");
+console.log(input2);
 
-const isMatch = output.trim() === expected.trim();
-console.log("\n[KẾT QUẢ TEST]:", isMatch ? "✅ THÀNH CÔNG" : "❌ THẤT BẠI");
+const detailed2 = anonymizeLegalTextDetailed(input2);
+const output2 = detailed2.text;
+console.log("[TEST 2] [OUTPUT ACTUAL]:", output2);
 
-console.log("\n[THÔNG SỐ CHI TIẾT]:");
-console.log(JSON.stringify(detailed.stats, null, 2));
+const isMatch2 = output2.trim() === expected2.trim();
+console.log("[TEST 2] [KẾT QUẢ]:", isMatch2 ? "✅ THÀNH CÔNG" : "❌ THẤT BẠI");
 
-console.log("\n[MAPPING CHI TIẾT]:");
-console.log(JSON.stringify(detailed.mapping, null, 2));
-
-if (!isMatch) {
+if (!isMatch1 || !isMatch2) {
   process.exit(1);
 } else {
   process.exit(0);

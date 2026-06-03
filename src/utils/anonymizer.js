@@ -123,14 +123,59 @@ export function anonymizeLegalTextDetailed(text) {
     processed = processed.replace(new RegExp(escapedKey, 'g'), mapping[key]);
   });
 
-  // 5. Ẩn danh Tên người
+  // 5. Ẩn danh Tên người (Chỉ những đương sự / người tham gia tố tụng được chỉ định)
+  const ANONYMIZE_ROLES = [
+    'nguyên đơn',
+    'bị đơn',
+    'bị cáo',
+    'bị hại',
+    'người bị hại',
+    'người có quyền lợi nghĩa vụ liên quan',
+    'người có quyền lợi, nghĩa vụ liên quan',
+    'người có quyền lợi và nghĩa vụ liên quan',
+    'người làm chứng',
+    'người đại diện',
+    'người bảo vệ quyền và lợi ích hợp pháp',
+    'người khởi kiện',
+    'người bị kiện',
+    'người yêu cầu',
+    'người phải thi hành án',
+    'người được thi hành án',
+    'đương sự'
+  ];
+
+  function makeCaseInsensitivePattern(str) {
+    return str
+      .split('')
+      .map(char => {
+        const lower = char.toLowerCase();
+        const upper = char.toUpperCase();
+        if (lower !== upper) {
+          return `[${upper}${lower}]`;
+        }
+        return char;
+      })
+      .join('');
+  }
+
   const familyNamesRegexStr = FAMILY_NAMES.join('|');
-  const nameRegex = new RegExp(`\\b(${familyNamesRegexStr})\\s+([\\p{Lu}][\\p{L}\\p{M}]*(?:\\s+[\\p{Lu}][\\p{L}\\p{M}]*){1,3})(?!\\p{L})`, 'gu');
+  const nameRegexPart = `(?:${familyNamesRegexStr})\\s+(?:[\\p{Lu}][\\p{L}\\p{M}]*(?:\\s+[\\p{Lu}][\\p{L}\\p{M}]*){1,3})(?!\\p{L})`;
+
+  // Sắp xếp vai trò theo chiều dài giảm dần để tối ưu hóa RegEx
+  const sortedRoles = [...ANONYMIZE_ROLES].sort((a, b) => b.length - a.length);
+  const rolesRegexStr = sortedRoles.map(makeCaseInsensitivePattern).join('|');
   
+  // RegEx để quét vai trò và tên theo sau (hỗ trợ dấu hai chấm `:`, từ `là`, các danh xưng `ông/bà/anh/chị`)
+  // Không dùng cờ 'i' để bảo toàn tính năng bắt chữ hoa của tên người (\p{Lu})
+  const searchRegex = new RegExp(
+    `\\b(${rolesRegexStr})\\b(?:\\s*:\\s*|\\s+là\\s+|\\s+)(?:[Ôô]ng|[Bb]à|[Aa]nh|[Cc]hị)?\\s*(${nameRegexPart})`,
+    'gu'
+  );
+
   const nameMatches = [];
   let nameMatch;
-  while ((nameMatch = nameRegex.exec(processed)) !== null) {
-    const fullName = nameMatch[0].trim();
+  while ((nameMatch = searchRegex.exec(processed)) !== null) {
+    const fullName = nameMatch[2].trim();
     const containsExclude = [
       'Bộ luật', 'Tòa án', 'Viện kiểm', 'Ủy ban', 'Hội đồng', 'Thẩm phán', 'Thư ký', 'Bản án', 'Quyết định', 'Cơ quan', 'Nhà nước',
       'Xã', 'Phường', 'Huyện', 'Quận', 'Thành phố', 'Tỉnh', 'Điều', 'Khoản', 'Điểm', 'Chương', 'Mục', 'Hiến pháp', 'Luật', 'Nghị quyết', 'Chính phủ'
