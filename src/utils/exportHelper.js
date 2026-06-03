@@ -253,7 +253,7 @@ export async function exportDocx(textOrPages, filename) {
         if (textVal) {
           runs.push(new TextRun({
             text: textVal,
-            italic: true,
+            italics: true,
             font: "Times New Roman",
             size: 28
           }));
@@ -361,6 +361,115 @@ export function exportToExcel(rows, fields, filename = 'Du_lieu_trich_xuat.xlsx'
 }
 
 /**
+ * Chuẩn bị văn bản trước khi tạo DOCX: loại bỏ hoàn toàn các HTML comment.
+ * @param {string} text - Văn bản gốc
+ * @returns {string} Văn bản đã được làm sạch
+ */
+export function prepareTextForDocxExport(text) {
+  if (!text) return "";
+  return text.replace(/<!--[\s\S]*?-->/g, '');
+}
+
+/**
+ * Phân tích cú pháp Markdown inline cơ bản (**bold**, __bold__, *italic*, _italic_) 
+ * thành mảng các đối tượng TextRun cho DOCX.
+ * @param {string} line - Dòng văn bản cần phân tích
+ * @returns {Array<TextRun>} Danh sách các TextRun định dạng
+ */
+export function parseLineToTextRuns(line) {
+  const runs = [];
+  if (!line) {
+    runs.push(new TextRun({ text: "", font: "Times New Roman", size: 28 }));
+    return runs;
+  }
+
+  const regex = /(\*\*.*?\*\*|__.*?__|\*.*?\*|_.*?_)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(line)) !== null) {
+    const matchIndex = match.index;
+    const matchText = match[0];
+
+    // 1. Thêm văn bản bình thường trước phần định dạng
+    if (matchIndex > lastIndex) {
+      const textVal = line.substring(lastIndex, matchIndex);
+      if (textVal) {
+        runs.push(new TextRun({
+          text: textVal,
+          font: "Times New Roman",
+          size: 28
+        }));
+      }
+    }
+
+    // 2. Xử lý phần định dạng
+    if (matchText.startsWith('**') && matchText.endsWith('**')) {
+      const textVal = matchText.slice(2, -2);
+      if (textVal) {
+        runs.push(new TextRun({
+          text: textVal,
+          bold: true,
+          font: "Times New Roman",
+          size: 28
+        }));
+      }
+    } else if (matchText.startsWith('__') && matchText.endsWith('__')) {
+      const textVal = matchText.slice(2, -2);
+      if (textVal) {
+        runs.push(new TextRun({
+          text: textVal,
+          bold: true,
+          font: "Times New Roman",
+          size: 28
+        }));
+      }
+    } else if (matchText.startsWith('*') && matchText.endsWith('*')) {
+      const textVal = matchText.slice(1, -1);
+      if (textVal) {
+        runs.push(new TextRun({
+          text: textVal,
+          italics: true,
+          font: "Times New Roman",
+          size: 28
+        }));
+      }
+    } else if (matchText.startsWith('_') && matchText.endsWith('_')) {
+      const textVal = matchText.slice(1, -1);
+      if (textVal) {
+        runs.push(new TextRun({
+          text: textVal,
+          italics: true,
+          font: "Times New Roman",
+          size: 28
+        }));
+      }
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  // 3. Thêm phần văn bản bình thường còn lại sau cùng
+  if (lastIndex < line.length) {
+    const textVal = line.substring(lastIndex);
+    if (textVal) {
+      runs.push(new TextRun({
+        text: textVal,
+        font: "Times New Roman",
+        size: 28
+      }));
+    }
+  }
+
+  // Nếu dòng trống, chèn một TextRun trống để giữ khoảng dòng
+  if (runs.length === 0) {
+    runs.push(new TextRun({ text: "", font: "Times New Roman", size: 28 }));
+  }
+
+  return runs;
+}
+
+/**
  * Xuất văn bản OCR ra tệp Word (.docx) sạch chuẩn Nghị định 30
  * @param {string} ocrText - Văn bản OCR
  * @param {string} filename - Tên tệp tin xuất ra
@@ -370,24 +479,21 @@ export async function exportWordNghiDinh30(ocrText, filename = 'ket_qua_ocr_nghi
     throw new Error("Chưa có nội dung OCR để xuất Word.");
   }
 
-  // 1. Tách văn bản thành các dòng và lọc bỏ dòng rỗng dư thừa
-  const rawLines = ocrText.split(/\r?\n/);
+  // 1. Chuẩn bị và làm sạch văn bản
+  const preparedText = prepareTextForDocxExport(ocrText);
+  const rawLines = preparedText.split(/\r?\n/);
   const docParagraphs = [];
 
   for (let i = 0; i < rawLines.length; i++) {
     const line = rawLines[i].trim();
     if (!line) continue; // Bỏ qua dòng rỗng
 
-    // 2. Tạo mỗi dòng thành một Paragraph
+    // 2. Phân tích dòng văn bản thành các TextRun định dạng và tạo Paragraph
     // Áp dụng định dạng chuẩn: Times New Roman, size 14 (size: 28), line spacing single, spacing before/after 6pt
+    const runs = parseLineToTextRuns(line);
+
     docParagraphs.push(new Paragraph({
-      children: [
-        new TextRun({
-          text: line,
-          font: "Times New Roman",
-          size: 28 // 14pt
-        })
-      ],
+      children: runs,
       alignment: AlignmentType.JUSTIFIED,
       spacing: {
         before: 120, // 6pt
