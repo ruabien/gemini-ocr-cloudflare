@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Copy, Check, FileText, Download, AlertCircle, ChevronDown, FileCode } from 'lucide-react';
 import { normalizeOcrText, cleanTextNewlines } from '../utils/textNormalizer';
 import { exportTxt, exportMarkdown, exportDocx, exportWordNghiDinh30 } from '../utils/exportHelper';
+import { anonymizeLegalTextDetailed } from '../utils/anonymizer';
 
 export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, ocrOptions, config, onOpenCustomExtractor }) {
   const [copied, setCopied] = useState(false);
@@ -12,6 +13,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
   const [detectedCaseNum, setDetectedCaseNum] = useState(null);
   const [exportError, setExportError] = useState(null);
   const [isPremiumPopupOpen, setIsPremiumPopupOpen] = useState(false);
+  const [isWordExportModalOpen, setIsWordExportModalOpen] = useState(false);
 
   const isPremiumFeatureEnabled = () => {
     if (import.meta.env.VITE_ENABLE_PREMIUM_TEST === 'true') return true;
@@ -19,14 +21,10 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
     return premiumKey.trim().length > 0;
   };
 
-  const handlePremiumWordExport = async () => {
+  const executeWordExport = async (isAnonymized) => {
     const textToCheck = getProcessedText();
     if (!textToCheck || !textToCheck.trim()) {
       alert("Chưa có nội dung OCR để xuất Word.");
-      return;
-    }
-    if (!isPremiumFeatureEnabled()) {
-      setIsPremiumPopupOpen(true);
       return;
     }
 
@@ -45,16 +43,36 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
       baseFileName = originalName.includes('.') ? originalName.substring(0, originalName.lastIndexOf('.')) : originalName;
     }
 
-    const exportFilename = baseFileName 
-      ? `${baseFileName}_nghi_dinh_30.docx` 
-      : 'ket_qua_ocr_nghi_dinh_30.docx';
+    let textToExport = textToCheck;
+    if (isAnonymized) {
+      const detailed = anonymizeLegalTextDetailed(textToCheck);
+      textToExport = detailed.text;
+    }
+
+    const exportFilename = isAnonymized
+      ? (baseFileName ? `${baseFileName}_nghi_dinh_30_an_danh.docx` : 'ket_qua_ocr_nghi_dinh_30_an_danh.docx')
+      : (baseFileName ? `${baseFileName}_nghi_dinh_30.docx` : 'ket_qua_ocr_nghi_dinh_30.docx');
 
     try {
-      await exportWordNghiDinh30(textToCheck, exportFilename);
+      await exportWordNghiDinh30(textToExport, exportFilename);
+      setIsWordExportModalOpen(false);
     } catch (error) {
-      console.error("Lỗi xuất file Word Nghị định 30:", error);
+      console.error("Lỗi xuất file Word:", error);
       alert(`Lỗi xuất file: ${error.message}`);
     }
+  };
+
+  const handlePremiumWordExport = () => {
+    const textToCheck = getProcessedText();
+    if (!textToCheck || !textToCheck.trim()) {
+      alert("Chưa có nội dung OCR để xuất Word.");
+      return;
+    }
+    if (!isPremiumFeatureEnabled()) {
+      setIsPremiumPopupOpen(true);
+      return;
+    }
+    setIsWordExportModalOpen(true);
   };
 
   const handleCustomExtractionClick = () => {
@@ -757,6 +775,117 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
           </div>
         </div>
       )}
+
+      {/* Premium Word Export Options Modal */}
+      {isWordExportModalOpen && (() => {
+        const textToCheck = getProcessedText();
+        const detailed = anonymizeLegalTextDetailed(textToCheck);
+        const stats = detailed.stats;
+
+        return (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/75 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="relative w-full max-w-2xl bg-surface rounded-3xl shadow-2xl border border-border/85 p-6 mx-4 text-left animate-in zoom-in-95 duration-300 flex flex-col gap-4">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <div className="flex items-center gap-2 text-primary">
+                  <span className="material-icons text-[24px]">description</span>
+                  <h4 className="font-sans font-bold text-base sm:text-lg text-text-primary">Tùy chọn xuất file Word (.docx)</h4>
+                </div>
+                <button 
+                  onClick={() => setIsWordExportModalOpen(false)}
+                  className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded-lg hover:bg-background cursor-pointer"
+                >
+                  <span className="text-2xl font-bold leading-none">&times;</span>
+                </button>
+              </div>
+
+              {/* Grid Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Official Export Column */}
+                <div className="border border-border rounded-2xl p-5 bg-background/30 hover:border-text-secondary/20 transition-all flex flex-col justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-text-primary">
+                      <span className="material-icons text-[20px] text-text-secondary">gavel</span>
+                      <h5 className="font-bold text-sm">Xuất Word chính thức</h5>
+                    </div>
+                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                      Giữ nguyên toàn bộ nội dung văn bản OCR nguyên bản. Thích hợp cho việc lưu trữ nội bộ hoặc nộp hồ sơ chính thức.
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={() => executeWordExport(false)}
+                    className="w-full h-10 flex items-center justify-center gap-1.5 px-4 text-xs font-bold bg-surface hover:bg-border text-text-primary border border-border rounded-xl transition-all cursor-pointer shadow-sm active:scale-95 mt-2"
+                  >
+                    <span className="material-icons text-[14px]">download</span>
+                    <span>Tải file chính thức</span>
+                  </button>
+                </div>
+
+                {/* Anonymized Export Column */}
+                <div className="border border-primary/30 rounded-2xl p-5 bg-primary/5 hover:border-primary/50 transition-all flex flex-col justify-between gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-primary">
+                      <span className="material-icons text-[20px]">security</span>
+                      <h5 className="font-bold text-sm">Xuất Word ẩn danh</h5>
+                    </div>
+                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                      Tự động che/mã hóa các thông tin nhạy cảm (tên người, địa danh, CCCD, SĐT, email) trước khi xuất file.
+                    </p>
+
+                    {/* Stats Preview */}
+                    <div className="bg-surface/80 rounded-xl p-3 border border-border/60 text-[11px] space-y-1.5 font-medium text-text-secondary">
+                      <div className="text-[10px] uppercase font-bold text-text-secondary/50 tracking-wider mb-1">Xem trước kết quả quét:</div>
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1.5"><span className="material-icons text-[14px] text-primary/70">person</span>Tên người đã ẩn:</span>
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold">{stats.names} tên</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1.5"><span className="material-icons text-[14px] text-primary/70">place</span>Địa danh đã xử lý:</span>
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold">{stats.locations} vùng</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1.5"><span className="material-icons text-[14px] text-primary/70">badge</span>CCCD / CMND:</span>
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold">{stats.cccd} số</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1.5"><span className="material-icons text-[14px] text-primary/70">contact_phone</span>SĐT & Email:</span>
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-bold">{stats.contacts} liên hệ</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => executeWordExport(true)}
+                    className="w-full h-10 flex items-center justify-center gap-1.5 px-4 text-xs font-bold btn-premium-primary text-white rounded-xl transition-all cursor-pointer shadow-md active:scale-95 mt-2"
+                  >
+                    <span className="material-icons text-[14px]">vpn_key</span>
+                    <span>Tải file ẩn danh</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Warning alert */}
+              <div className="text-[10px] text-amber-800 flex items-start gap-1.5 bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-2xl">
+                <span className="material-icons text-[16px] text-amber-700 mt-0.5">warning</span>
+                <p className="leading-relaxed">
+                  <strong>Khuyến cáo:</strong> Chế độ ẩn danh hỗ trợ che thông tin nhạy cảm tự động. Người dùng cần kiểm tra lại trước khi chia sẻ hoặc sử dụng công khai.
+                </p>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex justify-end gap-2 border-t border-border/60 pt-3">
+                <button
+                  onClick={() => setIsWordExportModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold bg-background hover:bg-border text-text-primary border border-border rounded-xl transition-all cursor-pointer shadow-sm"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
