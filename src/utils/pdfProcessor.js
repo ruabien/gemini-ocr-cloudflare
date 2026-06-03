@@ -124,5 +124,13 @@ export const splitPdfToImages = async (pdfFile, onProgress, options = {}) => {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
 
+  // Giải phóng tài liệu PDF.js hoàn toàn trong bộ nhớ
+  try {
+    await pdf.cleanup();
+    await pdf.destroy();
+  } catch (cleanupErr) {
+    console.warn("Lỗi khi giải phóng tài liệu PDF:", cleanupErr);
+  }
+
   return imageFiles;
 };

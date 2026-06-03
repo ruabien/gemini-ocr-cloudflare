@@ -1,4 +1,63 @@
 /**
+ * Nén ảnh chuyên biệt cho OCR.space nếu kích thước vượt quá 5MB
+ */
+async function compressForOcrSpace(file) {
+  if (file.size <= 5 * 1024 * 1024) {
+    return file;
+  }
+  
+  console.log(`[OCR.space] File size ${file.size} exceeds 5MB limit, compressing...`);
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const width = img.width;
+      const height = img.height;
+      
+      const MAX_DIM = 1600; // Giảm kích thước xuống tối đa 1600px để chắc chắn dung lượng < 5MB
+      let newWidth = width;
+      let newHeight = height;
+      
+      if (newWidth > MAX_DIM || newHeight > MAX_DIM) {
+        if (newWidth > newHeight) {
+          newHeight = Math.round((newHeight * MAX_DIM) / newWidth);
+          newWidth = MAX_DIM;
+        } else {
+          newWidth = Math.round((newWidth * MAX_DIM) / newHeight);
+          newHeight = MAX_DIM;
+        }
+      }
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, newWidth, newHeight);
+      
+      canvas.toBlob((blob) => {
+        canvas.width = 0;
+        canvas.height = 0;
+        if (!blob) {
+          reject(new Error("Lỗi khi nén ảnh cho OCR.space"));
+          return;
+        }
+        const compressedFile = new File([blob], file.name || 'compressed.jpg', {
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        });
+        resolve(compressedFile);
+      }, 'image/jpeg', 0.6); // Xuất jpeg chất lượng 60%
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Không thể tải ảnh để nén cho OCR.space"));
+    };
+    img.src = objectUrl;
+  });
+}
+
+/**
  * Hàm thực hiện OCR bằng dịch vụ OCR.space (thông qua API Proxy nội bộ /api/ocr-space)
  * @param {File|Blob} fileOrBlob - Tệp ảnh của trang tài liệu cần OCR
  * @param {string} apiKey - API Key OCR.space (tùy chọn cung cấp từ User)
@@ -12,11 +71,20 @@ export const ocrWithOcrSpace = async (fileOrBlob, options = {}) => {
     lang = 'vie';
   }
 
+  let fileToOcr = fileOrBlob;
+  if (fileOrBlob instanceof File || fileOrBlob instanceof Blob) {
+    try {
+      fileToOcr = await compressForOcrSpace(fileOrBlob);
+    } catch (compressErr) {
+      console.warn("Lỗi khi nén ảnh cho OCR.space:", compressErr);
+    }
+  }
+
   // Log dev mode chỉ hiển thị thông tin language, không log API key hay nội dung tài liệu
   console.log(`[OCR.space Proxy Dev Log] Gửi yêu cầu fallback đến proxy nội bộ. Ngôn ngữ: ${lang}`);
 
   const formData = new FormData();
-  formData.append('file', fileOrBlob);
+  formData.append('file', fileToOcr);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 50000); // 50s client timeout

@@ -1,3 +1,5 @@
+import { isPremiumUser, FREE_MAX_IMAGE_SIZE_MB, PREMIUM_MAX_FILE_SIZE_MB } from './premiumHelper';
+
 /**
  * Tự động nén ảnh nếu dung lượng lớn hơn 1.5 MB hoặc kích thước vượt quá 2500px.
  * Giảm kích thước chiều lớn nhất xuống tối đa 2200px và xuất JPEG/WebP chất lượng 0.8.
@@ -10,10 +12,11 @@ export const compressImageIfNeeded = async (file) => {
     return file;
   }
 
-  // 1. Giới hạn dung lượng tệp tin thô của ảnh đầu vào (Tối đa 30MB)
-  const MAX_RAW_IMAGE_SIZE = 30 * 1024 * 1024;
-  if (file.size > MAX_RAW_IMAGE_SIZE) {
-    throw new Error("File quá lớn hoặc ảnh có độ phân giải quá cao. Vui lòng nén file hoặc thử file nhỏ hơn.");
+  // 1. Giới hạn dung lượng tệp tin thô của ảnh đầu vào theo Gói tài khoản
+  const isPremium = isPremiumUser();
+  const maxRawImageSize = (isPremium ? PREMIUM_MAX_FILE_SIZE_MB : FREE_MAX_IMAGE_SIZE_MB) * 1024 * 1024;
+  if (file.size > maxRawImageSize) {
+    throw new Error(`File quá lớn. Kích thước tối đa cho phép là ${isPremium ? PREMIUM_MAX_FILE_SIZE_MB : FREE_MAX_IMAGE_SIZE_MB}MB.`);
   }
 
   const SIZE_LIMIT = 1.5 * 1024 * 1024;

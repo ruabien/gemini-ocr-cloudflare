@@ -13,6 +13,7 @@ import { ocrWithOcrSpace } from './utils/ocrSpaceService';
 import { splitPdfToImages } from './utils/pdfProcessor';
 import { compressImageIfNeeded } from './utils/imageCompressor';
 import { normalizeOcrText } from './utils/textNormalizer';
+import { isPremiumUser, FREE_MAX_IMAGE_SIZE_MB, FREE_MAX_PDF_SIZE_MB, PREMIUM_MAX_FILE_SIZE_MB } from './utils/premiumHelper';
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -178,7 +179,7 @@ function App() {
   const handleFilesSelected = (filesToImport) => {
     if (filesToImport.length === 0) return;
 
-    // Validate kích thước tệp tin theo Yêu cầu 9
+    // Validate kích thước tệp tin theo Gói tài khoản
     const validatedFiles = filesToImport.filter(file => {
       const type = file.type || '';
       const name = (file.name || '').toLowerCase();
@@ -193,10 +194,21 @@ function App() {
         return false;
       }
       
-      const limitBytes = isPdf ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
-      const limitName = isPdf ? "20MB đối với PDF" : "10MB đối với ảnh";
+      const isPremium = isPremiumUser();
+      let limitBytes;
+      let reasonMessage;
+      
+      if (isPremium) {
+        limitBytes = PREMIUM_MAX_FILE_SIZE_MB * 1024 * 1024;
+        reasonMessage = `Tệp "${file.name}" quá lớn. File vượt giới hạn ${PREMIUM_MAX_FILE_SIZE_MB}MB của gói Premium.`;
+      } else {
+        const freeLimitMb = isPdf ? FREE_MAX_PDF_SIZE_MB : FREE_MAX_IMAGE_SIZE_MB;
+        limitBytes = freeLimitMb * 1024 * 1024;
+        reasonMessage = `Tệp "${file.name}" quá lớn. File vượt giới hạn gói miễn phí. Nâng cấp Premium để xử lý file lên tới 50MB.`;
+      }
+      
       if (file.size > limitBytes) {
-        alert(`Tệp "${file.name}" quá lớn. Kích thước tối đa cho phép là ${limitName}.`);
+        alert(reasonMessage);
         return false;
       }
       
@@ -1039,6 +1051,81 @@ error message: ${finalErrorMsg || 'none'}`;
                     </div>
                   </div>
                 )}
+                
+                {/* Package and file size details */}
+                {(() => {
+                  const isPremium = isPremiumUser();
+                  const activeFile = files.find(f => f.id === activeFileId);
+                  const activeParentPdf = activeFile
+                    ? (activeFile.isParentPdf ? activeFile : files.find(f => f.id === activeFile.parentPdfId))
+                    : null;
+
+                  // 1. Get package and limit display text
+                  const packageLabel = isPremium ? "Premium" : "Miễn phí";
+                  const limitLabel = isPremium ? `${PREMIUM_MAX_FILE_SIZE_MB}MB` : `Ảnh ${FREE_MAX_IMAGE_SIZE_MB}MB | PDF ${FREE_MAX_PDF_SIZE_MB}MB`;
+
+                  // 2. Get active processing details
+                  let processingDetail = null;
+                  if (isProcessing && activeFile) {
+                    const activeProcessingFile = files.find(f => f.status === 'processing');
+                    if (activeProcessingFile) {
+                      const parent = activeProcessingFile.isPdfPage 
+                        ? files.find(f => f.id === activeProcessingFile.parentPdfId)
+                        : null;
+                      const sizeBytes = parent 
+                        ? parent.originalFile?.size 
+                        : activeProcessingFile.originalFile?.size;
+                      const sizeMb = sizeBytes ? (sizeBytes / 1024 / 1024).toFixed(1) : '0';
+                      
+                      const pageNum = activeProcessingFile.isPdfPage ? activeProcessingFile.pageIndex + 1 : 1;
+                      const totalPages = parent ? parent.totalPages : 1;
+                      
+                      processingDetail = `${packageLabel}: đang xử lý file ${sizeMb}MB, ${activeProcessingFile.isPdfPage ? `trang ${pageNum}/${totalPages}` : '1/1'}`;
+                    }
+                  }
+
+                  return (
+                    <div className="bg-background/40 border border-border rounded-xl p-3 text-[11px] font-medium space-y-1 text-text-secondary select-none">
+                      <div className="flex justify-between items-center">
+                        <span>Gói tài khoản:</span>
+                        <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${isPremium ? 'bg-primary/10 text-primary' : 'bg-text-secondary/10 text-text-secondary'}`}>
+                          {packageLabel}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Giới hạn file:</span>
+                        <span className="font-bold text-text-primary">{limitLabel}</span>
+                      </div>
+                      
+                      {/* Active file size if selected and not processing */}
+                      {!isProcessing && activeFile && !activeFile.isPdfPage && (
+                        <div className="flex justify-between items-center border-t border-border/50 pt-1.5 mt-1.5">
+                          <span>Dung lượng file đang chọn:</span>
+                          <span className="font-bold text-text-primary">
+                            {(activeFile.originalFile?.size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                        </div>
+                      )}
+                      
+                      {!isProcessing && activeParentPdf && (
+                        <div className="flex justify-between items-center border-t border-border/50 pt-1.5 mt-1.5">
+                          <span>Dung lượng tệp PDF gốc:</span>
+                          <span className="font-bold text-text-primary">
+                            {(activeParentPdf.originalFile?.size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Processing progress display */}
+                      {processingDetail && (
+                        <div className="flex items-center gap-1.5 border-t border-border/50 pt-2 mt-2 text-primary font-bold animate-pulse text-[10px] uppercase tracking-wider">
+                          <span className="material-icons text-[14px]">sync</span>
+                          <span>{processingDetail}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 
                 {/* Nút bấm Chuyển đổi chính */}
                 <button

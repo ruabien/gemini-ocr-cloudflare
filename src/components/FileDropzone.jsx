@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { isPremiumUser, FREE_MAX_IMAGE_SIZE_MB, FREE_MAX_PDF_SIZE_MB, PREMIUM_MAX_FILE_SIZE_MB } from '../utils/premiumHelper';
 
 export default function FileDropzone({ onFilesSelected, isCompact = false, disabled = false }) {
   const [isDragActive, setIsDragActive] = useState(false);
@@ -75,12 +76,21 @@ export default function FileDropzone({ onFilesSelected, isCompact = false, disab
         return false;
       }
 
-      // Giới hạn file: ảnh tối đa 10MB, PDF tối đa 20MB theo Yêu cầu 9
-      const limitBytes = isPdf ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
-      const limitName = isPdf ? "20 MB (PDF)" : "10 MB (Ảnh)";
+      const isPremium = isPremiumUser();
+      let limitBytes;
+      let reasonMessage;
+      
+      if (isPremium) {
+        limitBytes = PREMIUM_MAX_FILE_SIZE_MB * 1024 * 1024;
+        reasonMessage = `File vượt giới hạn ${PREMIUM_MAX_FILE_SIZE_MB}MB của gói Premium.`;
+      } else {
+        const freeLimitMb = isPdf ? FREE_MAX_PDF_SIZE_MB : FREE_MAX_IMAGE_SIZE_MB;
+        limitBytes = freeLimitMb * 1024 * 1024;
+        reasonMessage = `File vượt giới hạn gói miễn phí. Nâng cấp Premium để xử lý file lên tới 50MB.`;
+      }
       
       if (file.size > limitBytes) {
-        rejectedFiles.push({ name: file.name, reason: `Kích thước vượt quá ${limitName}` });
+        rejectedFiles.push({ name: file.name, reason: reasonMessage });
         return false;
       }
       
@@ -136,7 +146,7 @@ export default function FileDropzone({ onFilesSelected, isCompact = false, disab
                     ? 'Thả file vào đây...' 
                     : 'Kéo thả hoặc chạm để thêm tài liệu'}
               </p>
-              <p className="text-[10px] text-text-secondary/80 font-medium">Ảnh tối đa 10MB, PDF tối đa 20MB</p>
+              <p className="text-[10px] text-text-secondary/80 font-medium">{isPremiumUser() ? 'Premium: Tối đa 50MB' : 'Ảnh tối đa 10MB, PDF tối đa 20MB'}</p>
             </div>
           </div>
         </label>
@@ -192,11 +202,11 @@ export default function FileDropzone({ onFilesSelected, isCompact = false, disab
                   : 'Kéo thả hoặc chạm để tải file lên'}
             </p>
             <p className="text-xs sm:text-sm text-text-secondary font-medium max-w-sm mx-auto leading-relaxed">
-              Hỗ trợ hình ảnh chụp tài liệu dạng JPG, PNG, WEBP (tối đa 10MB) hoặc tệp văn bản PDF scan (tối đa 20MB)
+              Hỗ trợ hình ảnh chụp tài liệu và tệp PDF scan ({isPremiumUser() ? 'Premium: tối đa 50MB' : 'Ảnh tối đa 10MB | PDF tối đa 20MB'})
             </p>
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-background border border-border rounded-lg text-xs font-semibold text-text-secondary">
-            <span>Giới hạn: Ảnh 10MB | PDF 20MB</span>
+            <span>Giới hạn: {isPremiumUser() ? 'Tối đa 50MB' : 'Ảnh 10MB | PDF 20MB'}</span>
           </div>
         </div>
       </label>

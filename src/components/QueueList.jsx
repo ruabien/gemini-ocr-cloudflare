@@ -46,7 +46,7 @@ export default function QueueList({ files, activeFileId, onFileClick, onRemoveFi
     }
     switch(status) {
       case 'splitting':
-        return { label: 'Đang tách trang...', icon: <Loader2 size={16} className="animate-spin text-secondary" />, color: 'text-secondary', bar: 'bg-secondary/20', width: `${progress}%` };
+        return { label: 'Đang chuẩn bị tài liệu...', icon: <Loader2 size={16} className="animate-spin text-secondary" />, color: 'text-secondary', bar: 'bg-secondary/20', width: `${progress}%` };
       case 'processing': 
         return { label: `Đang xử lý... (${progress}%)`, icon: <Loader2 size={16} className="animate-spin text-primary" />, color: 'text-primary', bar: 'bg-primary', width: `${progress}%` };
       case 'completed': {
