@@ -800,7 +800,7 @@ export default function ResultViewer({ file, allFiles, onUpdateResult, onReset, 
               <div className="flex items-center justify-between border-b border-border/60 pb-3">
                 <div className="flex items-center gap-2 text-primary">
                   <span className="material-icons text-[24px]">description</span>
-                  <h4 className="font-sans font-bold text-base sm:text-lg text-text-primary">Tùy chọn xuất file Word (.docx)</h4>
+                  <h4 className="font-sans font-bold text-base sm:text-lg text-text-primary">Chọn chế độ xuất Word</h4>
                 </div>
                 <button 
                   onClick={() => setIsWordExportModalOpen(false)}
