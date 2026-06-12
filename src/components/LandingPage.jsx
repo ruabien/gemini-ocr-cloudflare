@@ -1,972 +1,318 @@
-import { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
-  HelpCircle, ChevronDown, Check, ArrowRight, Upload, Play,
-  Lock, Cpu, FileText, Camera, Gavel,
-  Shield, BookOpen, Search, ClipboardCheck, ShieldAlert, Scale
-} from 'lucide-react';
-import FileDropzone from './FileDropzone';
 
-export default function LandingPage({ onFilesSelected, onOpenSettings }) {
+export default function LandingPage() {
   const navigate = useNavigate();
-  const fileInputRef = useRef(null);
-  // FAQ state
-  const [openFaqIndex, setOpenFaqIndex] = useState(null);
-  
-  // Live Demo Typing State
-  const [demoText, setDemoText] = useState('');
-  const demoTextTarget = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc\n\nĐƠN KHỞI KIỆN\n\nKính gửi: Tòa án nhân dân quận Hoàn Kiếm, thành phố Hà Nội.\n\nTôi tên là: Nguyễn Văn A, sinh năm 1985.\nCăn cước công dân số: 001085000123 cấp ngày 15/10/2021";
-  
-  // Typing Effect for Live Demo
-  useEffect(() => {
-    let index = 0;
-    let timer;
-    
-    const startTyping = () => {
-      timer = setInterval(() => {
-        if (index < demoTextTarget.length) {
-          setDemoText(demoTextTarget.substring(0, index + 1));
-          index++;
-        } else {
-          clearInterval(timer);
-          // Wait and restart loop
-          setTimeout(() => {
-            setTimeout(() => {
-              index = 0;
-              setDemoText('');
-              startTyping();
-            }, 4000);
-          }, 2000);
-        }
-      }, 18);
-    };
-    
-    startTyping();
-    
-    return () => clearInterval(timer);
-  }, []);
 
-  const scrollToSection = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  const handleStart = () => {
+    navigate('/dashboard');
   };
 
-  // Trigger hidden input click
-  const triggerGlobalUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  const handleScroll = (e, id) => {
+    e.preventDefault();
+    const target = document.querySelector(id);
+    if (target) {
+      window.scrollTo({
+        top: target.offsetTop - 80,
+        behavior: 'smooth'
+      });
     }
   };
-
-  const handleGlobalFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      onFilesSelected(Array.from(e.target.files));
-    }
-  };
-
-  const faqItems = [
-    {
-      q: "Công cụ này dành cho ai?",
-      a: "DOC được thiết kế chuyên biệt phục vụ các cán bộ nghiệp vụ và chuyên gia trong khối tư pháp Việt Nam, bao gồm: Kiểm sát viên, Thẩm phán, Luật sư, Điều tra viên và Chấp hành viên có nhu cầu số hóa, xử lý văn bản từ hồ sơ tài liệu nghiệp vụ nhanh chóng."
-    },
-    {
-      q: "Có thể xử lý loại tài liệu nào?",
-      a: "Hệ thống hỗ trợ xử lý hầu hết các loại hình ảnh chụp tài liệu chứng cứ (định dạng JPG, PNG, WEBP) và các tệp văn bản PDF scan tài liệu nghiệp vụ nhiều trang với dung lượng tối đa lên tới 100MB cho mỗi tệp."
-    },
-    {
-      q: "Có dùng được cho hồ sơ tư pháp không?",
-      a: "Có. DOC tối ưu hóa sâu cho ngữ cảnh và thuật ngữ nghiệp vụ tư pháp tại Việt Nam (như bản án, quyết định tố tụng, biên bản hỏi cung, hợp đồng, đơn từ). Trí tuệ nhân tạo Gemini AI giúp tự động sửa lỗi chính tả và khôi phục các phần chữ bị mờ, mất nét do chất lượng quét tài liệu cũ kém."
-    },
-    {
-      q: "Có nên tải tài liệu mật lên không?",
-      a: "Tuyệt đối KHÔNG. Mặc dù dữ liệu được truyền tải qua HTTPS mã hóa trực tiếp đến Gemini API và không lưu lại bất kỳ máy chủ nào của DOC, người dùng tuyệt đối không được tải lên hoặc xử lý các tài liệu thuộc danh mục bí mật nhà nước (tài liệu mật, tối mật, tuyệt mật) theo quy định của Luật Bảo vệ bí mật nhà nước hiện hành."
-    },
-    {
-      q: "Kết quả OCR có thể dùng thay bản gốc không?",
-      a: "Không. Kết quả nhận dạng từ AI chỉ mang tính chất tham khảo chuyên môn và đóng vai trò trợ lý số hóa bóc tách văn bản thô để tiết kiệm thời gian soạn thảo. Người dùng bắt buộc phải đối chiếu, rà soát thủ công kết quả với tài liệu gốc trước khi đưa vào hồ sơ vụ án hoặc văn bản tố tụng chính thức."
-    },
-    {
-      q: "API key Gemini được xử lý như thế nào?",
-      a: "API Key cá nhân của bạn được mã hóa và lưu trữ cục bộ ngay tại bộ nhớ trình duyệt (localStorage) trên thiết bị của riêng bạn. Hệ thống hoạt động phi trạng thái (stateless), không ghi nhật ký lịch sử tài liệu nghiệp vụ hay lưu trữ khóa của bạn trên đám mây. Bạn có toàn quyền xóa cấu hình khóa này khỏi thiết bị bất cứ lúc nào."
-    }
-  ];
 
   return (
-<div className="relative min-h-screen bg-[#F8F9FB] text-[#191c1e] flex flex-col font-sans">
-      {/* Hidden file input for CTA triggers */}
-      <input 
-        type="file" 
-        ref={fileInputRef}
-        onChange={handleGlobalFileChange}
-        accept=".pdf,.jpg,.jpeg,.png,.webp"
-        multiple
-        className="hidden"
-      />
-
-      {/* Grid background overlay */}
-      <div className="absolute inset-0 bg-grid pointer-events-none z-0" />
-
-      {/* HEADER / NAVIGATION */}
-      <header className="sticky top-0 z-50 w-full glass-card border-b border-outline-variant/40 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <a href="#" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-[4px] bg-[#A10000] flex items-center justify-center text-white shadow-sm">
-                <Scale size={18} />
-              </div>
-              <span className="font-bold text-2xl tracking-tight text-primary font-serif">
-                DOC
-              </span>
+    <div className="text-on-background bg-background min-h-screen flex flex-col font-sans">
+      {/* TopAppBar */}
+      <header className="fixed top-0 w-full bg-surface z-50 border-b border-standard flex justify-between items-center px-gutter h-toolbar-height shadow-sm">
+        <div className="flex items-center gap-4">
+          <span className="material-symbols-outlined text-primary text-2xl">menu</span>
+          <h1 className="font-headline-md text-headline-md font-bold text-primary tracking-tight">VN OCR</h1>
+        </div>
+        <div className="flex items-center gap-6">
+          <nav className="hidden md:flex gap-8">
+            <a 
+              className="font-label-md text-label-md text-primary hover:text-primary transition-colors" 
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Trang chủ
             </a>
-            
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-on-surface-variant">
-              <button onClick={() => scrollToSection('features')} className="hover:text-primary transition-colors cursor-pointer">Tính năng</button>
-              <button onClick={() => scrollToSection('demo')} className="hover:text-primary transition-colors cursor-pointer">Live Demo</button>
-              <button onClick={() => scrollToSection('how-it-works')} className="hover:text-primary transition-colors cursor-pointer">Cách hoạt động</button>
-              <button onClick={() => scrollToSection('security')} className="hover:text-primary transition-colors cursor-pointer">Bảo mật</button>
-              <button onClick={() => scrollToSection('faq')} className="hover:text-primary transition-colors cursor-pointer">Câu hỏi</button>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={onOpenSettings}
-              className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-[4px] text-[#002F5F] border border-[#002F5F] hover:bg-[#002F5F]/5 transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
+            <a 
+              className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" 
+              href="#features"
+              onClick={(e) => handleScroll(e, '#features')}
             >
-              <span className="material-icons text-[18px]">settings</span>
-              <span>Cấu hình API</span>
-            </button>
-            <button 
-              onClick={triggerGlobalUpload}
-              className="bg-[#A10000] text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-[4px] hover:bg-[#850000] transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
+              Tính năng
+            </a>
+            <a 
+              className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" 
+              href="#documents"
+              onClick={(e) => handleScroll(e, '#documents')}
             >
-              <span>Bắt đầu số hóa</span>
-            </button>
-          </div>
+              Tài liệu
+            </a>
+          </nav>
+          <span className="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
         </div>
-</header>
+      </header>
 
-{/* Mock Google Login Flow */}
-<div className="flex justify-center py-6 bg-primary/10">
-  <button
-    onClick={() => {
-      navigate('/dashboard');
-    }}
-    className="flex items-center gap-2 bg-[#A10000] text-white font-bold px-6 py-3 rounded-[4px] hover:bg-[#850000] transition-colors"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" className="w-5 h-5 fill-white">
-      <path fill="currentColor" d="M533.5 278.4c0-18.3-1.5-36-4.4-53.1H272v100.5h146.9c-6.4 34.5-25.6 63.7-54.5 83.2v68.7h88.2c51.6-47.5 81.9-117.5 81.9-199.3"/>
-      <path fill="currentColor" d="M272 544.3c73.2 0 134.6-24.2 179.5-65.8l-88.2-68.7c-24.5 16.5-55.9 26.2-91.3 26.2-70 0-129.5-47.3-150.6-110.5H30.2v69.4c44.9 88.3 136.5 149.4 241.8 149.4"/>
-      <path fill="currentColor" d="M121.4 326.5c-9.9-29.5-9.9-61.2 0-90.7V166.5H30.2c-39.6 77.5-39.6 168.5 0 246l91.2-70.5"/>
-      <path fill="currentColor" d="M272 107.8c39.7 0 75.4 13.7 103.5 40.6l77.7-77.7C410.2 24.9 347 0 272 0 166.7 0 75.1 61.1 30.2 149.4l91.2 69.3C142.5 155.1 202 107.8 272 107.8"/>
-    </svg>
-    <span>Đăng nhập với Google (Mock)</span>
-  </button>
-</div>
-
-
-      {/* HERO SECTION */}
-      <section className="relative max-w-7xl mx-auto w-full px-6 pt-16 pb-20 md:pt-24 md:pb-28 z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
-          {/* Hero Left Content */}
-          <div className="lg:col-span-6 space-y-8 text-left animate-fade-up">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-container border border-primary/20 text-primary text-xs font-bold shadow-sm">
-              <span className="material-icons text-[14px] text-primary shrink-0">gavel</span>
-              <span className="uppercase tracking-wider">Hệ thống số hóa hồ sơ tư pháp chuyên sâu</span>
-            </div>
-            
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1] font-serif">
-              Trợ lý số hóa <br />
-              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2 font-serif">Hồ sơ tư pháp bằng AI</span>
-            </h1>
-            
-            <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-xl">
-              Chuyển PDF scan, ảnh chụp hồ sơ, bản án, quyết định, hợp đồng và tài liệu nghiệp vụ thành văn bản có thể sao chép, tra cứu và xử lý.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button 
-                onClick={triggerGlobalUpload}
-                className="bg-[#A10000] text-white font-bold px-6 py-3.5 rounded-[4px] flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:bg-[#850000] text-sm sm:text-base group"
-              >
-                <Upload size={18} />
-                <span>Bắt đầu OCR tài liệu</span>
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-              
-              <button 
-                onClick={() => scrollToSection('security')}
-                className="border border-[#002F5F] text-[#002F5F] font-semibold px-6 py-3.5 rounded-[4px] flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base hover:bg-[#002F5F]/5"
-              >
-                <Lock size={16} className="text-[#002F5F]" />
-                <span>Xem cam kết bảo mật</span>
-              </button>
-            </div>
-            
-            {/* Trust badges */}
-            <div className="pt-6 border-t border-outline-variant/60">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-semibold text-on-surface-variant">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck size={14} className="text-emerald-500 shrink-0" />
-                  <span>Bảo mật Zero-Server</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Layers size={14} className="text-primary shrink-0" />
-                  <span>Xử lý hồ sơ lớn</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <FileOutput size={14} className="text-ai-accent shrink-0" />
-                  <span>Tải Word (.docx) sạch</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Lock size={14} className="text-indigo-500 shrink-0" />
-                  <span>Tuân thủ bảo vệ bí mật</span>
-                </div>
-              </div>
-            </div>
+      <main className="pt-toolbar-height flex-1">
+        {/* Hero Section */}
+        <section className="relative min-h-[707px] flex items-center overflow-hidden bg-surface-container-lowest">
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-gradient-to-r from-surface-container-lowest via-surface-container-lowest/90 to-transparent z-10"></div>
+            <img 
+              className="w-full h-full object-cover" 
+              alt="A professional legal setting with a focus on an elegant oak desk featuring high-end stationery and a polished gavel. The background shows a blurred, sunlit law library with leather-bound books, evoking a sense of heritage and institutional trust. The lighting is soft and cinematic, utilizing a palette of deep mahogany, gold accents, and bright whites to create a sophisticated, high-fidelity corporate atmosphere." 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkWbcSXNx4-MVyww3YAQuRMw0_VjiP5vKot15yC0K_u_Hcv-odfsFrOAONVE13nC_RFhd3tA4ouaRPmT09z9mdfTr75exULAqDV2Cxx52wnPendLfq4YwnKhYFqpV5mysEc1X8qcX0tneahEe8Hg1u8Lhcunu_MH2Okp9i9ACy567UU2uY8YQgECPgRzft8Jb7bzHPecCFFngyfOp6AEirKmNsGMq8rY1_A6TFV4cg3ZEs7PiuATJhxKU7nlYQO3Q2OdG14KZfaC0"
+            />
           </div>
-
-          {/* Hero Right Visual: Premium Dropzone */}
-          <div className="lg:col-span-6 animate-fade-up [animation-delay:150ms]">
-            <div className="relative p-2 rounded-2xl bg-surface border border-border shadow-md">
-              
-              <div className="p-4 bg-surface rounded-2xl border border-border shadow-sm">
-                <FileDropzone onFilesSelected={onFilesSelected} />
-              </div>
-            </div>
-          </div>
-
-        </div>
-</section>
-
-{/* Pricing Section */}
-<section className="bg-primary/5 py-12">
-  <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-    {/* Basic Plan */}
-    <div className="bg-white rounded-[4px] shadow-lg p-6 border border-border">
-      <h3 className="text-xl font-bold text-primary mb-2">Cơ bản</h3>
-      <p className="text-3xl font-extrabold text-primary mb-4">Free</p>
-      <ul className="text-left space-y-2 mb-6">
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> OCR không giới hạn trong hạn mức miễn phí</li>
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Tối đa 10 MB / tệp</li>
-      </ul>
-      <button className="w-full border border-[#002F5F] text-[#002F5F] hover:bg-[#002F5F]/5 font-semibold py-2 rounded-[4px] transition-colors">
-        Chọn
-      </button>
-    </div>
-
-    {/* Pro Plan */}
-    <div className="bg-white rounded-[4px] shadow-lg p-6 border border-primary relative overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#D4AF37]"></div>
-      <h3 className="text-xl font-bold text-primary mb-2">Pro</h3>
-      <p className="text-3xl font-extrabold text-primary mb-4">49₫ / tháng</p>
-      <ul className="text-left space-y-2 mb-6">
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> OCR nhanh, không hạn chế</li>
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Tối đa 50 MB / tệp</li>
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Truy cập API Premium</li>
-      </ul>
-      <button className="w-full bg-[#A10000] text-white hover:bg-[#850000] font-semibold py-2 rounded-[4px] transition-colors">
-        Nâng cấp
-      </button>
-    </div>
-
-    {/* Enterprise Plan */}
-    <div className="bg-white rounded-[4px] shadow-lg p-6 border border-border">
-      <h3 className="text-xl font-bold text-primary mb-2">Enterprise</h3>
-      <p className="text-3xl font-extrabold text-primary mb-4">Liên hệ</p>
-      <ul className="text-left space-y-2 mb-6">
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Hỗ trợ tận nơi</li>
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Giải pháp tùy chỉnh</li>
-        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Hợp đồng SLA</li>
-      </ul>
-      <button className="w-full border border-[#002F5F] text-[#002F5F] hover:bg-[#002F5F]/5 font-semibold py-2 rounded-[4px] transition-colors">
-        Liên hệ
-      </button>
-    </div>
-  </div>
-</section>
-
-
-      {/* SOCIAL PROOF SECTION */}
-      <section className="border-y border-outline-variant/40 bg-surface/30 backdrop-blur-sm py-12 relative z-10">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="space-y-1">
-              <div className="text-4xl sm:text-5xl font-extrabold text-primary">50.000+</div>
-              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Hồ sơ tư pháp được số hóa</p>
-            </div>
-            <div className="space-y-1 border-y md:border-y-0 md:border-x border-outline-variant/40 py-6 md:py-0">
-              <div className="text-4xl sm:text-5xl font-extrabold text-primary">98%</div>
-              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Chính xác thuật ngữ pháp lý</p>
-            </div>
-            <div className="space-y-1">
-              <div className="text-4xl sm:text-5xl font-extrabold text-primary">10x</div>
-              <p className="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">Tiết kiệm thời gian lập hồ sơ</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION: DÀNH CHO AI */}
-      <section id="targets" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
-        <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
-            <Gavel size={12} />
-            <span>Đối tượng phục vụ</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary">
-            Dành cho ai?
-          </h2>
-          <div className="legal-divider mx-auto"><div className="legal-divider-primary"></div><div className="legal-divider-accent"></div></div>
-          <p className="text-text-secondary text-base max-w-xl mx-auto leading-relaxed">
-            Giải pháp chuyên dụng hỗ trợ đắc lực cho cán bộ nghiệp vụ và chuyên gia trong khối tư pháp.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
-          {/* Card 1 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <Shield size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base">Kiểm sát viên</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Số hóa nhanh hồ sơ vụ án, biên bản lấy lời khai phục vụ lập cáo trạng và xây dựng hồ sơ kiểm sát.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <Gavel size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base">Thẩm phán</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Trích xuất nội dung chứng cứ, hồ sơ kiện tụng, bản án lịch sử phục vụ công tác nghiên cứu nghiệp vụ.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <BookOpen size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base">Luật sư</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Số hóa nhanh chóng tài liệu do khách hàng cung cấp và hồ sơ tố tụng phục vụ nghiên cứu phương án bào chữa.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 4 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <Search size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base">Điều tra viên</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Chuyển đổi các biên bản hỏi cung viết tay, biên bản khám nghiệm hiện trường thành văn bản số hóa lưu trữ.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 5 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                <ClipboardCheck size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base">Chấp hành viên</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Số hóa nhanh các quyết định thi hành án, biên bản kê biên tài sản phục vụ đôn đốc và theo dõi hồ sơ.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* LIVE OCR DEMO (BEFORE/AFTER) */}
-      <section id="demo" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10">
-        <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-xs font-bold">
-            <Cpu size={12} />
-            <span>Trải nghiệm số hóa</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary">
-            Số hóa hồ sơ vụ án thông minh
-          </h2>
-          <div className="legal-divider mx-auto"><div className="legal-divider-primary"></div><div className="legal-divider-accent"></div></div>
-          <p className="text-text-secondary text-base max-w-xl mx-auto leading-relaxed">
-            Xem cách AI tự động phục hồi văn bản pháp lý từ ảnh chụp chứng cứ bị mờ và tự sửa lỗi chính tả theo đúng ngữ cảnh tư pháp.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch max-w-5xl mx-auto">
-          {/* Left Column: Original Scanned Image Visual */}
-          <div className="rounded-2xl border border-outline-variant/40 bg-surface shadow-md p-6 flex flex-col justify-between">
-            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
-              <span className="text-xs font-bold text-text-secondary uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-accent" />
-                Tài liệu chứng cứ / Biên bản gốc (Mờ, dính chữ)
-              </span>
-              <span className="text-xs bg-background text-text-secondary px-2 py-0.5 rounded-md font-medium">JPEG/PDF</span>
-            </div>
-            
-            <div className="flex-1 flex flex-col justify-center bg-background/80 rounded-xl p-6 border border-dashed border-border relative overflow-hidden min-h-[220px]">
-              <div className="absolute inset-0 bg-[radial-gradient(rgba(22,58,112,0.06)_1px,transparent_1px)] [background-size:16px_16px] opacity-60" />
-              
-              <div className="relative space-y-3 font-serif text-sm text-text-secondary/80 leading-relaxed italic select-none">
-                <p className="line-through decoration-accent/60 decoration-2">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIÊT NAM (Thiếu dấu)</p>
-                <p className="line-through decoration-accent/60 decoration-2">Đọc lập - Tự do - Hạnh phúc (Sai chính tả)</p>
-                <p className="mt-4 font-bold text-text-secondary">ĐƠN KHỞI KIỆN</p>
-                <p className="line-through decoration-accent/60 decoration-2">Kính gửi: Toà an nhan dan quan Hoan Kiem... (Không dấu)</p>
-                <p className="line-through decoration-accent/60 decoration-2">Căn cước công dân số: OO1O85OOO123 (Nhầm O với số 0)</p>
-              </div>
-              
-              {/* Badges pointing out errors */}
-              <div className="absolute bottom-2 right-2 flex gap-1.5">
-                <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded border border-accent/20 font-bold">Mất dấu</span>
-                <span className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded border border-accent/20 font-bold">Sai số</span>
-              </div>
-            </div>
-            
-            <div className="mt-4 pt-3 border-t border-outline-variant/30 flex justify-between text-xs text-text-secondary/80 font-medium">
-              <span>Độ phân giải thấp</span>
-              <span>Ảnh chụp hiện trường/Điện thoại</span>
-            </div>
-          </div>
-
-          {/* Right Column: AI Processed Text Result */}
-          <div className="rounded-2xl border border-primary/20 bg-surface shadow-lg shadow-primary/5 p-6 flex flex-col justify-between relative overflow-hidden">
-            {/* Visual border glow for AI theme */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
-            
-            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
-              <span className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-                Văn bản số hóa bởi DOC AI
-              </span>
-              <span className="text-xs bg-primary-container text-primary px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
-                <Cpu size={10} />
-                AI Nghiệp Vụ
-              </span>
-            </div>
-
-            <div className="flex-1 bg-background border border-border rounded-xl p-5 font-mono text-xs text-text-primary leading-relaxed min-h-[220px] whitespace-pre-wrap select-all">
-              <span className="typing-cursor font-medium">{demoText}</span>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-outline-variant/30 flex flex-wrap gap-2 items-center justify-between">
-              <div className="flex gap-2">
-                <span className="text-[10px] bg-success/10 text-success px-2 py-0.5 rounded border border-success/20 font-bold flex items-center gap-0.5">
-                  <Check size={10} /> Đã sửa dấu
-                </span>
-                <span className="text-[10px] bg-success/10 text-success px-2 py-0.5 rounded border border-success/20 font-bold flex items-center gap-0.5">
-                  <Check size={10} /> Nhận diện số chuẩn
+          <div className="container mx-auto px-margin relative z-20 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="max-w-2xl">
+              <div className="inline-block px-3 py-1 mb-6 bg-[#760000]/10 border border-[#760000] text-primary rounded-full">
+                <span className="font-label-md text-label-md flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                  Giải pháp dành cho khối Tư pháp & Hành chính
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-primary">Tự động giữ bố cục gốc</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES GRID SECTION */}
-      <section id="features" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10">
-        <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
-            <Layers size={12} />
-            <span>Tính năng chuyên biệt</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary">
-            Tại sao DOC mang lại hiệu quả vượt trội?
-          </h2>
-          <div className="legal-divider mx-auto"><div className="legal-divider-primary"></div><div className="legal-divider-accent"></div></div>
-          <p className="text-text-secondary text-base max-w-xl mx-auto leading-relaxed">
-            Thiết kế chuyên biệt cho hồ sơ tố tụng và tài liệu tư pháp tiếng Việt phức tạp.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          <div className="hover-glow-card rounded-2xl bg-surface p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
-              <Zap size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary mb-2">Số hóa nghiệp vụ siêu tốc</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              Xử lý hồ sơ tài liệu tức thì chỉ trong vài giây mỗi trang chứng cứ. Tách luồng xử lý song song để giảm thời gian chờ đợi đối với các vụ án nhiều trang.
-            </p>
-          </div>
-
-          <div className="hover-glow-card rounded-2xl bg-surface p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
-              <Scale size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary mb-2">Tối ưu tiếng Việt tư pháp</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              Khả năng nhận dạng chuẩn xác 100% các từ ngữ pháp lý cổ, từ viết tắt hành chính, dấu quốc huy và văn phong tư pháp Việt Nam.
-            </p>
-          </div>
-
-          <div className="hover-glow-card rounded-2xl bg-surface p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-success/10 text-success flex items-center justify-center mb-5">
-              <ShieldCheck size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary mb-2">Bảo mật tài liệu tuyệt đối</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              Xử lý hoàn toàn tại Client-Side. Tài liệu nghiệp vụ nhạy cảm được truyền thẳng tới cổng bảo mật Google API, đáp ứng nghiêm ngặt việc bảo vệ bí mật tư pháp.
-            </p>
-          </div>
-
-          <div className="hover-glow-card rounded-2xl bg-surface p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
-              <Layers size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary mb-2">Bảo toàn cấu trúc văn bản</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              Giữ nguyên định dạng bảng biểu, thụt lề biên bản ghi lời khai, phân vùng chữ ký/dấu đỏ giúp hồ sơ số hóa giữ đúng nguyên bản.
-            </p>
-          </div>
-
-          <div className="hover-glow-card rounded-2xl bg-surface p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
-              <RefreshCw size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary mb-2">Xử lý hồ sơ vụ án lớn</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              Thả hàng chục ảnh tài liệu hoặc tệp PDF vụ án hàng trăm trang. Hệ thống tự động phân tách trang và ghép nối kết quả văn bản số hóa hoàn chỉnh.
-            </p>
-          </div>
-
-          <div className="hover-glow-card rounded-2xl bg-surface p-6 text-left">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-5">
-              <Cpu size={22} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary mb-2">AI phục hồi chữ mờ, hỏng</h3>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              Sử dụng trí tuệ nhân tạo để phân tích ngữ cảnh hồ sơ, tự động bổ sung nét chữ mờ, sửa các lỗi dính chữ do chất lượng giấy tờ lưu trữ lâu năm kém.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* USE CASES SECTION */}
-      <section id="use-cases" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
-        <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
-            <FileText size={12} />
-            <span>Ứng dụng nghiệp vụ</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary">
-            Ứng dụng trong nghiệp vụ
-          </h2>
-          <div className="legal-divider mx-auto"><div className="legal-divider-primary"></div><div className="legal-divider-accent"></div></div>
-          <p className="text-text-secondary text-base max-w-xl mx-auto leading-relaxed">
-            Hỗ trợ toàn diện các hoạt động chuyên môn tố tụng và xử lý tài liệu pháp lý hàng ngày.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {/* Use Case 1 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-                <FileText size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base mb-2">Số hóa hồ sơ vụ án scan</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Chuyển đổi toàn diện tập hồ sơ PDF scan nhiều trang thành định dạng văn bản sạch để chỉnh sửa, lưu trữ.
+              <h2 className="font-display-lg text-display-lg text-on-background mb-6 leading-tight">
+                Số hóa hồ sơ tư pháp <br />
+                <span className="text-state-red">chuyên nghiệp</span>
+              </h2>
+              <p className="font-body-lg text-body-lg text-on-surface-variant mb-10 leading-relaxed max-w-lg">
+                Công nghệ OCR đột phá chuyển đổi chuẩn xác bản án, quyết định, hợp đồng và tài liệu nghiệp vụ sang văn bản số, tối ưu quy trình xử lý hồ sơ cho cán bộ tư pháp.
               </p>
-            </div>
-          </div>
-
-          {/* Use Case 2 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-                <Gavel size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base mb-2">Bóc tách nội dung bản án, quyết định</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Trích xuất chính xác thông tin pháp lý, các quyết định tố tụng, án lệ phục vụ nghiên cứu nghiệp vụ.
-              </p>
-            </div>
-          </div>
-
-          {/* Use Case 3 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-lg bg-success/10 text-success flex items-center justify-center mb-4">
-                <Camera size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base mb-2">Chuyển ảnh chụp tài liệu thành văn bản</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Nhận diện chữ tiếng Việt từ ảnh chụp bằng điện thoại di động tại thực địa hoặc trong phòng hồ sơ.
-              </p>
-            </div>
-          </div>
-
-          {/* Use Case 4 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
-                <FileOutput size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base mb-2">Trích xuất nội dung hợp đồng, đơn từ, biên bản</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Hỗ trợ bóc tách các điều khoản cam kết, lời khai viết tay hay đánh máy một cách nhanh chóng.
-              </p>
-            </div>
-          </div>
-
-          {/* Use Case 5 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
-                <Search size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base mb-2">Hỗ trợ tra cứu nhanh trong tài liệu dài</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Dễ dàng tìm kiếm thông tin pháp lý, định vị nội dung quan trọng trong hồ sơ dài hàng trăm trang.
-              </p>
-            </div>
-          </div>
-
-          {/* Use Case 6 */}
-          <div className="bg-surface p-6 rounded-2xl border border-border hover-glow-card text-left flex flex-col justify-between">
-            <div>
-              <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
-                <Cpu size={20} />
-              </div>
-              <h3 className="font-bold text-text-primary text-base mb-2">Chuẩn bị dữ liệu để tóm tắt, phân tích hoặc soạn thảo</h3>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                Cung cấp dữ liệu văn bản sạch để tóm tắt thông tin vụ án, phân tích hoặc đưa vào các mẫu báo cáo nghiệp vụ.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS SECTION */}
-      <section id="how-it-works" className="max-w-7xl mx-auto w-full px-6 py-20 relative z-10 border-t border-outline-variant/40">
-        <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/15 border border-secondary/20 text-secondary text-xs font-bold">
-            <Play size={12} className="fill-secondary" />
-            <span>Quy trình sử dụng</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary">
-            Quy trình 3 bước
-          </h2>
-          <div className="legal-divider mx-auto"><div className="legal-divider-primary"></div><div className="legal-divider-accent"></div></div>
-          <p className="text-text-secondary text-base max-w-xl mx-auto leading-relaxed">
-            Tối giản, bảo mật và tương thích với nghiệp vụ tư pháp hàng ngày của bạn.
-          </p>
-        </div>
-
-        {/* Steps Timeline UI */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative max-w-4xl mx-auto">
-          {/* Decorative connector line on desktop */}
-          <div className="hidden md:block absolute top-[2.5rem] left-[15%] right-[15%] h-0.5 bg-border -z-10" />
-          
-          {/* Step 1 */}
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-center mx-auto text-primary font-bold text-lg relative">
-              <div className="w-8 h-8 rounded-full bg-primary text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
-                1
-              </div>
-              <Upload size={28} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary">Tải PDF hoặc hình ảnh</h3>
-            <p className="text-sm text-text-secondary max-w-xs mx-auto">
-              Tải hình ảnh chứng cứ (.jpg, .png, .webp) hoặc tài liệu scan hồ sơ (.pdf) lên hệ thống.
-            </p>
-          </div>
-
-          {/* Step 2 */}
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-center mx-auto text-secondary font-bold text-lg relative">
-              <div className="w-8 h-8 rounded-full bg-secondary text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
-                2
-              </div>
-              <Cpu size={28} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary">OCR bằng AI</h3>
-            <p className="text-sm text-text-secondary max-w-xs mx-auto">
-              Mô hình Gemini AI tiến hành phân tích hình ảnh và tái tạo văn bản, tự động khôi phục chữ mờ theo ngữ cảnh tố tụng.
-            </p>
-          </div>
-
-          {/* Step 3 */}
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-center mx-auto text-success font-bold text-lg relative">
-              <div className="w-8 h-8 rounded-full bg-success text-white text-xs font-extrabold flex items-center justify-center absolute -top-2.5 -right-2.5 border-4 border-background">
-                3
-              </div>
-              <FileOutput size={28} />
-            </div>
-            <h3 className="text-lg font-bold text-text-primary">Sao chép hoặc tải kết quả</h3>
-            <p className="text-sm text-text-secondary max-w-xs mx-auto">
-              Sao chép văn bản số hóa sạch bằng 1-click hoặc kết xuất sang file Microsoft Word (.docx) để hoàn tất hồ sơ.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* TRUST & SECURITY (DARK PANEL) */}
-      <section id="security" className="bg-[#0B1E36] text-white py-20 relative overflow-hidden z-10">
-        {/* Background ambient glow */}
-        <div className="absolute inset-0 bg-grid opacity-5 pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center space-y-4 mb-16">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-              <ShieldCheck size={12} />
-              <span>Bảo mật & Quyền riêng tư</span>
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Cam kết bảo mật & Cảnh báo nghiệp vụ
-            </h2>
-            <div className="legal-divider mx-auto"><div className="legal-divider-primary bg-white/40"></div><div className="legal-divider-accent bg-accent"></div></div>
-            <p className="text-white/60 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-              Website ưu tiên bảo vệ tài liệu nghiệp vụ tư pháp. Dữ liệu xử lý được minh bạch hóa hoàn toàn về mặt kỹ thuật.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* Card 1: Cam kết bảo mật nghiệp vụ */}
-            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-all text-left flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 mb-4">
-                  <Lock size={18} />
-                </div>
-                <h3 className="font-bold text-white text-lg mb-4">Cam kết bảo mật nghiệp vụ</h3>
-                <ul className="text-xs text-white/60 space-y-3 leading-relaxed">
-                  <li className="flex items-start gap-2">
-                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Xử lý cục bộ:</strong> Các tác vụ tiền xử lý như nén hình ảnh và phân tách trang PDF được thực hiện trực tiếp và cục bộ trên trình duyệt thiết bị của bạn.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Truyền tải trực tiếp:</strong> Dữ liệu hình ảnh (mã hóa Base64) và API Key của bạn được gửi trực tiếp từ trình duyệt đến dịch vụ bên thứ ba (Google Gemini API) qua kết nối HTTPS mã hóa để nhận diện văn bản, không đi qua hay lưu trữ ở bất kỳ máy chủ trung gian nào khác.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Hỗ trợ OCR.space (Bên thứ ba):</strong> OCR.space là dịch vụ OCR do hệ thống cấu hình. Người dùng không cần nhập OCR.space API key. Chỉ trang bị lỗi khi Gemini không xử lý được mới được gửi sang OCR.space. Tuyệt đối không xử lý tài liệu mật, tối mật, tuyệt mật hoặc hồ sơ chưa được phép.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Không ghi nhật ký:</strong> Hệ thống tuyệt đối không lưu trữ tệp tin của bạn, không ghi nhận nhật ký (log) nội dung văn bản OCR và không ghi log API Key.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-emerald-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Quyền kiểm soát khóa:</strong> API Key cá nhân được lưu tại bộ nhớ trình duyệt của riêng bạn. Bạn có thể ẩn/hiện hoặc chủ động xóa sạch hoàn toàn cấu hình khóa bất kỳ lúc nào.</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Card 2: Lưu ý với tài liệu mật */}
-            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-all text-left flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 mb-4">
-                  <ShieldAlert size={18} />
-                </div>
-                <h3 className="font-bold text-white text-lg mb-4">Lưu ý với tài liệu mật</h3>
-                <ul className="text-xs text-white/60 space-y-3 leading-relaxed">
-                  <li className="flex items-start gap-2">
-                    <span className="text-amber-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Bí mật nhà nước:</strong> Tuyệt đối không tải lên hoặc xử lý các tài liệu thuộc danh mục bí mật nhà nước (tài liệu mật, tối mật, tuyệt mật) theo quy định của Luật Bảo vệ bí mật nhà nước hiện hành.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-amber-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Hạn chế thông tin nhạy cảm:</strong> Không thực hiện nhận dạng văn bản đối với chứng cứ vụ án, hồ sơ điều tra tố tụng nhạy cảm hoặc dữ liệu cá nhân khi chưa được phê duyệt của cơ quan có thẩm quyền hoặc chưa được sự đồng ý của khách hàng.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-amber-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Trách nhiệm tuân thủ:</strong> Người dùng hoàn toàn tự chịu trách nhiệm trong việc kiểm tra và tuân thủ các quy định bảo mật nội bộ của cơ quan, tổ chức hoặc văn phòng luật sư mà mình đang công tác.</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Card 3: Giới hạn của OCR/AI */}
-            <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.05] transition-all text-left flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 mb-4">
-                  <Scale size={18} />
-                </div>
-                <h3 className="font-bold text-white text-lg mb-4">Giới hạn của OCR & AI</h3>
-                <ul className="text-xs text-white/60 space-y-3 leading-relaxed">
-                  <li className="flex items-start gap-2">
-                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Sai số kỹ thuật:</strong> Kết quả nhận dạng ký tự quang học (OCR) từ mô hình AI có thể phát sinh sai lệch, nhầm lẫn ký tự, lỗi dịch nghĩa do chất lượng quét ảnh kém, chữ viết tay hoặc phông chữ cổ.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Đối chiếu bắt buộc:</strong> Văn bản nhận dạng cần được đối chiếu, soát lỗi và kiểm tra kỹ lưỡng thủ công với bản gốc trước khi đưa vào hồ sơ vụ án hoặc tài liệu chính thức.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Tính chất hỗ trợ:</strong> Công cụ chỉ hỗ trợ số hóa bóc tách văn bản thô để tối ưu hóa thời gian soạn thảo, hoàn toàn không thay thế cho đánh giá chuyên môn pháp lý của cán bộ nghiệp vụ.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-indigo-400 shrink-0 mt-0.5">•</span>
-                    <span><strong>Không làm căn cứ duy nhất:</strong> Tuyệt đối không sử dụng kết quả nhận dạng từ AI làm căn cứ pháp lý hoặc chứng cứ duy nhất trong hoạt động tố tụng, phán quyết hoặc tư vấn pháp luật.</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* FAQ SECTION */}
-      <section id="faq" className="max-w-4xl mx-auto w-full px-6 py-20 relative z-10">
-        <div className="text-center space-y-4 mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-background border border-border text-text-secondary text-xs font-bold">
-            <HelpCircle size={12} />
-            <span>Giải đáp thắc mắc</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-text-primary">
-            Các câu hỏi thường gặp
-          </h2>
-          <div className="legal-divider mx-auto"><div className="legal-divider-primary"></div><div className="legal-divider-accent"></div></div>
-        </div>
-
-        <div className="space-y-4 text-left">
-          {faqItems.map((item, index) => {
-            const isOpen = openFaqIndex === index;
-            return (
-              <div 
-                key={index}
-                className="bg-surface rounded-2xl border border-border hover:border-primary/30 transition-all overflow-hidden shadow-sm"
-              >
-                <button
-                  onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                  className="flex justify-between items-center p-5 cursor-pointer text-base sm:text-lg font-bold text-text-primary hover:text-primary transition-colors focus:outline-none w-full text-left"
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button 
+                  onClick={handleStart}
+                  className="bg-state-red text-white px-8 py-4 rounded font-label-md text-label-md flex items-center justify-center gap-3 hover:bg-primary transition-all shadow-md active:scale-95 cursor-pointer"
                 >
-                  <span>{item.q}</span>
-                  <ChevronDown className={`h-5 w-5 text-text-secondary transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`} />
+                  Trải nghiệm ngay
+                  <span className="material-symbols-outlined text-white">arrow_forward</span>
                 </button>
-                
-                <div 
-                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    isOpen ? 'max-h-60 opacity-100 border-t border-border/50' : 'max-h-0 opacity-0'
-                  }`}
+                <button 
+                  onClick={(e) => handleScroll(e, '#documents')}
+                  className="bg-white border border-deep-navy text-deep-navy px-8 py-4 rounded font-label-md text-label-md flex items-center justify-center gap-3 hover:bg-surface-container-low transition-all cursor-pointer"
                 >
-                  <div className="p-5 text-sm sm:text-base text-text-secondary leading-relaxed font-normal">
-                    {item.a}
-                  </div>
+                  Xem tài liệu hướng dẫn
+                </button>
+              </div>
+            </div>
+            <div className="hidden md:block relative">
+              <div className="bg-white p-6 rounded-xl shadow-2xl border border-standard transform rotate-2 relative z-10 w-full h-[320px] overflow-hidden flex items-center justify-center">
+                <img 
+                  className="w-full h-full object-cover rounded shadow-inner grayscale-[30%]" 
+                  alt="A macro close-up of a high-quality document scanner's glass bed with a legal contract being processed. A clean, digital scanning light bar glides over the text, with glowing red and gold interface elements superimposed on the image to signify advanced OCR technology. The aesthetic is clean, professional, and technologically advanced, emphasizing accuracy and speed." 
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmL4Q5-0gC5ahtgfHro18b1wuxSJKX9dgNOB-I1e44ttBhYFnA0JE2GCJoXsXwGr7MWph10cQ-CnuPmRJf1Pi_1YW46soQt12LcMWiS3y7HCLRCJenCups8yScY96dUjJhNjC5-Knj0ZBfks6yWFo19lxoDab-BW6vmmQW9k4LPWyVYi7gEopq9m6ShFPDHJSan3o6zRGXaPJLCfxBcc5uAitNdHL3xDMne8XZKfLwyWMlX-rB7noqdqh3XfDi-r4WEMZntTUM6NM"
+                />
+                <div className="absolute -bottom-6 -left-6 bg-heritage-gold text-white p-4 rounded-lg shadow-xl font-headline-md">
+                  <div className="text-sm font-label-sm">Độ chính xác</div>
+                  99.8%
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* CALL TO ACTION SECTION */}
-      <section className="max-w-7xl mx-auto w-full px-6 pb-20 relative z-10">
-        <div className="relative rounded-2xl overflow-hidden py-16 px-8 md:p-20 text-center bg-primary border border-secondary/20 text-white shadow-lg">
-          {/* Ambient visuals */}
-          <div className="absolute inset-0 bg-grid opacity-10 pointer-events-none" />
-
-          <div className="relative max-w-2xl mx-auto space-y-8">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              Bắt đầu số hóa hồ sơ tư pháp bằng AI ngay hôm nay
-            </h2>
-            <p className="text-white/80 text-base sm:text-lg leading-relaxed">
-              Quy trình khép kín, an toàn tuyệt đối. Chỉ cần tải hồ sơ lên và nhận kết quả văn bản số hóa dạng Word sạch chỉ trong vài giây.
-            </p>
-            <button 
-              onClick={triggerGlobalUpload}
-              className="bg-[#A10000] hover:bg-[#850000] text-white font-bold text-sm sm:text-base px-8 py-4 rounded-[4px] transition-all duration-200 inline-flex items-center gap-2 cursor-pointer mx-auto"
-            >
-              <Upload size={18} />
-              <span>Tải hồ sơ lên ngay</span>
-            </button>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10"></div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FOOTER SECTION */}
-      <footer className="w-full bg-[#0B1E36] border-t border-white/10 py-16 relative z-10 text-white">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-6">
-          
-          <div className="md:col-span-5 space-y-4 text-left">
-            <a href="#" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-white shadow-sm">
-                <span className="material-icons text-[16px]">gavel</span>
+        {/* Main Features */}
+        <section className="py-24 bg-surface px-margin" id="features">
+          <div className="container mx-auto">
+            <div className="text-center mb-16">
+              <h3 className="font-headline-lg text-headline-lg text-on-background mb-4">Tính năng vượt trội</h3>
+              <div className="h-1 w-20 bg-heritage-gold mx-auto"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Feature 1 */}
+              <div className="bento-card bg-white p-8 border border-standard heritage-border">
+                <div className="w-12 h-12 bg-[#760000]/10 flex items-center justify-center rounded-lg mb-6">
+                  <span className="material-symbols-outlined text-state-red text-3xl">document_scanner</span>
+                </div>
+                <h4 className="font-headline-md text-headline-md mb-4">Nhận diện chính xác</h4>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  Tối ưu cho tiếng Việt và các thuật ngữ chuyên ngành luật, nhận diện chuẩn xác các mẫu văn bản hành chính đặc thù.
+                </p>
               </div>
-              <span className="font-bold text-xl tracking-tight text-white font-serif">DOC</span>
-            </a>
-            <p className="text-sm text-white/60 leading-relaxed max-w-sm">
-              Hệ thống số hóa hồ sơ vụ án và tài liệu tư pháp chuyên dụng bằng Trí tuệ Nhân tạo. Giải pháp nhận dạng và chuẩn hóa văn bản tố tụng bảo mật tối đa cho khối cơ quan tư pháp và văn phòng luật.
-            </p>
-            <div className="text-xs text-white/40 font-bold">
-              Phiên bản: v1.4.0 (Nâng cấp Tư pháp Chuyên sâu)
+              {/* Feature 2 */}
+              <div className="bento-card bg-white p-8 border border-standard heritage-border">
+                <div className="w-12 h-12 bg-[#760000]/10 flex items-center justify-center rounded-lg mb-6">
+                  <span className="material-symbols-outlined text-state-red text-3xl">file_present</span>
+                </div>
+                <h4 className="font-headline-md text-headline-md mb-4">Đa định dạng hỗ trợ</h4>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  Chuyển đổi tức thì từ tệp PDF scan, ảnh chụp điện thoại (JPEG, PNG) sang Word hoặc tệp văn bản có thể tìm kiếm.
+                </p>
+              </div>
+              {/* Feature 3 */}
+              <div className="bento-card bg-white p-8 border border-standard heritage-border">
+                <div className="w-12 h-12 bg-[#760000]/10 flex items-center justify-center rounded-lg mb-6">
+                  <span className="material-symbols-outlined text-state-red text-3xl">shield</span>
+                </div>
+                <h4 className="font-headline-md text-headline-md mb-4">Bảo mật tuyệt đối</h4>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  Dữ liệu được xử lý mã hóa, cam kết không lưu trữ thông tin nhạy cảm của hồ sơ vụ việc, đảm bảo an toàn nghiệp vụ.
+                </p>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8 text-left">
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Hệ thống</h4>
-              <ul className="space-y-2.5 text-sm text-white/60">
-                <li><button onClick={() => scrollToSection('features')} className="hover:text-secondary transition-colors cursor-pointer">Tính năng nghiệp vụ</button></li>
-                <li><button onClick={() => scrollToSection('demo')} className="hover:text-secondary transition-colors cursor-pointer">Bản dùng thử</button></li>
-                <li><button onClick={() => scrollToSection('how-it-works')} className="hover:text-secondary transition-colors cursor-pointer">Quy trình số hóa</button></li>
+        {/* Supported Documents */}
+        <section className="py-24 bg-surface-container-low px-margin" id="documents">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+              <div className="max-w-2xl">
+                <h3 className="font-headline-lg text-headline-lg text-on-background mb-4">Tài liệu hỗ trợ tối ưu</h3>
+                <p className="font-body-lg text-body-lg text-on-surface-variant">
+                  VN OCR được huấn luyện đặc biệt để nhận diện các cấu trúc văn bản pháp lý phức tạp nhất tại Việt Nam.
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <div className="px-4 py-2 bg-white rounded-full border border-standard text-label-md font-label-md">Quyết định</div>
+                <div className="px-4 py-2 bg-white rounded-full border border-standard text-label-md font-label-md">Hợp đồng</div>
+                <div className="px-4 py-2 bg-white rounded-full border border-standard text-label-md font-label-md">Hồ sơ nghiệp vụ</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-6 rounded-lg border border-standard hover:border-heritage-gold transition-all text-center">
+                <span className="material-symbols-outlined text-4xl text-state-red mb-4">gavel</span>
+                <div className="font-headline-md text-sm uppercase tracking-widest text-deep-navy">Bản án</div>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-standard hover:border-heritage-gold transition-all text-center">
+                <span className="material-symbols-outlined text-4xl text-state-red mb-4">description</span>
+                <div className="font-headline-md text-sm uppercase tracking-widest text-deep-navy">Hợp đồng</div>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-standard hover:border-heritage-gold transition-all text-center">
+                <span className="material-symbols-outlined text-4xl text-state-red mb-4">assignment</span>
+                <div className="font-headline-md text-sm uppercase tracking-widest text-deep-navy">Quyết định</div>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-standard hover:border-heritage-gold transition-all text-center">
+                <span className="material-symbols-outlined text-4xl text-state-red mb-4">folder_shared</span>
+                <div className="font-headline-md text-sm uppercase tracking-widest text-deep-navy">Hồ sơ vụ việc</div>
+              </div>
+            </div>
+            <div className="mt-16 bg-deep-navy text-white p-12 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="max-w-xl">
+                <h4 className="font-headline-lg text-white mb-4">Bắt đầu số hóa ngay hôm nay</h4>
+                <p className="font-body-md text-surface-variant">Nâng cao hiệu suất công việc với công cụ OCR dành riêng cho chuyên gia tư pháp.</p>
+              </div>
+              <button 
+                onClick={handleStart}
+                className="bg-heritage-gold text-[#241a00] px-10 py-5 rounded font-label-md text-label-md whitespace-nowrap hover:brightness-110 transition-all cursor-pointer font-bold"
+              >
+                ĐĂNG KÝ SỬ DỤNG
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-on-background text-white py-16 px-margin">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="col-span-1 md:col-span-2">
+              <h2 className="font-headline-md text-headline-md font-bold text-heritage-gold mb-6">VN OCR</h2>
+              <p className="font-body-md text-surface-variant max-w-sm mb-6">
+                Giải pháp công nghệ tiên phong trong lĩnh vực số hóa tài liệu tư pháp tại Việt Nam. Tin cậy - Chính xác - Bảo mật.
+              </p>
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-surface-variant/10 rounded flex items-center justify-center cursor-pointer hover:bg-state-red transition-colors">
+                  <span className="material-symbols-outlined">share</span>
+                </div>
+                <div className="w-10 h-10 bg-surface-variant/10 rounded flex items-center justify-center cursor-pointer hover:bg-state-red transition-colors">
+                  <span className="material-symbols-outlined">mail</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h5 className="font-label-md text-label-md text-heritage-gold mb-6 uppercase tracking-widest">Liên hệ</h5>
+              <ul className="space-y-4 font-body-sm text-body-sm text-surface-variant">
+                <li className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-sm">location_on</span>
+                  Hà Nội, Việt Nam
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-sm">phone</span>
+                  Hotline: 1900 68xx
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-sm">alternate_email</span>
+                  contact@vnocr.gov.vn
+                </li>
               </ul>
             </div>
-            
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Thông tin pháp lý</h4>
-              <ul className="space-y-2.5 text-sm text-white/60">
-                <li><a href="#" className="hover:text-secondary transition-colors">Điều khoản Sử dụng (Terms)</a></li>
-                <li><a href="#" className="hover:text-secondary transition-colors">Chính sách Bảo mật (Privacy)</a></li>
-                <li><button onClick={() => scrollToSection('security')} className="hover:text-secondary transition-colors cursor-pointer">Cam kết an toàn</button></li>
-              </ul>
-            </div>
-
-            <div className="space-y-4 col-span-2 sm:col-span-1">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Hỗ trợ nghiệp vụ</h4>
-              <ul className="space-y-2.5 text-sm text-white/60">
-                <li className="flex items-center gap-1.5">
-                  <span className="material-icons text-xs text-white/60">email</span>
-                  <a href="mailto:support@hotro.online" className="hover:text-secondary transition-colors">support@hotro.online</a>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <span className="material-icons text-xs text-white/60">history</span>
-                  <a href="#" className="hover:text-secondary transition-colors" onClick={(e) => { e.preventDefault(); alert("Nhật ký thay đổi v1.4.0:\n- Chuyển đổi giao diện chính quy sang tone màu Navy/Slate tư pháp.\n- Tích hợp công cụ Nhận diện số văn bản tố tụng dùng regex.\n- Thêm tính năng Chuẩn hóa quốc hiệu, tiêu ngữ và dấu câu văn bản pháp lý.\n- Thêm nút tải Word (.docx) trực tiếp.\n- Đo lường và hiển thị siêu dữ liệu thời gian số hóa."); }}>Nhật ký thay đổi (Changelog)</a>
-                </li>
+            <div>
+              <h5 className="font-label-md text-label-md text-heritage-gold mb-6 uppercase tracking-widest">Pháp lý</h5>
+              <ul className="space-y-4 font-body-sm text-body-sm text-surface-variant">
+                <li><a className="hover:text-white transition-colors" href="#">Điều khoản sử dụng</a></li>
+                <li><a className="hover:text-white transition-colors" href="#">Chính sách bảo mật</a></li>
+                <li><a className="hover:text-white transition-colors" href="#">Cam kết dữ liệu</a></li>
               </ul>
             </div>
           </div>
-
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-semibold text-white/60">
-          <p>© 2026 DOC. Hệ thống Số hóa Hồ sơ Tư pháp Chuyên dụng.</p>
-          <div className="flex gap-4">
-            <a href="mailto:support@hotro.online" className="hover:text-secondary">Liên hệ hỗ trợ</a>
+          <div className="pt-8 border-t border-surface-variant/20 flex flex-col md:flex-row justify-between items-center gap-4 text-surface-variant font-label-sm">
+            <p>© 2024 VN OCR. Bản quyền thuộc về Đội ngũ phát triển Công nghệ Tư pháp.</p>
+            <div className="flex gap-6">
+              <span>Hệ thống vận hành 24/7</span>
+              <span className="text-green-500 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Trực tuyến
+              </span>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* BottomNavBar (Mobile Only) */}
+      <nav className="md:hidden fixed bottom-0 w-full z-50 bg-surface border-t border-standard flex justify-around items-center h-16 px-2">
+        <a 
+          className="flex flex-col items-center justify-center bg-[#760000]/10 text-primary rounded-full px-4 py-1 scale-95 active:scale-90 transition-transform" 
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>home</span>
+          <span className="font-label-md text-[10px]">Trang chủ</span>
+        </a>
+        <a 
+          className="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-transform active:scale-90" 
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            handleStart();
+          }}
+        >
+          <span className="material-symbols-outlined">document_scanner</span>
+          <span className="font-label-md text-[10px]">Máy quét</span>
+        </a>
+        <a 
+          className="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-transform active:scale-90" 
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            handleStart();
+          }}
+        >
+          <span className="material-symbols-outlined">history</span>
+          <span className="font-label-md text-[10px]">Lịch sử</span>
+        </a>
+        <a 
+          className="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-transform active:scale-90" 
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            handleStart();
+          }}
+        >
+          <span className="material-symbols-outlined">settings</span>
+          <span className="font-label-md text-[10px]">Cài đặt</span>
+        </a>
+      </nav>
     </div>
   );
 }
