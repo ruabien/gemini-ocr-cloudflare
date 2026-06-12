@@ -114,10 +114,10 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <a href="#" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white shadow-sm">
+              <div className="w-9 h-9 rounded-[4px] bg-[#A10000] flex items-center justify-center text-white shadow-sm">
                 <Scale size={18} />
               </div>
-              <span className="font-bold text-2xl tracking-tight text-primary">
+              <span className="font-bold text-2xl tracking-tight text-primary font-serif">
                 DOC
               </span>
             </a>
@@ -134,14 +134,14 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           <div className="flex items-center gap-3">
             <button 
               onClick={onOpenSettings}
-              className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary-container/20 transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-[4px] text-[#002F5F] border border-[#002F5F] hover:bg-[#002F5F]/5 transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
             >
               <span className="material-icons text-[18px]">settings</span>
               <span>Cấu hình API</span>
             </button>
             <button 
               onClick={triggerGlobalUpload}
-              className="btn-premium-primary text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
+              className="bg-[#A10000] text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-[4px] hover:bg-[#850000] transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
             >
               <span>Bắt đầu số hóa</span>
             </button>
@@ -155,13 +155,13 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
     onClick={() => {
       navigate('/dashboard');
     }}
-    className="flex items-center gap-2 bg-white text-primary font-bold px-6 py-3 rounded-xl shadow-md hover:bg-primary/5 transition-colors"
+    className="flex items-center gap-2 bg-[#A10000] text-white font-bold px-6 py-3 rounded-[4px] hover:bg-[#850000] transition-colors"
   >
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" className="w-5 h-5">
-      <path fill="#EA4335" d="M533.5 278.4c0-18.3-1.5-36-4.4-53.1H272v100.5h146.9c-6.4 34.5-25.6 63.7-54.5 83.2v68.7h88.2c51.6-47.5 81.9-117.5 81.9-199.3"/>
-      <path fill="#4285F4" d="M272 544.3c73.2 0 134.6-24.2 179.5-65.8l-88.2-68.7c-24.5 16.5-55.9 26.2-91.3 26.2-70 0-129.5-47.3-150.6-110.5H30.2v69.4c44.9 88.3 136.5 149.4 241.8 149.4"/>
-      <path fill="#FBBC05" d="M121.4 326.5c-9.9-29.5-9.9-61.2 0-90.7V166.5H30.2c-39.6 77.5-39.6 168.5 0 246l91.2-70.5"/>
-      <path fill="#34A853" d="M272 107.8c39.7 0 75.4 13.7 103.5 40.6l77.7-77.7C410.2 24.9 347 0 272 0 166.7 0 75.1 61.1 30.2 149.4l91.2 69.3C142.5 155.1 202 107.8 272 107.8"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" className="w-5 h-5 fill-white">
+      <path fill="currentColor" d="M533.5 278.4c0-18.3-1.5-36-4.4-53.1H272v100.5h146.9c-6.4 34.5-25.6 63.7-54.5 83.2v68.7h88.2c51.6-47.5 81.9-117.5 81.9-199.3"/>
+      <path fill="currentColor" d="M272 544.3c73.2 0 134.6-24.2 179.5-65.8l-88.2-68.7c-24.5 16.5-55.9 26.2-91.3 26.2-70 0-129.5-47.3-150.6-110.5H30.2v69.4c44.9 88.3 136.5 149.4 241.8 149.4"/>
+      <path fill="currentColor" d="M121.4 326.5c-9.9-29.5-9.9-61.2 0-90.7V166.5H30.2c-39.6 77.5-39.6 168.5 0 246l91.2-70.5"/>
+      <path fill="currentColor" d="M272 107.8c39.7 0 75.4 13.7 103.5 40.6l77.7-77.7C410.2 24.9 347 0 272 0 166.7 0 75.1 61.1 30.2 149.4l91.2 69.3C142.5 155.1 202 107.8 272 107.8"/>
     </svg>
     <span>Đăng nhập với Google (Mock)</span>
   </button>
@@ -179,9 +179,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <span className="uppercase tracking-wider">Hệ thống số hóa hồ sơ tư pháp chuyên sâu</span>
             </div>
             
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-on-surface leading-[1.1] font-serif">
               Trợ lý số hóa <br />
-              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2">Hồ sơ tư pháp bằng AI</span>
+              <span className="gradient-text-ai text-3xl sm:text-4xl lg:text-5xl block mt-2 font-serif">Hồ sơ tư pháp bằng AI</span>
             </h1>
             
             <p className="text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-xl">
@@ -191,7 +191,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             <div className="flex flex-col sm:flex-row gap-4">
               <button 
                 onClick={triggerGlobalUpload}
-                className="btn-premium-primary text-white font-bold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-primary/20 text-sm sm:text-base group"
+                className="bg-[#A10000] text-white font-bold px-6 py-3.5 rounded-[4px] flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:bg-[#850000] text-sm sm:text-base group"
               >
                 <Upload size={18} />
                 <span>Bắt đầu OCR tài liệu</span>
@@ -200,9 +200,9 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               
               <button 
                 onClick={() => scrollToSection('security')}
-                className="btn-premium-secondary text-on-surface font-semibold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base"
+                className="border border-[#002F5F] text-[#002F5F] font-semibold px-6 py-3.5 rounded-[4px] flex items-center justify-center gap-2 cursor-pointer text-sm sm:text-base hover:bg-[#002F5F]/5"
               >
-                <Lock size={16} className="text-primary" />
+                <Lock size={16} className="text-[#002F5F]" />
                 <span>Xem cam kết bảo mật</span>
               </button>
             </div>
@@ -247,20 +247,21 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
 <section className="bg-primary/5 py-12">
   <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
     {/* Basic Plan */}
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-border">
+    <div className="bg-white rounded-[4px] shadow-lg p-6 border border-border">
       <h3 className="text-xl font-bold text-primary mb-2">Cơ bản</h3>
       <p className="text-3xl font-extrabold text-primary mb-4">Free</p>
       <ul className="text-left space-y-2 mb-6">
         <li className="flex items-center"><Check size={14} className="text-success mr-2"/> OCR không giới hạn trong hạn mức miễn phí</li>
         <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Tối đa 10 MB / tệp</li>
       </ul>
-      <button className="w-full bg-primary text-white font-semibold py-2 rounded-xl hover:bg-primary-hover transition-colors">
+      <button className="w-full border border-[#002F5F] text-[#002F5F] hover:bg-[#002F5F]/5 font-semibold py-2 rounded-[4px] transition-colors">
         Chọn
       </button>
     </div>
 
     {/* Pro Plan */}
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-primary">
+    <div className="bg-white rounded-[4px] shadow-lg p-6 border border-primary relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#D4AF37]"></div>
       <h3 className="text-xl font-bold text-primary mb-2">Pro</h3>
       <p className="text-3xl font-extrabold text-primary mb-4">49₫ / tháng</p>
       <ul className="text-left space-y-2 mb-6">
@@ -268,13 +269,13 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Tối đa 50 MB / tệp</li>
         <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Truy cập API Premium</li>
       </ul>
-      <button className="w-full bg-primary text-white font-semibold py-2 rounded-xl hover:bg-primary-hover transition-colors">
+      <button className="w-full bg-[#A10000] text-white hover:bg-[#850000] font-semibold py-2 rounded-[4px] transition-colors">
         Nâng cấp
       </button>
     </div>
 
     {/* Enterprise Plan */}
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-border">
+    <div className="bg-white rounded-[4px] shadow-lg p-6 border border-border">
       <h3 className="text-xl font-bold text-primary mb-2">Enterprise</h3>
       <p className="text-3xl font-extrabold text-primary mb-4">Liên hệ</p>
       <ul className="text-left space-y-2 mb-6">
@@ -282,7 +283,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
         <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Giải pháp tùy chỉnh</li>
         <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Hợp đồng SLA</li>
       </ul>
-      <button className="w-full bg-primary text-white font-semibold py-2 rounded-xl hover:bg-primary-hover transition-colors">
+      <button className="w-full border border-[#002F5F] text-[#002F5F] hover:bg-[#002F5F]/5 font-semibold py-2 rounded-[4px] transition-colors">
         Liên hệ
       </button>
     </div>
@@ -895,7 +896,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </p>
             <button 
               onClick={triggerGlobalUpload}
-              className="bg-surface hover:bg-background text-primary font-bold text-sm sm:text-base px-8 py-4 rounded-xl shadow-md transition-all duration-200 inline-flex items-center gap-2 cursor-pointer mx-auto"
+              className="bg-[#A10000] hover:bg-[#850000] text-white font-bold text-sm sm:text-base px-8 py-4 rounded-[4px] transition-all duration-200 inline-flex items-center gap-2 cursor-pointer mx-auto"
             >
               <Upload size={18} />
               <span>Tải hồ sơ lên ngay</span>
@@ -913,7 +914,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
               <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-white shadow-sm">
                 <span className="material-icons text-[16px]">gavel</span>
               </div>
-              <span className="font-bold text-xl tracking-tight text-white">DOC</span>
+              <span className="font-bold text-xl tracking-tight text-white font-serif">DOC</span>
             </a>
             <p className="text-sm text-white/60 leading-relaxed max-w-sm">
               Hệ thống số hóa hồ sơ vụ án và tài liệu tư pháp chuyên dụng bằng Trí tuệ Nhân tạo. Giải pháp nhận dạng và chuẩn hóa văn bản tố tụng bảo mật tối đa cho khối cơ quan tư pháp và văn phòng luật.
