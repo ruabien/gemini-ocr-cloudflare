@@ -95,7 +95,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
   ];
 
   return (
-<div className="relative min-h-screen bg-primary text-white flex flex-col font-sans">
+<div className="relative min-h-screen bg-[#F8F9FB] text-[#191c1e] flex flex-col font-sans">
       {/* Hidden file input for CTA triggers */}
       <input 
         type="file" 

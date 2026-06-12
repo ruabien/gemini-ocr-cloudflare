@@ -39,16 +39,32 @@
   --color-ai-accent: #2F5FA7;
   --color-ai-accent-hover: #224883;
   
-  --font-sans: 'Inter', 'Be Vietnam Pro', sans-serif;
+  /* Sovereign Precision Design Tokens */
+  --color-state-red: #A10000; /* Màu Đỏ hành chính */
+  --color-heritage-gold: #D4AF37; /* Màu Vàng Gold cổ điển */
+  --color-deep-navy: #002F5F; /* Màu Xanh Navy đậm */
+  --color-surface-bg: #F8F9FB; /* Màu nền Base Level 0 */
+  --color-surface-subtle: #F0F2F5; /* Màu nền bổ trợ */
+  --color-border-standard: #D1D5DB; /* Màu đường viền tiêu chuẩn */
+  --color-surface-card: #FFFFFF; /* Màu trắng tinh khiết cho Canvas tài liệu và các khối nội dung Level 1 */
+  
+  /* Dual-Type Typography */
+  --font-serif: 'IBM Plex Serif', serif;
+  --font-sans: 'IBM Plex Sans', sans-serif;
   --font-inter: 'Inter', sans-serif;
   --font-be-vietnam: 'Be Vietnam Pro', sans-serif;
+
+  /* Shapes & Spacing */
+  --radius-default: 4px;
+  --sidebar-width: 280px;
+  --toolbar-height: 64px;
 }
 
 /* Base style reset */
 body {
-  font-family: 'Inter', 'Be Vietnam Pro', sans-serif;
-  background-color: #F8FAFC;
-  color: #1F2937;
+  font-family: var(--font-sans);
+  background-color: var(--color-surface-bg);
+  color: var(--color-deep-navy);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -187,64 +203,65 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Custom typography utilities mapped to Inter/Be Vietnam */
+/* Custom typography utilities mapped to IBM Plex Serif & Sans */
 .font-body-md, .text-body-md {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
 }
 
 .font-display-lg-mobile, .text-display-lg-mobile {
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: var(--font-serif);
   font-size: 32px;
   line-height: 40px;
   letter-spacing: -0.02em;
-  font-weight: 700; /* Giảm nhẹ font-weight từ 800 để trang trọng hơn */
+  font-weight: 700;
 }
 
 .font-display-lg, .text-display-lg {
-  font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 44px; /* Giảm nhẹ từ 48px */
-  line-height: 52px;
+  font-family: var(--font-serif);
+  font-size: 48px;
+  line-height: 56px;
   letter-spacing: -0.02em;
   font-weight: 700;
 }
 
 .font-headline-lg, .text-headline-lg {
-  font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 30px;
-  line-height: 38px;
-  letter-spacing: -0.01em;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
 }
 
 .font-headline-md, .text-headline-md {
-  font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 20px;
-  line-height: 28px;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 32px;
   font-weight: 600;
 }
 
 .font-body-lg, .text-body-lg {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 18px;
   line-height: 28px;
   font-weight: 400;
 }
 
 .font-label-md, .text-label-md {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
-}
-
-.font-label-sm, .text-label-sm {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.font-label-sm, .text-label-sm {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 /* Animations */
