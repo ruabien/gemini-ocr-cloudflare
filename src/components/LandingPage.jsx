@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, Zap, Layers, FileOutput, RefreshCw, 
   HelpCircle, ChevronDown, Check, ArrowRight, Upload, Play,
@@ -8,6 +9,7 @@ import {
 import FileDropzone from './FileDropzone';
 
 export default function LandingPage({ onFilesSelected, onOpenSettings }) {
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
   // FAQ state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -93,7 +95,7 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
   ];
 
   return (
-    <div className="relative min-h-screen bg-background text-on-surface flex flex-col font-sans">
+<div className="relative min-h-screen bg-primary text-white flex flex-col font-sans">
       {/* Hidden file input for CTA triggers */}
       <input 
         type="file" 
@@ -145,7 +147,26 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
             </button>
           </div>
         </div>
-      </header>
+</header>
+
+{/* Mock Google Login Flow */}
+<div className="flex justify-center py-6 bg-primary/10">
+  <button
+    onClick={() => {
+      navigate('/dashboard');
+    }}
+    className="flex items-center gap-2 bg-white text-primary font-bold px-6 py-3 rounded-xl shadow-md hover:bg-primary/5 transition-colors"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" className="w-5 h-5">
+      <path fill="#EA4335" d="M533.5 278.4c0-18.3-1.5-36-4.4-53.1H272v100.5h146.9c-6.4 34.5-25.6 63.7-54.5 83.2v68.7h88.2c51.6-47.5 81.9-117.5 81.9-199.3"/>
+      <path fill="#4285F4" d="M272 544.3c73.2 0 134.6-24.2 179.5-65.8l-88.2-68.7c-24.5 16.5-55.9 26.2-91.3 26.2-70 0-129.5-47.3-150.6-110.5H30.2v69.4c44.9 88.3 136.5 149.4 241.8 149.4"/>
+      <path fill="#FBBC05" d="M121.4 326.5c-9.9-29.5-9.9-61.2 0-90.7V166.5H30.2c-39.6 77.5-39.6 168.5 0 246l91.2-70.5"/>
+      <path fill="#34A853" d="M272 107.8c39.7 0 75.4 13.7 103.5 40.6l77.7-77.7C410.2 24.9 347 0 272 0 166.7 0 75.1 61.1 30.2 149.4l91.2 69.3C142.5 155.1 202 107.8 272 107.8"/>
+    </svg>
+    <span>Đăng nhập với Google (Mock)</span>
+  </button>
+</div>
+
 
       {/* HERO SECTION */}
       <section className="relative max-w-7xl mx-auto w-full px-6 pt-16 pb-20 md:pt-24 md:pb-28 z-10">
@@ -220,7 +241,54 @@ export default function LandingPage({ onFilesSelected, onOpenSettings }) {
           </div>
 
         </div>
-      </section>
+</section>
+
+{/* Pricing Section */}
+<section className="bg-primary/5 py-12">
+  <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+    {/* Basic Plan */}
+    <div className="bg-white rounded-xl shadow-lg p-6 border border-border">
+      <h3 className="text-xl font-bold text-primary mb-2">Cơ bản</h3>
+      <p className="text-3xl font-extrabold text-primary mb-4">Free</p>
+      <ul className="text-left space-y-2 mb-6">
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> OCR không giới hạn trong hạn mức miễn phí</li>
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Tối đa 10 MB / tệp</li>
+      </ul>
+      <button className="w-full bg-primary text-white font-semibold py-2 rounded-xl hover:bg-primary-hover transition-colors">
+        Chọn
+      </button>
+    </div>
+
+    {/* Pro Plan */}
+    <div className="bg-white rounded-xl shadow-lg p-6 border border-primary">
+      <h3 className="text-xl font-bold text-primary mb-2">Pro</h3>
+      <p className="text-3xl font-extrabold text-primary mb-4">49₫ / tháng</p>
+      <ul className="text-left space-y-2 mb-6">
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> OCR nhanh, không hạn chế</li>
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Tối đa 50 MB / tệp</li>
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Truy cập API Premium</li>
+      </ul>
+      <button className="w-full bg-primary text-white font-semibold py-2 rounded-xl hover:bg-primary-hover transition-colors">
+        Nâng cấp
+      </button>
+    </div>
+
+    {/* Enterprise Plan */}
+    <div className="bg-white rounded-xl shadow-lg p-6 border border-border">
+      <h3 className="text-xl font-bold text-primary mb-2">Enterprise</h3>
+      <p className="text-3xl font-extrabold text-primary mb-4">Liên hệ</p>
+      <ul className="text-left space-y-2 mb-6">
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Hỗ trợ tận nơi</li>
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Giải pháp tùy chỉnh</li>
+        <li className="flex items-center"><Check size={14} className="text-success mr-2"/> Hợp đồng SLA</li>
+      </ul>
+      <button className="w-full bg-primary text-white font-semibold py-2 rounded-xl hover:bg-primary-hover transition-colors">
+        Liên hệ
+      </button>
+    </div>
+  </div>
+</section>
+
 
       {/* SOCIAL PROOF SECTION */}
       <section className="border-y border-outline-variant/40 bg-surface/30 backdrop-blur-sm py-12 relative z-10">
