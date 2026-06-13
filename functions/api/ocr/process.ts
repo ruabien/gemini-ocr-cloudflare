@@ -130,15 +130,22 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
   return fullText.trim();
 }
 
-export async function onRequestPost(context: { request: Request; env: Record<string, any> }) {
+export const onRequestPost = async (context: { request: Request; env: any }) => {
   try {
+    if (!context || !context.request) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Yêu cầu không hợp lệ: Thiếu context hoặc request." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
     const request = context.request;
 
     // Setup OCR.space rotation keys properly from context.env
-    const ocrSpaceKeys = [
-      context.env?.OCR_SPACE_API_KEY,
-      context.env?.OCR_SPACE_API_KEY_1
-    ].filter(Boolean);
+    const ocrSpaceKeys = [];
+    if (context.env) {
+      if (context.env.OCR_SPACE_API_KEY) ocrSpaceKeys.push(context.env.OCR_SPACE_API_KEY);
+      if (context.env.OCR_SPACE_API_KEY_1) ocrSpaceKeys.push(context.env.OCR_SPACE_API_KEY_1);
+    }
 
     const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =
       await request.json() as any;
@@ -161,7 +168,7 @@ export async function onRequestPost(context: { request: Request; env: Record<str
       }
     }
     if (!Array.isArray(geminiKeys) || geminiKeys.length === 0) {
-      const fallbackKey = userGeminiKey || context.env.GEMINI_API_KEY;
+      const fallbackKey = userGeminiKey || (context.env ? context.env.GEMINI_API_KEY : undefined);
       if (fallbackKey) {
         geminiKeys = [fallbackKey];
       }

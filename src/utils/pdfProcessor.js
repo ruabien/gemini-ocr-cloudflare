@@ -11,9 +11,8 @@ export const loadPdfJs = () => {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
     script.onload = () => {
-      // Bỏ qua tạo Worker Blob để vượt qua lỗi CSP -> Chạy Fake Worker (Main Thread)
       const pdfjs = window.pdfjsLib;
-      pdfjs.GlobalWorkerOptions.workerSrc = "";
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
       resolve(pdfjs);
     };
     script.onerror = () => {

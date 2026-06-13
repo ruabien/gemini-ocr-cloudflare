@@ -53,35 +53,14 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [readyPayload, setReadyPayload] = useState<{ pagesBase64Array: string[]; fileName: string; mimeType: string } | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Tải thư viện pdf.js động từ CDN tin cậy
-  const loadPdfJS = (): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      if ((window as any).pdfjsLib) {
-        resolve((window as any).pdfjsLib);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js";
-      script.onload = () => {
-        const pdfjs = (window as any).pdfjsLib;
-        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        resolve(pdfjs);
-      };
-      script.onerror = (err) => reject(err);
-      document.head.appendChild(script);
-    });
-  };
-
   // Cắt PDF thành từng trang ảnh rời rạc và tự động nén
   const sliceAndCompressPdf = async (file: File, logProgress: (msg: string) => void): Promise<{ dataUrl: string; base64: string; size: string }[]> => {
     logProgress("Đang nạp bộ giải mã PDF chuyên sâu...");
-    const pdfjsLib = await loadPdfJS();
-    
     pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
     
     logProgress("Đang phân tích cấu trúc tệp PDF...");
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
     const pagesCount = pdf.numPages;
     const result: { dataUrl: string; base64: string; size: string }[] = [];
     
