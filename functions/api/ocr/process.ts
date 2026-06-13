@@ -131,15 +131,15 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
 }
 
 export const onRequestPost = async (context: { request: Request; env: any }) => {
-  const { request, env } = context;
-  
-  // Setup OCR.space rotation keys properly from context.env
-  const ocrSpaceKeys = [
-    env.OCR_SPACE_API_KEY,
-    env.OCR_SPACE_API_KEY_1
-  ].filter(Boolean);
-
   try {
+    const request = context.request;
+
+    // Setup OCR.space rotation keys properly from context.env
+    const ocrSpaceKeys = [
+      context.env.OCR_SPACE_API_KEY,
+      context.env.OCR_SPACE_API_KEY_1
+    ].filter(Boolean);
+
     const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =
       await request.json() as any;
 
@@ -161,7 +161,7 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       }
     }
     if (!Array.isArray(geminiKeys) || geminiKeys.length === 0) {
-      const fallbackKey = userGeminiKey || env.GEMINI_API_KEY;
+      const fallbackKey = userGeminiKey || context.env.GEMINI_API_KEY;
       if (fallbackKey) {
         geminiKeys = [fallbackKey];
       }
@@ -306,10 +306,8 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       }
     }
 
-    const securePayload = encryptText(finalOcrText, env);
+    const securePayload = encryptText(finalOcrText, context.env);
 
-    // Provide the required structure containing { success: true, text: finalOcrText } 
-    // AND the additional metadata expected by the frontend.
     return new Response(
       JSON.stringify({
         success: true,

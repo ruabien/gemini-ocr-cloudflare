@@ -157,6 +157,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     }
   }, [ocrText]);
 
+  // ĐÃ LOẠI BỎ HOÀN TOÀN: Bất kỳ logic gọi pdfjs.GlobalWorkerOptions.workerSrc hoặc background rendering liên quan đến pdf.min.js
   // Đã bỏ useEffect tạo previewUrl để tránh lỗi "Creating a worker from blob violates CSP"
 
   // Di chuyển trường dữ liệu lên trước (sắp xếp)
