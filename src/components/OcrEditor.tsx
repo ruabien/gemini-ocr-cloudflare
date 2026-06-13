@@ -152,6 +152,13 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    if (ocrText && !editorText) {
+      setEditorText(ocrText);
+      setOriginalBackup(ocrText);
+    }
+  }, [ocrText]);
+
+  useEffect(() => {
     if (document?.selectedFile) {
       const url = URL.createObjectURL(document.selectedFile);
       setPreviewUrl(url);
@@ -296,17 +303,15 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
       setShowUpgradeModal(true);
       return;
     }
-
     setIsExportingDocx(true);
     try {
-      const textToExport = editorRef.current ? editorRef.current.innerText : editorText;
+      const textToExport = editorText || "";
       const cleanText = sanitizeText(textToExport);
       const response = await fetch("/api/ocr/export/docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: cleanText, fileName: document.name })
       });
-      
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = window.document.createElement("a");
@@ -325,17 +330,14 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   // 2b. Logic Xuất file văn bản thô mặc định (.TXT) - Dành cho tất cả thành viên
   const handleExportTxt = () => {
     try {
-      const textToExport = editorRef.current ? editorRef.current.innerText : editorText;
+      const textToExport = editorText || "";
       const cleanText = sanitizeText(textToExport);
       const blob = new Blob([cleanText], { type: "text/plain;charset=utf-8" });
-      const url = window.URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const link = window.document.createElement("a");
       link.href = url;
-      link.download = `VKS_OCR_${Date.now()}.txt`;
-      window.document.body.appendChild(link);
+      link.download = `${document.name.replace(/\.[^/.]+$/, "")}_VKS.txt`;
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Lỗi xuất TXT:", err);
     }
