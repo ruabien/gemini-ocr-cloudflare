@@ -51,6 +51,15 @@ export const DEFAULT_TEMPLATES: ExportTemplate[] = [
   }
 ];
 
+const sanitizeText = (raw: string) => {
+  if (!raw) return "";
+  return raw
+    .replace(/\*\*/g, "") // Xóa dấu in đậm Markdown
+    .replace(/\*/g, "")   // Xóa dấu in nghiêng Markdown
+    .replace(/_/g, "")    // Xóa triệt để các ký tự gạch dưới bị rò rỉ
+    .trim();
+};
+
 interface OcrEditorProps {
   document: OcrDocument | null;
   onBack: () => void;
@@ -101,7 +110,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     return {};
   })();
 
-  const ocrText    = parsedData.text || parsedData.data?.text || document?.rawText || "";
+  const ocrText    = sanitizeText(parsedData.text || parsedData.data?.text || document?.rawText || "");
   const fileType   = parsedData.fileType   || document?.fileType   || "";
   const resolution = parsedData.resolution || document?.resolution || "";
   const uploader   = parsedData.uploader   || document?.uploader   || "";
@@ -278,7 +287,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     setIsExportingDocx(true);
     try {
       const textToExport = editorRef.current ? editorRef.current.innerText : editorText;
-const cleanText = textToExport.replace(/\*\*/g, "").replace(/\*/g, "");
+      const cleanText = sanitizeText(textToExport);
       const response = await fetch("/api/ocr/export/docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -304,14 +313,16 @@ const cleanText = textToExport.replace(/\*\*/g, "").replace(/\*/g, "");
   const handleExportTxt = () => {
     try {
       const textToExport = editorRef.current ? editorRef.current.innerText : editorText;
+      const cleanText = sanitizeText(textToExport);
       const blob = new Blob([cleanText], { type: "text/plain;charset=utf-8" });
-      const downloadUrl = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob);
       const link = window.document.createElement("a");
-      link.href = downloadUrl;
-      link.download = `${document.name.replace(/\.[^/.]+$/, "")}_OCR.txt`;
+      link.href = url;
+      link.download = `VKS_OCR_${Date.now()}.txt`;
       window.document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Lỗi xuất TXT:", err);
     }
