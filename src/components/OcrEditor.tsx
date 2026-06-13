@@ -11,6 +11,7 @@ import {
   ChevronUp, ChevronDown, Save, BookOpen, X
 } from "lucide-react";
 import { OcrDocument, ExtractionField } from "../types";
+import * as pdfjs from 'pdfjs-dist';
 
 export interface ExportTemplate {
   id: string;
@@ -122,6 +123,56 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   const [isAnonymized, setIsAnonymized] = useState(false);
   const [originalBackup, setOriginalBackup] = useState(ocrText);
   const [isEncryptActive, setIsEncryptActive] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const selectedFile = document?.selectedFile;
+    if (!selectedFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const isPdf = Array.isArray(selectedFile)
+      ? selectedFile[0]?.type === "application/pdf" || selectedFile[0]?.name?.toLowerCase().endsWith(".pdf")
+      : selectedFile.type === "application/pdf" || selectedFile.name?.toLowerCase().endsWith(".pdf");
+
+    if (isPdf) {
+      if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+      }
+      const fileToLoad = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
+      const fileReader = new FileReader();
+      fileReader.onload = async function() {
+        try {
+          const typedarray = new Uint8Array(this.result as ArrayBuffer);
+          const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
+          const page = await pdf.getPage(1); // Get page 1
+          
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = window.document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          if (context) {
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            const imageBase64 = canvas.toDataURL('image/jpeg');
+            setPreviewUrl(imageBase64); // This base64 bypasses CSP iframe restrictions perfectly
+          }
+        } catch (e) {
+          console.error("PDF preview error:", e);
+        }
+      };
+      fileReader.readAsArrayBuffer(fileToLoad);
+    } else {
+      const file = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+  }, [document?.selectedFile]);
 
   // Trạng thái các trường Excel tự định nghĩa
   const [exportFields, setExportFields] = useState<ExtractionField[]>([
@@ -156,9 +207,6 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
       setOriginalBackup(ocrText);
     }
   }, [ocrText]);
-
-  // ĐÃ LOẠI BỎ HOÀN TOÀN: Bất kỳ logic gọi pdfjs.GlobalWorkerOptions.workerSrc hoặc background rendering liên quan đến pdf.min.js
-  // Đã bỏ useEffect tạo previewUrl để tránh lỗi "Creating a worker from blob violates CSP"
 
   // Di chuyển trường dữ liệu lên trước (sắp xếp)
   const moveFieldUp = (index: number) => {
@@ -493,19 +541,23 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
             {/* Khung hiển thị tài liệu gốc thực tế hoặc fallback mock */}
             <div className="p-1 bg-slate-950 text-slate-400 relative h-[500px] overflow-hidden rounded-b-xl flex items-center justify-center">
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl p-6">
-                <div className="p-4 bg-red-500/10 text-red-400 rounded-full mb-3">
-                  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+              {previewUrl ? (
+                <img src={previewUrl} alt="Hồ sơ đại diện" className="max-w-full max-h-full object-contain rounded-lg" />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl p-6">
+                  <div className="p-4 bg-red-500/10 text-red-400 rounded-full mb-3">
+                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-200 text-center truncate max-w-full">
+                    {document?.name || "Workspace: Document"}
+                  </p>
+                  <span className="mt-2 px-2.5 py-1 text-xs font-medium bg-slate-800 text-slate-400 rounded-md border border-slate-700">
+                    {document?.selectedFile ? "Đang tạo bản xem trước..." : "Trang 1 / Hồ sơ gốc bảo mật"}
+                  </span>
                 </div>
-                <p className="text-sm font-semibold text-slate-200 text-center truncate max-w-full">
-                  {document?.name || "Workspace: Document"}
-                </p>
-                <span className="mt-2 px-2.5 py-1 text-xs font-medium bg-slate-800 text-slate-400 rounded-md border border-slate-700">
-                  Trang 1 / Hồ sơ gốc bảo mật
-                </span>
-              </div>
+              )}
             </div>
           </div>
 
