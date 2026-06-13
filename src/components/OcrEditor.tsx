@@ -531,15 +531,15 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             </div>
 
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-slate-500 uppercase">Phát hiện cảnh báo ({document.warnings.length})</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase">Phát hiện cảnh báo ({(document.warnings || []).length})</p>
               
               <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
-                {document.warnings.map((warn: any, index: number) => (
+                {(document.warnings || []).map((warn: any, index: number) => (
                   <div key={index} className="bg-yellow-50 border border-yellow-250 p-2 rounded flex items-start space-x-2 text-yellow-800 text-[10px] leading-relaxed">
                     <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold">Dòng {warn.line}: "{warn.text}"</p>
-                      <p className="text-slate-600">{warn.description}</p>
+                      <p className="font-bold">Dòng {warn?.line}: "{warn?.text}"</p>
+                      <p className="text-slate-600">{warn?.description}</p>
                     </div>
                   </div>
                 ))}
@@ -621,7 +621,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span>Mẫu soạn thảo tương thích hoàn hảo MS Word (.doc/.docx)</span>
               </span>
-              <span className="font-mono">Số ký tự: {editorText.length} kự</span>
+              <span className="font-mono">Số ký tự: {(editorText || "").length} kự</span>
             </div>
           </div>
 
@@ -668,13 +668,13 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
                   className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm cursor-pointer"
                 >
                   <optgroup label="Hệ thống (Mặc định)">
-                    {DEFAULT_TEMPLATES.map(t => (
+                    {(DEFAULT_TEMPLATES || []).map(t => (
                       <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </optgroup>
-                  {userTemplates.length > 0 && (
+                  {(userTemplates || []).length > 0 && (
                     <optgroup label="Mẫu của tôi (Custom)">
-                      {userTemplates.map(t => (
+                      {(userTemplates || []).map(t => (
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
                     </optgroup>
@@ -720,7 +720,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             <div className="space-y-2">
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Cấu hình thứ tự trường dữ liệu:</p>
               
-              {exportFields.length === 0 ? (
+              {(exportFields || []).length === 0 ? (
                 <div className="p-4 text-center rounded-lg border border-dashed border-slate-300 text-slate-400 text-xs">
                   Chưa có trường bóc tách nào. Vui lòng thêm trường hoặc chọn Template mẫu ở trên.
                 </div>
@@ -737,17 +737,17 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-xs">
-                      {exportFields.map((field, index) => (
-                        <tr key={field.id} className="hover:bg-slate-50/60 transition-colors">
+                      {(exportFields || []).map((field, index) => (
+                        <tr key={field?.id} className="hover:bg-slate-50/60 transition-colors">
                           <td className="py-2 px-3 font-mono font-bold text-slate-400 text-center">
                             {index + 1}
                           </td>
                           <td className="py-2 px-3 font-bold text-slate-700">
-                            {field.name}
+                            {field?.name}
                           </td>
                           <td className="py-2 px-2">
                             <code className="bg-slate-100 text-red-600 px-1.5 py-0.5 rounded font-mono text-[10px]">
-                              {field.key}
+                              {field?.key}
                             </code>
                           </td>
                           <td className="py-2 px-2">
@@ -766,9 +766,9 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
                               </button>
                               <button
                                 onClick={() => moveFieldDown(index)}
-                                disabled={index === exportFields.length - 1}
+                                disabled={index === (exportFields || []).length - 1}
                                 className={`p-1 rounded cursor-pointer transition-colors ${
-                                  index === exportFields.length - 1 
+                                  index === (exportFields || []).length - 1 
                                     ? "text-slate-200 cursor-not-allowed" 
                                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                                 }`}
