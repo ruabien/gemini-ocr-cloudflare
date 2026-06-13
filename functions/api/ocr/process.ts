@@ -66,59 +66,65 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
   let fullText = "";
 
   for (let pageIdx = 0; pageIdx < pagesToProcess.length; pageIdx++) {
+    const pageIndex = pageIdx + 1;
     const virtualBase64 = pagesToProcess[pageIdx];
     let pageText = "";
     let success = false;
     let lastErrorMsg = "";
 
-    for (let k = 0; k < ocrSpaceKeys.length; k++) {
-      const selectedOcrKey = ocrSpaceKeys[k];
-      try {
-        const formData = new FormData();
-        const currentMimeType = mimeType || "image/png";
-        formData.append("base64Image", `data:${currentMimeType};base64,${virtualBase64}`);
-        formData.append("language", "vie");
-        formData.append("isOverlayRequired", "false");
+    try {
+      for (let k = 0; k < ocrSpaceKeys.length; k++) {
+        const selectedOcrKey = ocrSpaceKeys[k];
+        try {
+          const formData = new FormData();
+          const currentMimeType = mimeType || "image/png";
+          formData.append("base64Image", `data:${currentMimeType};base64,${virtualBase64}`);
+          formData.append("language", "vie");
+          formData.append("isOverlayRequired", "false");
 
-        const ocrSpaceResponse = await fetch("https://api.ocr.space/parse/image", {
-          method: "POST",
-          headers: { "apikey": selectedOcrKey },
-          body: formData
-        });
+          const ocrSpaceResponse = await fetch("https://api.ocr.space/parse/image", {
+            method: "POST",
+            headers: { "apikey": selectedOcrKey },
+            body: formData
+          });
 
-        if (!ocrSpaceResponse.ok) {
-          throw new Error(`HTTP ${ocrSpaceResponse.status}`);
+          if (!ocrSpaceResponse.ok) {
+            throw new Error(`HTTP ${ocrSpaceResponse.status}`);
+          }
+
+          const ocrSpaceData: any = await ocrSpaceResponse.json();
+          if (
+            ocrSpaceData.IsErroredOnProcessing ||
+            ocrSpaceData.OCRExitCode === 99 ||
+            !ocrSpaceData.ParsedResults ||
+            ocrSpaceData.ParsedResults.length === 0
+          ) {
+            const errMsg = Array.isArray(ocrSpaceData.ErrorMessage)
+              ? ocrSpaceData.ErrorMessage.join(", ")
+              : String(ocrSpaceData.ErrorMessage || "Unknown error");
+            throw new Error(`OCR.space API Error: ${errMsg}`);
+          }
+
+          pageText = ocrSpaceData.ParsedResults[0].ParsedText;
+          success = true;
+          break;
+        } catch (err: any) {
+          console.warn(
+            `OCR.space API Key chỉ số ${k} thất bại ở trang ${pageIndex}:`,
+            err.message || err
+          );
+          lastErrorMsg = err.message || String(err);
         }
-
-        const ocrSpaceData: any = await ocrSpaceResponse.json();
-        if (
-          ocrSpaceData.IsErroredOnProcessing ||
-          ocrSpaceData.OCRExitCode === 99 ||
-          !ocrSpaceData.ParsedResults ||
-          ocrSpaceData.ParsedResults.length === 0
-        ) {
-          const errMsg = Array.isArray(ocrSpaceData.ErrorMessage)
-            ? ocrSpaceData.ErrorMessage.join(", ")
-            : String(ocrSpaceData.ErrorMessage || "Unknown error");
-          throw new Error(`OCR.space API Error: ${errMsg}`);
-        }
-
-        pageText = ocrSpaceData.ParsedResults[0].ParsedText;
-        success = true;
-        break;
-      } catch (err: any) {
-        console.warn(
-          `OCR.space API Key chỉ số ${k} thất bại ở trang ${pageIdx + 1}:`,
-          err.message || err
-        );
-        lastErrorMsg = err.message || String(err);
       }
-    }
 
-    if (!success) {
-      throw new Error(
-        `Tất cả các API Key OCR.space đều thất bại ở trang ${pageIdx + 1}. Lỗi cuối cùng: ${lastErrorMsg}`
-      );
+      if (!success) {
+        throw new Error(
+          `Tất cả các API Key OCR.space đều thất bại ở trang ${pageIndex}. Lỗi cuối cùng: ${lastErrorMsg}`
+        );
+      }
+    } catch (err: any) {
+      console.warn("Skipping corrupted page:", pageIndex);
+      pageText = `[TRANG SỐ ${pageIndex} BỊ LỖI ĐỌC DỮ LIỆU - ĐÃ TỰ ĐỘNG BỎ QUA]`;
     }
 
     fullText += pageText + "\n\n";
@@ -138,7 +144,7 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
     }
 
     const bodyData = await request.json() as any;
-    const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } = bodyData;
+    const { base64File, fileName, mimeType, isEncrypted, userGeminiKey, fromPage, toPage } = bodyData;
 
     // Temporary safe log to ensure parameters are passing cleanly
     console.log("File name received:", fileName);
@@ -223,6 +229,10 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
         pagesToProcess = [base64File];
       }
 
+      if (fromPage && toPage) {
+        pagesToProcess = pagesToProcess.slice(Number(fromPage) - 1, Number(toPage));
+      }
+
       let ocrSuccess = false;
       let lastError: any = null;
 
@@ -231,49 +241,71 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
         try {
           const results = await Promise.all(
             pagesToProcess.map(async (pageData, index) => {
-              const filePart = {
-                inlineData: {
-                  mimeType: base64File.startsWith("[") ? "image/jpeg" : mimeType || "image/png",
-                  data: pageData,
-                },
-              };
-              const promptPart = {
-                text: "Hãy thực hiện OCR văn bản tiếng Việt này. YÊU CẦU BẮT BUỘC TRẢ VỀ CHUẨN JSON VỚI CẤU TRÚC SAU (chỉ trả về JSON, không chứa markdown hay text nào khác bên ngoài):\n{\n  \"text\": \"Văn bản sau khi đã OCR với đầy đủ định dạng dòng, Quốc hiệu...\",\n  \"warnings\": [\n    { \"line\": \"số dòng hoặc trang\", \"text\": \"chữ bị lỗi/nghi ngờ\", \"description\": \"mô tả lỗi (VD: mờ, nghi ngờ sai, thiếu ngày tháng)\" }\n  ]\n}",
-              };
+              const pageIndex = index + 1;
+              try {
+                const filePart = {
+                  inlineData: {
+                    mimeType: base64File.startsWith("[") ? "image/jpeg" : mimeType || "image/png",
+                    data: pageData,
+                  },
+                };
+                const promptPart = {
+                  text: "Hãy thực hiện OCR văn bản tiếng Việt này. YÊU CẦU BẮT BUỘC TRẢ VỀ CHUẨN JSON VỚI CẤU TRÚC SAU (chỉ trả về JSON, không chứa markdown hay text nào khác bên ngoài):\n{\n  \"text\": \"Văn bản sau khi đã OCR với đầy đủ định dạng dòng, Quốc hiệu...\",\n  \"warnings\": [\n    { \"line\": \"số dòng hoặc trang\", \"text\": \"chữ bị lỗi/nghi ngờ\", \"description\": \"mô tả lỗi (VD: mờ, nghi ngờ sai, thiếu ngày tháng)\" }\n  ]\n}",
+                };
 
-              const modelName = "gemini-2.5-flash";
-              const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
-              const apiResp = await fetch(url, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "User-Agent": "aistudio-build"
-                },
-                body: JSON.stringify({
-                  contents: [{ parts: [filePart, promptPart] }]
-                })
-              });
+                const modelName = "gemini-2.5-flash";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
+                const apiResp = await fetch(url, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "User-Agent": "aistudio-build"
+                  },
+                  body: JSON.stringify({
+                    contents: [{ parts: [filePart, promptPart] }]
+                  })
+                });
 
-              if (!apiResp.ok) {
-                const errText = await apiResp.text();
-                throw new Error(`Gemini HTTP ${apiResp.status}: ${errText}`);
-              }
-
-              const responseData = await apiResp.json() as any;
-              const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-              if (generatedText) {
-                try {
-                  const cleanText = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                  const parsed = JSON.parse(cleanText);
-                  return { text: parsed.text || "", warnings: parsed.warnings || [], index: index + 1 };
-                } catch (e) {
-                  return { text: generatedText, warnings: [], index: index + 1 };
+                if (!apiResp.ok) {
+                  const errText = await apiResp.text();
+                  throw new Error(`Gemini HTTP ${apiResp.status}: ${errText}`);
                 }
-              } else {
-                throw new Error(
-                  `Không nhận được phản hồi văn bản từ dịch vụ Gemini ở trang thứ ${index + 1}.`
-                );
+
+                const responseData = await apiResp.json() as any;
+                const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (generatedText) {
+                  try {
+                    const cleanText = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    const parsed = JSON.parse(cleanText);
+                    return { text: parsed.text || "", warnings: parsed.warnings || [], index: pageIndex };
+                  } catch (e) {
+                    return { text: generatedText, warnings: [], index: pageIndex };
+                  }
+                } else {
+                  throw new Error(
+                    `Không nhận được phản hồi văn bản từ dịch vụ Gemini ở trang thứ ${pageIndex}.`
+                  );
+                }
+              } catch (err: any) {
+                const errMsg = err.message || String(err);
+                if (
+                  errMsg.includes("HTTP 403") ||
+                  errMsg.includes("HTTP 429") ||
+                  errMsg.includes("HTTP 401") ||
+                  errMsg.includes("API key") ||
+                  errMsg.toLowerCase().includes("recitation") ||
+                  errMsg.includes("RESOURCE_EXHAUSTED") ||
+                  errMsg.includes("UNAUTHENTICATED")
+                ) {
+                  throw err;
+                }
+                console.warn("Skipping corrupted page:", pageIndex);
+                return {
+                  text: `[TRANG SỐ ${pageIndex} BỊ LỖI ĐỌC DỮ LIỆU - ĐÃ TỰ ĐỘNG BỎ QUA]`,
+                  warnings: [],
+                  index: pageIndex
+                };
               }
             })
           );
