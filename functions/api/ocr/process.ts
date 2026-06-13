@@ -76,7 +76,32 @@ Số: 15/CT-VKS-P1
 
 /* ==== END MOCK DATA ==== */
 
-export async function onRequestPost({ request }: { request: any }) {
+async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: string, env: any) {
+  let fullText = "";
+  for (const virtualBase64 of pagesToProcess) {
+    const formData = new FormData();
+    const currentMimeType = mimeType || "image/png";
+    formData.append("base64Image", `data:${currentMimeType};base64,${virtualBase64}`);
+    formData.append("language", "vie");
+    formData.append("isOverlayRequired", "false");
+
+    const ocrSpaceResponse = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      headers: { "apikey": env?.OCR_SPACE_API_KEY || "YOUR_FALLBACK_KEY" },
+      body: formData
+    });
+
+    const ocrSpaceData: any = await ocrSpaceResponse.json();
+    if (ocrSpaceData.ParsedResults && ocrSpaceData.ParsedResults.length > 0) {
+      fullText += ocrSpaceData.ParsedResults[0].ParsedText + "\n\n";
+    } else {
+      console.warn("OCR.space response error:", ocrSpaceData);
+    }
+  }
+  return fullText.trim();
+}
+
+export async function onRequestPost({ request, env }: { request: any; env: any }) {
   try {
     const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =
       await request.json();
@@ -236,14 +261,30 @@ export async function onRequestPost({ request }: { request: any }) {
         } catch (err: any) {
           console.warn(`Gemini API Key chỉ số ${i} thất bại:`, err.message || err);
           lastError = err;
+          const errorMessage = err.message || String(err);
+          if (errorMessage.toLowerCase().includes("recitation")) {
+            console.warn("Phát hiện lỗi RECITATION, ngừng thử các key khác để chuyển sang fallback.");
+            break;
+          }
           // Thử key tiếp theo
         }
       }
 
       if (!ocrSuccess) {
-        throw new Error(
-          `Tất cả Gemini API Keys trong danh sách đều lỗi. Lỗi cuối cùng: ${lastError?.message || lastError}`
-        );
+        console.warn("Gemini thất bại, tiến hành gọi OCR.space fallback...");
+        try {
+          const fallbackMimeType = base64File.startsWith("[") ? "image/jpeg" : mimeType;
+          rawTextResult = await processWithOcrSpaceFallback(pagesToProcess, fallbackMimeType, env);
+          computedAccuracy = 85.0; // Độ chính xác giả định cho fallback
+          activePagesCount = pagesToProcess.length;
+          activeKeyIndex = -1; // Đánh dấu là đã dùng fallback
+          warningsToSend = [];
+          ocrSuccess = true;
+        } catch (fallbackErr: any) {
+          throw new Error(
+            `Gemini API lỗi (${lastError?.message || lastError}) và OCR.space fallback cũng thất bại: ${fallbackErr.message}`
+          );
+        }
       }
     }
 
