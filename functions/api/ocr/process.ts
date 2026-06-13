@@ -77,27 +77,76 @@ Số: 15/CT-VKS-P1
 /* ==== END MOCK DATA ==== */
 
 async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: string, env: any) {
-  let fullText = "";
-  for (const virtualBase64 of pagesToProcess) {
-    const formData = new FormData();
-    const currentMimeType = mimeType || "image/png";
-    formData.append("base64Image", `data:${currentMimeType};base64,${virtualBase64}`);
-    formData.append("language", "vie");
-    formData.append("isOverlayRequired", "false");
+  const ocrSpaceKeys = [
+    env?.OCR_SPACE_API_KEY,
+    env?.OCR_SPACE_API_KEY_1
+  ].filter(Boolean) as string[];
 
-    const ocrSpaceResponse = await fetch("https://api.ocr.space/parse/image", {
-      method: "POST",
-      headers: { "apikey": env?.OCR_SPACE_API_KEY || "YOUR_FALLBACK_KEY" },
-      body: formData
-    });
-
-    const ocrSpaceData: any = await ocrSpaceResponse.json();
-    if (ocrSpaceData.ParsedResults && ocrSpaceData.ParsedResults.length > 0) {
-      fullText += ocrSpaceData.ParsedResults[0].ParsedText + "\n\n";
-    } else {
-      console.warn("OCR.space response error:", ocrSpaceData);
-    }
+  if (ocrSpaceKeys.length === 0) {
+    ocrSpaceKeys.push("YOUR_FALLBACK_KEY");
   }
+
+  let fullText = "";
+
+  for (let pageIdx = 0; pageIdx < pagesToProcess.length; pageIdx++) {
+    const virtualBase64 = pagesToProcess[pageIdx];
+    let pageText = "";
+    let success = false;
+    let lastErrorMsg = "";
+
+    for (let k = 0; k < ocrSpaceKeys.length; k++) {
+      const selectedOcrKey = ocrSpaceKeys[k];
+      try {
+        const formData = new FormData();
+        const currentMimeType = mimeType || "image/png";
+        formData.append("base64Image", `data:${currentMimeType};base64,${virtualBase64}`);
+        formData.append("language", "vie");
+        formData.append("isOverlayRequired", "false");
+
+        const ocrSpaceResponse = await fetch("https://api.ocr.space/parse/image", {
+          method: "POST",
+          headers: { "apikey": selectedOcrKey },
+          body: formData
+        });
+
+        if (!ocrSpaceResponse.ok) {
+          throw new Error(`HTTP ${ocrSpaceResponse.status}`);
+        }
+
+        const ocrSpaceData: any = await ocrSpaceResponse.json();
+        if (
+          ocrSpaceData.IsErroredOnProcessing ||
+          ocrSpaceData.OCRExitCode === 99 ||
+          !ocrSpaceData.ParsedResults ||
+          ocrSpaceData.ParsedResults.length === 0
+        ) {
+          const errMsg = Array.isArray(ocrSpaceData.ErrorMessage)
+            ? ocrSpaceData.ErrorMessage.join(", ")
+            : String(ocrSpaceData.ErrorMessage || "Unknown error");
+          throw new Error(`OCR.space API Error: ${errMsg}`);
+        }
+
+        pageText = ocrSpaceData.ParsedResults[0].ParsedText;
+        success = true;
+        break; // Key này thành công, chuyển sang trang tiếp theo
+      } catch (err: any) {
+        console.warn(
+          `OCR.space API Key chỉ số ${k} thất bại ở trang ${pageIdx + 1}:`,
+          err.message || err
+        );
+        lastErrorMsg = err.message || String(err);
+      }
+    }
+
+    if (!success) {
+      throw new Error(
+        `Tất cả các API Key OCR.space đều thất bại ở trang ${pageIdx + 1}. Lỗi cuối cùng: ${lastErrorMsg}`
+      );
+    }
+
+    fullText += pageText + "\n\n";
+  }
+
   return fullText.trim();
 }
 
