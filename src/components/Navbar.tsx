@@ -43,7 +43,7 @@ export default function Navbar({ session, setSession, activeTab, setActiveTab, o
   };
 
   return (
-    <header id="gov-header" className="border-b border-rose-900/10 bg-slate-900 text-white sticky top-0 z-50 shadow-md">
+    <header id="gov-header" className="border-b border-rose-900/10 bg-slate-900 text-white fixed top-0 left-0 w-full z-50 shadow-md">
       {/* Thanh cờ Tổ quốc trang nghiêm ở phần rìa trên */}
       <div id="flag-bar" className="h-1 bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 w-full" />
       
@@ -75,14 +75,14 @@ export default function Navbar({ session, setSession, activeTab, setActiveTab, o
             <span>Tổng quan</span>
           </button>
           
-          <button
-            onClick={() => setActiveTab("ocr")}
-            className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
-              activeTab === "ocr" || activeTab === "editor"
-                ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
-                : "text-slate-300 hover:bg-slate-800 hover:text-white"
-            }`}
-          >
+<button
+  onClick={() => setActiveTab("scanner")}
+  className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
+    activeTab === "scanner" || activeTab === "editor"
+      ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
+      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+  }`}
+>
             <ScanLine className="h-4 w-4" />
             <span>Phân tích OCR</span>
           </button>
