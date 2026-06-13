@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from "react";
-import { UploadCloud, FileText, Settings, Shield, AlertTriangle, Play, HelpCircle, FileCheck, Layers, Activity } from "lucide-react";
+import { UploadCloud, FileText, Settings, Shield, AlertTriangle, Play, HelpCircle, FileCheck, Layers, Activity, ScanLine } from "lucide-react";
 import { OcrConfig } from "../types";
 
 interface OcrScannerProps {
@@ -49,6 +49,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [slicingMessage, setSlicingMessage] = useState<string>("");
   const [isSlicing, setIsSlicing] = useState<boolean>(false);
   const [slicedPages, setSlicedPages] = useState<{ index: number; dataUrl: string; size: string }[]>([]);
+  const [readyPayload, setReadyPayload] = useState<{ pagesBase64Array: string[]; fileName: string; mimeType: string } | null>(null);
 
   // Tải thư viện pdf.js động từ CDN tin cậy
   const loadPdfJS = (): Promise<any> => {
@@ -250,37 +251,78 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       // Chuyển tập hợp ảnh dạng JSON array về client-side processing
       const pagesBase64Array = pages.map(p => p.base64);
       const mimeTypeToSend = isPdfValue ? "application/json-pages" : file.type;
-
-(async () => {
-  try {
-    const storedKeys = JSON.parse(localStorage.getItem('geminiKeys') || '[]');
-    const response = await fetch('/api/ocr/process', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Gemini-Keys': JSON.stringify(storedKeys),
-      },
-      body: JSON.stringify({
-        base64File: JSON.stringify(pagesBase64Array),
+      
+      setReadyPayload({
+        pagesBase64Array,
         fileName: file.name,
-        mimeType: mimeTypeToSend,
-        isEncrypted: false,
-      }),
-    });
-    const data = await response.json();
-    // Forward the backend response to the parent component.
-    // Here we simply pass the raw JSON as content for demonstration.
-    onFileLoaded({ name: file.name, content: JSON.stringify(data), mimeType: mimeTypeToSend });
-  } catch (err: any) {
-    console.error('OCR request failed:', err);
-    alert('Lỗi khi thực hiện OCR: ' + (err?.message || err));
-  }
-})();
+        mimeType: mimeTypeToSend
+      });
 
     } catch (err: any) {
       console.error("Lỗi tiền xử lý tệp tin:", err);
       setIsSlicing(false);
       alert(`Đã xảy ra lỗi khi bóc tách phân trang hoặc nén ảnh: ${err.message || err}`);
+    }
+  };
+
+  const startOcrProcess = async () => {
+    if (!readyPayload) return;
+    
+    let keys: string[] = [];
+    try {
+      const stored = localStorage.getItem('vks_gemini_api_keys');
+      keys = stored ? JSON.parse(stored) : [];
+    } catch(e) { 
+      keys = []; 
+    }
+
+    if (!keys || keys.length === 0) {
+      alert("Vui lòng cấu hình ít nhất một Gemini API Key trong mục Cài đặt để bắt đầu bóc tách hồ sơ.");
+      return;
+    }
+
+    setProcessingFile(readyPayload.fileName);
+    setProgress(5);
+    
+    // Simulate progress bar while waiting
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return prev;
+        const increment = Math.floor(Math.random() * 10) + 5;
+        return Math.min(prev + increment, 90);
+      });
+    }, 500);
+
+    try {
+      const response = await fetch('/api/ocr/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Gemini-Keys': JSON.stringify(keys),
+        },
+        body: JSON.stringify({
+          base64File: JSON.stringify(readyPayload.pagesBase64Array),
+          fileName: readyPayload.fileName,
+          mimeType: readyPayload.mimeType,
+          isEncrypted: false,
+        }),
+      });
+      
+      const data = await response.json();
+      clearInterval(interval);
+      setProgress(100);
+      
+      setTimeout(() => {
+        onFileLoaded({ name: readyPayload.fileName, content: JSON.stringify(data), mimeType: readyPayload.mimeType });
+        setProcessingFile(null);
+        setProgress(0);
+      }, 500);
+    } catch (err: any) {
+      clearInterval(interval);
+      setProcessingFile(null);
+      setProgress(0);
+      console.error('OCR request failed:', err);
+      alert('Lỗi khi thực hiện OCR: ' + (err?.message || err));
     }
   };
 
@@ -507,6 +549,19 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 </p>
               </div>
             </div>
+
+            {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
+            {readyPayload && slicedPages.length > 0 && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={startOcrProcess}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center space-x-2"
+                >
+                  <ScanLine className="h-5 w-5" />
+                  <span>Bắt đầu trích xuất OCR</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* CHỌN TỆP MẪU NHANH TƯ PHÁP (Cột bên phải Desktop) */}
