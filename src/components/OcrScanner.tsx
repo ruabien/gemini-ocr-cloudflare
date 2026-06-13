@@ -63,7 +63,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js";
       script.onload = () => {
         const pdfjs = (window as any).pdfjsLib;
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+        // Bỏ qua tạo Worker Blob để vượt qua lỗi CSP -> Chạy Fake Worker (Main Thread)
+        pdfjs.GlobalWorkerOptions.workerSrc = "";
         resolve(pdfjs);
       };
       script.onerror = (err) => reject(err);

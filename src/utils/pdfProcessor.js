@@ -11,9 +11,9 @@ export const loadPdfJs = () => {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
     script.onload = () => {
-      // Thiết lập Worker URL từ CDN tương ứng để xử lý giải nén/render ngầm
+      // Bỏ qua tạo Worker Blob để vượt qua lỗi CSP -> Chạy Fake Worker (Main Thread)
       const pdfjs = window.pdfjsLib;
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+      pdfjs.GlobalWorkerOptions.workerSrc = "";
       resolve(pdfjs);
     };
     script.onerror = () => {
