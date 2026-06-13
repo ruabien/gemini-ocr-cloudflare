@@ -149,9 +149,6 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [isRedacting, setIsRedacting] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewError, setPreviewError] = useState(false);
-  const [previewFailed, setPreviewFailed] = useState(false);
 
   useEffect(() => {
     if (ocrText && !editorText) {
@@ -160,39 +157,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     }
   }, [ocrText]);
 
-  useEffect(() => {
-    setPreviewError(false);
-    setPreviewFailed(false);
-    if (document?.selectedFile) {
-      try {
-        const file = Array.isArray(document.selectedFile) 
-          ? document.selectedFile[0] 
-          : document.selectedFile;
-          
-        if (!file || !(file instanceof Blob)) {
-          setPreviewFailed(true);
-          setPreviewUrl(null);
-          return;
-        }
-
-        const baseObjUrl = URL.createObjectURL(file);
-        const isPdf = file.type === "application/pdf" || document?.fileType?.toLowerCase().includes("pdf");
-        const url = isPdf ? `${baseObjUrl}#page=1` : baseObjUrl;
-        
-        setPreviewUrl(url);
-        return () => {
-          URL.revokeObjectURL(baseObjUrl);
-        };
-      } catch (err) {
-        console.error("Preview creation error:", err);
-        setPreviewError(true);
-        setPreviewFailed(true);
-        setPreviewUrl(null);
-      }
-    } else {
-      setPreviewUrl(null);
-    }
-  }, [document?.selectedFile, document?.fileType]);
+  // Đã bỏ useEffect tạo previewUrl để tránh lỗi "Creating a worker from blob violates CSP"
 
   // Di chuyển trường dữ liệu lên trước (sắp xếp)
   const moveFieldUp = (index: number) => {

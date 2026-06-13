@@ -149,7 +149,7 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
   return fullText.trim();
 }
 
-export async function onRequestPost(context: any) {
+export const onRequest = async (context: any) => {
   const { request, env } = context;
   try {
     const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =

@@ -62,8 +62,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       const script = document.createElement("script");
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js";
       script.onload = () => {
-        (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
-        resolve((window as any).pdfjsLib);
+        const pdfjs = (window as any).pdfjsLib;
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+        resolve(pdfjs);
       };
       script.onerror = (err) => reject(err);
       document.head.appendChild(script);

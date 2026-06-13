@@ -12,8 +12,9 @@ export const loadPdfJs = () => {
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js';
     script.onload = () => {
       // Thiết lập Worker URL từ CDN tương ứng để xử lý giải nén/render ngầm
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-      resolve(window.pdfjsLib);
+      const pdfjs = window.pdfjsLib;
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+      resolve(pdfjs);
     };
     script.onerror = () => {
       reject(new Error('Không thể tải thư viện PDF.js từ CDN. Vui lòng kiểm tra lại kết nối mạng.'));
