@@ -251,11 +251,31 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       const pagesBase64Array = pages.map(p => p.base64);
       const mimeTypeToSend = isPdfValue ? "application/json-pages" : file.type;
 
-      simulateOcrProcess(
-        file.name, 
-        JSON.stringify(pagesBase64Array), 
-        mimeTypeToSend
-      );
+(async () => {
+  try {
+    const storedKeys = JSON.parse(localStorage.getItem('geminiKeys') || '[]');
+    const response = await fetch('/api/ocr/process', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Gemini-Keys': JSON.stringify(storedKeys),
+      },
+      body: JSON.stringify({
+        base64File: JSON.stringify(pagesBase64Array),
+        fileName: file.name,
+        mimeType: mimeTypeToSend,
+        isEncrypted: false,
+      }),
+    });
+    const data = await response.json();
+    // Forward the backend response to the parent component.
+    // Here we simply pass the raw JSON as content for demonstration.
+    onFileLoaded({ name: file.name, content: JSON.stringify(data), mimeType: mimeTypeToSend });
+  } catch (err: any) {
+    console.error('OCR request failed:', err);
+    alert('Lỗi khi thực hiện OCR: ' + (err?.message || err));
+  }
+})();
 
     } catch (err: any) {
       console.error("Lỗi tiền xử lý tệp tin:", err);

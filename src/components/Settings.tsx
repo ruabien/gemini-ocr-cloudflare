@@ -32,7 +32,15 @@ export default function SettingsComponent({
   // Lưu khoá API
   const handleSaveApiKey = (e: React.FormEvent) => {
     e.preventDefault();
-    setUserGeminiKey(apiKeyInput.trim());
+    // Split input by commas or newlines, trim, filter empty values
+    const keys = apiKeyInput
+      .split(/[\n,]+/)
+      .map(k => k.trim())
+      .filter(k => k);
+    // Persist array of keys securely in localStorage
+    localStorage.setItem('geminiKeys', JSON.stringify(keys));
+    // For backward compatibility set the first key as the single key state
+    setUserGeminiKey(keys[0] || '');
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2500);
   };
@@ -80,20 +88,13 @@ export default function SettingsComponent({
                   Gemini API Key của bạn
                 </label>
                 <div className="relative rounded-lg shadow-sm">
-                  <input
-                    type={showKey ? "text" : "password"}
+                  <textarea
+                    rows={4}
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-3.5 pr-12 text-sm text-slate-800 font-mono focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                    placeholder="Nhập các Gemini API Key, mỗi key trên một dòng hoặc cách nhau bằng dấu phẩy"
+                    className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-3.5 pr-3.5 text-sm text-slate-800 font-mono focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all resize-y"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey(!showKey)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
                 </div>
               </div>
 

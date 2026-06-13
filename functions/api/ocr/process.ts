@@ -76,7 +76,7 @@ Số: 15/CT-VKS-P1
 
 /* ==== END MOCK DATA ==== */
 
-export async function onRequestPost({ request }) {
+export async function onRequestPost({ request }: { request: any }) {
   try {
     const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =
       await request.json();
@@ -86,6 +86,23 @@ export async function onRequestPost({ request }) {
         JSON.stringify({ error: "Không tìm thấy dữ liệu tệp tải lên." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
+    }
+
+    // Bóc tách danh sách Gemini Keys
+    let geminiKeys: string[] = [];
+    const keysHeader = request.headers.get("X-Gemini-Keys");
+    if (keysHeader) {
+      try {
+        geminiKeys = JSON.parse(keysHeader);
+      } catch (e) {
+        console.warn("Lỗi khi parse X-Gemini-Keys header:", e);
+      }
+    }
+    if (!Array.isArray(geminiKeys) || geminiKeys.length === 0) {
+      const fallbackKey = userGeminiKey || process.env.GEMINI_API_KEY;
+      if (fallbackKey) {
+        geminiKeys = [fallbackKey];
+      }
     }
 
     // Determine if mock file
@@ -110,6 +127,7 @@ export async function onRequestPost({ request }) {
     let rawTextResult = MOCK_LEGAL_DOC_TEXT;
     let computedAccuracy = 99.4;
     let activePagesCount = 15;
+    let activeKeyIndex = 0;
 
     if (isMock1) {
       rawTextResult = MOCK_BAN_AN_TEXT;
@@ -123,8 +141,7 @@ export async function onRequestPost({ request }) {
     }
 
     if (!isMockFile) {
-      const activeKey = userGeminiKey || process.env.GEMINI_API_KEY;
-      if (!activeKey) {
+      if (geminiKeys.length === 0) {
         return new Response(
           JSON.stringify({
             error:
@@ -133,15 +150,6 @@ export async function onRequestPost({ request }) {
           { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }
-
-      const activeAiInstance = new GoogleGenAI({
-        apiKey: activeKey,
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          },
-        },
-      });
 
       let pagesToProcess: string[] = [];
       try {
@@ -154,39 +162,69 @@ export async function onRequestPost({ request }) {
         pagesToProcess = [base64File];
       }
 
-      const results = await Promise.all(
-        pagesToProcess.map(async (pageData, index) => {
-          const filePart = {
-            inlineData: {
-              mimeType:
-                base64File.startsWith("[") ? "image/jpeg" : mimeType || "image/png",
-              data: pageData,
-            },
-          };
-          const promptPart = {
-            text:
-              "Hãy thực hiện OCR văn bản tiếng Việt này một cách vô cùng chính xác từng ký tự, giữ nguyên định dạng dòng, tiêu đề, các phần tử chữ. Nếu đây là một văn bản hành chính Việt Nam, hãy định dạng đúng cấu trúc hành chính bao gồm Quốc hiệu, Tiêu ngữ, Tên cơ quan, Số văn bản, Trích yếu nội dung, Căn cứ pháp lý, Các điều khoản chi tiết và Phần chữ ký chức danh.",
-          };
-          const response = await activeAiInstance.models.generateContent({
-            model: "gemini-3.5-flash",
-            contents: { parts: [filePart, promptPart] },
-          });
-            if (response && response.text) {
-              return { text: response.text, index: index + 1 };
-            } else {
-              throw new Error(
-                `Không nhận được phản hồi văn bản từ dịch vụ Gemini ở trang thứ ${index + 1}.`
-              );
-            }
-        })
-      );
+      let ocrSuccess = false;
+      let lastError: any = null;
 
-      results.sort((a, b) => a.index - b.index);
-      rawTextResult = results.map((r) => r.text).join("\n\n");
-      computedAccuracy = parseFloat(
-        (95 + Math.random() * 4.9).toFixed(1)
-      );
-      activePagesCount = pagesToProcess.length;
+      for (let i = 0; i < geminiKeys.length; i++) {
+        const activeKey = geminiKeys[i];
+        try {
+          const activeAiInstance = new GoogleGenAI({
+            apiKey: activeKey,
+            httpOptions: {
+              headers: {
+                "User-Agent": "aistudio-build",
+              },
+            },
+          });
+
+          const results = await Promise.all(
+            pagesToProcess.map(async (pageData, index) => {
+              const filePart = {
+                inlineData: {
+                  mimeType:
+                    base64File.startsWith("[") ? "image/jpeg" : mimeType || "image/png",
+                  data: pageData,
+                },
+              };
+              const promptPart = {
+                text:
+                  "Hãy thực hiện OCR văn bản tiếng Việt này một cách vô cùng chính xác từng ký tự, giữ nguyên định dạng dòng, tiêu đề, các phần tử chữ. Nếu đây là một văn bản hành chính Việt Nam, hãy định dạng đúng cấu trúc hành chính bao gồm Quốc hiệu, Tiêu ngữ, Tên cơ quan, Số văn bản, Trích yếu nội dung, Căn cứ pháp lý, Các điều khoản chi tiết và Phần chữ ký chức danh.",
+              };
+              const response = await activeAiInstance.models.generateContent({
+                model: "gemini-3.5-flash",
+                contents: { parts: [filePart, promptPart] },
+              });
+              if (response && response.text) {
+                return { text: response.text, index: index + 1 };
+              } else {
+                throw new Error(
+                  `Không nhận được phản hồi văn bản từ dịch vụ Gemini ở trang thứ ${index + 1}.`
+                );
+              }
+            })
+          );
+
+          results.sort((a, b) => a.index - b.index);
+          rawTextResult = results.map((r) => r.text).join("\n\n");
+          computedAccuracy = parseFloat(
+            (95 + Math.random() * 4.9).toFixed(1)
+          );
+          activePagesCount = pagesToProcess.length;
+          activeKeyIndex = i;
+          ocrSuccess = true;
+          break; // Key này thành công, thoát khỏi vòng lặp xoay vòng keys
+        } catch (err: any) {
+          console.warn(`Gemini API Key chỉ số ${i} thất bại:`, err.message || err);
+          lastError = err;
+          // Thử key tiếp theo
+        }
+      }
+
+      if (!ocrSuccess) {
+        throw new Error(
+          `Tất cả Gemini API Keys trong danh sách đều lỗi. Lỗi cuối cùng: ${lastError?.message || lastError}`
+        );
+      }
     }
 
     const securePayload = encryptText(rawTextResult);
@@ -196,21 +234,22 @@ export async function onRequestPost({ request }) {
       { line: 28, text: "163/2016/NĐ-CP", description: "Ký tự NĐ-CP bị mờ nhẹ trên bản ảnh gốc" },
     ];
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        fileName: fileName || "Untitled.pdf",
-        size: `${((base64File.length * 3) / 4 / 1024 / 1024).toFixed(1)} MB`,
-        resolution: "300 DPI",
-        fileType: mimeType && mimeType.includes("pdf") ? "PDF/A-1" : "JPEG Image",
-        uploader: "Admin-01",
-        progress: 100,
-        accuracy: computedAccuracy,
-        pagesCount: activePagesCount,
-        warnings: mockWarnings,
-        encryptedPayload: securePayload.encryptedData,
-        iv: securePayload.iv,
-      }),
+return new Response(
+  JSON.stringify({
+    success: true,
+    fileName: fileName || "Untitled.pdf",
+    size: `${((base64File.length * 3) / 4 / 1024 / 1024).toFixed(1)} MB`,
+    resolution: "300 DPI",
+    fileType: mimeType && mimeType.includes("pdf") ? "PDF/A-1" : "JPEG Image",
+    uploader: "Admin-01",
+    progress: 100,
+    accuracy: computedAccuracy,
+    pagesCount: activePagesCount,
+    warnings: mockWarnings,
+    encryptedPayload: securePayload.encryptedData,
+    iv: securePayload.iv,
+    activeKeyIndex: activeKeyIndex,
+  }),
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
