@@ -150,6 +150,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   const [isExportingDocx, setIsExportingDocx] = useState(false);
   const [isRedacting, setIsRedacting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
 
   useEffect(() => {
     if (ocrText && !editorText) {
@@ -159,16 +160,35 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   }, [ocrText]);
 
   useEffect(() => {
+    setPreviewError(false);
     if (document?.selectedFile) {
-      const url = URL.createObjectURL(document.selectedFile);
-      setPreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+      try {
+        const file = Array.isArray(document.selectedFile) 
+          ? document.selectedFile[0] 
+          : document.selectedFile;
+          
+        if (!file) {
+          setPreviewUrl(null);
+          return;
+        }
+
+        const baseObjUrl = URL.createObjectURL(file);
+        const isPdf = file.type === "application/pdf" || document?.fileType?.toLowerCase().includes("pdf");
+        const url = isPdf ? `${baseObjUrl}#page=1` : baseObjUrl;
+        
+        setPreviewUrl(url);
+        return () => {
+          URL.revokeObjectURL(baseObjUrl);
+        };
+      } catch (err) {
+        console.error("Preview creation error:", err);
+        setPreviewError(true);
+        setPreviewUrl(null);
+      }
     } else {
       setPreviewUrl(null);
     }
-  }, [document?.selectedFile]);
+  }, [document?.selectedFile, document?.fileType]);
 
   // Di chuyển trường dữ liệu lên trước (sắp xếp)
   const moveFieldUp = (index: number) => {
@@ -503,20 +523,30 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
             {/* Khung hiển thị tài liệu gốc thực tế hoặc fallback mock */}
             <div className="p-1 bg-slate-950 text-slate-400 relative h-[500px] overflow-hidden rounded-b-xl flex items-center justify-center">
-              {previewUrl ? (
-                document?.selectedFile?.type === "application/pdf" || document?.fileType?.toLowerCase().includes("pdf") ? (
-                  <iframe
-                    src={`${previewUrl}#toolbar=0`}
-                    className="w-full h-full border-0"
-                    title="Bản chụp tài liệu nguyên bản PDF"
-                  />
-                ) : (
-                  <img
-                    src={previewUrl}
-                    alt="Bản chụp tài liệu nguyên bản"
-                    className="max-w-full max-h-full object-contain"
-                  />
-                )
+              {previewError ? (
+                <div className="flex items-center justify-center h-full w-full text-slate-400 font-bold text-sm">
+                  Tài liệu đang trực chiến (Trang 1)
+                </div>
+              ) : previewUrl ? (
+                (() => {
+                  const file = Array.isArray(document?.selectedFile) ? document.selectedFile[0] : document?.selectedFile;
+                  const isPdf = file?.type === "application/pdf" || document?.fileType?.toLowerCase().includes("pdf");
+                  return isPdf ? (
+                    <iframe
+                      src={`${previewUrl}&toolbar=0`}
+                      className="w-full h-full border-0"
+                      title="Bản chụp tài liệu nguyên bản PDF"
+                      onError={() => setPreviewError(true)}
+                    />
+                  ) : (
+                    <img
+                      src={previewUrl}
+                      alt="Bản chụp tài liệu nguyên bản"
+                      className="max-w-full max-h-full object-contain"
+                      onError={() => setPreviewError(true)}
+                    />
+                  );
+                })()
               ) : (
                 <div className="p-6 text-slate-400 relative font-mono text-[9px] h-full w-full overflow-y-auto custom-scrollbar select-none">
                   {/* Lớp lưới kỹ thuật */}
