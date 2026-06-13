@@ -461,7 +461,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             className={`font-bold px-4 py-1.5 rounded-lg text-xs tracking-wide flex items-center space-x-1.5 shadow-md cursor-pointer transition-all ${
               membershipRole === "Pro"
                 ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-rose-500/10"
-                : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border border-amber-300/45"
+                : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45"
             }`}
           >
             {membershipRole === "Pro" ? (
@@ -511,7 +511,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
           {/* SỬA NHANH & CHI TIẾT OCR (Accuracy Panel) */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wide flex items-center space-x-1.5 border-b border-slate-100 pb-2.5">
+            <h4 className="font-bold text-slate-850 text-slate-800 text-xs uppercase tracking-wide flex items-center space-x-1.5 border-b border-slate-100 pb-2.5">
               <Sparkles className="h-4 w-4 text-rose-600" />
               <span>Chẩn đoán & Sửa nhanh lỗi scan</span>
             </h4>
@@ -819,7 +819,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
               <div className="flex justify-end pt-1">
                 <button
                   onClick={handleAddExportField}
-                  className="bg-slate-800 hover:bg-slate-700 text-white px-3.5 py-1.5 rounded text-[11.5px] font-bold flex items-center space-x-1 border border-slate-700 shadow-sm transition-all cursor-pointer"
+                  className="bg-slate-800 hover:bg-slate-705 text-white px-3.5 py-1.5 rounded text-[11.5px] font-bold flex items-center space-x-1 border border-slate-700 shadow-sm transition-all cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Xác nhận thêm cột</span>

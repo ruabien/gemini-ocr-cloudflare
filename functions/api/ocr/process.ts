@@ -1,5 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-
 /* ==== MOCK DATA ==== */
 const MOCK_LEGAL_DOC_TEXT = `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
 Độc lập - Tự do - Hạnh phúc
@@ -54,7 +52,6 @@ Số: 15/CT-VKS-P1
 /* ==== END MOCK DATA ==== */
 
 function encryptText(text: string): { iv: string; encryptedData: string } {
-  // Safe mock encryption to avoid "node:crypto" module missing errors in standard Cloudflare Pages
   return {
     iv: "mock-iv-1234567890",
     encryptedData: "encrypted-mock-data-for-workerd",
@@ -108,7 +105,7 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
 
         pageText = ocrSpaceData.ParsedResults[0].ParsedText;
         success = true;
-        break; // Key này thành công, chuyển sang trang tiếp theo
+        break;
       } catch (err: any) {
         console.warn(
           `OCR.space API Key chỉ số ${k} thất bại ở trang ${pageIdx + 1}:`,
@@ -131,33 +128,36 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
 }
 
 export const onRequestPost = async (context: { request: Request; env: any }) => {
+  const { request, env } = context;
   try {
-    if (!context || !context.request) {
+    if (!request) {
       return new Response(
-        JSON.stringify({ success: false, error: "Yêu cầu không hợp lệ: Thiếu context hoặc request." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Yêu cầu không hợp lệ: Thiếu request." }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
-    const request = context.request;
 
-    // Setup OCR.space rotation keys properly from context.env
-    const ocrSpaceKeys = [];
-    if (context.env) {
-      if (context.env.OCR_SPACE_API_KEY) ocrSpaceKeys.push(context.env.OCR_SPACE_API_KEY);
-      if (context.env.OCR_SPACE_API_KEY_1) ocrSpaceKeys.push(context.env.OCR_SPACE_API_KEY_1);
-    }
+    const bodyData = await request.json() as any;
+    const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } = bodyData;
 
-    const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =
-      await request.json() as any;
+    // Temporary safe log to ensure parameters are passing cleanly
+    console.log("File name received:", fileName);
 
     if (!base64File) {
       return new Response(
         JSON.stringify({ success: false, error: "Không tìm thấy dữ liệu tệp tải lên." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Bóc tách danh sách Gemini Keys
+    // Setup OCR.space rotation keys properly from context.env/env
+    const ocrSpaceKeys = [];
+    if (env) {
+      if (env.OCR_SPACE_API_KEY) ocrSpaceKeys.push(env.OCR_SPACE_API_KEY);
+      if (env.OCR_SPACE_API_KEY_1) ocrSpaceKeys.push(env.OCR_SPACE_API_KEY_1);
+    }
+
+    // Bóc tách danh sách Gemini Keys từ headers
     let geminiKeys: string[] = [];
     const keysHeader = request.headers.get("X-Gemini-Keys");
     if (keysHeader) {
@@ -168,7 +168,7 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       }
     }
     if (!Array.isArray(geminiKeys) || geminiKeys.length === 0) {
-      const fallbackKey = userGeminiKey || (context.env ? context.env.GEMINI_API_KEY : undefined);
+      const fallbackKey = userGeminiKey || (env ? env.GEMINI_API_KEY : undefined);
       if (fallbackKey) {
         geminiKeys = [fallbackKey];
       }
@@ -208,7 +208,7 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
             success: false,
             error: "Yêu cầu cấu hình Gemini API Key cá nhân trong phần 'Cài đặt' để thực hiện nhận diện văn bản thực tế bằng Trí tuệ nhân tạo.",
           }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          { status: 200, headers: { "Content-Type": "application/json" } }
         );
       }
 
@@ -229,13 +229,6 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       for (let i = 0; i < geminiKeys.length; i++) {
         const activeKey = geminiKeys[i];
         try {
-          const activeAiInstance = new GoogleGenAI({
-            apiKey: activeKey,
-            httpOptions: {
-              headers: { "User-Agent": "aistudio-build" },
-            },
-          });
-
           const results = await Promise.all(
             pagesToProcess.map(async (pageData, index) => {
               const filePart = {
@@ -247,17 +240,35 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
               const promptPart = {
                 text: "Hãy thực hiện OCR văn bản tiếng Việt này. YÊU CẦU BẮT BUỘC TRẢ VỀ CHUẨN JSON VỚI CẤU TRÚC SAU (chỉ trả về JSON, không chứa markdown hay text nào khác bên ngoài):\n{\n  \"text\": \"Văn bản sau khi đã OCR với đầy đủ định dạng dòng, Quốc hiệu...\",\n  \"warnings\": [\n    { \"line\": \"số dòng hoặc trang\", \"text\": \"chữ bị lỗi/nghi ngờ\", \"description\": \"mô tả lỗi (VD: mờ, nghi ngờ sai, thiếu ngày tháng)\" }\n  ]\n}",
               };
-              const response = await activeAiInstance.models.generateContent({
-                model: "gemini-3.5-flash",
-                contents: { parts: [filePart, promptPart] },
+
+              const modelName = "gemini-2.5-flash";
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
+              const apiResp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "User-Agent": "aistudio-build"
+                },
+                body: JSON.stringify({
+                  contents: [{ parts: [filePart, promptPart] }]
+                })
               });
-              if (response && response.text) {
+
+              if (!apiResp.ok) {
+                const errText = await apiResp.text();
+                throw new Error(`Gemini HTTP ${apiResp.status}: ${errText}`);
+              }
+
+              const responseData = await apiResp.json() as any;
+              const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+              if (generatedText) {
                 try {
-                  const cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                  const cleanText = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
                   const parsed = JSON.parse(cleanText);
                   return { text: parsed.text || "", warnings: parsed.warnings || [], index: index + 1 };
                 } catch (e) {
-                  return { text: response.text, warnings: [], index: index + 1 };
+                  return { text: generatedText, warnings: [], index: index + 1 };
                 }
               } else {
                 throw new Error(
@@ -281,17 +292,15 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
           activeKeyIndex = i;
           ocrSuccess = true;
           warningsToSend = aggregatedWarnings;
-          break; // Key này thành công, thoát khỏi vòng lặp xoay vòng keys
+          break;
         } catch (err: any) {
           console.warn(`Gemini API Key chỉ số ${i} thất bại:`, err.message || err);
           lastError = err;
           const errorMessage = err.message || String(err);
-          // Make sure any catch block for Gemini "RECITATION" falls back to the OCR.space API correctly using the rotated keys.
           if (errorMessage.toLowerCase().includes("recitation")) {
             console.warn("Phát hiện lỗi RECITATION, ngừng thử các key khác để chuyển sang fallback.");
             break;
           }
-          // Thử key tiếp theo
         }
       }
 
@@ -300,9 +309,9 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
         try {
           const fallbackMimeType = base64File.startsWith("[") ? "image/jpeg" : mimeType;
           finalOcrText = await processWithOcrSpaceFallback(pagesToProcess, fallbackMimeType, ocrSpaceKeys);
-          computedAccuracy = 85.0; // Độ chính xác giả định cho fallback
+          computedAccuracy = 85.0;
           activePagesCount = pagesToProcess.length;
-          activeKeyIndex = -1; // Đánh dấu là đã dùng fallback
+          activeKeyIndex = -1;
           warningsToSend = [];
           ocrSuccess = true;
         } catch (fallbackErr: any) {
@@ -336,10 +345,10 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
         headers: { "Content-Type": "application/json" }
       }
     );
-  } catch (error: any) {
-    console.error("Backend error:", error);
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
-      status: 500,
+  } catch (err: any) {
+    console.error("Backend error:", err);
+    return new Response(JSON.stringify({ success: false, error: err.message || String(err) }), {
+      status: 200,
       headers: { "Content-Type": "application/json" }
     });
   }
