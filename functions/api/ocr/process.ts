@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 
 const ENCRYPTION_ALGORITHM = "aes-256-cbc";
