@@ -527,106 +527,19 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
             {/* Khung hiển thị tài liệu gốc thực tế hoặc fallback mock */}
             <div className="p-1 bg-slate-950 text-slate-400 relative h-[500px] overflow-hidden rounded-b-xl flex items-center justify-center">
-              {previewFailed ? (
-                <div className="flex flex-col items-center justify-center h-full w-full p-6 text-center bg-slate-900/50 border border-dashed border-slate-700 rounded-lg">
-                  <div className="p-4 bg-slate-800/60 rounded-full border border-slate-700 mb-4 text-slate-400">
-                    <FileText className="h-10 w-10 text-slate-300" />
-                  </div>
-                  <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-2">
-                    TÀI LIỆU HỒ SƠ VỤ ÁN
-                  </h3>
-                  <p className="text-xs text-slate-400 max-w-xs truncate mb-4 font-mono text-center" title={document.name}>
-                    {document.name}
-                  </p>
-                  <span className="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-full text-[10px] font-bold tracking-wider uppercase">
-                    Trang 1 / Tài liệu gốc
-                  </span>
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl p-6">
+                <div className="p-4 bg-red-500/10 text-red-400 rounded-full mb-3">
+                  <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-              ) : previewUrl ? (
-                (() => {
-                  const file = Array.isArray(document?.selectedFile) ? document.selectedFile[0] : document?.selectedFile;
-                  const isPdf = file?.type === "application/pdf" || document?.fileType?.toLowerCase().includes("pdf");
-                  return isPdf ? (
-                    <iframe
-                      src={`${previewUrl}&toolbar=0`}
-                      className="w-full h-full border-0"
-                      title="Bản chụp tài liệu nguyên bản PDF"
-                      onError={() => {
-                        setPreviewError(true);
-                        setPreviewFailed(true);
-                      }}
-                    />
-                  ) : (
-                    <img
-                      src={previewUrl}
-                      alt="Bản chụp tài liệu nguyên bản"
-                      className="max-w-full max-h-full object-contain"
-                      onError={() => {
-                        setPreviewError(true);
-                        setPreviewFailed(true);
-                      }}
-                    />
-                  );
-                })()
-              ) : (
-                <div className="p-6 text-slate-400 relative font-mono text-[9px] h-full w-full overflow-y-auto custom-scrollbar select-none">
-                  {/* Lớp lưới kỹ thuật */}
-                  <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#808080_1.5px,transparent_1.5px),linear-gradient(to_bottom,#808080_1.5px,transparent_1.5px)] bg-[size:1.5rem_1.5rem]" />
-                  <div className="relative z-10 space-y-8 leading-relaxed">
-                    <div className="flex justify-between items-center">
-                      <div className="border border-yellow-500/40 bg-yellow-500/5 p-1 rounded relative" title="Khu vực Quốc hiệu">
-                        <span className="absolute -top-3.5 left-0 text-[8px] bg-yellow-500 text-slate-950 px-1 font-bold rounded uppercase">Quốc hiệu</span>
-                        <p className="font-bold text-slate-200">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-                        <p className="font-bold text-slate-200">Độc lập - Tự do - Hạnh phúc</p>
-                      </div>
-                      
-                      <div className="border border-yellow-500/40 bg-yellow-500/5 p-1 rounded relative text-right">
-                        <span className="absolute -top-3.5 right-0 text-[8px] bg-yellow-500 text-slate-950 px-1 font-bold rounded uppercase">Địa danh / Ngày tháng</span>
-                        <p className="text-slate-300">Hà Nội, ngày 15 tháng 10 năm 2023</p>
-                      </div>
-                    </div>
-
-                    <div className="border border-red-500/50 bg-red-500/5 p-1.5 rounded relative max-w-xs">
-                      <span className="absolute -top-3.5 left-0 text-[8px] bg-red-500 text-white px-1 font-bold rounded uppercase">Cơ quan ban hành / Số hiệu</span>
-                      <p className="font-bold text-slate-200">UBND THÀNH PHỐ HÀ NỘI</p>
-                      <p className="font-bold text-slate-200">SỞ TÀI CHÍNH</p>
-                      <p className="text-yellow-400 font-bold">Số: 042/QĐ-STC</p>
-                    </div>
-
-                    <div className="border border-yellow-500/40 bg-yellow-500/5 p-2 rounded relative text-center">
-                      <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[8px] bg-yellow-500 text-slate-950 px-1 font-bold rounded uppercase">Trích yếu</span>
-                      <h3 className="font-bold text-slate-100 text-xs">QUYẾT ĐỊNH</h3>
-                      <p className="text-slate-300 mt-1">Về việc phê duyệt dự toán kinh phí triển khai hệ thống OCR tập trung</p>
-                    </div>
-
-                    <div className="space-y-3 font-sans text-slate-300 text-[10px] leading-relaxed">
-                      <p className="italic">Căn cứ Luật Ngân sách nhà nước ngày 25 tháng 6 năm 2015;</p>
-                      <p className="italic">Căn cứ Nghị định số 163/2016/NĐ-CP ngày 21 tháng 12 năm 2016 của Chính phủ chi tiết...</p>
-                      
-                      <div className="border-l-2 border-red-500 bg-red-500/5 p-2 rounded">
-                        <div className="flex items-center space-x-1 mb-1 text-red-400 font-bold uppercase text-[8px]">
-                          <AlertTriangle className="h-3 w-3" />
-                          <span>Khu vực chứa thông tin đương sự nhạy cảm</span>
-                        </div>
-                        <p className="text-rose-200">
-                           Người phê duyệt quyết định này: Nguyễn Văn A - Giám đốc Sở Tài chính. 
-                           Người đại diện: Ông Trần Văn B. Bà Nguyễn Thị C, ngụ tại 123 Đường Lê Lợi, CCCD 079092001122.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border border-slate-700 p-2 rounded bg-slate-900/60 flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-bold text-slate-200">Sở Tài chính Hà Nội</p>
-                        <p className="text-[8px] text-slate-500">Đã kiểm chứng mộc chữ ký số</p>
-                      </div>
-                      <div className="h-8 w-8 rounded-full border border-red-500/50 flex items-center justify-center text-[8px] font-bold text-red-500 uppercase animate-pulse">
-                        MỘC ĐỎ
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                <p className="text-sm font-semibold text-slate-200 text-center truncate max-w-full">
+                  {document?.name || "Workspace: Document"}
+                </p>
+                <span className="mt-2 px-2.5 py-1 text-xs font-medium bg-slate-800 text-slate-400 rounded-md border border-slate-700">
+                  Trang 1 / Hồ sơ gốc bảo mật
+                </span>
+              </div>
             </div>
           </div>
 

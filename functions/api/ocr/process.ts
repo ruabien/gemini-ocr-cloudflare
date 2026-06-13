@@ -2,13 +2,12 @@ import crypto from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
 
 const ENCRYPTION_ALGORITHM = "aes-256-cbc";
-const ENCRYPTION_KEY = Buffer.from(
-  process.env.CIPHER_SECRET ||
-    "01234567890123456789012345678912",
-  "utf-8"
-);
 
-function encryptText(text: string): { iv: string; encryptedData: string } {
+function encryptText(text: string, env: any): { iv: string; encryptedData: string } {
+  const ENCRYPTION_KEY = Buffer.from(
+    env?.CIPHER_SECRET || "01234567890123456789012345678912",
+    "utf-8"
+  );
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     ENCRYPTION_ALGORITHM,
@@ -150,7 +149,8 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
   return fullText.trim();
 }
 
-export async function onRequestPost({ request, env }: { request: any; env: any }) {
+export async function onRequestPost(context: any) {
+  const { request, env } = context;
   try {
     const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =
       await request.json();
@@ -173,7 +173,7 @@ export async function onRequestPost({ request, env }: { request: any; env: any }
       }
     }
     if (!Array.isArray(geminiKeys) || geminiKeys.length === 0) {
-      const fallbackKey = userGeminiKey || process.env.GEMINI_API_KEY;
+      const fallbackKey = userGeminiKey || context.env.GEMINI_API_KEY;
       if (fallbackKey) {
         geminiKeys = [fallbackKey];
       }
@@ -337,7 +337,7 @@ export async function onRequestPost({ request, env }: { request: any; env: any }
       }
     }
 
-    const securePayload = encryptText(rawTextResult);
+    const securePayload = encryptText(rawTextResult, context.env);
 
 return new Response(
   JSON.stringify({
