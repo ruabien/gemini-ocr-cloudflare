@@ -8,7 +8,7 @@ import { UploadCloud, FileText, Settings, Shield, AlertTriangle, Play, HelpCircl
 import { OcrConfig } from "../types";
 
 interface OcrScannerProps {
-  onFileLoaded: (fileData: { name: string; content: string; mimeType: string }) => void;
+  onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File }) => void;
   config: OcrConfig;
   setConfig: React.Dispatch<React.SetStateAction<OcrConfig>>;
 }
@@ -50,6 +50,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [isSlicing, setIsSlicing] = useState<boolean>(false);
   const [slicedPages, setSlicedPages] = useState<{ index: number; dataUrl: string; size: string }[]>([]);
   const [readyPayload, setReadyPayload] = useState<{ pagesBase64Array: string[]; fileName: string; mimeType: string } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Tải thư viện pdf.js động từ CDN tin cậy
   const loadPdfJS = (): Promise<any> => {
@@ -172,7 +173,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         if (prev >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            onFileLoaded({ name: fileName, content, mimeType });
+            onFileLoaded({ name: fileName, content, mimeType, selectedFile: selectedFile || undefined });
             setProcessingFile(null);
             setProgress(0);
           }, 300);
@@ -208,6 +209,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   };
 
   const handleSelectedFile = async (file: File) => {
+    setSelectedFile(file);
     setIsSlicing(true);
     setSlicedPages([]);
     setSlicingMessage("Khởi kiện tệp tin...");
@@ -313,7 +315,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       setProgress(100);
       
       setTimeout(() => {
-        onFileLoaded({ name: readyPayload.fileName, content: JSON.stringify(data), mimeType: readyPayload.mimeType });
+        onFileLoaded({ name: readyPayload.fileName, content: JSON.stringify(data), mimeType: readyPayload.mimeType, selectedFile: selectedFile || undefined });
         setProcessingFile(null);
         setProgress(0);
       }, 500);

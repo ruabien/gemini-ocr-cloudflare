@@ -124,10 +124,16 @@ export async function onRequestPost({ request }: { request: any }) {
         (fileName.toLowerCase().includes("doc_04") ||
           fileName.toLowerCase().includes("quyet-dinh")));
 
+    const mockWarnings = [
+      { line: 14, text: "042/QĐ-STC", description: "Mã số văn bản cần kiểm tra định dạng theo tiêu chuẩn" },
+      { line: 28, text: "163/2016/NĐ-CP", description: "Ký tự NĐ-CP bị mờ nhẹ trên bản ảnh gốc" },
+    ];
+
     let rawTextResult = MOCK_LEGAL_DOC_TEXT;
     let computedAccuracy = 99.4;
     let activePagesCount = 15;
     let activeKeyIndex = 0;
+    let warningsToSend = mockWarnings;
 
     if (isMock1) {
       rawTextResult = MOCK_BAN_AN_TEXT;
@@ -188,14 +194,20 @@ export async function onRequestPost({ request }: { request: any }) {
               };
               const promptPart = {
                 text:
-                  "Hãy thực hiện OCR văn bản tiếng Việt này một cách vô cùng chính xác từng ký tự, giữ nguyên định dạng dòng, tiêu đề, các phần tử chữ. Nếu đây là một văn bản hành chính Việt Nam, hãy định dạng đúng cấu trúc hành chính bao gồm Quốc hiệu, Tiêu ngữ, Tên cơ quan, Số văn bản, Trích yếu nội dung, Căn cứ pháp lý, Các điều khoản chi tiết và Phần chữ ký chức danh.",
+                  "Hãy thực hiện OCR văn bản tiếng Việt này. YÊU CẦU BẮT BUỘC TRẢ VỀ CHUẨN JSON VỚI CẤU TRÚC SAU (chỉ trả về JSON, không chứa markdown hay text nào khác bên ngoài):\n{\n  \"text\": \"Văn bản sau khi đã OCR với đầy đủ định dạng dòng, Quốc hiệu...\",\n  \"warnings\": [\n    { \"line\": \"số dòng hoặc trang\", \"text\": \"chữ bị lỗi/nghi ngờ\", \"description\": \"mô tả lỗi (VD: mờ, nghi ngờ sai, thiếu ngày tháng)\" }\n  ]\n}",
               };
               const response = await activeAiInstance.models.generateContent({
                 model: "gemini-3.5-flash",
                 contents: { parts: [filePart, promptPart] },
               });
               if (response && response.text) {
-                return { text: response.text, index: index + 1 };
+                try {
+                  const cleanText = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                  const parsed = JSON.parse(cleanText);
+                  return { text: parsed.text || "", warnings: parsed.warnings || [], index: index + 1 };
+                } catch (e) {
+                  return { text: response.text, warnings: [], index: index + 1 };
+                }
               } else {
                 throw new Error(
                   `Không nhận được phản hồi văn bản từ dịch vụ Gemini ở trang thứ ${index + 1}.`
@@ -204,14 +216,22 @@ export async function onRequestPost({ request }: { request: any }) {
             })
           );
 
+          let aggregatedWarnings: any[] = [];
           results.sort((a, b) => a.index - b.index);
           rawTextResult = results.map((r) => r.text).join("\n\n");
+          results.forEach(r => {
+            if (r.warnings && r.warnings.length > 0) {
+              aggregatedWarnings.push(...r.warnings);
+            }
+          });
+
           computedAccuracy = parseFloat(
             (95 + Math.random() * 4.9).toFixed(1)
           );
           activePagesCount = pagesToProcess.length;
           activeKeyIndex = i;
           ocrSuccess = true;
+          warningsToSend = aggregatedWarnings;
           break; // Key này thành công, thoát khỏi vòng lặp xoay vòng keys
         } catch (err: any) {
           console.warn(`Gemini API Key chỉ số ${i} thất bại:`, err.message || err);
@@ -229,11 +249,6 @@ export async function onRequestPost({ request }: { request: any }) {
 
     const securePayload = encryptText(rawTextResult);
 
-    const mockWarnings = [
-      { line: 14, text: "042/QĐ-STC", description: "Mã số văn bản cần kiểm tra định dạng theo tiêu chuẩn" },
-      { line: 28, text: "163/2016/NĐ-CP", description: "Ký tự NĐ-CP bị mờ nhẹ trên bản ảnh gốc" },
-    ];
-
 return new Response(
   JSON.stringify({
     success: true,
@@ -246,7 +261,7 @@ return new Response(
       accuracy: computedAccuracy,
       text: rawTextResult,
     pagesCount: activePagesCount,
-    warnings: mockWarnings,
+    warnings: warningsToSend,
     encryptedPayload: securePayload.encryptedData,
     iv: securePayload.iv,
     activeKeyIndex: activeKeyIndex,
