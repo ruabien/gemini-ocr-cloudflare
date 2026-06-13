@@ -151,6 +151,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   const [isRedacting, setIsRedacting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
 
   useEffect(() => {
     if (ocrText && !editorText) {
@@ -161,13 +162,15 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
   useEffect(() => {
     setPreviewError(false);
+    setPreviewFailed(false);
     if (document?.selectedFile) {
       try {
         const file = Array.isArray(document.selectedFile) 
           ? document.selectedFile[0] 
           : document.selectedFile;
           
-        if (!file) {
+        if (!file || !(file instanceof Blob)) {
+          setPreviewFailed(true);
           setPreviewUrl(null);
           return;
         }
@@ -183,6 +186,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
       } catch (err) {
         console.error("Preview creation error:", err);
         setPreviewError(true);
+        setPreviewFailed(true);
         setPreviewUrl(null);
       }
     } else {
@@ -523,9 +527,20 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
             {/* Khung hiển thị tài liệu gốc thực tế hoặc fallback mock */}
             <div className="p-1 bg-slate-950 text-slate-400 relative h-[500px] overflow-hidden rounded-b-xl flex items-center justify-center">
-              {previewError ? (
-                <div className="flex items-center justify-center h-full w-full text-slate-400 font-bold text-sm">
-                  Tài liệu đang trực chiến (Trang 1)
+              {previewFailed ? (
+                <div className="flex flex-col items-center justify-center h-full w-full p-6 text-center bg-slate-900/50 border border-dashed border-slate-700 rounded-lg">
+                  <div className="p-4 bg-slate-800/60 rounded-full border border-slate-700 mb-4 text-slate-400">
+                    <FileText className="h-10 w-10 text-slate-300" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-2">
+                    TÀI LIỆU HỒ SƠ VỤ ÁN
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-xs truncate mb-4 font-mono text-center" title={document.name}>
+                    {document.name}
+                  </p>
+                  <span className="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-full text-[10px] font-bold tracking-wider uppercase">
+                    Trang 1 / Tài liệu gốc
+                  </span>
                 </div>
               ) : previewUrl ? (
                 (() => {
@@ -536,14 +551,20 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
                       src={`${previewUrl}&toolbar=0`}
                       className="w-full h-full border-0"
                       title="Bản chụp tài liệu nguyên bản PDF"
-                      onError={() => setPreviewError(true)}
+                      onError={() => {
+                        setPreviewError(true);
+                        setPreviewFailed(true);
+                      }}
                     />
                   ) : (
                     <img
                       src={previewUrl}
                       alt="Bản chụp tài liệu nguyên bản"
                       className="max-w-full max-h-full object-contain"
-                      onError={() => setPreviewError(true)}
+                      onError={() => {
+                        setPreviewError(true);
+                        setPreviewFailed(true);
+                      }}
                     />
                   );
                 })()
