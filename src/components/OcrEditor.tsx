@@ -84,11 +84,34 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   // Trạng thái nâng cấp & tính năng PRO
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
+  // -------------------------------------------------
+  // Parse OCR data from `document.content` (backend response) 
+  // or fallback to legacy `document` fields.
+  // This ensures the editor never receives the literal string "undefined".
+  const parsedData = (() => {
+    if (!document) return {};
+    if (document.content) {
+      try {
+        return JSON.parse(document.content);
+      } catch {
+        // Not a JSON string – may be a mock base64 placeholder or raw text.
+        return { text: document.content };
+      }
+    }
+    return {};
+  })();
+
+  const ocrText    = parsedData.text || parsedData.data?.text || document?.rawText || "";
+  const fileType   = parsedData.fileType   || document?.fileType   || "";
+  const resolution = parsedData.resolution || document?.resolution || "";
+  const uploader   = parsedData.uploader   || document?.uploader   || "";
+  const accuracy   = (parsedData.accuracy !== undefined ? parsedData.accuracy : document?.accuracy) ?? "";
+  const warnings   = parsedData.warnings ?? document?.warnings ?? [];
 
   // Trạng thái lưu trữ văn bản đang biên tập
-  const [editorText, setEditorText] = useState(document.rawText);
+  const [editorText, setEditorText] = useState(ocrText);
   const [isAnonymized, setIsAnonymized] = useState(false);
-  const [originalBackup, setOriginalBackup] = useState(document.rawText);
+  const [originalBackup, setOriginalBackup] = useState(ocrText);
   const [isEncryptActive, setIsEncryptActive] = useState(true);
 
   // Trạng thái các trường Excel tự định nghĩa
@@ -370,7 +393,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
               <span>Workspace: {document.name}</span>
             </h2>
             <p className="text-[10px] text-slate-500 font-medium">
-              Định dạng quét: <span className="text-slate-700 font-bold">{document.fileType}</span> • {document.resolution} • Uploader: {document.uploader}
+              Định dạng quét: <span className="text-slate-700 font-bold">{fileType}</span> • {resolution} • Uploader: {uploader}
             </p>
           </div>
         </div>
@@ -523,7 +546,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-150">
               <div>
                 <p className="text-[10px] text-slate-400 font-bold uppercase">Độ chính xác bóc tách</p>
-                <p className="text-xl font-mono font-black text-emerald-600 mt-0.5">{document.accuracy}%</p>
+                <p className="text-xl font-mono font-black text-emerald-600 mt-0.5">{accuracy}%</p>
               </div>
               <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-200 block">
                 TỐI ƯU TIẾNG VIỆT
@@ -531,10 +554,10 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             </div>
 
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-slate-500 uppercase">Phát hiện cảnh báo ({(document.warnings || []).length})</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase">Phát hiện cảnh báo ({warnings.length})</p>
               
               <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
-                {(document.warnings || []).map((warn: any, index: number) => (
+                {warnings.map((warn: any, index: number) => (
                   <div key={index} className="bg-yellow-50 border border-yellow-250 p-2 rounded flex items-start space-x-2 text-yellow-800 text-[10px] leading-relaxed">
                     <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0 mt-0.5" />
                     <div>

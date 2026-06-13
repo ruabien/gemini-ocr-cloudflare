@@ -30,6 +30,7 @@ export interface ExtractionField {
 
 export interface OcrDocument {
   name: string;
+  content?: string;
   rawText: string;
   fileType: string;
   resolution: string;
