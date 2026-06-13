@@ -311,7 +311,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = window.document.createElement("a");
       link.href = downloadUrl;
-      link.download = `${document.name.replace(/\.[^/.]+$/, "")}_ND30.doc`;
+      link.download = `${document.name.replace(/\.[^/.]+$/, "")}_ND30.docx`;
       window.document.body.appendChild(link);
       link.click();
       link.remove();
