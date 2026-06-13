@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { 
   Settings, Key, ShieldCheck, Eye, EyeOff, Check, CreditCard, 
-  Sparkles, Award, Zap, AlertCircle, RefreshCw, X, Shield, Cloud
+  Sparkles, Award, Zap, AlertCircle, RefreshCw, X, Shield, Cloud, Trash2
 } from "lucide-react";
 
 interface SettingsProps {
@@ -24,7 +24,19 @@ export default function SettingsComponent({
   setMembershipRole,
   setActiveTab
 }: SettingsProps) {
-  const [apiKeyInput, setApiKeyInput] = useState(userGeminiKey);
+  const [keysList, setKeysList] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('geminiKeys');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return userGeminiKey ? [userGeminiKey] : [];
+  });
+  const [apiKeyInput, setApiKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [upgradeAnim, setUpgradeAnim] = useState(false);
@@ -32,17 +44,26 @@ export default function SettingsComponent({
   // Lưu khoá API
   const handleSaveApiKey = (e: React.FormEvent) => {
     e.preventDefault();
-    // Split input by commas or newlines, trim, filter empty values
-    const keys = apiKeyInput
+    const newKeys = apiKeyInput
       .split(/[\n,]+/)
       .map(k => k.trim())
-      .filter(k => k);
-    // Persist array of keys securely in localStorage
-    localStorage.setItem('geminiKeys', JSON.stringify(keys));
-    // For backward compatibility set the first key as the single key state
-    setUserGeminiKey(keys[0] || '');
+      .filter(k => k && !keysList.includes(k));
+    if (newKeys.length === 0) return;
+
+    const updatedKeys = [...keysList, ...newKeys];
+    setKeysList(updatedKeys);
+    localStorage.setItem('geminiKeys', JSON.stringify(updatedKeys));
+    setUserGeminiKey(updatedKeys[0] || '');
+    setApiKeyInput("");
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  const handleDeleteKey = (index: number) => {
+    const updatedKeys = keysList.filter((_, i) => i !== index);
+    setKeysList(updatedKeys);
+    localStorage.setItem('geminiKeys', JSON.stringify(updatedKeys));
+    setUserGeminiKey(updatedKeys[0] || '');
   };
 
   // Nâng cấp gói thành viên
@@ -85,14 +106,14 @@ export default function SettingsComponent({
             <form onSubmit={handleSaveApiKey} className="space-y-4">
               <div>
                 <label className="block text-[11px] font-bold text-slate-650 text-slate-600 uppercase mb-1.5 tracking-wide">
-                  Gemini API Key của bạn
+                  Nhập thêm Gemini API Keys mới
                 </label>
                 <div className="relative rounded-lg shadow-sm">
                   <textarea
-                    rows={4}
+                    rows={3}
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="Nhập các Gemini API Key, mỗi key trên một dòng hoặc cách nhau bằng dấu phẩy"
+                    placeholder="Nhập các Gemini API Key, cách nhau bằng dấu phẩy hoặc dòng mới"
                     className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-3.5 pr-3.5 text-sm text-slate-800 font-mono focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all resize-y"
                   />
                 </div>
@@ -105,10 +126,10 @@ export default function SettingsComponent({
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                {userGeminiKey ? (
+                {keysList.length > 0 ? (
                   <span className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-2.5 py-1 rounded-md font-bold font-mono tracking-wider flex items-center space-x-1">
                     <Check className="h-3.5 w-3.5" />
-                    <span>ĐÃ KHỞI TẠO KEY</span>
+                    <span>ĐÃ NẠP {keysList.length} KEYS</span>
                   </span>
                 ) : (
                   <span className="text-[11px] bg-amber-50 border border-amber-200 text-amber-600 px-2.5 py-1 rounded-md font-bold font-mono tracking-wider flex items-center space-x-1">
@@ -119,23 +140,63 @@ export default function SettingsComponent({
 
                 <button
                   type="submit"
+                  disabled={!apiKeyInput.trim()}
                   className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform flex items-center space-x-1.5 cursor-pointer shadow-sm border ${
                     saveSuccess 
                       ? "bg-emerald-600 text-white border-emerald-500 scale-95" 
-                      : "bg-slate-900 border-slate-850 hover:bg-slate-800 text-white active:scale-95"
+                      : "bg-slate-900 border-slate-850 hover:bg-slate-800 text-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                   }`}
                 >
                   {saveSuccess ? (
                     <>
                       <Check className="h-4 w-4 animate-scale" />
-                      <span>Đã cập nhật khóa thành công!</span>
+                      <span>Đã thêm khóa thành công!</span>
                     </>
                   ) : (
-                    <span>Lưu cấu hình khóa</span>
+                    <span>Thêm và lưu Key</span>
                   )}
                 </button>
               </div>
             </form>
+
+            {/* DANH SÁCH KEY ĐÃ LƯU */}
+            <div className="space-y-3 pt-3 border-t border-slate-100">
+              <label className="block text-[11px] font-bold text-slate-650 text-slate-600 uppercase tracking-wide">
+                Danh sách Keys hiện có ({keysList.length})
+              </label>
+              {keysList.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">Chưa có API Key nào được nhập.</p>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+                  {keysList.map((key, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-lg text-xs transition-colors"
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <span className="font-mono text-slate-400 font-bold text-[10px]">#{index + 1}</span>
+                        <code className="font-mono text-slate-700 font-semibold bg-white px-1.5 py-0.5 border border-slate-150 rounded">
+                          {key.length > 12 ? `${key.substring(0, 8)}...${key.slice(-4)}` : key}
+                        </code>
+                        {index === 0 && (
+                          <span className="px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded text-[9px] font-bold">
+                            Chính
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteKey(index)}
+                        className="p-1 text-slate-450 hover:text-red-650 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-all cursor-pointer"
+                        title="Xóa khóa này"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
               <h4 className="text-xs font-bold text-slate-750 text-slate-800 flex items-center space-x-1.5">

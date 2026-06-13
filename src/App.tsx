@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 import Dashboard from "./components/Dashboard";
 import OcrScanner from "./components/OcrScanner";
@@ -8,9 +7,7 @@ import Navbar from "./components/Navbar";
 import Upgrade from "./components/Upgrade";
 import Settings from "./components/Settings";
 
-function AppRoutes() {
-  const navigate = useNavigate();
-
+function AppContent() {
   // State to hold OCR configuration, document data, session and membership
   const [config, setConfig] = useState<any>(() => {
     const saved = localStorage.getItem('ocr_config');
@@ -35,23 +32,25 @@ function AppRoutes() {
   });
   const [activeTab, setActiveTab] = useState("landing");
   const [membershipRole, setMembershipRole] = useState<"Free" | "Pro">("Free");
-  const [userGeminiKey, setUserGeminiKey] = useState<string>("");
-
-  // Set default initial tab route to landing page correctly without triggering rerender flicker
-  React.useEffect(() => {
-    if (window.location.pathname === "/") {
-      setActiveTab("landing");
-    }
-  }, []);
+  const [userGeminiKey, setUserGeminiKey] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('geminiKeys');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
+      }
+    } catch (e) {}
+    return "";
+  });
 
   // Handlers for navigation and tab changes
   const handleStart = () => {
     setActiveTab("scanner");
-    navigate("/scanner");
   };
   const handleActiveTab = (tab: string) => {
     setActiveTab(tab);
-    navigate(`/${tab}`);
   };
 
   const login = async () => {
@@ -75,69 +74,52 @@ function AppRoutes() {
         membershipRole={membershipRole}
       />
       <div className="pt-16 min-h-[calc(100vh-4rem)]">
-        <Routes>
-          <Route
-            path="/"
-            element={<LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />}
+        {activeTab === "landing" && (
+          <LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />
+        )}
+        {activeTab === "dashboard" && (
+          <Dashboard onStartOcr={handleStart} />
+        )}
+        {activeTab === "scanner" && (
+          <OcrScanner
+            onFileLoaded={(fileData) => {
+              setDocument(fileData);
+              setActiveTab("editor");
+            }}
+            config={config}
+            setConfig={setConfig}
           />
-          <Route path="/dashboard" element={<Dashboard onStartOcr={handleStart} />} />
-          <Route
-            path="/scanner"
-            element={
-              <OcrScanner
-                onFileLoaded={(fileData) => {
-                  setDocument(fileData);
-                  navigate("/editor");
-                }}
-                config={config}
-                setConfig={setConfig}
-              />
-            }
+        )}
+        {activeTab === "editor" && (
+          <OcrEditor
+            document={document}
+            onBack={handleStart}
+            membershipRole={membershipRole}
+            setActiveTab={handleActiveTab}
           />
-          <Route
-            path="/editor"
-            element={
-              <OcrEditor
-                document={document}
-                onBack={handleStart}
-                membershipRole={membershipRole}
-                setActiveTab={handleActiveTab}
-              />
-            }
+        )}
+        {activeTab === "upgrade" && (
+          <Upgrade
+            session={session}
+            membershipRole={membershipRole}
+            setMembershipRole={setMembershipRole}
+            setActiveTab={handleActiveTab}
           />
-          <Route
-            path="/upgrade"
-            element={
-              <Upgrade
-                session={session}
-                membershipRole={membershipRole}
-                setMembershipRole={setMembershipRole}
-                setActiveTab={handleActiveTab}
-              />
-            }
+        )}
+        {activeTab === "settings" && (
+          <Settings
+            userGeminiKey={userGeminiKey}
+            setUserGeminiKey={setUserGeminiKey}
+            membershipRole={membershipRole}
+            setMembershipRole={setMembershipRole}
+            setActiveTab={handleActiveTab}
           />
-          <Route
-            path="/settings"
-            element={
-              <Settings
-                userGeminiKey={userGeminiKey}
-                setUserGeminiKey={setUserGeminiKey}
-                membershipRole={membershipRole}
-                setMembershipRole={setMembershipRole}
-                setActiveTab={handleActiveTab}
-              />
-            }
-          />
-        </Routes>
+        )}
       </div>
     </>
   );
 }
 
 export default function App() {
-  return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
-  );
+  return <AppContent />;
 }

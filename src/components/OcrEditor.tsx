@@ -59,7 +59,27 @@ interface OcrEditorProps {
 }
 
 export default function OcrEditor({ document, onBack, membershipRole, setActiveTab }: OcrEditorProps) {
-  if (!document) return null;
+  if (!document) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-8">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-lg font-bold text-slate-800 mb-2">
+            Chưa có dữ liệu hồ sơ được chọn.
+          </h2>
+          <p className="text-slate-600 mb-6">
+            Vui lòng quay lại trang Phân tích OCR để chọn file và tiến hành bóc tách.
+          </p>
+          <button
+            onClick={onBack}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-colors"
+          >
+            Quay lại Phân tích OCR
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Trạng thái nâng cấp & tính năng PRO
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -514,7 +534,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
               <p className="text-[10px] font-bold text-slate-500 uppercase">Phát hiện cảnh báo ({document.warnings.length})</p>
               
               <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
-                {document.warnings.map((warn, index) => (
+                {document.warnings.map((warn: any, index: number) => (
                   <div key={index} className="bg-yellow-50 border border-yellow-250 p-2 rounded flex items-start space-x-2 text-yellow-800 text-[10px] leading-relaxed">
                     <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0 mt-0.5" />
                     <div>

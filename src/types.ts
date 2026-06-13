@@ -17,5 +17,27 @@ export interface RecentActivity {
 export interface OcrConfig {
   engine: string;
   outputFormat: string;
-  // Add other configuration fields as needed
+  language?: string;
+  preserveLayout?: boolean;
+}
+
+export interface ExtractionField {
+  id: string;
+  name: string;
+  key: string;
+  type: string;
+}
+
+export interface OcrDocument {
+  name: string;
+  rawText: string;
+  fileType: string;
+  resolution: string;
+  uploader: string;
+  accuracy: number | string;
+  warnings: Array<{
+    line: string | number;
+    text: string;
+    description: string;
+  }>;
 }
