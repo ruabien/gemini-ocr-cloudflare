@@ -12,7 +12,20 @@ function AppRoutes() {
   const navigate = useNavigate();
 
   // State to hold OCR configuration, document data, session and membership
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<any>(() => {
+    const saved = localStorage.getItem('ocr_config');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {
+      engine: 'precision',
+      outputFormat: 'TXT',
+      language: 'vi',
+      preserveLayout: true
+    };
+  });
   const [document, setDocument] = useState<any>(null);
   const [session, setSession] = useState<any>({
     name: "Khách",

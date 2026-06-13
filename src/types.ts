@@ -13,3 +13,9 @@ export interface RecentActivity {
   status: string;
   icon: string;
 }
+
+export interface OcrConfig {
+  engine: string;
+  outputFormat: string;
+  // Add other configuration fields as needed
+}

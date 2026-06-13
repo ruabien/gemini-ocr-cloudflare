@@ -442,8 +442,14 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Mô hình OCR</label>
                   <select 
-                    value={config.engine}
-                    onChange={(e: any) => setConfig(prev => ({ ...prev, engine: e.target.value }))}
+                    value={config?.engine || 'precision'}
+                    onChange={(e: any) => {
+                      setConfig((prev: any) => {
+                        const newConfig = { ...(prev || {}), engine: e.target.value };
+                        localStorage.setItem('ocr_config', JSON.stringify(newConfig));
+                        return newConfig;
+                      });
+                    }}
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
                   >
                     <option value="precision">Sovereign Lawtech Precision (Mô hình Trí tuệ nhân tạo V4 - Khuyên dùng)</option>
@@ -455,8 +461,14 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Xuất định dạng mặc định</label>
                   <select 
-                    value={config.outputFormat}
-                    onChange={(e: any) => setConfig(prev => ({ ...prev, outputFormat: e.target.value }))}
+                    value={config?.outputFormat || 'TXT'}
+                    onChange={(e: any) => {
+                      setConfig((prev: any) => {
+                        const newConfig = { ...(prev || {}), outputFormat: e.target.value };
+                        localStorage.setItem('ocr_config', JSON.stringify(newConfig));
+                        return newConfig;
+                      });
+                    }}
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
                   >
                     <option value="TXT">Văn bản thô không định dạng (.TXT) - Mặc định</option>
