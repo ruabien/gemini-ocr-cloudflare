@@ -26,7 +26,7 @@ export default function SettingsComponent({
 }: SettingsProps) {
   const [keysList, setKeysList] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem('geminiKeys');
+      const stored = localStorage.getItem('vks_gemini_api_keys');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -52,7 +52,7 @@ export default function SettingsComponent({
 
     const updatedKeys = [...keysList, ...newKeys];
     setKeysList(updatedKeys);
-    localStorage.setItem('geminiKeys', JSON.stringify(updatedKeys));
+    localStorage.setItem('vks_gemini_api_keys', JSON.stringify(updatedKeys));
     setUserGeminiKey(updatedKeys[0] || '');
     setApiKeyInput("");
     setSaveSuccess(true);
@@ -62,7 +62,7 @@ export default function SettingsComponent({
   const handleDeleteKey = (index: number) => {
     const updatedKeys = keysList.filter((_, i) => i !== index);
     setKeysList(updatedKeys);
-    localStorage.setItem('geminiKeys', JSON.stringify(updatedKeys));
+    localStorage.setItem('vks_gemini_api_keys', JSON.stringify(updatedKeys));
     setUserGeminiKey(updatedKeys[0] || '');
   };
 

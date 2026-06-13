@@ -34,7 +34,7 @@ function AppContent() {
   const [membershipRole, setMembershipRole] = useState<"Free" | "Pro">("Free");
   const [userGeminiKey, setUserGeminiKey] = useState<string>(() => {
     try {
-      const saved = localStorage.getItem('geminiKeys');
+      const saved = localStorage.getItem('vks_gemini_api_keys');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
