@@ -47,6 +47,10 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Range State
+  const [fromPage, setFromPage] = useState<string>("");
+  const [toPage, setToPage] = useState<string>("");
+
   const [slicingMessage, setSlicingMessage] = useState<string>("");
   const [isSlicing, setIsSlicing] = useState<boolean>(false);
   const [slicedPages, setSlicedPages] = useState<{ index: number; dataUrl: string; size: string }[]>([]);
@@ -279,18 +283,27 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     }, 500);
 
     try {
+      const payload: any = {
+        base64File: JSON.stringify(readyPayload.pagesBase64Array),
+        fileName: readyPayload.fileName,
+        mimeType: readyPayload.mimeType,
+        isEncrypted: false,
+      };
+
+      if (fromPage.trim() !== "") {
+        payload.fromPage = parseInt(fromPage, 10);
+      }
+      if (toPage.trim() !== "") {
+        payload.toPage = parseInt(toPage, 10);
+      }
+
       const response = await fetch('/api/ocr/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Gemini-Keys': JSON.stringify(keys),
         },
-        body: JSON.stringify({
-          base64File: JSON.stringify(readyPayload.pagesBase64Array),
-          fileName: readyPayload.fileName,
-          mimeType: readyPayload.mimeType,
-          isEncrypted: false,
-        }),
+        body: JSON.stringify(payload),
       });
       
       const data = await response.json();
@@ -525,6 +538,35 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                   </select>
                   <p className="text-[10px] text-slate-400 mt-1">Sử dụng định dạng file tối ưu để phục vụ bóc tách tài liệu tố tụng. DOCX và Excel yêu cầu tài khoản PRO.</p>
                 </div>
+              </div>
+
+              {/* PHẠM VI TRÍCH XUẤT (PAGE RANGE) */}
+              <div className="border-t border-slate-100 pt-4">
+                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Phạm vi trích xuất (Page Range)</label>
+                <div className="flex items-center space-x-3">
+                  <div className="w-1/2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Từ trang"
+                      value={fromPage}
+                      onChange={(e) => setFromPage(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
+                    />
+                  </div>
+                  <span className="text-slate-400 text-xs">—</span>
+                  <div className="w-1/2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Đến trang"
+                      value={toPage}
+                      onChange={(e) => setToPage(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
               </div>
 
               <div className="flex items-center space-x-4 bg-yellow-50 text-yellow-800 p-3 rounded-lg border border-yellow-200 mt-2">
