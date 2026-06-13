@@ -53,7 +53,7 @@ Số: 15/CT-VKS-P1
 
 /* ==== END MOCK DATA ==== */
 
-function encryptText(text: string, env: any): { iv: string; encryptedData: string } {
+function encryptText(text: string): { iv: string; encryptedData: string } {
   // Safe mock encryption to avoid "node:crypto" module missing errors in standard Cloudflare Pages
   return {
     iv: "mock-iv-1234567890",
@@ -130,14 +130,14 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
   return fullText.trim();
 }
 
-export const onRequestPost = async (context: { request: Request; env: any }) => {
+export async function onRequestPost(context: { request: Request; env: Record<string, any> }) {
   try {
     const request = context.request;
 
     // Setup OCR.space rotation keys properly from context.env
     const ocrSpaceKeys = [
-      context.env.OCR_SPACE_API_KEY,
-      context.env.OCR_SPACE_API_KEY_1
+      context.env?.OCR_SPACE_API_KEY,
+      context.env?.OCR_SPACE_API_KEY_1
     ].filter(Boolean);
 
     const { base64File, fileName, mimeType, isEncrypted, userGeminiKey } =
@@ -306,7 +306,7 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       }
     }
 
-    const securePayload = encryptText(finalOcrText, context.env);
+    const securePayload = encryptText(finalOcrText);
 
     return new Response(
       JSON.stringify({

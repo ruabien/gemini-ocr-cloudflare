@@ -1,0 +1,4 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; worker-src 'self' blob:; img-src 'self' data: blob: https://lh3.googleusercontent.com https://api.vietqr.io; connect-src 'self' https://api.ocr.space https://api.vietqr.io; frame-src 'self' blob:;
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
