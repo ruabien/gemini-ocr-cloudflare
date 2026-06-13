@@ -37,6 +37,13 @@ function AppRoutes() {
   const [membershipRole, setMembershipRole] = useState<"Free" | "Pro">("Free");
   const [userGeminiKey, setUserGeminiKey] = useState<string>("");
 
+  // Set default initial tab route to landing page correctly without triggering rerender flicker
+  React.useEffect(() => {
+    if (window.location.pathname === "/") {
+      setActiveTab("landing");
+    }
+  }, []);
+
   // Handlers for navigation and tab changes
   const handleStart = () => {
     setActiveTab("scanner");
