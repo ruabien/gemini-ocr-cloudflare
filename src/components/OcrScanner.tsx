@@ -457,11 +457,11 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
-              <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl text-slate-100 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
               
-              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-800 flex items-center mb-4 relative z-10">
-                <Settings className="h-4 w-4 mr-1.5 text-slate-600 animate-pulse" />
+              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-100 flex items-center mb-4 relative z-10">
+                <Settings className="h-4 w-4 mr-1.5 text-slate-100 animate-pulse" />
                 <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
               </h4>
 
@@ -477,7 +477,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 </button>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-xs font-bold text-slate-100 mb-1.5 uppercase tracking-wide">
                     Phạm vi trích xuất (Page Range)
                   </label>
                   <div className="flex items-center space-x-3">
@@ -491,7 +491,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                         className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
                       />
                     </div>
-                    <span className="text-slate-500 text-xs">—</span>
+                    <span className="text-slate-300 text-xs">—</span>
                     <div className="w-1/2">
                       <input
                         type="number"
@@ -503,7 +503,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
+                  <p className="text-[10px] text-slate-300 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
                 </div>
 
                 <div className="flex items-start space-x-3 bg-yellow-50 text-yellow-800 p-3.5 rounded-lg border border-yellow-200 mt-4">
