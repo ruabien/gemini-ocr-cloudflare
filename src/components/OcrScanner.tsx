@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from "react";
-import { UploadCloud, Settings, Shield, AlertTriangle, HelpCircle, Layers, Activity, ScanLine } from "lucide-react";
+import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity } from "lucide-react";
 import { OcrConfig } from "../types";
 import * as pdfjs from 'pdfjs-dist';
 
@@ -123,29 +123,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     } else if (e.type === "dragleave") {
       setDragActive(false);
     }
-  };
-
-  // Kích hoạt giả lập quét tệp mượt mà và chuyển đổi màn hình sau khi đạt 100%
-  const simulateOcrProcess = (fileName: string, content: string, mimeType: string) => {
-    setProcessingFile(fileName);
-    setProgress(5);
-    
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            onFileLoaded({ name: fileName, content, mimeType, selectedFile: selectedFile || undefined });
-            setProcessingFile(null);
-            setProgress(0);
-          }, 300);
-          return 100;
-        }
-        // Tăng vọt ngẫu nhiên tạo độ tin cậy
-        const increment = Math.floor(Math.random() * 20) + 12;
-        return Math.min(prev + increment, 100);
-      });
-    }, 280);
   };
 
   // Thả tệp tin
@@ -320,7 +297,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         {/* Left column: File upload & nén trang */}
         <div className="lg:col-span-2 space-y-6">
           {isSlicing ? (
-            <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
+            <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
               
               <div className="relative z-10 flex flex-col items-center w-full max-w-md text-center space-y-6">
@@ -345,8 +322,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               </div>
             </div>
           ) : processingFile ? (
-            <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
-              {/* Shimmer backgrounds */}
+            <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
               
               <div className="relative z-10 flex flex-col items-center w-full max-w-md text-center space-y-6">
@@ -361,13 +337,11 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                   <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{processingFile}</p>
                 </div>
 
-                {/* Thanh tiến trình Shimmer */}
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
                   <div 
                     className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 h-full rounded-full transition-all duration-300 relative"
                     style={{ width: `${progress}%` }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
                   </div>
                 </div>
 
@@ -433,7 +407,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950/50">
                     {slicedPages.map((page) => (
-                      <div key={page.index} className="bg-slate-900 p-2 rounded-lg border border-slate-800 shadow-xs flex flex-col space-y-2 relative group hover:border-emerald-500 transition-all">
+                      <div key={page.index} className="bg-slate-900 p-2 rounded-lg border border-slate-800 flex flex-col space-y-2 relative group hover:border-emerald-500 transition-all">
                         <div className="aspect-[3/4] rounded bg-slate-950 overflow-hidden relative border border-slate-800">
                           <img 
                             referrerPolicy="no-referrer"
@@ -466,23 +440,23 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           <div className="bg-gradient-to-b from-[#002F5F] to-[#0A192F] text-white p-6 rounded-xl border border-[#163A70] shadow-sm relative overflow-hidden">
             <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
             
-            <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-4 relative z-10">
+            <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-5 relative z-10">
               <Settings className="h-4 w-4 mr-1.5 text-yellow-400 animate-pulse" />
               <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
             </h4>
 
-            <div className="relative z-10 space-y-4">
+            <div className="relative z-10 space-y-5">
               {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR - Opacity isolated strictly to button element */}
               <button
                 onClick={startOcrProcess}
                 disabled={!selectedFile || isProcessing}
-                className="w-full py-3 bg-emerald-600 disabled:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all duration-200 shadow-lg shadow-emerald-900/30 hover:bg-emerald-700 transform hover:scale-105 disabled:hover:scale-100 flex items-center justify-center space-x-2"
+                className="w-full py-3.5 bg-emerald-600 text-white font-bold rounded-lg transition-all duration-200 shadow-lg shadow-emerald-900/30 hover:bg-emerald-700 disabled:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isProcessing ? "Đang xử lý..." : "⚡ Bắt đầu trích xuất OCR"}
               </button>
 
               <div>
-                <label className="block text-xs font-bold text-slate-350 mb-1.5 uppercase tracking-wide">
+                <label className="block text-xs font-bold text-slate-300 mb-2 uppercase tracking-wide">
                   Phạm vi trích xuất (Page Range)
                 </label>
                 <div className="flex items-center space-x-3">
@@ -493,10 +467,10 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                       placeholder="Từ trang"
                       value={fromPage}
                       onChange={(e) => setFromPage(e.target.value)}
-                      className="w-full bg-[#0B1E36] border border-[#1E3E62] focus:ring-[#D4AF37] focus:border-[#D4AF37] rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-550 focus:outline-none"
+                      className="w-full bg-[#0B1E36] border border-[#1E3E62] focus:ring-[#D4AF37] focus:border-[#D4AF37] rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none"
                     />
                   </div>
-                  <span className="text-slate-500 text-xs">—</span>
+                  <span className="text-slate-400 text-xs">—</span>
                   <div className="w-1/2">
                     <input
                       type="number"
@@ -504,14 +478,14 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                       placeholder="Đến trang"
                       value={toPage}
                       onChange={(e) => setToPage(e.target.value)}
-                      className="w-full bg-[#0B1E36] border border-[#1E3E62] focus:ring-[#D4AF37] focus:border-[#D4AF37] rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-550 focus:outline-none"
+                      className="w-full bg-[#0B1E36] border border-[#1E3E62] focus:ring-[#D4AF37] focus:border-[#D4AF37] rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none"
                     />
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
+                <p className="text-[10px] text-slate-400 mt-2">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
               </div>
 
-              <div className="flex items-start space-x-3 bg-yellow-500/10 text-yellow-250 p-3.5 rounded-lg border border-yellow-500/20 mt-4">
+              <div className="flex items-start space-x-3 bg-yellow-500/10 text-yellow-500 p-4 rounded-lg border border-yellow-500/20">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-400 mt-0.5" />
                 <p className="text-[10px] leading-relaxed font-medium">
                   <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.
@@ -520,12 +494,13 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             </div>
           </div>
           
-          <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800 shadow-sm text-center">
-            <h5 className="text-xs font-bold text-slate-300 flex items-center justify-center space-x-1.5">
-              <Shield className="h-4 w-4 text-emerald-500" />
+          {/* White compliance card */}
+          <div className="bg-slate-100 p-5 rounded-xl border border-slate-300 shadow-sm text-center">
+            <h5 className="text-xs font-bold text-slate-800 flex items-center justify-center space-x-1.5 mb-2">
+              <Shield className="h-4 w-4 text-emerald-600" />
               <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
             </h5>
-            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+            <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
               Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối và tự động hủy hoàn toàn ngay sau khi kết thúc phiên làm việc, cam kết không lưu vết hồ sơ nghiệp vụ trên máy chủ.
             </p>
           </div>
