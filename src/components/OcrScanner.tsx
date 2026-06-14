@@ -298,7 +298,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   };
 
   return (
-    <div id="ocr-scanner-tab" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div id="ocr-scanner-tab" className="min-h-[calc(100vh-4rem)] bg-slate-50 pb-12 flex flex-col">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-grow">
       
       {/* HEADER SECTION */}
       <div className="border-b border-slate-200 pb-5">
@@ -488,7 +489,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                         placeholder="Từ trang"
                         value={fromPage}
                         onChange={(e) => setFromPage(e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
                       />
                     </div>
                     <span className="text-slate-300 text-xs">—</span>
@@ -499,7 +500,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                         placeholder="Đến trang"
                         value={toPage}
                         onChange={(e) => setToPage(e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
                       />
                     </div>
                   </div>
@@ -529,6 +530,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         </div>
       )}
 
+      </div>
     </div>
   );
 }
