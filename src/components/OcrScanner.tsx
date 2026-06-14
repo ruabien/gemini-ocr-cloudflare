@@ -30,6 +30,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [readyPayload, setReadyPayload] = useState<{ pagesBase64Array: string[]; fileName: string; mimeType: string } | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const isProcessing = processingFile !== null;
+
   // Cắt PDF thành từng trang ảnh rời rạc và tự động nén
   const sliceAndCompressPdf = async (file: File, logProgress: (msg: string) => void): Promise<{ dataUrl: string; base64: string; size: string }[]> => {
     logProgress("Đang nạp bộ giải mã PDF chuyên sâu...");
@@ -473,11 +475,10 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
               <button
                 onClick={startOcrProcess}
-                disabled={!selectedFile || !readyPayload || processingFile !== null}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-emerald-900/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-emerald-600"
+                disabled={!selectedFile || isProcessing}
+                className="w-full py-3 bg-emerald-600 disabled:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all duration-200 shadow-lg shadow-emerald-900/30 hover:bg-emerald-700 transform hover:scale-105 disabled:hover:scale-100 flex items-center justify-center space-x-2"
               >
-                <ScanLine className="h-5 w-5" />
-                <span>Bắt đầu trích xuất OCR</span>
+                {isProcessing ? "Đang xử lý..." : "⚡ Bắt đầu trích xuất OCR"}
               </button>
 
               <div>
