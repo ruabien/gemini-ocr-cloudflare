@@ -289,7 +289,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
       let response: Response;
       try {
-        response = await fetch('https://ocr-worker.text24.workers.dev/', {
+        response = await fetch('https://gemini-ocr-backend.ruabien1504.workers.dev/', {
           method: 'POST',
           body: formData,
         });
