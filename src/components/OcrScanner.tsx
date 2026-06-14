@@ -281,29 +281,17 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                               ? "application/json-pages" 
                               : file.type || "image/jpeg";
                               
-      const payload: any = {
-        base64File: JSON.stringify(pagesBase64Array),
-        fileName: file.name,
-        mimeType: mimeTypeToSend,
-        isEncrypted: false,
-      };
+      const formData = new FormData();
+      formData.append("file", file);
 
-      if (fromPage.trim() !== "" && filesToProcess.length === 1) {
-        payload.fromPage = parseInt(fromPage, 10);
-      }
-      if (toPage.trim() !== "" && filesToProcess.length === 1) {
-        payload.toPage = parseInt(toPage, 10);
-      }
+      // Extract form data if necessary - currently sending raw file via FormData
+      // Removing custom headers entirely so browser sets multipart boundary and avoids CORS preflight OPTIONS
 
       let response: Response;
       try {
-        response = await fetch('/api/ocr/process', {
+        response = await fetch('https://ocr-worker.text24.workers.dev/', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Gemini-Keys': JSON.stringify(keys),
-          },
-          body: JSON.stringify(payload),
+          body: formData,
         });
       } catch (err: any) {
         clearInterval(interval);
