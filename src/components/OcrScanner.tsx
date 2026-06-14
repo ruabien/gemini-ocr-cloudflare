@@ -283,6 +283,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                               
       const formData = new FormData();
       formData.append("file", file);
+      if (keys && keys.length > 0) {
+        formData.append("apiKey", keys[0]);
+      }
 
       // Extract form data if necessary - currently sending raw file via FormData
       // Removing custom headers entirely so browser sets multipart boundary and avoids CORS preflight OPTIONS
