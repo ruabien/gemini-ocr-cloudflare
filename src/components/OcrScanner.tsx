@@ -201,7 +201,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     
     const filesPassToEditor: File[] = [];
 
-    for (const qFile of filesToProcess) {
+    for (let i = 0; i < filesToProcess.length; i++) {
+      const qFile = filesToProcess[i];
       const file = qFile.file;
       setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp...`);
       setProcessingFile(file.name);
@@ -306,6 +307,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
         completedFiles++;
         console.error(`OCR request failed for ${file?.name}:`, err);
+        if (i < filesToProcess.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 600));
+        }
         continue;
       }
       
@@ -341,6 +345,10 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: `HTTP error: ${response?.status}` } : f));
       }
       completedFiles++;
+
+      if (i < filesToProcess.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
     }
 
     setBatchProgressText(`Đã xử lý xong ${completedFiles}/${totalFiles} tệp.`);
