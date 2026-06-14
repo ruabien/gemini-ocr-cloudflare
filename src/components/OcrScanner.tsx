@@ -472,7 +472,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             </h4>
 
             <div className="relative z-10 space-y-4">
-              {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
+              {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR - Opacity isolated strictly to button element */}
               <button
                 onClick={startOcrProcess}
                 disabled={!selectedFile || isProcessing}
