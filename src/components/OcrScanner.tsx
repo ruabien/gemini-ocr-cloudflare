@@ -301,23 +301,26 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     <div id="ocr-scanner-tab" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
       {/* HEADER SECTION */}
-      <div className="border-b border-slate-200 pb-5">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center space-x-2">
-          <span>Số hóa & Trích xuất hồ sơ vụ án chuyên sâu</span>
-        </h2>
-        <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-          Tải tài liệu tố tụng (Cáo trạng, Bản án, Thụ lý vụ án) định dạng PDF, JPEG, PNG có dung lượng tối đa 50MB. Hệ thống tự động phân loại bị can/bị cáo, đương sự, ngày thụ lý và tóm tắt diễn biến.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 pb-5 gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 flex items-center space-x-2">
+            <span className="bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">Số hóa & Trích xuất hồ sơ vụ án chuyên sâu</span>
+            <span className="text-[10px] bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Cloudflare Edge v3</span>
+          </h2>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1 leading-relaxed max-w-3xl">
+            Tải tài liệu tố tụng (Cáo trạng, Bản án, Thụ lý vụ án) định dạng PDF, JPEG, PNG có dung lượng tối đa 50MB. Hệ thống tự động phân loại bị can/bị cáo, đương sự, ngày thụ lý và tóm tắt diễn biến.
+          </p>
+        </div>
       </div>
 
       {/* HIỂN THỊ TIẾN TRÌNH KHỞI TẠO / PHÂN TÁCH / NÉN NẾU ĐANG CHẠY */}
       {isSlicing ? (
-        <div className="bg-slate-900 text-white p-8 rounded-xl border border-rose-950/20 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-yellow-500/5 to-emerald-600/5 animate-pulse" />
+        <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
           
           <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-6">
-            <div className="relative h-16 w-16 bg-emerald-605 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
-              <Layers className="h-8 w-8 text-emerald-300 animate-spin" style={{ animationDuration: "3s" }} />
+            <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
+              <Layers className="h-8 w-8 text-emerald-400 animate-spin" style={{ animationDuration: "3s" }} />
             </div>
             
             <div>
@@ -328,7 +331,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             </div>
 
             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700 animate-pulse">
-              <div className="bg-gradient-to-r from-emerald-600 to-yellow-500 h-full rounded-full w-2/3" />
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-500 h-full rounded-full w-2/3" />
             </div>
 
             <div className="text-[10px] text-slate-400 leading-relaxed italic">
@@ -337,26 +340,26 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           </div>
         </div>
       ) : processingFile ? (
-        <div className="bg-slate-900 text-white p-8 rounded-xl border border-rose-950/20 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
+        <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
           {/* Shimmer backgrounds */}
-          <div className="absolute inset-0 bg-gradient-to-r from-red-600/5 via-yellow-500/5 to-red-600/5 animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
           
           <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-6">
-            <div className="relative h-16 w-16 bg-red-600 rounded-full flex items-center justify-center border-2 border-yellow-500/30 shadow-lg animate-bounce duration-1000">
-              <Activity className="h-8 w-8 text-yellow-400 animate-spin duration-3000" />
+            <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
+              <Activity className="h-8 w-8 text-emerald-400 animate-spin duration-3000" />
             </div>
             
             <div>
               <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans flex items-center justify-center">
                 <span>Đang bóc tách văn bản nghiệp vụ...</span>
               </h3>
-              <p className="text-xs text-yellow-400 font-mono mt-1 font-semibold">{processingFile}</p>
+              <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{processingFile}</p>
             </div>
 
             {/* Thanh tiến trình Shimmer */}
             <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
               <div 
-                className="bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 h-full rounded-full transition-all duration-300 relative"
+                className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 h-full rounded-full transition-all duration-300 relative"
                 style={{ width: `${progress}%` }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
@@ -365,7 +368,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
             <div className="flex items-center justify-between w-full text-[10px] text-slate-400 font-mono">
               <span>Đại diện an toàn: AES-256</span>
-              <span className="text-yellow-400 font-bold">{progress}% HOÀN THÀNH</span>
+              <span className="text-emerald-400 font-bold">{progress}% HOÀN THÀNH</span>
               <span>Bộ nhớ tạm: RAM stateless</span>
             </div>
 
@@ -388,8 +391,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               onClick={onButtonClick}
               className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[250px] transition-all duration-200 ${
                 dragActive 
-                  ? "border-red-600 bg-red-50/40" 
-                  : "border-slate-300 bg-white hover:border-red-500/50 hover:bg-slate-50/50"
+                  ? "border-emerald-500 bg-emerald-950/20" 
+                  : "border-slate-700 bg-slate-900/30 hover:border-emerald-500/50 hover:bg-slate-800/50"
               }`}
             >
               <input 
@@ -399,17 +402,17 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 accept=".pdf,.png,.jpg,.jpeg" 
                 onChange={handleFileInput}
               />
-              <div className="h-14 w-14 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-4 border border-red-100">
+              <div className="h-14 w-14 bg-slate-800 rounded-full flex items-center justify-center text-emerald-400 mb-4 border border-slate-700">
                 <UploadCloud className="h-7 w-7" />
               </div>
-              <h3 className="font-bold text-slate-800 text-sm">
+              <h3 className="font-bold text-slate-200 text-sm">
                 Kéo thả tài liệu của bạn vào đây hoặc click để duyệt từ máy tính
               </h3>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-sm">
+              <p className="text-[11px] text-slate-400 mt-1 max-w-sm">
                 Hỗ trợ định dạng PDF, PNG, JPG (tối đa 50MB). Bản quét sẽ tự động được xử lý thông minh để khôi phục cấu trúc dòng tiếng Việt.
               </p>
               
-              <div className="mt-4 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-1">
+              <div className="mt-4 flex items-center justify-center space-x-2 text-[10px] text-slate-300 font-semibold font-mono bg-slate-800/50 border border-slate-700 rounded px-2.5 py-1">
                 <Shield className="h-3.5 w-3.5 text-emerald-500" />
                 <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
               </div>
@@ -417,32 +420,32 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
             {/* DANH SÁCH CÁC TRANG ẢNH ĐÃ PHÂN TÁCH RỜI RẠC */}
             {slicedPages.length > 0 && (
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 shadow-sm space-y-4">
+                <h4 className="font-bold text-slate-200 text-xs sm:text-sm flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center space-x-1.5">
-                    <Layers className="h-4 w-4 text-emerald-600 animate-pulse" />
+                    <Layers className="h-4 w-4 text-emerald-500 animate-pulse" />
                     <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({slicedPages.length} trang)</span>
                   </div>
-                  <span className="text-[10px] bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded font-bold font-mono border border-emerald-100">DUNG LƯỢNG AN TOÀN API</span>
+                  <span className="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded font-bold font-mono border border-emerald-900">DUNG LƯỢNG AN TOÀN API</span>
                 </h4>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-2 border border-slate-100 rounded-lg bg-slate-50">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950/50">
                   {slicedPages.map((page) => (
-                    <div key={page.index} className="bg-white p-2 rounded-lg border border-slate-250 shadow-xs flex flex-col space-y-2 relative group hover:border-emerald-500 transition-all">
-                      <div className="aspect-[3/4] rounded bg-slate-100 overflow-hidden relative border border-slate-100">
+                    <div key={page.index} className="bg-slate-900 p-2 rounded-lg border border-slate-800 shadow-xs flex flex-col space-y-2 relative group hover:border-emerald-500 transition-all">
+                      <div className="aspect-[3/4] rounded bg-slate-950 overflow-hidden relative border border-slate-800">
                         <img 
                           referrerPolicy="no-referrer"
                           src={page.dataUrl} 
                           alt={`Trang ${page.index}`} 
                           className="w-full h-full object-cover" 
                         />
-                        <div className="absolute top-1 left-1 bg-slate-900/85 text-white font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">
+                        <div className="absolute top-1 left-1 bg-slate-950/90 text-slate-200 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">
                           Trang {page.index}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-[9px] text-slate-500 font-mono">
+                      <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
                         <span>Nén:</span>
-                        <span className="text-emerald-600 font-bold">{page.size}</span>
+                        <span className="text-emerald-400 font-bold">{page.size}</span>
                       </div>
                     </div>
                   ))}
@@ -470,7 +473,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 <button
                   onClick={startOcrProcess}
                   disabled={!selectedFile || !readyPayload || processingFile !== null}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-emerald-900/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-emerald-600"
                 >
                   <ScanLine className="h-5 w-5" />
                   <span>Bắt đầu trích xuất OCR</span>
@@ -515,12 +518,12 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               </div>
             </div>
             
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <h5 className="text-xs font-bold text-slate-700 flex items-center justify-center space-x-1.5">
+            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800 shadow-sm text-center">
+              <h5 className="text-xs font-bold text-slate-300 flex items-center justify-center space-x-1.5">
                 <Shield className="h-4 w-4 text-emerald-500" />
                 <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
               </h5>
-              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
                 Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối và tự động hủy hoàn toàn ngay sau khi kết thúc phiên làm việc, cam kết không lưu vết hồ sơ nghiệp vụ trên máy chủ.
               </p>
             </div>

@@ -1,0 +1,139 @@
+[33mcommit fcc2bed4715b3e9036f8967b6f4ca26f4dbe44c0[m
+Author: ruabien <ruabien1504@gmail.com>
+Date:   Sun Jun 14 07:47:48 2026 +0700
+
+    Tối ưu bố cục hai cột và tinh chỉnh giao diện hộp cấu hình Navy
+
+[1mdiff --git a/src/components/OcrScanner.tsx b/src/components/OcrScanner.tsx[m
+[1mindex 218fe8e..642fe0b 100644[m
+[1m--- a/src/components/OcrScanner.tsx[m
+[1m+++ b/src/components/OcrScanner.tsx[m
+[36m@@ -4,7 +4,7 @@[m
+  */[m
+ [m
+ import React, { useState, useRef } from "react";[m
+[31m-import { UploadCloud, FileText, Settings, Shield, AlertTriangle, Play, HelpCircle, FileCheck, Layers, Activity, ScanLine } from "lucide-react";[m
+[32m+[m[32mimport { UploadCloud, Settings, Shield, AlertTriangle, HelpCircle, Layers, Activity, ScanLine } from "lucide-react";[m
+ import { OcrConfig } from "../types";[m
+ import * as pdfjs from 'pdfjs-dist';[m
+ [m
+[36m@@ -14,33 +14,6 @@[m [minterface OcrScannerProps {[m
+   setConfig: React.Dispatch<React.SetStateAction<OcrConfig>>;[m
+ }[m
+ [m
+[31m-const MOCK_DOCS = [[m
+[31m-  {[m
+[31m-    id: "mock-1",[m
+[31m-    name: "Ban_an_hinh_su_so_24_2024_HS_ST.pdf",[m
+[31m-    type: "Hình Sự - Bản Án (PDF)",[m
+[31m-    pages: 12,[m
+[31m-    size: "2.1 MB",[m
+[31m-    description: "Bản án hình sự sơ thẩm đối với bị cáo Nguyễn Văn Nam (34 tuổi, cư trú tại Hoàn Kiếm, Hà Nội) về tội Cố ý gây thương tích. Thụ lý ngày 10/01/2024, xét xử ngày 25/02/2024 (Đã thụ lý 46 ngày)."[m
+[31m-  },[m
+[31m-  {[m
+[31m-    id: "mock-2",[m
+[31m-    name: "Cao_trang_truy_to_15_CT_VKS_P1.pdf",[m
+[31m-    type: "Hình Sự - Viện Kiểm Sát (PDF)",[m
+[31m-    pages: 8,[m
+[31m-    size: "1.2 MB",[m
+[31m-    description: "Cáo trạng của Viện kiểm sát nhân dân truy tố bị can Trần Văn Mạnh (32 tuổi, cư trú tại Hai Bà Trưng, HN) phạm tội Trộm cắp tài sản. Thụ lý kiểm sát ngày 05/03/2024."[m
+[31m-  },[m
+[31m-  {[m
+[31m-    id: "mock-3",[m
+[31m-    name: "Quyet_dinh_thu_ly_dan_su_112_2024.pdf",[m
+[31m-    type: "Dân Sự - Thụ Lý (PDF)",[m
+[31m-    pages: 5,[m
+[31m-    size: "950 KB",[m
+[31m-    description: "Tranh chấp hợp đồng tín dụng giữa nguyên đơn Ngân hàng và bị đơn Lê Thị Hoa (45 tuổi, cư trú tại Cầu Giấy, HN). Thụ lý ngày 12/03/2024."[m
+[31m-  }[m
+[31m-];[m
+[31m-[m
+ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {[m
+   const [dragActive, setDragActive] = useState(false);[m
+   const [processingFile, setProcessingFile] = useState<string | null>(null);[m
+[36m@@ -324,17 +297,6 @@[m [mexport default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann[m
+     }[m
+   };[m
+ [m
+[31m-  // Kích hoạt tệp mẫu nhanh tư pháp[m
+[31m-  const selectMockDoc = (id: string) => {[m
+[31m-    const doc = MOCK_DOCS.find(m => m.id === id);[m
+[31m-    if (doc) {[m
+[31m-      // Base64 ảo cho tài liệu mẫu[m
+[31m-      const virtualBase64 = "MOCK_BASE64_BYTES_LAW_DEPT";[m
+[31m-      const mimeType = doc.name.endsWith(".pdf") ? "application/pdf" : "image/jpeg";[m
+[31m-      simulateOcrProcess(doc.name, virtualBase64, mimeType);[m
+[31m-    }[m
+[31m-  };[m
+[31m-[m
+   return ([m
+     <div id="ocr-scanner-tab" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">[m
+       [m
+[36m@@ -491,53 +453,6 @@[m [mexport default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann[m
+               </div>[m
+             )}[m
+ [m
+[31m-            {/* Các tùy chỉnh tham số (Metadata & Engine) */}[m
+[31m-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">[m
+[31m-              <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5 border-b border-slate-100 pb-3">[m
+[31m-                <Settings className="h-4 w-4 text-rose-600" />[m
+[31m-                <span>Cấu hình</span>[m
+[31m-              </h4>[m
+[31m-[m
+[31m-              {/* MÔ HÌNH OCR VÀ XUẤT ĐỊNH DẠNG ĐƯỢC ẨN ĐỂ ĐƠN GIẢN HÓA GIAO DIỆN */}[m
+[31m-              {/* (Giá trị mặc định vẫn được lưu trong config state tại App.tsx và giữ nguyên logic payload) */}[m
+[31m-[m
+[31m-              {/* PHẠM VI TRÍCH XUẤT (PAGE RANGE) */}[m
+[31m-              <div>[m
+[31m-                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Phạm vi trích xuất (Page Range)</label>[m
+[31m-                <div className="flex items-center space-x-3">[m
+[31m-                  <div className="w-1/2">[m
+[31m-                    <input[m
+[31m-                      type="number"[m
+[31m-                      min="1"[m
+[31m-                      placeholder="Từ trang"[m
+[31m-                      value={fromPage}[m
+[31m-                      onChange={(e) => setFromPage(e.target.value)}[m
+[31m-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"[m
+[31m-                    />[m
+[31m-                  </div>[m
+[31m-                  <span className="text-slate-400 text-xs">—</span>[m
+[31m-                  <div className="w-1/2">[m
+[31m-                    <input[m
+[31m-                      type="number"[m
+[31m-                      min="1"[m
+[31m-                      placeholder="Đến trang"[m
+[31m-                      value={toPage}[m
+[31m-                      onChange={(e) => setToPage(e.target.value)}[m
+[31m-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"[m
+[31m-                    />[m
+[31m-                  </div>[m
+[31m-                </div>[m
+[31m-                <p className="text-[10px] text-slate-400 mt-1">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>[m
+[31m-              </div>[m
+[31m-[m
+[31m-              <div className="flex items-center space-x-4 bg-yellow-50 text-yellow-800 p-3 rounded-lg border border-yellow-200 mt-2">[m
+[31m-                <AlertTriangle className="h-4 w-4 flex-shrink-0" />[m
+[31m-                <p className="text-[10px] leading-relaxed font-medium">[m
+[31m-                  <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.[m
+[31m-                </p>[m
+[31m-              </div>[m
+[31m-            </div>[m
+[31m-[m
+             {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}[m
+             {readyPayload && slicedPages.length > 0 && ([m
+               <div className="flex justify-center mt-6">[m
+[36m@@ -552,46 +467,53 @@[m [mexport default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann[m
+             )}[m
+           </div>[m
+ [m
+[31m-          {/* CHỌN TỆP MẪU NHANH TƯ PHÁP (Cột bên phải Desktop) */}[m
+[32m+[m[32m          {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}[m
+           <div className="space-y-6">[m
+             <div className="bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 rounded-xl border border-slate-700 shadow-sm relative overflow-hidden">[m
+               <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />[m
+               [m
+[31m-              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-4">[m
+[31m-                <Layers className="h-4 w-4 mr-1.5 text-yellow-400" />[m
+[31m-                <span>Hồ sơ vụ án mẫu</span>[m
+[32m+[m[32m              <h4 classNa
