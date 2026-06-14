@@ -37,6 +37,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
+  const [editorContent, setEditorContent] = useState("");
+  const editorContentRef = useRef("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Range State
@@ -190,15 +193,18 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     }
 
     setIsBatchProcessing(true);
+    setEditorContent("");
+    editorContentRef.current = "";
+    
     let totalFiles = filesToProcess.length;
     let completedFiles = 0;
     
-    const results: any[] = [];
     const filesPassToEditor: File[] = [];
 
     for (const qFile of filesToProcess) {
+      const file = qFile.file;
       setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp...`);
-      setProcessingFile(qFile.file.name);
+      setProcessingFile(file.name);
       setProgress(5);
 
       // Step 1: Tiền xử lý (slicing & nén) nếu chưa được thực hiện
@@ -208,7 +214,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp - Đang phân tích cấu trúc...`);
         
         try {
-          const file = qFile.file;
           const isPdfValue = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
           const isImageValue = file.type.startsWith("image/") || 
                             file.name.toLowerCase().endsWith(".png") || 
@@ -273,13 +278,13 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       }, 500);
 
       try {
-        const mimeTypeToSend = (qFile.file.type === "application/pdf" || qFile.file.name.toLowerCase().endsWith(".pdf")) 
+        const mimeTypeToSend = (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) 
                                 ? "application/json-pages" 
-                                : qFile.file.type || "image/jpeg";
+                                : file.type || "image/jpeg";
                                 
         const payload: any = {
           base64File: JSON.stringify(pagesBase64Array),
-          fileName: qFile.file.name,
+          fileName: file.name,
           mimeType: mimeTypeToSend,
           isEncrypted: false,
         };
@@ -300,57 +305,49 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           body: JSON.stringify(payload),
         });
         
-        const rawResponse = await response.text();
-        let data;
-        try {
-          data = JSON.parse(rawResponse);
-        } catch (parseError) {
-          data = { text: rawResponse, success: true };
-        }
-        
         clearInterval(interval);
         setProgress(100);
-        
-        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'done', resultData: data } : f));
-        results.push(data);
-        filesPassToEditor.push(qFile.file);
+
+        if (response.ok) {
+          const txt = await response.text();
+          setEditorContent((prev) => {
+            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + txt;
+            editorContentRef.current = next;
+            return next;
+          });
+          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'done' } : f));
+          filesPassToEditor.push(file);
+        } else {
+          setEditorContent((prev) => {
+            const next = prev + `\n\n[LỖI TRANG: ${file.name}]\n\n`;
+            editorContentRef.current = next;
+            return next;
+          });
+          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: `HTTP error: ${response.status}` } : f));
+        }
         completedFiles++;
 
       } catch (err: any) {
         clearInterval(interval);
+        setEditorContent((prev) => {
+          const next = prev + `\n\n[LỖI TRANG: ${file.name}]\n\n`;
+          editorContentRef.current = next;
+          return next;
+        });
         setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
         completedFiles++;
-        console.error(`OCR request failed for ${qFile.file.name}:`, err);
-        console.error("Frontend parsing bug:", err);
+        console.error(`OCR request failed for ${file.name}:`, err);
       }
     }
 
     setBatchProgressText(`Đã xử lý xong ${completedFiles}/${totalFiles} tệp.`);
     
     setTimeout(() => {
-      if (results.length > 0) {
-        let finalContent = "";
-        
-        if (results.length === 1 || !autoMerge) {
-           const mergedTextParts = results.map(r => r.text || r.data?.text || r.rawText || "");
-           const separator = autoMerge ? '\n\n--- [TRANG KẾ TIẾP] ---\n\n' : '\n\n';
-           finalContent = JSON.stringify({
-             ...results[0],
-             text: mergedTextParts.join(separator),
-             warnings: results.flatMap(r => r.warnings || [])
-           });
-        } else {
-           const mergedTextParts = results.map(r => r.text || r.data?.text || r.rawText || "");
-           finalContent = JSON.stringify({
-             ...results[0],
-             text: mergedTextParts.join('\n\n--- [TRANG KẾ TIẾP] ---\n\n'),
-             warnings: results.flatMap(r => r.warnings || [])
-           });
-        }
-        
+      const finalContent = editorContentRef.current;
+      if (finalContent.trim() !== "") {
         const outputMime = filesPassToEditor.length > 0 ? filesPassToEditor[0].type : "application/pdf";
         onFileLoaded({ 
-          name: filesPassToEditor.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : filesPassToEditor[0].name, 
+          name: filesPassToEditor.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (filesPassToEditor[0]?.name || "Tài Liệu OCR"), 
           content: finalContent, 
           mimeType: outputMime, 
           selectedFile: filesPassToEditor 
