@@ -300,7 +300,14 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           body: JSON.stringify(payload),
         });
         
-        const data = await response.json();
+        const rawResponse = await response.text();
+        let data;
+        try {
+          data = JSON.parse(rawResponse);
+        } catch (parseError) {
+          data = { text: rawResponse, success: true };
+        }
+        
         clearInterval(interval);
         setProgress(100);
         
@@ -314,6 +321,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
         completedFiles++;
         console.error(`OCR request failed for ${qFile.file.name}:`, err);
+        console.error("Frontend parsing bug:", err);
       }
     }
 
