@@ -42,5 +42,5 @@ export interface OcrDocument {
     description: string;
   }>;
   selectedFileUrl?: string;
-  selectedFile?: File;
+  selectedFile?: File | File[];
 }
