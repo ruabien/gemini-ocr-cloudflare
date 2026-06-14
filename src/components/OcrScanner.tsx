@@ -322,19 +322,18 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       setProgress(100);
 
       if (response.ok) {
-        const rawText = await response.text();
+        const rawResult = await response.text();
         try {
-          const parsed = JSON.parse(rawText);
-          const actualOcrText = parsed.text || rawText; // Fallback to raw text if structure differs
+          const cleanJson = JSON.parse(rawResult);
+          const finalContent = cleanJson.text || rawResult;
           setEditorContent((prev) => {
-            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + actualOcrText;
+            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalContent;
             editorContentRef.current = next;
             return next;
           });
         } catch (e) {
-          // If it's not JSON, append raw text directly
           setEditorContent((prev) => {
-            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + rawText;
+            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + rawResult;
             editorContentRef.current = next;
             return next;
           });
