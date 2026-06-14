@@ -492,56 +492,17 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             )}
 
             {/* Các tùy chỉnh tham số (Metadata & Engine) */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
               <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5 border-b border-slate-100 pb-3">
                 <Settings className="h-4 w-4 text-rose-600" />
-                <span>Cấu hình bộ máy nhận diện (OCR Settings)</span>
+                <span>Cấu hình</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Mô hình OCR</label>
-                  <select 
-                    value={config?.engine || 'precision'}
-                    onChange={(e: any) => {
-                      setConfig((prev: any) => {
-                        const newConfig = { ...(prev || {}), engine: e.target.value };
-                        localStorage.setItem('ocr_config', JSON.stringify(newConfig));
-                        return newConfig;
-                      });
-                    }}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
-                  >
-                    <option value="precision">Sovereign Lawtech Precision (Mô hình Trí tuệ nhân tạo V4 - Khuyên dùng)</option>
-                    <option value="fastscan">FastScan Legacy Engine (Bộ máy xử lý nhanh cho ảnh mờ)</option>
-                  </select>
-                  <p className="text-[10px] text-slate-400 mt-1">Dùng mô hình Gemini 3.5 phân giải cao để đạt độ chính xác tối đa đối với chữ viết tay.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Xuất định dạng mặc định</label>
-                  <select 
-                    value={config?.outputFormat || 'TXT'}
-                    onChange={(e: any) => {
-                      setConfig((prev: any) => {
-                        const newConfig = { ...(prev || {}), outputFormat: e.target.value };
-                        localStorage.setItem('ocr_config', JSON.stringify(newConfig));
-                        return newConfig;
-                      });
-                    }}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
-                  >
-                    <option value="TXT">Văn bản thô không định dạng (.TXT) - Mặc định</option>
-                    <option value="DOCX">Microsoft Word (.DOC) - Chuẩn Nghị định 30 (Chỉ PRO)</option>
-                    <option value="XLSX">Dữ liệu bảng tính mẫu Excel (.XLSX) (Chỉ PRO)</option>
-                    <option value="PDF">Bản sao văn bản PDF có thể tìm kiếm chữ (.PDF)</option>
-                  </select>
-                  <p className="text-[10px] text-slate-400 mt-1">Sử dụng định dạng file tối ưu để phục vụ bóc tách tài liệu tố tụng. DOCX và Excel yêu cầu tài khoản PRO.</p>
-                </div>
-              </div>
+              {/* MÔ HÌNH OCR VÀ XUẤT ĐỊNH DẠNG ĐƯỢC ẨN ĐỂ ĐƠN GIẢN HÓA GIAO DIỆN */}
+              {/* (Giá trị mặc định vẫn được lưu trong config state tại App.tsx và giữ nguyên logic payload) */}
 
               {/* PHẠM VI TRÍCH XUẤT (PAGE RANGE) */}
-              <div className="border-t border-slate-100 pt-4">
+              <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Phạm vi trích xuất (Page Range)</label>
                 <div className="flex items-center space-x-3">
                   <div className="w-1/2">
