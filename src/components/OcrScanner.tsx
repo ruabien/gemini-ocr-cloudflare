@@ -277,26 +277,27 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         });
       }, 500);
 
+      const mimeTypeToSend = (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) 
+                              ? "application/json-pages" 
+                              : file.type || "image/jpeg";
+                              
+      const payload: any = {
+        base64File: JSON.stringify(pagesBase64Array),
+        fileName: file.name,
+        mimeType: mimeTypeToSend,
+        isEncrypted: false,
+      };
+
+      if (fromPage.trim() !== "" && filesToProcess.length === 1) {
+        payload.fromPage = parseInt(fromPage, 10);
+      }
+      if (toPage.trim() !== "" && filesToProcess.length === 1) {
+        payload.toPage = parseInt(toPage, 10);
+      }
+
+      let response: Response;
       try {
-        const mimeTypeToSend = (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) 
-                                ? "application/json-pages" 
-                                : file.type || "image/jpeg";
-                                
-        const payload: any = {
-          base64File: JSON.stringify(pagesBase64Array),
-          fileName: file.name,
-          mimeType: mimeTypeToSend,
-          isEncrypted: false,
-        };
-
-        if (fromPage.trim() !== "" && filesToProcess.length === 1) {
-          payload.fromPage = parseInt(fromPage, 10);
-        }
-        if (toPage.trim() !== "" && filesToProcess.length === 1) {
-          payload.toPage = parseInt(toPage, 10);
-        }
-
-        const response = await fetch('/api/ocr/process', {
+        response = await fetch('/api/ocr/process', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -304,29 +305,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           },
           body: JSON.stringify(payload),
         });
-        
-        clearInterval(interval);
-        setProgress(100);
-
-        if (response.ok) {
-          const txt = await response.text();
-          setEditorContent((prev) => {
-            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + txt;
-            editorContentRef.current = next;
-            return next;
-          });
-          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'done' } : f));
-          filesPassToEditor.push(file);
-        } else {
-          setEditorContent((prev) => {
-            const next = prev + `\n\n[LỖI TRANG: ${file.name}]\n\n`;
-            editorContentRef.current = next;
-            return next;
-          });
-          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: `HTTP error: ${response.status}` } : f));
-        }
-        completedFiles++;
-
       } catch (err: any) {
         clearInterval(interval);
         setEditorContent((prev) => {
@@ -337,7 +315,31 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
         completedFiles++;
         console.error(`OCR request failed for ${file.name}:`, err);
+        continue;
       }
+      
+      clearInterval(interval);
+      setProgress(100);
+
+      if (response.ok) {
+        const extractedText = await response.text();
+        setEditorContent((prev) => {
+          const separator = prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "";
+          const next = prev + separator + extractedText;
+          editorContentRef.current = next;
+          return next;
+        });
+        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'done' } : f));
+        filesPassToEditor.push(file);
+      } else {
+        setEditorContent((prev) => {
+          const next = prev + `\n\n[LỖI TRANG: ${file.name}]\n\n`;
+          editorContentRef.current = next;
+          return next;
+        });
+        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: `HTTP error: ${response.status}` } : f));
+      }
+      completedFiles++;
     }
 
     setBatchProgressText(`Đã xử lý xong ${completedFiles}/${totalFiles} tệp.`);
