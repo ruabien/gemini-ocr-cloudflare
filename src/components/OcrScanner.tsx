@@ -176,8 +176,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   };
 
   const startOcrProcess = async () => {
-    const filesToProcess = queuedFiles.filter(q => q.status !== 'done');
-    if (filesToProcess.length === 0) return;
+    const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
+    if (!filesToProcess || filesToProcess.length === 0) return;
     
     let keys: string[] = [];
     try {
@@ -208,9 +208,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       setProgress(5);
 
       // Step 1: Tiền xử lý (slicing & nén) nếu chưa được thực hiện
-      let pagesBase64Array = qFile.pagesBase64Array;
+      let pagesBase64Array = qFile.pagesBase64Array || [];
       if (pagesBase64Array.length === 0) {
-        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'slicing' } : f));
+        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'slicing' } : f));
         setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp - Đang phân tích cấu trúc...`);
         
         try {
@@ -249,23 +249,23 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             });
           }
 
-          pagesBase64Array = pages.map(p => p.base64);
+          pagesBase64Array = (pages || []).map(p => p?.base64);
           
-          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? {
+          setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? {
             ...f,
-            slicedPages: pages.map((p, idx) => ({ index: idx + 1, dataUrl: p.dataUrl, size: p.size })),
-            pagesBase64Array: pagesBase64Array
+            slicedPages: (pages || []).map((p, idx) => ({ index: idx + 1, dataUrl: p?.dataUrl, size: p?.size })),
+            pagesBase64Array: pagesBase64Array || []
           } : f));
         } catch (err: any) {
           console.error("Lỗi tiền xử lý tệp tin:", err);
-          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
+          setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
           completedFiles++;
           continue;
         }
       }
       
       // Step 2: Gửi tín hiệu bóc tách văn bản (OCR)
-      setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'processing' } : f));
+      setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'processing' } : f));
       setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp - Đang trích xuất văn bản...`);
 
       // Simulate progress bar while waiting
@@ -300,9 +300,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           editorContentRef.current = next;
           return next;
         });
-        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
+        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
         completedFiles++;
-        console.error(`OCR request failed for ${file.name}:`, err);
+        console.error(`OCR request failed for ${file?.name}:`, err);
         continue;
       }
       
@@ -327,15 +327,15 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           });
         }
         
-        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'done' } : f));
-        filesPassToEditor.push(file);
+        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'done' } : f));
+        if (file) filesPassToEditor.push(file);
       } else {
         setEditorContent((prev) => {
-          const next = prev + `\n\n[LỖI TRANG: ${file.name}]\n\n`;
+          const next = prev + `\n\n[LỖI TRANG: ${file?.name}]\n\n`;
           editorContentRef.current = next;
           return next;
         });
-        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: `HTTP error: ${response.status}` } : f));
+        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: `HTTP error: ${response?.status}` } : f));
       }
       completedFiles++;
     }
@@ -343,20 +343,21 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     setBatchProgressText(`Đã xử lý xong ${completedFiles}/${totalFiles} tệp.`);
     
     setTimeout(() => {
-      const finalContent = editorContentRef.current;
-      if (finalContent.trim() !== "") {
-        const outputMime = filesPassToEditor.length > 0 ? filesPassToEditor[0].type : "application/pdf";
-        onFileLoaded({ 
-          name: filesPassToEditor.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (filesPassToEditor[0]?.name || "Tài Liệu OCR"), 
-          content: finalContent, 
-          mimeType: outputMime, 
-          selectedFile: filesPassToEditor 
-        });
-      }
-      
       setIsBatchProcessing(false);
       setProcessingFile(null);
       setProgress(0);
+
+      const finalContent = editorContentRef.current;
+      if (finalContent && finalContent.trim() !== "") {
+        const safeFiles = filesPassToEditor || [];
+        const outputMime = safeFiles.length > 0 ? safeFiles[0]?.type : "application/pdf";
+        onFileLoaded({ 
+          name: safeFiles.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (safeFiles[0]?.name || "Tài Liệu OCR"), 
+          content: finalContent, 
+          mimeType: outputMime, 
+          selectedFile: safeFiles 
+        });
+      }
     }, 1000);
   };
 
@@ -465,12 +466,12 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             )}
 
             {/* DANH SÁCH HÀNG ĐỢI (QUEUE LIST) */}
-            {queuedFiles.length > 0 && (
+            {(queuedFiles || []).length > 0 && (
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                   <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5">
                     <Layers className="h-4 w-4 text-emerald-600" />
-                    <span>Hàng đợi xử lý ({queuedFiles.length} tệp)</span>
+                    <span>Hàng đợi xử lý ({(queuedFiles || []).length} tệp)</span>
                   </h4>
                   <label className="flex items-center space-x-2 cursor-pointer bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors">
                     <input 
@@ -484,11 +485,13 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 </div>
 
                 <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                  {queuedFiles.map(q => (
-                    <div key={q.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-emerald-300 transition-colors">
+                  {(queuedFiles || []).map(q => {
+                    if (!q) return null;
+                    return (
+                    <div key={q.id || Math.random()} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-emerald-300 transition-colors">
                        <div className="flex flex-col overflow-hidden">
-                         <span className="text-sm font-semibold text-slate-800 truncate" title={q.file.name}>{q.file.name}</span>
-                         <span className="text-[10px] text-slate-500 mt-0.5">{q.size} {q.slicedPages?.length ? `• ${q.slicedPages.length} trang phân mảnh` : ''}</span>
+                         <span className="text-sm font-semibold text-slate-800 truncate" title={q.file?.name}>{q.file?.name || 'Tệp không xác định'}</span>
+                         <span className="text-[10px] text-slate-500 mt-0.5">{q.size || ''} {(q.slicedPages || []).length > 0 ? `• ${(q.slicedPages || []).length} trang phân mảnh` : ''}</span>
                        </div>
                        <div className="flex items-center space-x-3 flex-shrink-0 ml-4">
                          {q.status === 'error' ? (
@@ -519,7 +522,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                          </span>
                        </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 
                 {autoMerge && (
@@ -546,7 +550,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
                 <button
                   onClick={startOcrProcess}
-                  disabled={queuedFiles.length === 0 || isBatchProcessing || isSlicing}
+                  disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
                   className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
                 >
                   <ScanLine className="h-5 w-5" />
@@ -566,7 +570,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                         value={fromPage}
                         onChange={(e) => setFromPage(e.target.value)}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
-                        disabled={queuedFiles.length > 1}
+                        disabled={(queuedFiles || []).length > 1}
                       />
                     </div>
                     <span className="text-slate-300 text-xs">—</span>
@@ -578,7 +582,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                         value={toPage}
                         onChange={(e) => setToPage(e.target.value)}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
-                        disabled={queuedFiles.length > 1}
+                        disabled={(queuedFiles || []).length > 1}
                       />
                     </div>
                   </div>

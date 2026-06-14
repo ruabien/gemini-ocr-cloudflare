@@ -127,20 +127,23 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
   useEffect(() => {
     const selectedFile = document?.selectedFile;
-    if (!selectedFile) {
+    if (!selectedFile || (Array.isArray(selectedFile) && selectedFile.length === 0)) {
       setPreviewUrl(null);
       return;
     }
 
-    const isPdf = Array.isArray(selectedFile)
-      ? selectedFile[0]?.type === "application/pdf" || selectedFile[0]?.name?.toLowerCase().endsWith(".pdf")
-      : selectedFile.type === "application/pdf" || selectedFile.name?.toLowerCase().endsWith(".pdf");
+    const file = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const isPdf = file.type === "application/pdf" || file.name?.toLowerCase().endsWith(".pdf");
 
     if (isPdf) {
       if (!pdfjs.GlobalWorkerOptions.workerSrc) {
         pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
       }
-      const fileToLoad = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
       const fileReader = new FileReader();
       fileReader.onload = async function() {
         try {
@@ -163,14 +166,18 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
           console.error("PDF preview error:", e);
         }
       };
-      fileReader.readAsArrayBuffer(fileToLoad);
+      fileReader.readAsArrayBuffer(file);
     } else {
-      const file = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+      try {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        return () => {
+          URL.revokeObjectURL(url);
+        };
+      } catch (e) {
+        console.error("Error creating object URL:", e);
+        setPreviewUrl(null);
+      }
     }
   }, [document?.selectedFile]);
 
