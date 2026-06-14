@@ -313,225 +313,224 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         </div>
       </div>
 
-      {/* HIỂN THỊ TIẾN TRÌNH KHỞI TẠO / PHÂN TÁCH / NÉN NẾU ĐANG CHẠY */}
-      {isSlicing ? (
-        <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
-          
-          <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-6">
-            <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
-              <Layers className="h-8 w-8 text-emerald-400 animate-spin" style={{ animationDuration: "3s" }} />
-            </div>
-            
-            <div>
-              <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans">
-                Tiền xử lý tập tin tư pháp...
-              </h3>
-              <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{slicingMessage}</p>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left column: File upload & nén trang */}
+        <div className="lg:col-span-2 space-y-6">
+          {isSlicing ? (
+            <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
+              
+              <div className="relative z-10 flex flex-col items-center w-full max-w-md text-center space-y-6">
+                <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
+                  <Layers className="h-8 w-8 text-emerald-400 animate-spin" style={{ animationDuration: "3s" }} />
+                </div>
+                
+                <div>
+                  <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans">
+                    Tiền xử lý tập tin tư pháp...
+                  </h3>
+                  <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{slicingMessage}</p>
+                </div>
 
-            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700 animate-pulse">
-              <div className="bg-gradient-to-r from-emerald-600 to-teal-500 h-full rounded-full w-2/3" />
-            </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700 animate-pulse">
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-500 h-full rounded-full w-2/3" />
+                </div>
 
-            <div className="text-[10px] text-slate-400 leading-relaxed italic">
-              *Tập tin PDF được bóc tách rời rạc thành từng trang ảnh. Toàn bộ hình ảnh đầu vào được tự động nén dung lượng, thu hẹp độ phân giải gốc để triệt tiêu lỗi quá tải tải trọng (Payload limit) qua biên độ kết nối API.
-            </div>
-          </div>
-        </div>
-      ) : processingFile ? (
-        <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
-          {/* Shimmer backgrounds */}
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
-          
-          <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-6">
-            <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
-              <Activity className="h-8 w-8 text-emerald-400 animate-spin duration-3000" />
-            </div>
-            
-            <div>
-              <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans flex items-center justify-center">
-                <span>Đang bóc tách văn bản nghiệp vụ...</span>
-              </h3>
-              <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{processingFile}</p>
-            </div>
-
-            {/* Thanh tiến trình Shimmer */}
-            <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
-              <div 
-                className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 h-full rounded-full transition-all duration-300 relative"
-                style={{ width: `${progress}%` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                <div className="text-[10px] text-slate-400 leading-relaxed italic">
+                  *Tập tin PDF được bóc tách rời rạc thành từng trang ảnh. Toàn bộ hình ảnh đầu vào được tự động nén dung lượng, thu hẹp độ phân giải gốc để triệt tiêu lỗi quá tải tải trọng (Payload limit) qua biên độ kết nối API.
+                </div>
               </div>
             </div>
+          ) : processingFile ? (
+            <div className="bg-slate-900/50 text-white p-8 rounded-xl border border-slate-800 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
+              {/* Shimmer backgrounds */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
+              
+              <div className="relative z-10 flex flex-col items-center w-full max-w-md text-center space-y-6">
+                <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
+                  <Activity className="h-8 w-8 text-emerald-400 animate-spin duration-3000" />
+                </div>
+                
+                <div>
+                  <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans flex items-center justify-center">
+                    <span>Đang bóc tách văn bản nghiệp vụ...</span>
+                  </h3>
+                  <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{processingFile}</p>
+                </div>
 
-            <div className="flex items-center justify-between w-full text-[10px] text-slate-400 font-mono">
-              <span>Đại diện an toàn: AES-256</span>
-              <span className="text-emerald-400 font-bold">{progress}% HOÀN THÀNH</span>
-              <span>Bộ nhớ tạm: RAM stateless</span>
+                {/* Thanh tiến trình Shimmer */}
+                <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                  <div 
+                    className="bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 h-full rounded-full transition-all duration-300 relative"
+                    style={{ width: `${progress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between w-full text-[10px] text-slate-400 font-mono">
+                  <span>Đại diện an toàn: AES-256</span>
+                  <span className="text-emerald-400 font-bold">{progress}% HOÀN THÀNH</span>
+                  <span>Bộ nhớ tạm: RAM stateless</span>
+                </div>
+
+                <p className="text-[10px] text-slate-500 italic leading-relaxed">
+                  *Hệ thống đang nạp tệp và gửi tín hiệu bóc tách văn bản lên Serverless Edge Node, thực thi phân giải độ tương phản thông minh và khôi phục ngôn ngữ tiếng Việt.
+                </p>
+              </div>
             </div>
+          ) : (
+            <>
+              {/* Hộp kéo thả Dropzone */}
+              <div 
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                onClick={onButtonClick}
+                className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[250px] transition-all duration-200 ${
+                  dragActive 
+                    ? "border-emerald-500 bg-emerald-950/20" 
+                    : "border-slate-700 bg-slate-900/30 hover:border-emerald-500/50 hover:bg-slate-800/50"
+                }`}
+              >
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  className="hidden" 
+                  accept=".pdf,.png,.jpg,.jpeg" 
+                  onChange={handleFileInput}
+                />
+                <div className="h-14 w-14 bg-slate-800 rounded-full flex items-center justify-center text-emerald-400 mb-4 border border-slate-700">
+                  <UploadCloud className="h-7 w-7" />
+                </div>
+                <h3 className="font-bold text-slate-200 text-sm">
+                  Kéo thả tài liệu của bạn vào đây hoặc click để duyệt từ máy tính
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-1 max-w-sm">
+                  Hỗ trợ định dạng PDF, PNG, JPG (tối đa 50MB). Bản quét sẽ tự động được xử lý thông minh để khôi phục cấu trúc dòng tiếng Việt.
+                </p>
+                
+                <div className="mt-4 flex items-center justify-center space-x-2 text-[10px] text-slate-300 font-semibold font-mono bg-slate-800/50 border border-slate-700 rounded px-2.5 py-1">
+                  <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
+                </div>
+              </div>
 
-            <p className="text-[10px] text-slate-500 italic leading-relaxed">
-              *Hệ thống đang nạp tệp và gửi tín hiệu bóc tách văn bản lên Serverless Edge Node, thực thi phân giải độ tương phản thông minh và khôi phục ngôn ngữ tiếng Việt.
+              {/* DANH SÁCH CÁC TRANG ẢNH ĐÃ PHÂN TÁCH RỜI RẠC */}
+              {slicedPages.length > 0 && (
+                <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 shadow-sm space-y-4">
+                  <h4 className="font-bold text-slate-200 text-xs sm:text-sm flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center space-x-1.5">
+                      <Layers className="h-4 w-4 text-emerald-500 animate-pulse" />
+                      <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({slicedPages.length} trang)</span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded font-bold font-mono border border-emerald-900">DUNG LƯỢNG AN TOÀN API</span>
+                  </h4>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950/50">
+                    {slicedPages.map((page) => (
+                      <div key={page.index} className="bg-slate-900 p-2 rounded-lg border border-slate-800 shadow-xs flex flex-col space-y-2 relative group hover:border-emerald-500 transition-all">
+                        <div className="aspect-[3/4] rounded bg-slate-950 overflow-hidden relative border border-slate-800">
+                          <img 
+                            referrerPolicy="no-referrer"
+                            src={page.dataUrl} 
+                            alt={`Trang ${page.index}`} 
+                            className="w-full h-full object-cover" 
+                          />
+                          <div className="absolute top-1 left-1 bg-slate-950/90 text-slate-200 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">
+                            Trang {page.index}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                          <span>Nén:</span>
+                          <span className="text-emerald-400 font-bold">{page.size}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic leading-relaxed">
+                    *Ghi chú nghiệp vụ: Toàn bộ {slicedPages.length} trang tài liệu đã được nén về độ phân giải chuẩn và xuất JPEG 0.75 để giữ độ nét bóc tách tối đa của Gemini đồng thời bảo đảm an toàn payload.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Right column: Hộp Cấu hình màu Navy */}
+        <div className="space-y-6">
+          <div className="bg-gradient-to-b from-[#002F5F] to-[#0A192F] text-white p-6 rounded-xl border border-[#163A70] shadow-sm relative overflow-hidden">
+            <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+            
+            <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-4 relative z-10">
+              <Settings className="h-4 w-4 mr-1.5 text-yellow-400 animate-pulse" />
+              <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
+            </h4>
+
+            <div className="relative z-10 space-y-4">
+              {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
+              <button
+                onClick={startOcrProcess}
+                disabled={!selectedFile || !readyPayload || processingFile !== null}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-emerald-900/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-emerald-600"
+              >
+                <ScanLine className="h-5 w-5" />
+                <span>Bắt đầu trích xuất OCR</span>
+              </button>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-350 mb-1.5 uppercase tracking-wide">
+                  Phạm vi trích xuất (Page Range)
+                </label>
+                <div className="flex items-center space-x-3">
+                  <div className="w-1/2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Từ trang"
+                      value={fromPage}
+                      onChange={(e) => setFromPage(e.target.value)}
+                      className="w-full bg-[#0B1E36] border border-[#1E3E62] focus:ring-[#D4AF37] focus:border-[#D4AF37] rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-550 focus:outline-none"
+                    />
+                  </div>
+                  <span className="text-slate-500 text-xs">—</span>
+                  <div className="w-1/2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Đến trang"
+                      value={toPage}
+                      onChange={(e) => setToPage(e.target.value)}
+                      className="w-full bg-[#0B1E36] border border-[#1E3E62] focus:ring-[#D4AF37] focus:border-[#D4AF37] rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-550 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
+              </div>
+
+              <div className="flex items-start space-x-3 bg-yellow-500/10 text-yellow-250 p-3.5 rounded-lg border border-yellow-500/20 mt-4">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-400 mt-0.5" />
+                <p className="text-[10px] leading-relaxed font-medium">
+                  <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800 shadow-sm text-center">
+            <h5 className="text-xs font-bold text-slate-300 flex items-center justify-center space-x-1.5">
+              <Shield className="h-4 w-4 text-emerald-500" />
+              <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
+            </h5>
+            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối và tự động hủy hoàn toàn ngay sau khi kết thúc phiên làm việc, cam kết không lưu vết hồ sơ nghiệp vụ trên máy chủ.
             </p>
           </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* CẤU HÌNH OCR VÀ DROPZONE CHÍNH (Chiếm 2 cột trên màn hình Desktop) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Hộp kéo thả Dropzone */}
-            <div 
-              onDragEnter={handleDrag}
-              onDragOver={handleDrag}
-              onDragLeave={handleDrag}
-              onDrop={handleDrop}
-              onClick={onButtonClick}
-              className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[250px] transition-all duration-200 ${
-                dragActive 
-                  ? "border-emerald-500 bg-emerald-950/20" 
-                  : "border-slate-700 bg-slate-900/30 hover:border-emerald-500/50 hover:bg-slate-800/50"
-              }`}
-            >
-              <input 
-                ref={fileInputRef}
-                type="file" 
-                className="hidden" 
-                accept=".pdf,.png,.jpg,.jpeg" 
-                onChange={handleFileInput}
-              />
-              <div className="h-14 w-14 bg-slate-800 rounded-full flex items-center justify-center text-emerald-400 mb-4 border border-slate-700">
-                <UploadCloud className="h-7 w-7" />
-              </div>
-              <h3 className="font-bold text-slate-200 text-sm">
-                Kéo thả tài liệu của bạn vào đây hoặc click để duyệt từ máy tính
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-1 max-w-sm">
-                Hỗ trợ định dạng PDF, PNG, JPG (tối đa 50MB). Bản quét sẽ tự động được xử lý thông minh để khôi phục cấu trúc dòng tiếng Việt.
-              </p>
-              
-              <div className="mt-4 flex items-center justify-center space-x-2 text-[10px] text-slate-300 font-semibold font-mono bg-slate-800/50 border border-slate-700 rounded px-2.5 py-1">
-                <Shield className="h-3.5 w-3.5 text-emerald-500" />
-                <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
-              </div>
-            </div>
 
-            {/* DANH SÁCH CÁC TRANG ẢNH ĐÃ PHÂN TÁCH RỜI RẠC */}
-            {slicedPages.length > 0 && (
-              <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 shadow-sm space-y-4">
-                <h4 className="font-bold text-slate-200 text-xs sm:text-sm flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center space-x-1.5">
-                    <Layers className="h-4 w-4 text-emerald-500 animate-pulse" />
-                    <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({slicedPages.length} trang)</span>
-                  </div>
-                  <span className="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded font-bold font-mono border border-emerald-900">DUNG LƯỢNG AN TOÀN API</span>
-                </h4>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-2 border border-slate-800 rounded-lg bg-slate-950/50">
-                  {slicedPages.map((page) => (
-                    <div key={page.index} className="bg-slate-900 p-2 rounded-lg border border-slate-800 shadow-xs flex flex-col space-y-2 relative group hover:border-emerald-500 transition-all">
-                      <div className="aspect-[3/4] rounded bg-slate-950 overflow-hidden relative border border-slate-800">
-                        <img 
-                          referrerPolicy="no-referrer"
-                          src={page.dataUrl} 
-                          alt={`Trang ${page.index}`} 
-                          className="w-full h-full object-cover" 
-                        />
-                        <div className="absolute top-1 left-1 bg-slate-950/90 text-slate-200 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">
-                          Trang {page.index}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
-                        <span>Nén:</span>
-                        <span className="text-emerald-400 font-bold">{page.size}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-slate-500 italic leading-relaxed">
-                  *Ghi chú nghiệp vụ: Toàn bộ {slicedPages.length} trang tài liệu đã được nén về độ phân giải chuẩn và xuất JPEG 0.75 để giữ độ nét bóc tách tối đa của Gemini đồng thời bảo đảm an toàn payload.
-                </p>
-              </div>
-            )}
-
-          </div>
-
-          {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
-          <div className="space-y-6">
-            <div className="bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 rounded-xl border border-slate-700 shadow-sm relative overflow-hidden">
-              <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
-              
-              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-4 relative z-10">
-                <Settings className="h-4 w-4 mr-1.5 text-yellow-400 animate-pulse" />
-                <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
-              </h4>
-
-              <div className="relative z-10 space-y-4">
-                {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
-                <button
-                  onClick={startOcrProcess}
-                  disabled={!selectedFile || !readyPayload || processingFile !== null}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-emerald-900/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-emerald-600"
-                >
-                  <ScanLine className="h-5 w-5" />
-                  <span>Bắt đầu trích xuất OCR</span>
-                </button>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-350 mb-1.5 uppercase tracking-wide">
-                    Phạm vi trích xuất (Page Range)
-                  </label>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-1/2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Từ trang"
-                        value={fromPage}
-                        onChange={(e) => setFromPage(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500"
-                      />
-                    </div>
-                    <span className="text-slate-500 text-xs">—</span>
-                    <div className="w-1/2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Đến trang"
-                        value={toPage}
-                        onChange={(e) => setToPage(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
-                </div>
-
-                <div className="flex items-start space-x-3 bg-yellow-500/10 text-yellow-250 p-3.5 rounded-lg border border-yellow-500/20 mt-4">
-                  <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-400 mt-0.5" />
-                  <p className="text-[10px] leading-relaxed font-medium">
-                    <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-800 shadow-sm text-center">
-              <h5 className="text-xs font-bold text-slate-300 flex items-center justify-center space-x-1.5">
-                <Shield className="h-4 w-4 text-emerald-500" />
-                <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
-              </h5>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối và tự động hủy hoàn toàn ngay sau khi kết thúc phiên làm việc, cam kết không lưu vết hồ sơ nghiệp vụ trên máy chủ.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      )}
-
+      </div>
     </div>
   );
 }
