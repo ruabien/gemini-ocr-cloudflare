@@ -135,86 +135,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       pagesBase64Array: []
     }));
     
-    setQueuedFiles(prev => {
-      const nextQueue = [...prev, ...newQueued];
-      // Trigger processing loop asynchronously
-      setTimeout(() => processSlicingQueue(nextQueue), 0);
-      return nextQueue;
-    });
-  };
-
-  const processSlicingQueue = async (currentQueue: QueuedFile[]) => {
-    if (isSlicing) return; // Already a loop running
-    
-    setIsSlicing(true);
-    let keepGoing = true;
-    
-    while(keepGoing) {
-      let qFile: QueuedFile | undefined;
-      await new Promise<void>(resolve => {
-        setQueuedFiles(prev => {
-          const next = prev.find(f => f.status === 'waiting');
-          if (next) {
-            qFile = next;
-            return prev.map(f => f.id === next.id ? { ...f, status: 'slicing' } : f);
-          }
-          keepGoing = false;
-          return prev;
-        });
-        resolve();
-      });
-
-      if (!qFile) break;
-
-      try {
-        let pages: { dataUrl: string; base64: string; size: string }[] = [];
-        const file = qFile.file;
-        const isPdfValue = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-        const isImageValue = file.type.startsWith("image/") || 
-                          file.name.toLowerCase().endsWith(".png") || 
-                          file.name.toLowerCase().endsWith(".jpg") || 
-                          file.name.toLowerCase().endsWith(".jpeg");
-
-        if (isPdfValue) {
-          pages = await sliceAndCompressPdf(file, setSlicingMessage);
-        } else if (isImageValue) {
-          pages = await compressImageFile(file, setSlicingMessage);
-        } else {
-          setSlicingMessage(`Đang đọc tệp ${file.name}...`);
-          const reader = new FileReader();
-          pages = await new Promise((resolve, reject) => {
-            reader.onload = (e) => {
-              if (e.target?.result) {
-                const base64 = (e.target.result as string).split(",")[1];
-                resolve([{
-                  dataUrl: e.target.result as string,
-                  base64,
-                  size: `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`
-                }]);
-              } else {
-                reject(new Error("Lỗi đọc tệp tin."));
-              }
-            };
-            reader.onerror = () => reject(new Error("Lỗi tải tệp."));
-            reader.readAsDataURL(file);
-          });
-        }
-
-        setQueuedFiles(prev => prev.map(f => f.id === qFile!.id ? {
-          ...f,
-          status: 'ready',
-          slicedPages: pages.map((p, idx) => ({ index: idx + 1, dataUrl: p.dataUrl, size: p.size })),
-          pagesBase64Array: pages.map(p => p.base64)
-        } : f));
-        
-      } catch (err: any) {
-        console.error("Lỗi tiền xử lý tệp tin:", err);
-        setQueuedFiles(prev => prev.map(f => f.id === qFile!.id ? { ...f, status: 'error', message: err.message || err } : f));
-      }
-    }
-    
-    setIsSlicing(false);
-    setSlicingMessage("");
+    setQueuedFiles(prev => [...prev, ...newQueued]);
   };
 
   // Xử lý sự kiện Drag
@@ -252,7 +173,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   };
 
   const startOcrProcess = async () => {
-    const filesToProcess = queuedFiles.filter(q => q.status === 'ready');
+    const filesToProcess = queuedFiles.filter(q => q.status !== 'done');
     if (filesToProcess.length === 0) return;
     
     let keys: string[] = [];
@@ -279,8 +200,68 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp...`);
       setProcessingFile(qFile.file.name);
       setProgress(5);
+
+      // Step 1: Tiền xử lý (slicing & nén) nếu chưa được thực hiện
+      let pagesBase64Array = qFile.pagesBase64Array;
+      if (pagesBase64Array.length === 0) {
+        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'slicing' } : f));
+        setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp - Đang phân tích cấu trúc...`);
+        
+        try {
+          const file = qFile.file;
+          const isPdfValue = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+          const isImageValue = file.type.startsWith("image/") || 
+                            file.name.toLowerCase().endsWith(".png") || 
+                            file.name.toLowerCase().endsWith(".jpg") || 
+                            file.name.toLowerCase().endsWith(".jpeg");
+
+          let pages: { dataUrl: string; base64: string; size: string }[] = [];
+          if (isPdfValue) {
+            pages = await sliceAndCompressPdf(file, (msg) => {
+              setBatchProgressText(`Đang xử lý ${completedFiles}/${totalFiles} tệp - ${msg}`);
+            });
+          } else if (isImageValue) {
+            pages = await compressImageFile(file, (msg) => {
+              setBatchProgressText(`Đang xử lý ${completedFiles}/${totalFiles} tệp - ${msg}`);
+            });
+          } else {
+            const reader = new FileReader();
+            pages = await new Promise((resolve, reject) => {
+              reader.onload = (e) => {
+                if (e.target?.result) {
+                  const base64 = (e.target.result as string).split(",")[1];
+                  resolve([{
+                    dataUrl: e.target.result as string,
+                    base64,
+                    size: `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`
+                  }]);
+                } else {
+                  reject(new Error("Lỗi đọc tệp tin."));
+                }
+              };
+              reader.onerror = () => reject(new Error("Lỗi tải tệp."));
+              reader.readAsDataURL(file);
+            });
+          }
+
+          pagesBase64Array = pages.map(p => p.base64);
+          
+          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? {
+            ...f,
+            slicedPages: pages.map((p, idx) => ({ index: idx + 1, dataUrl: p.dataUrl, size: p.size })),
+            pagesBase64Array: pagesBase64Array
+          } : f));
+        } catch (err: any) {
+          console.error("Lỗi tiền xử lý tệp tin:", err);
+          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
+          completedFiles++;
+          continue;
+        }
+      }
       
+      // Step 2: Gửi tín hiệu bóc tách văn bản (OCR)
       setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, status: 'processing' } : f));
+      setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp - Đang trích xuất văn bản...`);
 
       // Simulate progress bar while waiting
       const interval = setInterval(() => {
@@ -297,7 +278,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                                 : qFile.file.type || "image/jpeg";
                                 
         const payload: any = {
-          base64File: JSON.stringify(qFile.pagesBase64Array),
+          base64File: JSON.stringify(pagesBase64Array),
           fileName: qFile.file.name,
           mimeType: mimeTypeToSend,
           isEncrypted: false,
@@ -560,7 +541,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
                 <button
                   onClick={startOcrProcess}
-                  disabled={queuedFiles.filter(q => q.status === 'ready').length === 0 || isBatchProcessing || isSlicing}
+                  disabled={queuedFiles.length === 0 || isBatchProcessing || isSlicing}
                   className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
                 >
                   <ScanLine className="h-5 w-5" />
