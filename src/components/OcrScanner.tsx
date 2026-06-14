@@ -312,49 +312,49 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
       {/* HIỂN THỊ TIẾN TRÌNH KHỞI TẠO / PHÂN TÁCH / NÉN NẾU ĐANG CHẠY */}
       {isSlicing ? (
-        <div className="bg-slate-900 text-white p-8 rounded-xl border border-rose-950/20 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-yellow-500/5 to-emerald-600/5 animate-pulse" />
+        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 via-yellow-50/50 to-emerald-50/50 animate-pulse" />
           
           <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-6">
-            <div className="relative h-16 w-16 bg-emerald-605 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
-              <Layers className="h-8 w-8 text-emerald-300 animate-spin" style={{ animationDuration: "3s" }} />
+            <div className="relative h-16 w-16 bg-emerald-100 rounded-full flex items-center justify-center border-2 border-emerald-200 shadow-sm animate-bounce duration-1000">
+              <Layers className="h-8 w-8 text-emerald-600 animate-spin" style={{ animationDuration: "3s" }} />
             </div>
             
             <div>
-              <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans">
+              <h3 className="text-base font-bold text-slate-900 uppercase tracking-widest font-sans">
                 Tiền xử lý tập tin tư pháp...
               </h3>
-              <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{slicingMessage}</p>
+              <p className="text-xs text-emerald-600 font-mono mt-1 font-semibold">{slicingMessage}</p>
             </div>
 
-            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700 animate-pulse">
-              <div className="bg-gradient-to-r from-emerald-600 to-yellow-500 h-full rounded-full w-2/3" />
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200 animate-pulse">
+              <div className="bg-gradient-to-r from-emerald-500 to-yellow-400 h-full rounded-full w-2/3" />
             </div>
 
-            <div className="text-[10px] text-slate-400 leading-relaxed italic">
+            <div className="text-[10px] text-slate-500 leading-relaxed italic">
               *Tập tin PDF được bóc tách rời rạc thành từng trang ảnh. Toàn bộ hình ảnh đầu vào được tự động nén dung lượng, thu hẹp độ phân giải gốc để triệt tiêu lỗi quá tải tải trọng (Payload limit) qua biên độ kết nối API.
             </div>
           </div>
         </div>
       ) : processingFile ? (
-        <div className="bg-slate-900 text-white p-8 rounded-xl border border-rose-950/20 shadow-xl paper-glow relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
+        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
           {/* Shimmer backgrounds */}
-          <div className="absolute inset-0 bg-gradient-to-r from-red-600/5 via-yellow-500/5 to-red-600/5 animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-to-r from-red-50/50 via-yellow-50/50 to-red-50/50 animate-pulse" />
           
           <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-6">
-            <div className="relative h-16 w-16 bg-red-600 rounded-full flex items-center justify-center border-2 border-yellow-500/30 shadow-lg animate-bounce duration-1000">
-              <Activity className="h-8 w-8 text-yellow-400 animate-spin duration-3000" />
+            <div className="relative h-16 w-16 bg-red-100 rounded-full flex items-center justify-center border-2 border-red-200 shadow-sm animate-bounce duration-1000">
+              <Activity className="h-8 w-8 text-red-600 animate-spin duration-3000" />
             </div>
             
             <div>
-              <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans flex items-center justify-center">
+              <h3 className="text-base font-bold text-slate-900 uppercase tracking-widest font-sans flex items-center justify-center">
                 <span>Đang bóc tách văn bản nghiệp vụ...</span>
               </h3>
-              <p className="text-xs text-yellow-400 font-mono mt-1 font-semibold">{processingFile}</p>
+              <p className="text-xs text-red-600 font-mono mt-1 font-semibold">{processingFile}</p>
             </div>
 
             {/* Thanh tiến trình Shimmer */}
-            <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
               <div 
                 className="bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 h-full rounded-full transition-all duration-300 relative"
                 style={{ width: `${progress}%` }}
@@ -363,9 +363,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               </div>
             </div>
 
-            <div className="flex items-center justify-between w-full text-[10px] text-slate-400 font-mono">
+            <div className="flex items-center justify-between w-full text-[10px] text-slate-500 font-mono">
               <span>Đại diện an toàn: AES-256</span>
-              <span className="text-yellow-400 font-bold">{progress}% HOÀN THÀNH</span>
+              <span className="text-red-600 font-bold">{progress}% HOÀN THÀNH</span>
               <span>Bộ nhớ tạm: RAM stateless</span>
             </div>
 
@@ -457,11 +457,11 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
           <div className="space-y-6">
-            <div className="bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 rounded-xl border border-slate-700 shadow-sm relative overflow-hidden">
-              <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
               
-              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-4 relative z-10">
-                <Settings className="h-4 w-4 mr-1.5 text-yellow-400 animate-pulse" />
+              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-800 flex items-center mb-4 relative z-10">
+                <Settings className="h-4 w-4 mr-1.5 text-slate-600 animate-pulse" />
                 <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
               </h4>
 
@@ -477,7 +477,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 </button>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-350 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
                     Phạm vi trích xuất (Page Range)
                   </label>
                   <div className="flex items-center space-x-3">
@@ -488,7 +488,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                         placeholder="Từ trang"
                         value={fromPage}
                         onChange={(e) => setFromPage(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500"
+                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
                       />
                     </div>
                     <span className="text-slate-500 text-xs">—</span>
@@ -499,15 +499,15 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                         placeholder="Đến trang"
                         value={toPage}
                         onChange={(e) => setToPage(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500"
+                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500"
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
+                  <p className="text-[10px] text-slate-500 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
                 </div>
 
-                <div className="flex items-start space-x-3 bg-yellow-500/10 text-yellow-250 p-3.5 rounded-lg border border-yellow-500/20 mt-4">
-                  <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-400 mt-0.5" />
+                <div className="flex items-start space-x-3 bg-yellow-50 text-yellow-800 p-3.5 rounded-lg border border-yellow-200 mt-4">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-600 mt-0.5" />
                   <p className="text-[10px] leading-relaxed font-medium">
                     <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.
                   </p>

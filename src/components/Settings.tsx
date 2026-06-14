@@ -373,55 +373,55 @@ export default function SettingsComponent({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Lớp bảo vệ truyền dữ liệu */}
-          <div className="lg:col-span-7 bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-md">
-            <h4 className="font-bold text-xs sm:text-sm uppercase tracking-widest text-slate-300 flex items-center mb-5">
-              <Cloud className="h-4.5 w-4.5 mr-2 text-yellow-400" />
-              <span>Sơ đồ truyền dữ liệu bảo mật (Stateless)</span>
+          <div className="lg:col-span-7 bg-white text-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h4 className="font-bold text-xs sm:text-sm uppercase tracking-widest text-slate-800 flex items-center mb-5">
+              <Shield className="h-4.5 w-4.5 text-yellow-650 text-yellow-600 mr-2 animate-pulse" />
+              <span>Lớp bảo mật truyền tải dữ liệu tư pháp</span>
             </h4>
-
+            
             {/* Sơ đồ */}
-            <div className="space-y-6 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-850">
+            <div className="space-y-6 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
               {/* Step 1 */}
               <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-red-600 font-bold font-mono text-[10px] text-white flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
+                <div className="h-6.5 w-6.5 rounded-full bg-slate-100 font-bold font-mono text-[10px] text-slate-755 flex items-center justify-center border-2 border-white z-10 flex-shrink-0 shadow-sm">
                   1
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-100">Client-Side mã hóa tệp</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Tệp quét của phòng tư pháp được nạp lên trình duyệt, kích hoạt AES-256 mã hóa gói byte nhị phân.</p>
+                  <h4 className="text-xs font-bold text-slate-800">Đầu cuối mã hóa AES-256</h4>
+                  <p className="text-[10px] text-slate-500 leading-relaxed mt-0.5">Tệp PDF được phân nhỏ thành từng trang ảnh JPEG 75% chất lượng và chuyển hóa về chuỗi Base64.</p>
                 </div>
               </div>
 
               {/* Step 2 */}
               <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-yellow-500 font-bold font-mono text-[10px] text-slate-950 flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
+                <div className="h-6.5 w-6.5 rounded-full bg-slate-100 font-bold font-mono text-[10px] text-slate-755 flex items-center justify-center border-2 border-white z-10 flex-shrink-0 shadow-sm">
                   2
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-100">Edge Node Processing</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Cloudflare Worker tiếp nhận chuyển khoản, giải mã tạm thời trên RAM và gọi trực tiếp Google Cloud Vision API.</p>
+                  <h4 className="text-xs font-bold text-slate-800">Edge Node Processing</h4>
+                  <p className="text-[10px] text-slate-500 leading-relaxed mt-0.5">Cloudflare Worker tiếp nhận chuyển khoản, giải mã tạm thời trên RAM và gọi trực tiếp Google Cloud Vision API.</p>
                 </div>
               </div>
 
               {/* Step 3 */}
               <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-slate-700 font-bold font-mono text-[10px] text-white flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
+                <div className="h-6.5 w-6.5 rounded-full bg-slate-200 font-bold font-mono text-[10px] text-slate-755 flex items-center justify-center border-2 border-white z-10 flex-shrink-0 shadow-sm">
                   3
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-100">Mật danh hóa & Kết xuất</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Văn bản thô được chạy qua module regex nâng cao để che dấu tên đương sự và CCCD/địa chỉ theo Nghị định 30.</p>
+                  <h4 className="text-xs font-bold text-slate-800">Mật danh hóa & Kết xuất</h4>
+                  <p className="text-[10px] text-slate-500 leading-relaxed mt-0.5">Văn bản thô được chạy qua module regex nâng cao để che dấu tên đương sự và CCCD/địa chỉ theo Nghị định 30.</p>
                 </div>
               </div>
 
               {/* Step 4 */}
               <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-emerald-600 font-bold font-mono text-[10px] text-white flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
+                <div className="h-6.5 w-6.5 rounded-full bg-emerald-600 font-bold font-mono text-[10px] text-white flex items-center justify-center border-2 border-white z-10 flex-shrink-0 shadow-sm">
                   4
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-emerald-400">Xuất DOCX Nghị định 30</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Tải về tệp tin an toàn. Toàn bộ tài liệu nhạy cảm biến mất khỏi RAM Edge ngay sau khi phản hồi.</p>
+                  <h4 className="text-xs font-bold text-emerald-600">Xuất DOCX Nghị định 30</h4>
+                  <p className="text-[10px] text-slate-500 leading-relaxed mt-0.5">Tải về tệp tin an toàn. Toàn bộ tài liệu nhạy cảm biến mất khỏi RAM Edge ngay sau khi phản hồi.</p>
                 </div>
               </div>
             </div>
