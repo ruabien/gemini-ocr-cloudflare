@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from "react";
-import { UploadCloud, FileText, Settings, Shield, AlertTriangle, Play, HelpCircle, FileCheck, Layers, Activity, ScanLine } from "lucide-react";
+import { UploadCloud, Settings, Shield, AlertTriangle, HelpCircle, Layers, Activity, ScanLine } from "lucide-react";
 import { OcrConfig } from "../types";
 import * as pdfjs from 'pdfjs-dist';
 
@@ -13,33 +13,6 @@ interface OcrScannerProps {
   config: OcrConfig;
   setConfig: React.Dispatch<React.SetStateAction<OcrConfig>>;
 }
-
-const MOCK_DOCS = [
-  {
-    id: "mock-1",
-    name: "Ban_an_hinh_su_so_24_2024_HS_ST.pdf",
-    type: "Hình Sự - Bản Án (PDF)",
-    pages: 12,
-    size: "2.1 MB",
-    description: "Bản án hình sự sơ thẩm đối với bị cáo Nguyễn Văn Nam (34 tuổi, cư trú tại Hoàn Kiếm, Hà Nội) về tội Cố ý gây thương tích. Thụ lý ngày 10/01/2024, xét xử ngày 25/02/2024 (Đã thụ lý 46 ngày)."
-  },
-  {
-    id: "mock-2",
-    name: "Cao_trang_truy_to_15_CT_VKS_P1.pdf",
-    type: "Hình Sự - Viện Kiểm Sát (PDF)",
-    pages: 8,
-    size: "1.2 MB",
-    description: "Cáo trạng của Viện kiểm sát nhân dân truy tố bị can Trần Văn Mạnh (32 tuổi, cư trú tại Hai Bà Trưng, HN) phạm tội Trộm cắp tài sản. Thụ lý kiểm sát ngày 05/03/2024."
-  },
-  {
-    id: "mock-3",
-    name: "Quyet_dinh_thu_ly_dan_su_112_2024.pdf",
-    type: "Dân Sự - Thụ Lý (PDF)",
-    pages: 5,
-    size: "950 KB",
-    description: "Tranh chấp hợp đồng tín dụng giữa nguyên đơn Ngân hàng và bị đơn Lê Thị Hoa (45 tuổi, cư trú tại Cầu Giấy, HN). Thụ lý ngày 12/03/2024."
-  }
-];
 
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
   const [dragActive, setDragActive] = useState(false);
@@ -324,17 +297,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     }
   };
 
-  // Kích hoạt tệp mẫu nhanh tư pháp
-  const selectMockDoc = (id: string) => {
-    const doc = MOCK_DOCS.find(m => m.id === id);
-    if (doc) {
-      // Base64 ảo cho tài liệu mẫu
-      const virtualBase64 = "MOCK_BASE64_BYTES_LAW_DEPT";
-      const mimeType = doc.name.endsWith(".pdf") ? "application/pdf" : "image/jpeg";
-      simulateOcrProcess(doc.name, virtualBase64, mimeType);
-    }
-  };
-
   return (
     <div id="ocr-scanner-tab" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
@@ -491,53 +453,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               </div>
             )}
 
-            {/* Các tùy chỉnh tham số (Metadata & Engine) */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5 border-b border-slate-100 pb-3">
-                <Settings className="h-4 w-4 text-rose-600" />
-                <span>Cấu hình</span>
-              </h4>
-
-              {/* MÔ HÌNH OCR VÀ XUẤT ĐỊNH DẠNG ĐƯỢC ẨN ĐỂ ĐƠN GIẢN HÓA GIAO DIỆN */}
-              {/* (Giá trị mặc định vẫn được lưu trong config state tại App.tsx và giữ nguyên logic payload) */}
-
-              {/* PHẠM VI TRÍCH XUẤT (PAGE RANGE) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase">Phạm vi trích xuất (Page Range)</label>
-                <div className="flex items-center space-x-3">
-                  <div className="w-1/2">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Từ trang"
-                      value={fromPage}
-                      onChange={(e) => setFromPage(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
-                    />
-                  </div>
-                  <span className="text-slate-400 text-xs">—</span>
-                  <div className="w-1/2">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Đến trang"
-                      value={toPage}
-                      onChange={(e) => setToPage(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500"
-                    />
-                  </div>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
-              </div>
-
-              <div className="flex items-center space-x-4 bg-yellow-50 text-yellow-800 p-3 rounded-lg border border-yellow-200 mt-2">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                <p className="text-[10px] leading-relaxed font-medium">
-                  <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.
-                </p>
-              </div>
-            </div>
-
             {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
             {readyPayload && slicedPages.length > 0 && (
               <div className="flex justify-center mt-6">
@@ -552,46 +467,53 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             )}
           </div>
 
-          {/* CHỌN TỆP MẪU NHANH TƯ PHÁP (Cột bên phải Desktop) */}
+          {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
           <div className="space-y-6">
             <div className="bg-gradient-to-b from-slate-900 to-slate-800 text-white p-6 rounded-xl border border-slate-700 shadow-sm relative overflow-hidden">
               <div className="absolute inset-0 opacity-5 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
               
-              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-4">
-                <Layers className="h-4 w-4 mr-1.5 text-yellow-400" />
-                <span>Hồ sơ vụ án mẫu</span>
+              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-300 flex items-center mb-4 relative z-10">
+                <Settings className="h-4 w-4 mr-1.5 text-yellow-400 animate-pulse" />
+                <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
               </h4>
-              <p className="text-xs text-slate-400 leading-relaxed mb-4 font-normal">
-                Bấm vào hồ sơ mẫu dưới đây để mô phỏng hoạt động bóc tách bản án, cáo trạng thực tế của Kiểm sát viên.
-              </p>
 
-              <div className="space-y-4">
-                {MOCK_DOCS.map((doc) => (
-                  <div 
-                    key={doc.id}
-                    onClick={() => selectMockDoc(doc.id)}
-                    className="bg-slate-850/50 hover:bg-slate-800 border border-slate-700/60 hover:border-yellow-500/30 p-3.5 rounded-lg cursor-pointer transition-all flex items-start space-x-3 group relative"
-                  >
-                    <div className="img-thumbnail rounded-md bg-red-600/20 group-hover:bg-red-600/30 text-yellow-400 flex items-center justify-center flex-shrink-0 border border-red-500/20 h-8 w-8">
-                      <FileCheck className="h-4.5 w-4.5" />
+              <div className="relative z-10 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-350 mb-1.5 uppercase tracking-wide">
+                    Phạm vi trích xuất (Page Range)
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-1/2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Từ trang"
+                        value={fromPage}
+                        onChange={(e) => setFromPage(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500"
+                      />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h5 className="text-xs text-slate-100 font-bold truncate group-hover:text-yellow-400 transition-colors">
-                          {doc.name}
-                        </h5>
-                        <Play className="h-3.5 w-3.5 text-yellow-500 opacity-60 group-hover:opacity-100 transition-opacity ml-1 flex-shrink-0" />
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 font-medium leading-relaxed font-sans">
-                        {doc.description}
-                      </p>
-                      <div className="flex items-center justify-between text-[8px] text-slate-400 font-mono mt-1 pt-1.5 border-t border-slate-700/40">
-                        <span>{doc.type}</span>
-                        <span>{doc.size}</span>
-                      </div>
+                    <span className="text-slate-500 text-xs">—</span>
+                    <div className="w-1/2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Đến trang"
+                        value={toPage}
+                        onChange={(e) => setToPage(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500"
+                      />
                     </div>
                   </div>
-                ))}
+                  <p className="text-[10px] text-slate-400 mt-1.5">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
+                </div>
+
+                <div className="flex items-start space-x-3 bg-yellow-500/10 text-yellow-250 p-3.5 rounded-lg border border-yellow-500/20 mt-4">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-400 mt-0.5" />
+                  <p className="text-[10px] leading-relaxed font-medium">
+                    <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.
+                  </p>
+                </div>
               </div>
             </div>
             
