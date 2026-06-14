@@ -79,7 +79,7 @@ export default function UpgradeComponent({
   useEffect(() => {
     if (!showQRModal) return;
 
-    let timeoutIds: NodeJS.Timeout[] = [];
+    let timeoutIds: any[] = [];
 
     if (paymentStatus === "pending") {
       // Step log 2
@@ -427,44 +427,44 @@ export default function UpgradeComponent({
             <div className="grid grid-cols-1 md:grid-cols-12">
               
               {/* CỘT THÔNG TIN HÓA ĐƠN - MB Bank */}
-              <div className="md:col-span-5 bg-slate-900 text-white p-6 flex flex-col justify-between">
+              <div className="md:col-span-5 bg-slate-50 border-r border-slate-200 text-slate-900 p-6 flex flex-col justify-between">
                 <div>
-                  <div className="h-8 bg-red-600/30 text-yellow-400 border border-yellow-500/35 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider inline-block mb-4">
+                  <div className="h-8 bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider inline-block mb-4">
                     VietQR / Napas 247
                   </div>
-                  <h3 className="text-sm font-bold uppercase tracking-tight text-white mb-4">Kết nối tới MB Bank</h3>
+                  <h3 className="text-sm font-bold uppercase tracking-tight text-slate-900 mb-4">Kết nối tới MB Bank</h3>
                   
                   <div className="space-y-4 text-xs font-medium">
                     <div className="space-y-0.5">
-                      <p className="text-slate-400 text-[10px] uppercase">Ngân hàng thụ hưởng</p>
-                      <p className="text-slate-100 font-bold">MB Bank (Ngân hàng Quân đội)</p>
+                      <p className="text-slate-500 text-[10px] uppercase">Ngân hàng thụ hưởng</p>
+                      <p className="text-slate-800 font-bold">MB Bank (Ngân hàng Quân đội)</p>
                     </div>
 
                     <div className="space-y-0.5">
-                      <p className="text-slate-400 text-[10px] uppercase">Số tài khoản nghiệp vụ</p>
-                      <p className="text-yellow-400 font-mono font-bold text-sm tracking-wide">190820268888</p>
+                      <p className="text-slate-500 text-[10px] uppercase">Số tài khoản nghiệp vụ</p>
+                      <p className="text-red-600 font-mono font-bold text-sm tracking-wide">190820268888</p>
                     </div>
 
                     <div className="space-y-0.5">
-                      <p className="text-slate-400 text-[10px] uppercase">Chủ tài khoản</p>
-                      <p className="text-slate-100 font-bold">DU AN CONG NGHE VKS OCR</p>
+                      <p className="text-slate-500 text-[10px] uppercase">Chủ tài khoản</p>
+                      <p className="text-slate-800 font-bold">DU AN CONG NGHE VKS OCR</p>
                     </div>
 
                     <div className="space-y-0.5">
-                      <p className="text-slate-400 text-[10px] uppercase">Số tiền quyết định</p>
-                      <p className="text-white font-mono font-black text-sm text-[15px]">{activePlan.display}</p>
+                      <p className="text-slate-500 text-[10px] uppercase">Số tiền quyết định</p>
+                      <p className="text-slate-900 font-mono font-black text-sm text-[15px]">{activePlan.display}</p>
                     </div>
 
                     <div className="space-y-0.5">
-                      <p className="text-slate-400 text-[10px] uppercase">Nội dung bắt buộc</p>
-                      <p className="text-yellow-400 font-mono font-bold bg-slate-800 p-1.5 rounded border border-slate-700/50 break-words select-all text-[11px]">
+                      <p className="text-slate-500 text-[10px] uppercase">Nội dung bắt buộc</p>
+                      <p className="text-red-700 font-mono font-bold bg-white p-1.5 rounded border border-red-200 break-words select-all text-[11px]">
                         VKS PRO {session.name.toUpperCase().replace(/[^A-Z ]/g, "")} {billingCycle === "yearly" ? "1Y" : "1M"}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-slate-800/80 mt-4 text-[10px] text-slate-400 leading-relaxed">
+                <div className="pt-6 border-t border-slate-200 mt-4 text-[10px] text-slate-500 leading-relaxed">
                   * Vui lòng nhập chuẩn xác nội dung chuyển khoản ở thiết bị di động để hệ thống khớp nối tự động trong 5-10 giây.
                 </div>
               </div>

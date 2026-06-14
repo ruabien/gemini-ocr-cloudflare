@@ -76,7 +76,7 @@ export default function SettingsComponent({
   };
 
   return (
-    <div id="settings-view" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div id="settings-view" className="max-w-7xl mx-auto p-4 md:p-6 space-y-6 w-full">
       
       {/* HEADER SECTION */}
       <div className="border-b border-slate-200 pb-5">
@@ -362,99 +362,6 @@ export default function SettingsComponent({
 
       </div>
 
-      {/* PHẦN BẢO MẬT & KIẾN TRÚC AN TOÀN TƯ PHÁP */}
-      <div className="border-t border-slate-200 pt-8 space-y-6">
-        <div className="flex items-center space-x-2">
-          <Shield className="h-5 w-5 text-slate-800" />
-          <h3 className="font-bold text-sm sm:text-base text-slate-900 uppercase tracking-wide">
-            Kiến trúc bảo mật thông tin & Chứng nhận tư pháp
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Lớp bảo vệ truyền dữ liệu */}
-          <div className="lg:col-span-7 bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 shadow-md">
-            <h4 className="font-bold text-xs sm:text-sm uppercase tracking-widest text-slate-300 flex items-center mb-5">
-              <Cloud className="h-4.5 w-4.5 mr-2 text-yellow-400" />
-              <span>Sơ đồ truyền dữ liệu bảo mật (Stateless)</span>
-            </h4>
-
-            {/* Sơ đồ */}
-            <div className="space-y-6 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-850">
-              {/* Step 1 */}
-              <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-red-600 font-bold font-mono text-[10px] text-white flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
-                  1
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-100">Client-Side mã hóa tệp</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Tệp quét của phòng tư pháp được nạp lên trình duyệt, kích hoạt AES-256 mã hóa gói byte nhị phân.</p>
-                </div>
-              </div>
-
-              {/* Step 2 */}
-              <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-yellow-500 font-bold font-mono text-[10px] text-slate-950 flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
-                  2
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-100">Edge Node Processing</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Cloudflare Worker tiếp nhận chuyển khoản, giải mã tạm thời trên RAM và gọi trực tiếp Google Cloud Vision API.</p>
-                </div>
-              </div>
-
-              {/* Step 3 */}
-              <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-slate-700 font-bold font-mono text-[10px] text-white flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
-                  3
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-100">Mật danh hóa & Kết xuất</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Văn bản thô được chạy qua module regex nâng cao để che dấu tên đương sự và CCCD/địa chỉ theo Nghị định 30.</p>
-                </div>
-              </div>
-
-              {/* Step 4 */}
-              <div className="flex items-start space-x-3.5 relative">
-                <div className="h-6.5 w-6.5 rounded-full bg-emerald-600 font-bold font-mono text-[10px] text-white flex items-center justify-center border-2 border-slate-900 z-10 flex-shrink-0">
-                  4
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-emerald-400">Xuất DOCX Nghị định 30</h4>
-                  <p className="text-[10px] text-slate-400 leading-relaxed mt-0.5">Tải về tệp tin an toàn. Toàn bộ tài liệu nhạy cảm biến mất khỏi RAM Edge ngay sau khi phản hồi.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Chứng chỉ & Quy chế hành chính */}
-          <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <h4 className="text-xs font-black text-slate-800 uppercase flex items-center space-x-1.5 border-b border-slate-100 pb-2.5">
-                <Shield className="h-4.5 w-4.5 text-emerald-500" />
-                <span>Chứng chỉ bảo mật hành chính</span>
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Kiến trúc giải pháp được phê chuẩn tuân thủ theo các quy định về An toàn thông tin cấp độ 3 cho phần mềm hành chính nhà nước của Bộ Thông tin & Truyền thông.
-              </p>
-              <div className="flex flex-wrap gap-2 pt-2">
-                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-150 rounded text-[9.5px] font-bold uppercase">STAT ELIGIBLE</span>
-                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-150 rounded text-[9.5px] font-bold uppercase">STATELESS GUARANTEED</span>
-              </div>
-            </div>
-
-            <div className="bg-amber-500/5 p-6 rounded-2xl border border-amber-500/15 text-slate-700 space-y-3">
-              <h4 className="text-xs font-bold text-amber-800 uppercase flex items-center space-x-1.5">
-                <ShieldCheck className="h-4.5 w-4.5 text-amber-600" />
-                <span>Cam kết An ninh Tư pháp Việt Nam</span>
-              </h4>
-              <p className="text-[11px] text-slate-600 leading-relaxed">
-                Hệ thống cam kết <strong className="font-bold">100% không lưu trữ</strong> bất kỳ bản sao tài liệu, thông tin đương sự hay lịch sử bóc tách nào của quý cán bộ lên máy chủ trung gian. Toàn bộ hoạt động thực thi hoàn toàn giải phóng khỏi bộ nhớ lưu trữ (Stateless Architecture).
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div>
   );
