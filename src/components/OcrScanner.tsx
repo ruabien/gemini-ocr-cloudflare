@@ -178,181 +178,57 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const startOcrProcess = async () => {
     const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
     if (!filesToProcess || filesToProcess.length === 0) return;
-    
-    let keys: string[] = [];
-    try {
-      const stored = localStorage.getItem('vks_gemini_api_keys');
-      keys = stored ? JSON.parse(stored) : [];
-    } catch(e) { 
-      keys = []; 
-    }
-
-    if (!keys || keys.length === 0) {
-      alert("Vui lòng cấu hình ít nhất một Gemini API Key trong mục Cài đặt để bắt đầu bóc tách hồ sơ.");
-      return;
-    }
 
     setIsBatchProcessing(true);
     setEditorContent("");
     editorContentRef.current = "";
-    
-    let totalFiles = filesToProcess.length;
-    let completedFiles = 0;
-    
-    const filesPassToEditor: File[] = [];
 
-    for (let i = 0; i < filesToProcess.length; i++) {
-      const qFile = filesToProcess[i];
-      const file = qFile.file;
-      setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp...`);
-      setProcessingFile(file.name);
-      setProgress(5);
+    const selectedFiles = filesToProcess.map(q => q.file);
 
-      // Step 1: Tiền xử lý (slicing & nén) nếu chưa được thực hiện
-      let pagesBase64Array = qFile.pagesBase64Array || [];
-      if (pagesBase64Array.length === 0) {
-        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'slicing' } : f));
-        setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp - Đang phân tích cấu trúc...`);
-        
-        try {
-          const isPdfValue = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-          const isImageValue = file.type.startsWith("image/") || 
-                            file.name.toLowerCase().endsWith(".png") || 
-                            file.name.toLowerCase().endsWith(".jpg") || 
-                            file.name.toLowerCase().endsWith(".jpeg");
+    const updateFileStatus = (index: number, status: "processing" | "completed" | "error") => {
+      const qFile = filesToProcess[index];
+      if (!qFile) return;
+      const mappedStatus = status === "completed" ? "done" : status;
+      setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
+    };
 
-          let pages: { dataUrl: string; base64: string; size: string }[] = [];
-          if (isPdfValue) {
-            pages = await sliceAndCompressPdf(file, (msg) => {
-              setBatchProgressText(`Đang xử lý ${completedFiles}/${totalFiles} tệp - ${msg}`);
-            });
-          } else if (isImageValue) {
-            pages = await compressImageFile(file, (msg) => {
-              setBatchProgressText(`Đang xử lý ${completedFiles}/${totalFiles} tệp - ${msg}`);
-            });
-          } else {
-            const reader = new FileReader();
-            pages = await new Promise((resolve, reject) => {
-              reader.onload = (e) => {
-                if (e.target?.result) {
-                  const base64 = (e.target.result as string).split(",")[1];
-                  resolve([{
-                    dataUrl: e.target.result as string,
-                    base64,
-                    size: `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`
-                  }]);
-                } else {
-                  reject(new Error("Lỗi đọc tệp tin."));
-                }
-              };
-              reader.onerror = () => reject(new Error("Lỗi tải tệp."));
-              reader.readAsDataURL(file);
-            });
-          }
-
-          pagesBase64Array = (pages || []).map(p => p?.base64);
-          
-          setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? {
-            ...f,
-            slicedPages: (pages || []).map((p, idx) => ({ index: idx + 1, dataUrl: p?.dataUrl, size: p?.size })),
-            pagesBase64Array: pagesBase64Array || []
-          } : f));
-        } catch (err: any) {
-          console.error("Lỗi tiền xử lý tệp tin:", err);
-          setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
-          completedFiles++;
-          continue;
-        }
-      }
+    // Inside the true sequential handler
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
       
-      // Step 2: Gửi tín hiệu bóc tách văn bản (OCR)
-      setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'processing' } : f));
-      setBatchProgressText(`Đã xử lý ${completedFiles}/${totalFiles} tệp - Đang trích xuất văn bản...`);
+      // Update UI status for this specific index to "Đang bóc tách"
+      updateFileStatus(i, "processing"); 
 
-      // Simulate progress bar while waiting
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) return prev;
-          const increment = Math.floor(Math.random() * 10) + 5;
-          return Math.min(prev + increment, 90);
-        });
-      }, 500);
-
-      const mimeTypeToSend = (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) 
-                              ? "application/json-pages" 
-                              : file.type || "image/jpeg";
-                              
       const formData = new FormData();
       formData.append("file", file);
-      if (keys && keys.length > 0) {
-        formData.append("apiKey", keys[0]);
-      }
 
-      // Extract form data if necessary - currently sending raw file via FormData
-      // Removing custom headers entirely so browser sets multipart boundary and avoids CORS preflight OPTIONS
-
-      let response: Response;
       try {
-        response = await fetch('https://gemini-ocr-backend.ruabien1504.workers.dev/', {
-          method: 'POST',
-          body: formData,
+        // This AWAIT must block the loop until the server responds completely
+        const response = await fetch("https://gemini-ocr-backend.ruabien1504.workers.dev/", {
+          method: "POST",
+          body: formData
         });
-      } catch (err: any) {
-        clearInterval(interval);
-        setEditorContent((prev) => {
-          const next = prev + `\n\n[LỖI TRANG: ${file.name}]\n\n`;
-          editorContentRef.current = next;
-          return next;
-        });
-        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: err.message || err } : f));
-        completedFiles++;
-        console.error(`OCR request failed for ${file?.name}:`, err);
-        if (i < filesToProcess.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 600));
-        }
-        continue;
-      }
-      
-      clearInterval(interval);
-      setProgress(100);
 
-      if (response.ok) {
-        const rawResult = await response.text();
-        try {
-          const cleanJson = JSON.parse(rawResult);
-          const finalContent = cleanJson.text || rawResult;
-          setEditorContent((prev) => {
-            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalContent;
-            editorContentRef.current = next;
-            return next;
-          });
-        } catch (e) {
-          setEditorContent((prev) => {
-            const next = prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + rawResult;
-            editorContentRef.current = next;
-            return next;
-          });
-        }
-        
-        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'done' } : f));
-        if (file) filesPassToEditor.push(file);
-      } else {
-        setEditorContent((prev) => {
-          const next = prev + `\n\n[LỖI TRANG: ${file?.name}]\n\n`;
-          editorContentRef.current = next;
-          return next;
-        });
-        setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: 'error', message: `HTTP error: ${response?.status}` } : f));
-      }
-      completedFiles++;
+        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
-      if (i < filesToProcess.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        const rawText = await response.text();
+        const cleanJson = JSON.parse(rawText);
+        const actualText = cleanJson.text || rawText;
+
+        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + actualText);
+        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + actualText;
+        updateFileStatus(i, "completed");
+      } catch (err) {
+        console.error(`Error at index ${i}:`, err);
+        updateFileStatus(i, "error");
+      }
+
+      // Explicit safety throttle delay of 1 full second to prevent Gemini Rate Limit
+      if (i < selectedFiles.length - 1) {
+        await new Promise((res) => setTimeout(res, 1000));
       }
     }
 
-    setBatchProgressText(`Đã xử lý xong ${completedFiles}/${totalFiles} tệp.`);
-    
     setTimeout(() => {
       setIsBatchProcessing(false);
       setProcessingFile(null);
@@ -360,13 +236,12 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
       const finalContent = editorContentRef.current;
       if (finalContent && finalContent.trim() !== "") {
-        const safeFiles = filesPassToEditor || [];
-        const outputMime = safeFiles.length > 0 ? safeFiles[0]?.type : "application/pdf";
+        const outputMime = selectedFiles.length > 0 ? selectedFiles[0]?.type : "application/pdf";
         onFileLoaded({ 
-          name: safeFiles.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (safeFiles[0]?.name || "Tài Liệu OCR"), 
+          name: selectedFiles.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (selectedFiles[0]?.name || "Tài Liệu OCR"), 
           content: finalContent, 
           mimeType: outputMime, 
-          selectedFile: safeFiles 
+          selectedFile: selectedFiles 
         });
       }
     }, 1000);
