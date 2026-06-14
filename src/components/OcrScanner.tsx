@@ -453,18 +453,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               </div>
             )}
 
-            {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
-            {readyPayload && slicedPages.length > 0 && (
-              <div className="flex justify-center mt-6">
-                <button
-                  onClick={startOcrProcess}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center space-x-2"
-                >
-                  <ScanLine className="h-5 w-5" />
-                  <span>Bắt đầu trích xuất OCR</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
@@ -478,6 +466,16 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
               </h4>
 
               <div className="relative z-10 space-y-4">
+                {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
+                <button
+                  onClick={startOcrProcess}
+                  disabled={!selectedFile || !readyPayload || processingFile !== null}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
+                >
+                  <ScanLine className="h-5 w-5" />
+                  <span>Bắt đầu trích xuất OCR</span>
+                </button>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-350 mb-1.5 uppercase tracking-wide">
                     Phạm vi trích xuất (Page Range)
@@ -519,11 +517,11 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
             
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
               <h5 className="text-xs font-bold text-slate-700 flex items-center justify-center space-x-1.5">
-                <HelpCircle className="h-4 w-4 text-emerald-500" />
-                <span>Đồng bộ hóa bảo mật Google Workspace</span>
+                <Shield className="h-4 w-4 text-emerald-500" />
+                <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
               </h5>
               <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                Tài khoản công vụ của Kiểm sát viên được phân quyền lưu trữ bóc tách trực tiếp về Drive an toàn của đơn vị kiểm soát tố tụng.
+                Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối và tự động hủy hoàn toàn ngay sau khi kết thúc phiên làm việc, cam kết không lưu vết hồ sơ nghiệp vụ trên máy chủ.
               </p>
             </div>
           </div>
