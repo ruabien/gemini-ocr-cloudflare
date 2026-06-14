@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from "react";
-import { UploadCloud, Settings, Shield, AlertTriangle, HelpCircle, Layers, Activity, ScanLine, ShieldCheck } from "lucide-react";
+import { UploadCloud, Settings, Shield, AlertTriangle, HelpCircle, Layers, Activity, ScanLine } from "lucide-react";
 import { OcrConfig } from "../types";
 import * as pdfjs from 'pdfjs-dist';
 
@@ -530,98 +530,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         </div>
       )}
 
-      {/* SECTION WRAPPER */}
-      <div className="border-t border-slate-200 mt-12 pt-8">
-        <h3 className="text-xl font-bold text-slate-900 mb-6">
-          🛡️ KIẾN TRÚC BẢO MẬT THÔNG TIN & CHỨNG NHẬN TƯ PHÁP
-        </h3>
-
-        {/* THE 4-STEP STATELESS SƠ ĐỒ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Step 1 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
-            <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-              1
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Client-Side mã hóa tệp</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Tệp quét của phòng tư pháp được nạp lên trình duyệt, kích hoạt AES-256 mã hóa gói byte nhị phân.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
-            <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-              2
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Edge Node Processing</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Cloudflare Worker tiếp nhận chuyển khoản, giải mã tạm thời trên RAM và gọi trực tiếp Google Cloud Vision API.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 3 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
-            <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-              3
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Mật danh hóa & Kết xuất</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Văn bản thô được chạy qua module regex nâng cao để che dấu tên đương sự và CCCD/địa chỉ theo Nghị định 30.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 4 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
-            <div className="h-6 w-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-              4
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Xuất DOCX Nghị định 30</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Tải về tệp tin an toàn. Toàn bộ tài liệu nhạy cảm biến mất khỏi RAM Edge ngay sau khi phản hồi.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* LOWER COMPLIANCE & COMMITMENT ROW */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left side: Chứng chỉ hành chính */}
-          <div className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col justify-between space-y-4 shadow-sm">
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-800 uppercase flex items-center space-x-1.5 border-b border-slate-100 pb-2">
-                <Shield className="h-4.5 w-4.5 text-emerald-500" />
-                <span>Chứng chỉ bảo mật hành chính</span>
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Kiến trúc giải pháp được phê chuẩn tuân thủ theo các quy định về An toàn thông tin cấp độ 3 cho phần mềm hành chính nhà nước của Bộ Thông tin & Truyền thông.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 pt-2">
-              <span className="px-2.5 py-1 bg-slate-100 text-slate-650 border border-slate-200 rounded text-[9.5px] font-bold uppercase">STAT ELIGIBLE</span>
-              <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-150 rounded text-[9.5px] font-bold uppercase">STATELESS GUARANTEED</span>
-            </div>
-          </div>
-
-          {/* Right side: Cam kết an ninh tư pháp */}
-          <div className="bg-amber-50/40 border border-amber-200/60 p-5 rounded-xl space-y-3 shadow-sm">
-            <h4 className="text-xs font-bold text-amber-800 uppercase flex items-center space-x-1.5 border-b border-amber-200/40 pb-2">
-              <ShieldCheck className="h-4.5 w-4.5 text-amber-600" />
-              <span>Cam kết An ninh Tư pháp Việt Nam</span>
-            </h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Cam kết 100% không lưu trữ bất kỳ bản sao tài liệu, thông tin đương sự hay lịch sử bóc tách nào của quý cán bộ lên máy chủ trung gian. Toàn bộ hoạt động thực thi hoàn toàn giải phóng khỏi bộ nhớ lưu trữ (Stateless Architecture).
-            </p>
-          </div>
-        </div>
-      </div>
 
       </div>
     </div>
