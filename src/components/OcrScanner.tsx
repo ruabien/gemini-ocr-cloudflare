@@ -176,17 +176,16 @@ const startOcrProcess = async () => {
 
     const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
 
-    const sendFileToBackend = (fileItem: File): Promise<void> => {
+    const sendFileToBackend = (fileBlob: Blob, fileName: string): Promise<void> => {
       return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append("file", fileItem);
-        formData.append("apiKey", apiKey);
-        formData.append("model", model);
-
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`);
-        // CRITICAL: DO NOT call xhr.setRequestHeader('Content-Type', 'multipart/form-data')
-        // Let the browser handle the FormData boundary natively.
+        
+        // Explicit stream headers for raw binary transmission
+        xhr.setRequestHeader("Content-Type", fileBlob.type || "image/jpeg");
+        xhr.setRequestHeader("X-File-Name", encodeURIComponent(fileName));
+        xhr.setRequestHeader("X-API-Key", apiKey);
+        xhr.setRequestHeader("X-Model", model);
 
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -217,7 +216,7 @@ const startOcrProcess = async () => {
         };
 
         xhr.onerror = () => reject(new Error("Network Error"));
-        xhr.send(formData);
+        xhr.send(fileBlob);
       });
     };
 
@@ -232,15 +231,17 @@ const startOcrProcess = async () => {
       try {
         setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...`);
         
-        let fileToUpload = file;
+        let fileBlob: Blob = file;
+        let fileName = file.name;
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
         
         if (!isPdf) {
           const compressedBlob = await compressImage(file);
-          fileToUpload = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: "image/jpeg" });
+          fileBlob = compressedBlob;
+          fileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
         }
         
-        await sendFileToBackend(fileToUpload);
+        await sendFileToBackend(fileBlob, fileName);
         
         updateFileStatus(i, "completed");
       } catch (err: any) {
