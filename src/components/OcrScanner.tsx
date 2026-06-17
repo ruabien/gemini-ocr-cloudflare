@@ -233,7 +233,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
       try {
         // This AWAIT must block the loop until the server responds completely
-        const response = await fetch("https://gemini-ocr-backend.ruabien1504.workers.dev/", {
+        const response = await fetch(`https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`, {
           method: "POST",
           body: formData
         });
