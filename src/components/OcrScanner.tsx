@@ -244,7 +244,15 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         const cleanJson = JSON.parse(rawText);
         const actualText = cleanJson.text || rawText;
 
-        let sanitizedText = actualText.trim();
+        let lines = actualText.split('\n');
+        if (lines.length > 0) {
+          const firstLine = lines[0].trim();
+          const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+          if (isAiIntro) {
+            lines.shift(); // Remove only the rogue chatbot greeting line
+          }
+        }
+        let sanitizedText = lines.join('\n').trim();
 
         setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
         editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
