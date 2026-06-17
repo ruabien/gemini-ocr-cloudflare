@@ -244,8 +244,11 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         const cleanJson = JSON.parse(rawText);
         const actualText = cleanJson.text || rawText;
 
-        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + actualText);
-        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + actualText;
+        let sanitizedText = actualText.replace(/Dưới đây là văn bản đã được bóc tách và làm sạch từ file PDF, bao gồm sửa lỗi chính tả, lỗi dính chữ và các lỗi xuống dòng vô tội vạ:\s*/gi, "");
+        sanitizedText = sanitizedText.trim();
+
+        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
         updateFileStatus(i, "completed");
       } catch (err) {
         console.error(`Error at index ${i}:`, err);
