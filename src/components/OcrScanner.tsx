@@ -39,6 +39,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [editorContent, setEditorContent] = useState("");
   const editorContentRef = useRef("");
 
+  const [fileErrors, setFileErrors] = useState<Record<number, string>>({});
+  const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Range State
@@ -99,6 +102,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     setIsBatchProcessing(true);
     setEditorContent("");
     editorContentRef.current = "";
+    setFileErrors({});
 
     const selectedFiles = filesToProcess.map(q => q.file);
 
@@ -134,35 +138,49 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
     const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
 
-    const sendFileToBackend = async (fileItem: File) => {
-      const formData = new FormData();
-      formData.append("file", fileItem);
-      formData.append("apiKey", apiKey);
-      formData.append("model", model);
+    const sendFileToBackend = (fileItem: File): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append("file", fileItem);
+        formData.append("apiKey", apiKey);
+        formData.append("model", model);
 
-      const response = await fetch(`https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`, {
-        method: "POST",
-        body: formData
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`);
+        // CRITICAL: DO NOT call xhr.setRequestHeader('Content-Type', 'multipart/form-data')
+        // Let the browser handle the FormData boundary natively.
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const rawText = xhr.responseText;
+              const cleanJson = JSON.parse(rawText);
+              const actualText = cleanJson.text || rawText;
+
+              let lines = actualText.split('\n');
+              if (lines.length > 0) {
+                const firstLine = lines[0].trim();
+                const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+                if (isAiIntro) {
+                  lines.shift(); // Remove only the rogue chatbot greeting line
+                }
+              }
+              let sanitizedText = lines.join('\n').trim();
+
+              setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+              editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            reject(new Error(`HTTP error ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network Error"));
+        xhr.send(formData);
       });
-
-      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-
-      const rawText = await response.text();
-      const cleanJson = JSON.parse(rawText);
-      const actualText = cleanJson.text || rawText;
-
-      let lines = actualText.split('\n');
-      if (lines.length > 0) {
-        const firstLine = lines[0].trim();
-        const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
-        if (isAiIntro) {
-          lines.shift(); // Remove only the rogue chatbot greeting line
-        }
-      }
-      let sanitizedText = lines.join('\n').trim();
-
-      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
     };
 
     // Inside the true sequential handler
@@ -178,8 +196,16 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         await sendFileToBackend(file);
         
         updateFileStatus(i, "completed");
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Error at index ${i}:`, err);
+        
+        setFileErrors(prev => {
+          const qFile = filesToProcess[i];
+          const actualIndex = (queuedFiles || []).findIndex(f => f.id === qFile?.id);
+          const finalIndex = actualIndex >= 0 ? actualIndex : i;
+          return { ...prev, [finalIndex]: err.message || 'Lỗi không xác định' };
+        });
+        
         updateFileStatus(i, "error");
       }
 
@@ -331,7 +357,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                 </div>
 
                 <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                  {(queuedFiles || []).map(q => {
+                  {(queuedFiles || []).map((q, index) => {
                     if (!q) return null;
                     return (
                     <div key={q.id || Math.random()} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-emerald-300 transition-colors">
@@ -351,7 +377,15 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                          ) : (
                            <div className="h-2 w-2 bg-slate-300 rounded-full"></div>
                          )}
-                         <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                         <span 
+                           onClick={() => {
+                             if (q.status === 'error' && fileErrors[index]) {
+                               setErrorModalMsg(`Chi tiết lỗi hệ thống tại trang này: ${fileErrors[index]}`);
+                             }
+                           }}
+                           className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                             q.status === 'error' ? 'cursor-pointer hover:bg-red-200 transition-colors' : ''
+                           } ${
                            q.status === 'waiting' ? 'bg-slate-200 text-slate-600' :
                            q.status === 'slicing' ? 'bg-yellow-100 text-yellow-700' :
                            q.status === 'ready' ? 'bg-emerald-100 text-emerald-700' :
@@ -364,7 +398,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
                            {q.status === 'ready' && 'Sẵn sàng'}
                            {q.status === 'processing' && 'Đang trích xuất'}
                            {q.status === 'done' && 'Hoàn thành'}
-                           {q.status === 'error' && 'Lỗi'}
+                           {q.status === 'error' && 'LỖI'}
                          </span>
                        </div>
                     </div>
@@ -457,6 +491,29 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
         </div>
       </div>
+
+      {/* ERROR MODAL */}
+      {errorModalMsg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full animate-in fade-in duration-200">
+            <div className="flex items-center space-x-2 text-red-600 mb-4">
+              <AlertTriangle className="h-6 w-6" />
+              <h3 className="text-lg font-bold">Lỗi hệ thống</h3>
+            </div>
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+              {errorModalMsg}
+            </p>
+            <div className="flex justify-end">
+              <button 
+                onClick={() => setErrorModalMsg(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
