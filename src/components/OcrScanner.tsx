@@ -200,9 +200,10 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       updateFileStatus(i, "processing"); 
 
       const formData = new FormData();
-      formData.append("file", file);   // Failsafe 1
-      formData.append("image", file);  // Failsafe 2
-      formData.append("pdf", file);    // Failsafe 3
+      // Use the exact standard formats with clean filename parameters
+      formData.append("file", file, file.name);
+      formData.append("image", file, file.name);
+      formData.append("pdf", file, file.name);
 
       try {
         // This AWAIT must block the loop until the server responds completely
