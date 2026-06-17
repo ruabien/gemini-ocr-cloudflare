@@ -199,11 +199,37 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       // Update UI status for this specific index to "Đang bóc tách"
       updateFileStatus(i, "processing"); 
 
-      const formData = new FormData();
-      // Use the exact standard formats with clean filename parameters
-      formData.append("file", file, file.name);
-      formData.append("image", file, file.name);
-      formData.append("pdf", file, file.name);
+       const formData = new FormData();
+       // Retrieve Gemini API key from localStorage
+       let apiKey = "";
+       try {
+         const stored = localStorage.getItem('vks_gemini_api_keys');
+         if (stored) {
+           const parsed = JSON.parse(stored);
+           if (Array.isArray(parsed) && parsed.length > 0) {
+             apiKey = parsed[0];
+           }
+         }
+       } catch (e) {}
+       
+       if (!apiKey) {
+         apiKey = localStorage.getItem('ocr_api_key') || "";
+       }
+
+       if (!apiKey) {
+         console.error('Missing Gemini API Key.');
+         alert('Missing Gemini API Key. Please configure it in Settings.');
+         setIsBatchProcessing(false);
+         return;
+       }
+
+       const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
+
+       formData.append("file", file, file.name);
+       formData.append("image", file, file.name);
+       formData.append("pdf", file, file.name);
+       formData.append("apiKey", apiKey);
+       formData.append("model", model);
 
       try {
         // This AWAIT must block the loop until the server responds completely
