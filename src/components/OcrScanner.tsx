@@ -179,7 +179,7 @@ const startOcrProcess = async () => {
     const sendFileToBackend = (formData: FormData): Promise<void> => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", `https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`, true);
+xhr.open("POST", `https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}&key=${apiKey}`, true);
         
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
@@ -189,31 +189,38 @@ const startOcrProcess = async () => {
         };
 
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const rawText = xhr.responseText;
-              const cleanJson = JSON.parse(rawText);
-              const actualText = cleanJson.text || rawText;
+if (xhr.status >= 200 && xhr.status < 300) {
+  try {
+    const rawText = xhr.responseText;
+    const cleanJson = JSON.parse(rawText);
+    const actualText = cleanJson.text || rawText;
 
-              let lines = actualText.split('\n');
-              if (lines.length > 0) {
-                const firstLine = lines[0].trim();
-                const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
-                if (isAiIntro) {
-                  lines.shift(); // Remove only the rogue chatbot greeting line
-                }
-              }
-              let sanitizedText = lines.join('\n').trim();
+    let lines = actualText.split('\n');
+    if (lines.length > 0) {
+      const firstLine = lines[0].trim();
+      const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+      if (isAiIntro) {
+        lines.shift(); // Remove only the rogue chatbot greeting line
+      }
+    }
+    let sanitizedText = lines.join('\n').trim();
 
-              setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-              editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
-              resolve();
-            } catch (e) {
-              reject(e);
-            }
-          } else {
-            reject(new Error(`HTTP error ${xhr.status}`));
-          }
+    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+} else {
+  // Try to parse the server's JSON error payload for a richer message
+  try {
+    const errJson = JSON.parse(xhr.responseText);
+    const msg = errJson?.error?.message || errJson?.error || `HTTP error ${xhr.status}`;
+    reject(new Error(msg));
+  } catch {
+    reject(new Error(`HTTP error ${xhr.status}`));
+  }
+}
         };
 
         xhr.onerror = () => reject(new Error("Network Error"));
