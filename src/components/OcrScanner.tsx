@@ -28,7 +28,7 @@ interface QueuedFile {
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
   const [dragActive, setDragActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
-  const [autoMerge, setAutoMerge] = useState(true);
+  const [autoMerge, setAutoMerge] = useState(false);
   
   const [isSlicing, setIsSlicing] = useState(false);
   const [slicingMessage, setSlicingMessage] = useState("");
