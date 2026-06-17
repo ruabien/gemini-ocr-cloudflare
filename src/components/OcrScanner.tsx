@@ -6,7 +6,6 @@
 import React, { useState, useRef } from "react";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle } from "lucide-react";
 import { OcrConfig } from "../types";
-import * as pdfjs from 'pdfjs-dist';
 
 interface OcrScannerProps {
   onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[] }) => void;
@@ -45,53 +44,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   // Range State
   const [fromPage, setFromPage] = useState<string>("");
   const [toPage, setToPage] = useState<string>("");
-
-  // Nén tự động chất lượng hình ảnh đầu vào thông thường sang đối tượng File
-  const compressImageToFile = (file: File, logProgress: (msg: string) => void): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      logProgress("Đang nạp hình ảnh hồ sơ vụ án...");
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          logProgress("Đang nén tối ưu độ phân giải...");
-          const canvas = document.createElement("canvas");
-          const maxDim = 1600;
-          let width = img.width;
-          let height = img.height;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            canvas.toBlob((blob) => {
-              if (blob) {
-                const optimizedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg' });
-                resolve(optimizedFile);
-              } else {
-                reject(new Error("Không thể chuyển đổi canvas thành Blob."));
-              }
-            }, 'image/jpeg', 0.85);
-          } else {
-            reject(new Error("Không thể tạo bộ dựng canvas."));
-          }
-        };
-        img.onerror = (err) => reject(err);
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
-    });
-  };
 
   const handleSelectedFiles = (files: File[]) => {
     const newQueued: QueuedFile[] = files.map(f => ({
@@ -182,9 +134,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
     const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
 
-    const sendFileToBackend = async (optimizedFile: File) => {
+    const sendFileToBackend = async (fileItem: File) => {
       const formData = new FormData();
-      formData.append("file", optimizedFile);
+      formData.append("file", fileItem);
       formData.append("apiKey", apiKey);
       formData.append("model", model);
 
@@ -222,75 +174,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       setProcessingFile(file.name);
 
       try {
-        if (file.type.includes("pdf")) {
-          setBatchProgressText(`Đang xử lý ${file.name}: khởi động bộ giải mã PDF...`);
-          pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-          
-          const arrayBuffer = await file.arrayBuffer();
-          const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-          const pagesCount = pdf.numPages;
-
-          let startPage = 1;
-          let endPage = pagesCount;
-          if (fromPage) {
-            const parsedFrom = parseInt(fromPage, 10);
-            if (!isNaN(parsedFrom) && parsedFrom >= 1) {
-              startPage = Math.min(parsedFrom, pagesCount);
-            }
-          }
-          if (toPage) {
-            const parsedTo = parseInt(toPage, 10);
-            if (!isNaN(parsedTo) && parsedTo >= startPage) {
-              endPage = Math.min(parsedTo, pagesCount);
-            }
-          }
-
-          for (let pageIdx = startPage; pageIdx <= endPage; pageIdx++) {
-            setBatchProgressText(`Đang xử lý ${file.name} (Trang ${pageIdx}/${pagesCount})...`);
-            const page = await pdf.getPage(pageIdx);
-            
-            const viewport = page.getViewport({ scale: 1 });
-            const maxDim = 1200; // Tối ưu cân bằng giữa độ nét chữ và dung lượng payload
-            let scale = 1.5;
-            if (viewport.width > maxDim || viewport.height > maxDim) {
-              scale = maxDim / Math.max(viewport.width, viewport.height);
-            }
-            
-            const scaledViewport = page.getViewport({ scale });
-            const canvas = document.createElement("canvas");
-            canvas.width = scaledViewport.width;
-            canvas.height = scaledViewport.height;
-            const context = canvas.getContext("2d");
-            
-            if (context) {
-              await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
-              
-              // Force optimized canvas compression to native File object
-              const optimizedFile = await new Promise<File>((resolveBlob, rejectBlob) => {
-                canvas.toBlob((blob) => {
-                  if (blob) {
-                    const f = new File([blob], `page-${pageIdx}.jpg`, { type: 'image/jpeg' });
-                    resolveBlob(f);
-                  } else {
-                    rejectBlob(new Error("Không thể chuyển đổi canvas thành Blob."));
-                  }
-                }, 'image/jpeg', 0.85);
-              });
-
-              await sendFileToBackend(optimizedFile);
-            }
-
-            // Safety throttle between pages
-            if (pageIdx < endPage) {
-              await new Promise((res) => setTimeout(res, 200));
-            }
-          }
-        } else {
-          setBatchProgressText(`Đang nạp & nén tối ưu hình ảnh ${file.name}...`);
-          const optimizedFile = await compressImageToFile(file, setBatchProgressText);
-          setBatchProgressText(`Đang gửi yêu cầu bóc tách hình ảnh ${file.name}...`);
-          await sendFileToBackend(optimizedFile);
-        }
+        setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...`);
+        await sendFileToBackend(file);
+        
         updateFileStatus(i, "completed");
       } catch (err) {
         console.error(`Error at index ${i}:`, err);
