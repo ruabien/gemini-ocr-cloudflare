@@ -244,13 +244,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         const cleanJson = JSON.parse(rawText);
         const actualText = cleanJson.text || rawText;
 
-        // This regex matches any intro sentence ending with a colon (:) at the start of the string, including newlines
-        let sanitizedText = actualText.replace(/^(Dưới đây|Văn bản|Kết quả)[^:]+:\s*/i, "");
-        
-        // Failsafe alternative pattern if it falls outside the exact prefix:
-        sanitizedText = sanitizedText.replace(/^[^:\n]+:\s*\n/, "");
-        
-        sanitizedText = sanitizedText.trim();
+        let sanitizedText = actualText.trim();
 
         setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
         editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
