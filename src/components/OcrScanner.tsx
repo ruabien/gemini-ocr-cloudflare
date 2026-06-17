@@ -46,47 +46,8 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [fromPage, setFromPage] = useState<string>("");
   const [toPage, setToPage] = useState<string>("");
 
-  // Cắt PDF thành từng trang ảnh rời rạc và tự động nén
-  const sliceAndCompressPdf = async (file: File, logProgress: (msg: string) => void): Promise<{ dataUrl: string; base64: string; size: string }[]> => {
-    logProgress("Đang nạp bộ giải mã PDF chuyên sâu...");
-    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-    
-    logProgress("Đang phân tích cấu trúc tệp PDF...");
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-    const pagesCount = pdf.numPages;
-    const result: { dataUrl: string; base64: string; size: string }[] = [];
-    
-    for (let i = 1; i <= pagesCount; i++) {
-      logProgress(`Đang trích xuất & nén trang ${i}/${pagesCount}...`);
-      const page = await pdf.getPage(i);
-      
-      const viewport = page.getViewport({ scale: 1 });
-      const maxDim = 1200; // Tối ưu cân bằng giữa độ nét chữ và dung lượng payload
-      let scale = 1.5;
-      if (viewport.width > maxDim || viewport.height > maxDim) {
-        scale = maxDim / Math.max(viewport.width, viewport.height);
-      }
-      
-      const scaledViewport = page.getViewport({ scale });
-      const canvas = document.createElement("canvas");
-      canvas.width = scaledViewport.width;
-      canvas.height = scaledViewport.height;
-      const context = canvas.getContext("2d");
-      
-      if (context) {
-        await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.75); // Nén tối đa kích thước, chất lượng 75%
-        const base64 = dataUrl.split(",")[1];
-        const approxSize = `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`;
-        result.push({ dataUrl, base64, size: approxSize });
-      }
-    }
-    return result;
-  };
-
-  // Nén tự động chất lượng hình ảnh đầu vào thông thường
-  const compressImageFile = (file: File, logProgress: (msg: string) => void): Promise<{ dataUrl: string; base64: string; size: string }[]> => {
+  // Nén tự động chất lượng hình ảnh đầu vào thông thường sang đối tượng File
+  const compressImageToFile = (file: File, logProgress: (msg: string) => void): Promise<File> => {
     return new Promise((resolve, reject) => {
       logProgress("Đang nạp hình ảnh hồ sơ vụ án...");
       const reader = new FileReader();
@@ -112,10 +73,14 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
           const ctx = canvas.getContext("2d");
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.75); // Nén 75% chất lượng
-            const base64 = dataUrl.split(",")[1];
-            const approxSize = `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`;
-            resolve([{ dataUrl, base64, size: approxSize }]);
+            canvas.toBlob((blob) => {
+              if (blob) {
+                const optimizedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg' });
+                resolve(optimizedFile);
+              } else {
+                reject(new Error("Không thể chuyển đổi canvas thành Blob."));
+              }
+            }, 'image/jpeg', 0.85);
           } else {
             reject(new Error("Không thể tạo bộ dựng canvas."));
           }
@@ -192,70 +157,140 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
     };
 
+    // Retrieve Gemini API key and model
+    let apiKey = "";
+    try {
+      const stored = localStorage.getItem('vks_gemini_api_keys');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          apiKey = parsed[0];
+        }
+      }
+    } catch (e) {}
+
+    if (!apiKey) {
+      apiKey = localStorage.getItem('ocr_api_key') || "";
+    }
+
+    if (!apiKey) {
+      console.error('Missing Gemini API Key.');
+      alert('Missing Gemini API Key. Please configure it in Settings.');
+      setIsBatchProcessing(false);
+      return;
+    }
+
+    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
+
+    const sendFileToBackend = async (optimizedFile: File) => {
+      const formData = new FormData();
+      formData.append("file", optimizedFile);
+      formData.append("apiKey", apiKey);
+      formData.append("model", model);
+
+      const response = await fetch(`https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+
+      const rawText = await response.text();
+      const cleanJson = JSON.parse(rawText);
+      const actualText = cleanJson.text || rawText;
+
+      let lines = actualText.split('\n');
+      if (lines.length > 0) {
+        const firstLine = lines[0].trim();
+        const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+        if (isAiIntro) {
+          lines.shift(); // Remove only the rogue chatbot greeting line
+        }
+      }
+      let sanitizedText = lines.join('\n').trim();
+
+      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+    };
+
     // Inside the true sequential handler
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       
       // Update UI status for this specific index to "Đang bóc tách"
       updateFileStatus(i, "processing"); 
-
-       const formData = new FormData();
-       // Retrieve Gemini API key from localStorage
-       let apiKey = "";
-       try {
-         const stored = localStorage.getItem('vks_gemini_api_keys');
-         if (stored) {
-           const parsed = JSON.parse(stored);
-           if (Array.isArray(parsed) && parsed.length > 0) {
-             apiKey = parsed[0];
-           }
-         }
-       } catch (e) {}
-       
-       if (!apiKey) {
-         apiKey = localStorage.getItem('ocr_api_key') || "";
-       }
-
-       if (!apiKey) {
-         console.error('Missing Gemini API Key.');
-         alert('Missing Gemini API Key. Please configure it in Settings.');
-         setIsBatchProcessing(false);
-         return;
-       }
-
-       const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
-
-       formData.append("file", file, file.name);
-       formData.append("image", file, file.name);
-       formData.append("pdf", file, file.name);
-       formData.append("apiKey", apiKey);
-       formData.append("model", model);
+      setProcessingFile(file.name);
 
       try {
-        // This AWAIT must block the loop until the server responds completely
-        const response = await fetch(`https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`, {
-          method: "POST",
-          body: formData
-        });
+        if (file.type.includes("pdf")) {
+          setBatchProgressText(`Đang xử lý ${file.name}: khởi động bộ giải mã PDF...`);
+          pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+          
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+          const pagesCount = pdf.numPages;
 
-        if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-
-        const rawText = await response.text();
-        const cleanJson = JSON.parse(rawText);
-        const actualText = cleanJson.text || rawText;
-
-        let lines = actualText.split('\n');
-        if (lines.length > 0) {
-          const firstLine = lines[0].trim();
-          const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
-          if (isAiIntro) {
-            lines.shift(); // Remove only the rogue chatbot greeting line
+          let startPage = 1;
+          let endPage = pagesCount;
+          if (fromPage) {
+            const parsedFrom = parseInt(fromPage, 10);
+            if (!isNaN(parsedFrom) && parsedFrom >= 1) {
+              startPage = Math.min(parsedFrom, pagesCount);
+            }
           }
-        }
-        let sanitizedText = lines.join('\n').trim();
+          if (toPage) {
+            const parsedTo = parseInt(toPage, 10);
+            if (!isNaN(parsedTo) && parsedTo >= startPage) {
+              endPage = Math.min(parsedTo, pagesCount);
+            }
+          }
 
-        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+          for (let pageIdx = startPage; pageIdx <= endPage; pageIdx++) {
+            setBatchProgressText(`Đang xử lý ${file.name} (Trang ${pageIdx}/${pagesCount})...`);
+            const page = await pdf.getPage(pageIdx);
+            
+            const viewport = page.getViewport({ scale: 1 });
+            const maxDim = 1200; // Tối ưu cân bằng giữa độ nét chữ và dung lượng payload
+            let scale = 1.5;
+            if (viewport.width > maxDim || viewport.height > maxDim) {
+              scale = maxDim / Math.max(viewport.width, viewport.height);
+            }
+            
+            const scaledViewport = page.getViewport({ scale });
+            const canvas = document.createElement("canvas");
+            canvas.width = scaledViewport.width;
+            canvas.height = scaledViewport.height;
+            const context = canvas.getContext("2d");
+            
+            if (context) {
+              await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+              
+              // Force optimized canvas compression to native File object
+              const optimizedFile = await new Promise<File>((resolveBlob, rejectBlob) => {
+                canvas.toBlob((blob) => {
+                  if (blob) {
+                    const f = new File([blob], `page-${pageIdx}.jpg`, { type: 'image/jpeg' });
+                    resolveBlob(f);
+                  } else {
+                    rejectBlob(new Error("Không thể chuyển đổi canvas thành Blob."));
+                  }
+                }, 'image/jpeg', 0.85);
+              });
+
+              await sendFileToBackend(optimizedFile);
+            }
+
+            // Safety throttle between pages
+            if (pageIdx < endPage) {
+              await new Promise((res) => setTimeout(res, 200));
+            }
+          }
+        } else {
+          setBatchProgressText(`Đang nạp & nén tối ưu hình ảnh ${file.name}...`);
+          const optimizedFile = await compressImageToFile(file, setBatchProgressText);
+          setBatchProgressText(`Đang gửi yêu cầu bóc tách hình ảnh ${file.name}...`);
+          await sendFileToBackend(optimizedFile);
+        }
         updateFileStatus(i, "completed");
       } catch (err) {
         console.error(`Error at index ${i}:`, err);
