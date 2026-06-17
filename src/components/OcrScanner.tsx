@@ -244,6 +244,8 @@ const startOcrProcess = async () => {
         
         const formData = new FormData();
         formData.append("file", fileBlob, fileName);
+        formData.append("image", fileBlob, fileName);
+        formData.append("pdf", fileBlob, fileName);
         if (model) formData.append("model", model);
         
         await sendFileToBackend(formData);
