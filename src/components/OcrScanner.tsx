@@ -95,7 +95,45 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     }
   };
 
-  const startOcrProcess = async () => {
+const startOcrProcess = async () => {
+  // Helper to compress images before upload
+  const compressImage = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        let { width, height } = img;
+        const maxDim = 2048;
+        if (width > maxDim || height > maxDim) {
+          const scale = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas 2D context not available'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Canvas toBlob returned null'));
+          }
+        }, 'image/jpeg', 0.8);
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image for compression'));
+      };
+      img.src = url;
+    });
+  };
     const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
     if (!filesToProcess || filesToProcess.length === 0) return;
 
@@ -190,10 +228,19 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
       // Update UI status for this specific index to "Đang bóc tách"
       updateFileStatus(i, "processing"); 
       setProcessingFile(file.name);
-
+    
       try {
         setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...`);
-        await sendFileToBackend(file);
+        
+        let fileToUpload = file;
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        
+        if (!isPdf) {
+          const compressedBlob = await compressImage(file);
+          fileToUpload = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: "image/jpeg" });
+        }
+        
+        await sendFileToBackend(fileToUpload);
         
         updateFileStatus(i, "completed");
       } catch (err: any) {
