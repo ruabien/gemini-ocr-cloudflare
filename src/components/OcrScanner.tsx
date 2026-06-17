@@ -181,8 +181,6 @@ const startOcrProcess = async () => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}`, true);
         
-        xhr.setRequestHeader("x-api-key", apiKey);
-        
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
             const percentComplete = Math.round((e.loaded / e.total) * 100);
