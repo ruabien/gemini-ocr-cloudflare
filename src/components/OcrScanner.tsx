@@ -262,9 +262,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
         updateFileStatus(i, "error");
       }
 
-      // Explicit safety throttle delay of 1 full second to prevent Gemini Rate Limit
+      // Explicit safety throttle delay of 200 ms to prevent Gemini Rate Limit
       if (i < selectedFiles.length - 1) {
-        await new Promise((res) => setTimeout(res, 1000));
+        await new Promise((res) => setTimeout(res, 200));
       }
     }
 
