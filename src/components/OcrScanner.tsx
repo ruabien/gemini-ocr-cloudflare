@@ -161,7 +161,7 @@ const startOcrProcess = async () => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
        
-        const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`;
+        const googleUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${userApiKey}`;
         xhr.open("POST", googleUrl, true);
         xhr.setRequestHeader("Content-Type", "application/json");
         
