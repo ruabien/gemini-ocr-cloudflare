@@ -125,39 +125,45 @@ const startOcrProcess = async () => {
       }
     } catch (e) {}
 
-    if (!apiKey) {
-      apiKey = localStorage.getItem('ocr_api_key') || "";
-    }
-
-    if (!apiKey) {
+    // Check key
+    const userApiKey = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key") || apiKey || "";
+    if (!userApiKey) {
       console.error('Missing Gemini API Key.');
       alert('Missing Gemini API Key. Please configure it in Settings.');
       setIsBatchProcessing(false);
       return;
     }
 
-    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
+    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
-    const sendFileToBackend = (formData: FormData): Promise<void> => {
+    const sendFileToBackend = async (file: File): Promise<void> => {
+      let fileType = file.type || '';
+      if (!fileType) {
+        if (file.name.toLowerCase().endsWith('.pdf')) {
+          fileType = 'application/pdf';
+        } else if (file.name.toLowerCase().endsWith('.png')) {
+          fileType = 'image/png';
+        } else {
+          fileType = 'image/jpeg';
+        }
+      }
+
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
        
-const userApiKey = (() => {
-  const stored = localStorage.getItem("vks_gemini_api_keys");
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed[0] || "";
-      }
-    } catch (e) {
-      // ignore JSON parse errors
-    }
-  }
-  return "";
-})();
-xhr.open("POST", `/api/ocr/?cb=${new Date().getTime()}`, true);
-xhr.setRequestHeader("x-user-key", userApiKey);
+        const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`;
+        xhr.open("POST", googleUrl, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
         
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
@@ -167,42 +173,61 @@ xhr.setRequestHeader("x-user-key", userApiKey);
         };
 
         xhr.onload = () => {
-if (xhr.status >= 200 && xhr.status < 300) {
-  try {
-    const rawText = xhr.responseText;
-    const cleanJson = JSON.parse(rawText);
-    const actualText = cleanJson.text || rawText;
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const rawText = xhr.responseText;
+              const cleanJson = JSON.parse(rawText);
+              
+              // Extract text from Gemini's standard response format
+              const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
+              const actualText = geminiText || cleanJson.text || rawText;
 
-    let lines = actualText.split('\n');
-    if (lines.length > 0) {
-      const firstLine = lines[0].trim();
-      const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
-      if (isAiIntro) {
-        lines.shift(); // Remove only the rogue chatbot greeting line
-      }
-    }
-    let sanitizedText = lines.join('\n').trim();
+              let lines = actualText.split('\n');
+              if (lines.length > 0) {
+                const firstLine = lines[0].trim();
+                const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+                if (isAiIntro) {
+                  lines.shift(); // Remove only the rogue chatbot greeting line
+                }
+              }
+              let sanitizedText = lines.join('\n').trim();
 
-    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
-    resolve();
-  } catch (e) {
-    reject(e);
-  }
-} else {
-  // Try to parse the server's JSON error payload for a richer message
-  try {
-    const errJson = JSON.parse(xhr.responseText);
-    const msg = errJson?.error?.message || errJson?.error || `HTTP error ${xhr.status}`;
-    reject(new Error(msg));
-  } catch {
-    reject(new Error(`HTTP error ${xhr.status}`));
-  }
-}
+              setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+              editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            // Try to parse the server's JSON error payload for a richer message
+            try {
+              const errJson = JSON.parse(xhr.responseText);
+              const msg = errJson?.error?.message || errJson?.error || `HTTP error ${xhr.status}`;
+              reject(new Error(msg));
+            } catch {
+              reject(new Error(`HTTP error ${xhr.status}`));
+            }
+          }
         };
 
         xhr.onerror = () => reject(new Error("Network Error"));
-        xhr.send(formData);
+        
+        const payload = {
+          "contents": [{
+            "parts":[
+              {"text": "Bóc tách toàn bộ văn bản trong ảnh này sang tiếng Việt chuẩn."},
+              {"inlineData": {"mimeType": fileType, "data": base64Data}}
+            ]
+          }],
+          "safetySettings": [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+          ]
+        };
+        
+        xhr.send(JSON.stringify(payload));
       });
     };
 
@@ -221,12 +246,7 @@ if (xhr.status >= 200 && xhr.status < 300) {
           try {
             setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...${attempts > 0 ? ` (Thử lại lần ${attempts})` : ''}`);
             
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("apiKey", apiKey);
-            if (model) formData.append("model", model);
-            
-            await sendFileToBackend(formData);
+            await sendFileToBackend(file);
             success = true;
           } catch (err: any) {
             attempts++;
