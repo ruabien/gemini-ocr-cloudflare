@@ -142,7 +142,7 @@ const startOcrProcess = async () => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://gemini-ocr-backend.ruabien1504.workers.dev';
-xhr.open("POST", `/api/ocr/?cb=${new Date().getTime()}&apiKey=AIzaSyBrofj8f0dLg0SpZg24Qexck4JQMCJyZHc`, true);
+        xhr.open("POST", `/api/ocr/?cb=${new Date().getTime()}`, true);
         
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {

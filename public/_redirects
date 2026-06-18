@@ -1,2 +1,2 @@
-/api/ocr/* https://gemini-ocr-backend.ruabien1504.workers.dev/:splat 200
+# Removed static redirect for API
 /* /index.html 200
