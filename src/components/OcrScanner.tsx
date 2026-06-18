@@ -141,7 +141,8 @@ const startOcrProcess = async () => {
     const sendFileToBackend = (formData: FormData): Promise<void> => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open("POST", `https://gemini-ocr-backend.ruabien1504.workers.dev/?cb=${new Date().getTime()}&apiKey=${encodeURIComponent(apiKey)}`, true);
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://gemini-ocr-backend.ruabien1504.workers.dev';
+        xhr.open("POST", `${apiBaseUrl}/?cb=${new Date().getTime()}&apiKey=${encodeURIComponent(apiKey)}`, true);
         
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
