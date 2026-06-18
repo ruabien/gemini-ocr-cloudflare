@@ -1,7 +1,7 @@
 export const onRequestPost = async (context: any) => {
   const { request } = context;
   const url = new URL(request.url);
-  const userKey = url.searchParams.get("userKey") || "";
+  const userKey = request.headers.get("x-user-key") || "";
   
   // Construct the secure destination URL hidden from the user's browser
   const targetUrl = new URL("https://gemini-ocr-backend.ruabien1504.workers.dev/");

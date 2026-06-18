@@ -156,7 +156,8 @@ const userApiKey = (() => {
   }
   return "";
 })();
-xhr.open("POST", `/api/ocr/?cb=${new Date().getTime()}&userKey=${encodeURIComponent(userApiKey)}`, true);
+xhr.open("POST", `/api/ocr/?cb=${new Date().getTime()}`, true);
+xhr.setRequestHeader("x-user-key", userApiKey);
         
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
