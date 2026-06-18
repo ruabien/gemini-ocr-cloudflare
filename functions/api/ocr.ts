@@ -1,0 +1,1 @@
+// Removed proxy layer. Gemini calls are executed directly from the client-side browser code.

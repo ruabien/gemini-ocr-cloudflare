@@ -73,7 +73,7 @@ function AppContent() {
         onLogin={login}
         membershipRole={membershipRole}
       />
-      <div className="pt-16 min-h-[calc(100vh-4rem)]">
+      <div className="pt-16 min-h-[calc(100vh-4rem)] bg-slate-50 text-slate-900">
         {activeTab === "landing" && (
           <LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />
         )}

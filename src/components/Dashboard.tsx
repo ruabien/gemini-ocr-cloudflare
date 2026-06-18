@@ -26,7 +26,7 @@ export default function Dashboard({ onStartOcr }: DashboardProps) {
       {/* Slogan chào mừng */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Bảng tổng quan VKS OCR</h2>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Bảng tổng quan LexOCR</h2>
           <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Thống kê giám sát và hiệu năng bóc tách số hóa tư pháp phục vụ Viện kiểm sát nhân dân.</p>
         </div>
         <button

@@ -69,7 +69,12 @@ export default {
         body: JSON.stringify({
           contents: [{
             parts: [
-              { text: "Hãy OCR và bóc tách toàn bộ văn bản của file PDF này. Giữ nguyên nội dung, tự động sửa các lỗi chính tả dính chữ hoặc xuống dòng vô tội vạ, trả về kết quả là văn bản sạch thuần túy." },
+              { text: `You are a professional legal document digitization engine. Your sole task is to extract all text from the provided image with 100% accuracy.
+   
+   CRITICAL RULES:
+   1. Output ONLY the raw extracted text found inside the document.
+   2. DO NOT include any conversational filler, descriptions, prefaces, or introductory remarks (e.g., Do NOT say "Dưới đây là kết quả...", "Here is the extracted text...").
+   3. Maintain the original legal formatting, paragraph structure, and wording exactly as it appears in the image.` },
               {
                 inlineData: {
                   mimeType: fileType,

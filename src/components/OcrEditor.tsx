@@ -127,20 +127,23 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
   useEffect(() => {
     const selectedFile = document?.selectedFile;
-    if (!selectedFile) {
+    if (!selectedFile || (Array.isArray(selectedFile) && selectedFile.length === 0)) {
       setPreviewUrl(null);
       return;
     }
 
-    const isPdf = Array.isArray(selectedFile)
-      ? selectedFile[0]?.type === "application/pdf" || selectedFile[0]?.name?.toLowerCase().endsWith(".pdf")
-      : selectedFile.type === "application/pdf" || selectedFile.name?.toLowerCase().endsWith(".pdf");
+    const file = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const isPdf = file.type === "application/pdf" || file.name?.toLowerCase().endsWith(".pdf");
 
     if (isPdf) {
       if (!pdfjs.GlobalWorkerOptions.workerSrc) {
         pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
       }
-      const fileToLoad = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
       const fileReader = new FileReader();
       fileReader.onload = async function() {
         try {
@@ -163,14 +166,18 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
           console.error("PDF preview error:", e);
         }
       };
-      fileReader.readAsArrayBuffer(fileToLoad);
+      fileReader.readAsArrayBuffer(file);
     } else {
-      const file = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+      try {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        return () => {
+          URL.revokeObjectURL(url);
+        };
+      } catch (e) {
+        console.error("Error creating object URL:", e);
+        setPreviewUrl(null);
+      }
     }
   }, [document?.selectedFile]);
 
@@ -470,12 +477,12 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             onClick={() => setIsEncryptActive(!isEncryptActive)}
             className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold font-mono tracking-wider flex items-center space-x-1.5 cursor-pointer transition-all ${
               isEncryptActive 
-                ? "bg-slate-900 border-emerald-500/30 text-emerald-400" 
-                : "bg-slate-100 border-slate-200 text-slate-400"
+                ? "bg-emerald-50 border-emerald-300 text-emerald-700" 
+                : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
             title="Bộ bảo vệ luồng dữ liệu AES-256"
           >
-            <Shield className={`h-3.5 w-3.5 ${isEncryptActive ? "text-emerald-400 animate-pulse" : "text-slate-400"}`} />
+            <Shield className={`h-3.5 w-3.5 ${isEncryptActive ? "text-emerald-600 animate-pulse" : "text-slate-400"}`} />
             <span>AES-256: {isEncryptActive ? "đang bảo mật" : "tắt"}</span>
           </div>
 
@@ -495,7 +502,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
           {/* Nút xuất văn bản TXT mặc định */}
           <button
             onClick={handleExportTxt}
-            className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-white px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide flex items-center space-x-1.5 shadow-md cursor-pointer transition-all"
+            className="bg-slate-900 hover:bg-slate-800 border border-transparent text-white px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide flex items-center space-x-1.5 shadow-sm cursor-pointer transition-all"
             title="Xuất file văn bản thô không định dạng lề (Mặc định miễn phí)"
           >
             <Download className="h-4 w-4 text-slate-350" />
@@ -528,32 +535,32 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
         
         {/* CỘT BÊN TRÁI (LỚP BIỂU DIỄN VĂN BẢN VÀ Ô NHẬN DIỆN MÀU VÀNG/ĐỎ) - Chiếm 5/12 cột */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-lg paper-glow">
-            <div className="bg-slate-950 p-4 border-b border-slate-800 flex items-center justify-between">
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-300 flex items-center space-x-1.5">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between">
+              <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center space-x-1.5">
                 <span className="h-2 w-2 rounded-full bg-yellow-500 inline-block animate-pulse" />
                 <span>Bản chụp tài liệu nguyên bản</span>
               </h4>
-              <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-[9px] font-mono text-slate-400">
+              <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-mono text-slate-500">
                 100% RAW SCAN
               </span>
             </div>
 
             {/* Khung hiển thị tài liệu gốc thực tế hoặc fallback mock */}
-            <div className="p-1 bg-slate-950 text-slate-400 relative h-[500px] overflow-hidden rounded-b-xl flex items-center justify-center">
+            <div className="p-1 bg-slate-50 text-slate-600 relative h-[500px] overflow-hidden rounded-b-xl flex items-center justify-center">
               {previewUrl ? (
                 <img src={previewUrl} alt="Hồ sơ đại diện" className="max-w-full max-h-full object-contain rounded-lg" />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-slate-900/40 border border-dashed border-slate-700/60 rounded-xl p-6">
-                  <div className="p-4 bg-red-500/10 text-red-400 rounded-full mb-3">
+                <div className="flex flex-col items-center justify-center h-full text-slate-500 bg-white border border-dashed border-slate-200 rounded-xl p-6">
+                  <div className="p-4 bg-red-500/10 text-red-600 rounded-full mb-3">
                     <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-sm font-semibold text-slate-200 text-center truncate max-w-full">
+                  <p className="text-sm font-semibold text-slate-800 text-center truncate max-w-full">
                     {document?.name || "Workspace: Document"}
                   </p>
-                  <span className="mt-2 px-2.5 py-1 text-xs font-medium bg-slate-800 text-slate-400 rounded-md border border-slate-700">
+                  <span className="mt-2 px-2.5 py-1 text-xs font-medium bg-slate-150 text-slate-600 rounded-md border border-slate-200">
                     {document?.selectedFile ? "Đang tạo bản xem trước..." : "Trang 1 / Hồ sơ gốc bảo mật"}
                   </span>
                 </div>
@@ -751,10 +758,10 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
                     onChange={(e) => setTemplateSaveName(e.target.value)}
                     className="flex-grow bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm"
                   />
-                  <button
-                    onClick={handleSaveAsTemplate}
+                  <button 
                     disabled={!templateSaveName.trim()}
-                    className="bg-slate-800 hover:bg-slate-705 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-bold flex items-center space-x-1 border border-slate-700 transition-all cursor-pointer shadow-sm"
+                    onClick={handleSaveAsTemplate}
+                    className="bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-bold flex items-center space-x-1 border border-transparent transition-all cursor-pointer shadow-sm"
                     title="Lưu thành mẫu mới"
                   >
                     <Save className="h-3.5 w-3.5" />
@@ -871,7 +878,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
               <div className="flex justify-end pt-1">
                 <button
                   onClick={handleAddExportField}
-                  className="bg-slate-800 hover:bg-slate-705 text-white px-3.5 py-1.5 rounded text-[11.5px] font-bold flex items-center space-x-1 border border-slate-700 shadow-sm transition-all cursor-pointer"
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded text-[11.5px] font-bold flex items-center space-x-1 border border-transparent shadow-sm transition-all cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Xác nhận thêm cột</span>

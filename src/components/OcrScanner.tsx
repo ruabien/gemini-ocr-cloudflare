@@ -4,114 +4,61 @@
  */
 
 import React, { useState, useRef } from "react";
-import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity } from "lucide-react";
+import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle } from "lucide-react";
 import { OcrConfig } from "../types";
-import * as pdfjs from 'pdfjs-dist';
 
 interface OcrScannerProps {
-  onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File }) => void;
+  onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[] }) => void;
   config: OcrConfig;
   setConfig: React.Dispatch<React.SetStateAction<OcrConfig>>;
 }
 
+interface QueuedFile {
+  id: string;
+  file: File;
+  status: 'waiting' | 'slicing' | 'ready' | 'processing' | 'done' | 'error';
+  size: string;
+  slicedPages: { index: number; dataUrl: string; size: string }[];
+  pagesBase64Array: string[];
+  message?: string;
+  resultData?: any;
+}
+
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
   const [dragActive, setDragActive] = useState(false);
+  const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
+  const [autoMerge, setAutoMerge] = useState(false);
+  
+  const [isSlicing, setIsSlicing] = useState(false);
+  const [slicingMessage, setSlicingMessage] = useState("");
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [batchProgressText, setBatchProgressText] = useState("");
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+
+  const [editorContent, setEditorContent] = useState("");
+  const editorContentRef = useRef("");
+
+  const [fileErrors, setFileErrors] = useState<Record<number, string>>({});
+  const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Range State
   const [fromPage, setFromPage] = useState<string>("");
   const [toPage, setToPage] = useState<string>("");
 
-  const [slicingMessage, setSlicingMessage] = useState<string>("");
-  const [isSlicing, setIsSlicing] = useState<boolean>(false);
-  const [slicedPages, setSlicedPages] = useState<{ index: number; dataUrl: string; size: string }[]>([]);
-  const [readyPayload, setReadyPayload] = useState<{ pagesBase64Array: string[]; fileName: string; mimeType: string } | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  const isProcessing = processingFile !== null;
-
-  // Cắt PDF thành từng trang ảnh rời rạc và tự động nén
-  const sliceAndCompressPdf = async (file: File, logProgress: (msg: string) => void): Promise<{ dataUrl: string; base64: string; size: string }[]> => {
-    logProgress("Đang nạp bộ giải mã PDF chuyên sâu...");
-    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  const handleSelectedFiles = (files: File[]) => {
+    const newQueued: QueuedFile[] = files.map(f => ({
+      id: Math.random().toString(36).substring(2, 11),
+      file: f,
+      status: 'waiting',
+      size: `${(f.size / 1024 / 1024).toFixed(2)} MB`,
+      slicedPages: [],
+      pagesBase64Array: []
+    }));
     
-    logProgress("Đang phân tích cấu trúc tệp PDF...");
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-    const pagesCount = pdf.numPages;
-    const result: { dataUrl: string; base64: string; size: string }[] = [];
-    
-    for (let i = 1; i <= pagesCount; i++) {
-      logProgress(`Đang trích xuất & nén trang ${i}/${pagesCount}...`);
-      const page = await pdf.getPage(i);
-      
-      const viewport = page.getViewport({ scale: 1 });
-      const maxDim = 1200; // Tối ưu cân bằng giữa độ nét chữ và dung lượng payload
-      let scale = 1.5;
-      if (viewport.width > maxDim || viewport.height > maxDim) {
-        scale = maxDim / Math.max(viewport.width, viewport.height);
-      }
-      
-      const scaledViewport = page.getViewport({ scale });
-      const canvas = document.createElement("canvas");
-      canvas.width = scaledViewport.width;
-      canvas.height = scaledViewport.height;
-      const context = canvas.getContext("2d");
-      
-      if (context) {
-        await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.75); // Nén tối đa kích thước, chất lượng 75%
-        const base64 = dataUrl.split(",")[1];
-        const approxSize = `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`;
-        result.push({ dataUrl, base64, size: approxSize });
-      }
-    }
-    return result;
-  };
-
-  // Nén tự động chất lượng hình ảnh đầu vào thông thường
-  const compressImageFile = (file: File, logProgress: (msg: string) => void): Promise<{ dataUrl: string; base64: string; size: string }[]> => {
-    return new Promise((resolve, reject) => {
-      logProgress("Đang nạp hình ảnh hồ sơ vụ án...");
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          logProgress("Đang nén tối ưu độ phân giải...");
-          const canvas = document.createElement("canvas");
-          const maxDim = 1600;
-          let width = img.width;
-          let height = img.height;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.75); // Nén 75% chất lượng
-            const base64 = dataUrl.split(",")[1];
-            const approxSize = `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`;
-            resolve([{ dataUrl, base64, size: approxSize }]);
-          } else {
-            reject(new Error("Không thể tạo bộ dựng canvas."));
-          }
-        };
-        img.onerror = (err) => reject(err);
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
-    });
+    setQueuedFiles(prev => [...prev, ...newQueued]);
   };
 
   // Xử lý sự kiện Drag
@@ -125,15 +72,13 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     }
   };
 
-  // Thả tệp tin
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      handleSelectedFile(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleSelectedFiles(Array.from(e.dataTransfer.files));
     }
   };
 
@@ -142,367 +87,499 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleSelectedFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      handleSelectedFiles(Array.from(e.target.files));
+    }
+    if (fileInputRef.current) {
+       fileInputRef.current.value = "";
     }
   };
 
-  const handleSelectedFile = async (file: File) => {
-    setSelectedFile(file);
-    setIsSlicing(true);
-    setSlicedPages([]);
-    setSlicingMessage("Khởi kiện tệp tin...");
+const startOcrProcess = async () => {
+    const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
+    if (!filesToProcess || filesToProcess.length === 0) return;
 
-    try {
-      let pages: { dataUrl: string; base64: string; size: string }[] = [];
-      const isPdfValue = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      const isImageValue = file.type.startsWith("image/") || 
-                        file.name.toLowerCase().endsWith(".png") || 
-                        file.name.toLowerCase().endsWith(".jpg") || 
-                        file.name.toLowerCase().endsWith(".jpeg");
+    setIsBatchProcessing(true);
+    setEditorContent("");
+    editorContentRef.current = "";
+    setFileErrors({});
 
-      if (isPdfValue) {
-        pages = await sliceAndCompressPdf(file, setSlicingMessage);
-      } else if (isImageValue) {
-        pages = await compressImageFile(file, setSlicingMessage);
-      } else {
-        setSlicingMessage("Đang đọc loại tệp thô...");
-        const reader = new FileReader();
-        pages = await new Promise((resolve, reject) => {
-          reader.onload = (e) => {
-            if (e.target?.result) {
-              const base64 = (e.target.result as string).split(",")[1];
-              resolve([{
-                dataUrl: e.target.result as string,
-                base64,
-                size: `${((base64.length * 3) / 4 / 1024).toFixed(0)} KB`
-              }]);
-            } else {
-              reject(new Error("Lỗi đọc tệp tin."));
-            }
-          };
-          reader.onerror = () => reject(new Error("Lỗi tải tệp."));
-          reader.readAsDataURL(file);
-        });
-      }
+    const selectedFiles = filesToProcess.map(q => q.file);
 
-      setSlicedPages(pages.map((p, idx) => ({ index: idx + 1, dataUrl: p.dataUrl, size: p.size })));
-      setIsSlicing(false);
+    const updateFileStatus = (index: number, status: "processing" | "completed" | "error") => {
+      const qFile = filesToProcess[index];
+      if (!qFile) return;
+      const mappedStatus = status === "completed" ? "done" : status;
+      setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
+    };
 
-      // Chuyển tập hợp ảnh dạng JSON array về client-side processing
-      const pagesBase64Array = pages.map(p => p.base64);
-      const mimeTypeToSend = isPdfValue ? "application/json-pages" : file.type;
-      
-      setReadyPayload({
-        pagesBase64Array,
-        fileName: file.name,
-        mimeType: mimeTypeToSend
-      });
-
-    } catch (err: any) {
-      console.error("Lỗi tiền xử lý tệp tin:", err);
-      setIsSlicing(false);
-      alert(`Đã xảy ra lỗi khi bóc tách phân trang hoặc nén ảnh: ${err.message || err}`);
-    }
-  };
-
-  const startOcrProcess = async () => {
-    if (!readyPayload) return;
-    
-    let keys: string[] = [];
+    // Retrieve Gemini API key and model
+    let apiKey = "";
     try {
       const stored = localStorage.getItem('vks_gemini_api_keys');
-      keys = stored ? JSON.parse(stored) : [];
-    } catch(e) { 
-      keys = []; 
-    }
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          apiKey = parsed[0];
+        }
+      }
+    } catch (e) {}
 
-    if (!keys || keys.length === 0) {
-      alert("Vui lòng cấu hình ít nhất một Gemini API Key trong mục Cài đặt để bắt đầu bóc tách hồ sơ.");
+    // Check key
+    const userApiKey = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key") || apiKey || "";
+    if (!userApiKey) {
+      console.error('Missing Gemini API Key.');
+      alert('Missing Gemini API Key. Please configure it in Settings.');
+      setIsBatchProcessing(false);
       return;
     }
 
-    setProcessingFile(readyPayload.fileName);
-    setProgress(5);
+    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
+
+    const sendFileToBackend = async (file: File): Promise<void> => {
+      let fileType = file.type || '';
+      if (!fileType) {
+        if (file.name.toLowerCase().endsWith('.pdf')) {
+          fileType = 'application/pdf';
+        } else if (file.name.toLowerCase().endsWith('.png')) {
+          fileType = 'image/png';
+        } else {
+          fileType = 'image/jpeg';
+        }
+      }
+
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+       
+        const googleUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${userApiKey}`;
+        xhr.open("POST", googleUrl, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            setProgress(percentComplete);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const rawText = xhr.responseText;
+              const cleanJson = JSON.parse(rawText);
+              
+              // Extract text from Gemini's standard response format
+              const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
+              const actualText = geminiText || cleanJson.text || rawText;
+
+              let lines = actualText.split('\n');
+              if (lines.length > 0) {
+                const firstLine = lines[0].trim();
+                const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+                if (isAiIntro) {
+                  lines.shift(); // Remove only the rogue chatbot greeting line
+                }
+              }
+              let sanitizedText = lines.join('\n').trim();
+
+              setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+              editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          } else {
+            // Try to parse the server's JSON error payload for a richer message
+            try {
+              const errJson = JSON.parse(xhr.responseText);
+              const msg = errJson?.error?.message || errJson?.error || `HTTP error ${xhr.status}`;
+              reject(new Error(msg));
+            } catch {
+              reject(new Error(`HTTP error ${xhr.status}`));
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network Error"));
+        
+        const payload = {
+          "contents": [{
+            "parts":[
+              {"text": "Bóc tách toàn bộ văn bản trong ảnh này sang tiếng Việt chuẩn."},
+              {"inlineData": {"mimeType": fileType, "data": base64Data}}
+            ]
+          }],
+          "safetySettings": [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+          ]
+        };
+        
+        xhr.send(JSON.stringify(payload));
+      });
+    };
+
+    // Inside the true sequential handler
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      
+      // Update UI status for this specific index to "Đang bóc tách"
+      updateFileStatus(i, "processing"); 
+      setProcessingFile(file.name);
     
-    // Simulate progress bar while waiting
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return prev;
-        const increment = Math.floor(Math.random() * 10) + 5;
-        return Math.min(prev + increment, 90);
-      });
-    }, 500);
-
-    try {
-      const payload: any = {
-        base64File: JSON.stringify(readyPayload.pagesBase64Array),
-        fileName: readyPayload.fileName,
-        mimeType: readyPayload.mimeType,
-        isEncrypted: false,
-      };
-
-      if (fromPage.trim() !== "") {
-        payload.fromPage = parseInt(fromPage, 10);
+      try {
+        let attempts = 0;
+        let success = false;
+        while (attempts < 3 && !success) {
+          try {
+            setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...${attempts > 0 ? ` (Thử lại lần ${attempts})` : ''}`);
+            
+            await sendFileToBackend(file);
+            success = true;
+          } catch (err: any) {
+            attempts++;
+            const errMsg = err?.message || '';
+            const isCongested = errMsg.toLowerCase().includes("high demand") || errMsg.toLowerCase().includes("temporary");
+            
+            if (attempts < 3 && isCongested) {
+              await new Promise((res) => setTimeout(res, 2000)); // Wait 2s before retrying
+            } else {
+              throw err; // Out of attempts or not congested, finally mark as error
+            }
+          }
+        }
+        
+        updateFileStatus(i, "completed");
+      } catch (err: any) {
+        console.error(`Error at index ${i}:`, err);
+        
+        setFileErrors(prev => {
+          const qFile = filesToProcess[i];
+          const actualIndex = (queuedFiles || []).findIndex(f => f.id === qFile?.id);
+          const finalIndex = actualIndex >= 0 ? actualIndex : i;
+          return { ...prev, [finalIndex]: err.message || 'Lỗi không xác định' };
+        });
+        
+        updateFileStatus(i, "error");
       }
-      if (toPage.trim() !== "") {
-        payload.toPage = parseInt(toPage, 10);
-      }
 
-      const response = await fetch('/api/ocr/process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Gemini-Keys': JSON.stringify(keys),
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      const data = await response.json();
-      clearInterval(interval);
-      setProgress(100);
-      
-      setTimeout(() => {
-        onFileLoaded({ name: readyPayload.fileName, content: JSON.stringify(data), mimeType: readyPayload.mimeType, selectedFile: selectedFile || undefined });
-        setProcessingFile(null);
-        setProgress(0);
-      }, 500);
-    } catch (err: any) {
-      clearInterval(interval);
+      // Explicit safety throttle delay of 200 ms to prevent Gemini Rate Limit
+      if (i < selectedFiles.length - 1) {
+        await new Promise((res) => setTimeout(res, 200));
+      }
+    }
+
+    setTimeout(() => {
+      setIsBatchProcessing(false);
       setProcessingFile(null);
       setProgress(0);
-      console.error('OCR request failed:', err);
-      alert('Lỗi khi thực hiện OCR: ' + (err?.message || err));
-    }
+
+      const finalContent = editorContentRef.current;
+      if (finalContent && finalContent.trim() !== "") {
+        const outputMime = selectedFiles.length > 0 ? selectedFiles[0]?.type : "application/pdf";
+        onFileLoaded({ 
+          name: selectedFiles.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (selectedFiles[0]?.name || "Tài Liệu OCR"), 
+          content: finalContent, 
+          mimeType: outputMime, 
+          selectedFile: selectedFiles 
+        });
+      }
+    }, 1000);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
+    <div id="ocr-scanner-tab" className="min-h-[calc(100vh-4rem)] bg-slate-50 pb-12 flex flex-col">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-grow">
       
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 pb-5 mb-6 gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center space-x-2">
-            <span className="bg-gradient-to-r from-slate-100 to-slate-350 bg-clip-text text-transparent">Số hóa & Trích xuất hồ sơ vụ án chuyên sâu</span>
-            <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Cloudflare Edge v3</span>
+        {/* HEADER SECTION */}
+        <div className="border-b border-slate-200 pb-5">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center space-x-2">
+            <span>Số hóa & Trích xuất hồ sơ vụ án chuyên sâu</span>
           </h2>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1 leading-relaxed max-w-3xl">
-            Tải tài liệu tố tụng (Cáo trạng, Bản án, Thụ lý vụ án) định dạng PDF, JPEG, PNG có dung lượng tối đa 50MB. Hệ thống tự động phân loại bị can/bị cáo, đương sự, ngày thụ lý và tóm tắt diễn biến.
+          <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
+            Tải tài liệu tố tụng định dạng PDF, JPEG, PNG. Hỗ trợ <strong>tải lên hàng loạt nhiều tệp</strong> (Bulk Image OCR) và tự động gộp văn bản xuất chuẩn.
           </p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-        
-        {/* LEFT COLUMN (2/3 width) */}
-        <div className="lg:col-span-2 space-y-6">
-          {isSlicing ? (
-            <div className="bg-slate-900 text-slate-100 p-8 rounded-xl border border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* CẤU HÌNH OCR VÀ DROPZONE CHÍNH (Chiếm 2 cột trên màn hình Desktop) */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* DROPZONE */}
+            <div 
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={onButtonClick}
+              className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px] transition-all duration-200 ${
+                dragActive 
+                  ? "border-red-600 bg-red-50/40" 
+                  : "border-slate-300 bg-white hover:border-red-500/50 hover:bg-slate-50/50"
+              }`}
+            >
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                multiple={true}
+                className="hidden" 
+                accept=".pdf,.png,.jpg,.jpeg" 
+                onChange={handleFileInput}
+              />
+              <div className="h-14 w-14 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-4 border border-red-100">
+                <UploadCloud className="h-7 w-7" />
+              </div>
+              <h3 className="font-bold text-slate-800 text-sm">
+                Kéo thả nhiều tài liệu vào đây hoặc click để duyệt từ máy tính
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-1 max-w-sm">
+                Hỗ trợ chọn nhiều tệp tin cùng lúc. Bản quét sẽ được tự động phân lớp, đưa vào hàng đợi và bóc tách nội dung tuần tự.
+              </p>
               
-              <div className="relative z-10 flex flex-col items-center w-full max-w-md text-center space-y-6">
-                <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
-                  <Layers className="h-8 w-8 text-emerald-450 animate-spin" style={{ animationDuration: "3s" }} />
-                </div>
-                
-                <div>
-                  <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans">
-                    Tiền xử lý tập tin tư pháp...
-                  </h3>
-                  <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{slicingMessage}</p>
-                </div>
-
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700 animate-pulse">
-                  <div className="bg-gradient-to-r from-emerald-550 to-teal-500 h-full rounded-full w-2/3" />
-                </div>
-
-                <div className="text-[10px] text-slate-400 leading-relaxed italic">
-                  *Tập tin PDF được bóc tách rời rạc thành từng trang ảnh. Toàn bộ hình ảnh đầu vào được tự động nén dung lượng, thu hẹp độ phân giải gốc để triệt tiêu lỗi quá tải tải trọng (Payload limit) qua biên độ kết nối API.
-                </div>
+              <div className="mt-4 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-1">
+                <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
               </div>
             </div>
-          ) : processingFile ? (
-            <div className="bg-slate-900 text-slate-100 p-8 rounded-xl border border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center justify-center min-h-[250px]">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 via-teal-500/5 to-emerald-600/5 animate-pulse" />
-              
-              <div className="relative z-10 flex flex-col items-center w-full max-w-md text-center space-y-6">
-                <div className="relative h-16 w-16 bg-slate-800 rounded-full flex items-center justify-center border-2 border-emerald-500/30 shadow-lg animate-bounce duration-1000">
-                  <Activity className="h-8 w-8 text-emerald-400 animate-spin duration-3000" />
-                </div>
-                
-                <div>
-                  <h3 className="text-base font-bold text-slate-100 uppercase tracking-widest font-sans flex items-center justify-center">
-                    <span>Đang bóc tách văn bản nghiệp vụ...</span>
-                  </h3>
-                  <p className="text-xs text-emerald-400 font-mono mt-1 font-semibold">{processingFile}</p>
-                </div>
 
-                <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
-                  <div 
-                    className="bg-gradient-to-r from-emerald-550 via-teal-500 to-emerald-550 h-full rounded-full transition-all duration-300 relative"
-                    style={{ width: `${progress}%` }}
-                  >
+            {/* HIỂN THỊ TIẾN TRÌNH KHI ĐANG BATCH PROCESSING OR SLICING */}
+            {(isSlicing || isBatchProcessing) && (
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col items-center justify-center min-h-[200px]">
+                <div className={`absolute inset-0 bg-gradient-to-r ${isBatchProcessing ? 'from-red-50/50 via-yellow-50/50 to-red-50/50' : 'from-emerald-50/50 via-yellow-50/50 to-emerald-50/50'} animate-pulse`} />
+                
+                <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-4">
+                  <div className={`relative h-14 w-14 ${isBatchProcessing ? 'bg-red-100 border-red-200' : 'bg-emerald-100 border-emerald-200'} rounded-full flex items-center justify-center border-2 shadow-sm animate-bounce duration-1000`}>
+                    {isBatchProcessing ? (
+                      <Activity className="h-7 w-7 text-red-600 animate-spin duration-3000" />
+                    ) : (
+                      <Layers className="h-7 w-7 text-emerald-600 animate-spin" style={{ animationDuration: "3s" }} />
+                    )}
                   </div>
-                </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest font-sans flex items-center justify-center">
+                      <span>{isBatchProcessing ? 'Đang bóc tách văn bản nghiệp vụ...' : 'Tiền xử lý tập tin tư pháp...'}</span>
+                    </h3>
+                    <p className={`text-xs font-mono mt-1 font-semibold ${isBatchProcessing ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {isBatchProcessing ? batchProgressText : slicingMessage}
+                    </p>
+                    {isBatchProcessing && processingFile && (
+                      <p className="text-[10px] text-slate-500 mt-1">Đang chạy: {processingFile}</p>
+                    )}
+                  </div>
 
-                <div className="flex items-center justify-between w-full text-[10px] text-slate-400 font-mono">
-                  <span>Đại diện an toàn: AES-256</span>
-                  <span className="text-emerald-400 font-bold">{progress}% HOÀN THÀNH</span>
-                  <span>Bộ nhớ tạm: RAM stateless</span>
-                </div>
-
-                <p className="text-[10px] text-slate-400 italic leading-relaxed">
-                  *Hệ thống đang nạp tệp và gửi tín hiệu bóc tách văn bản lên Serverless Edge Node, thực thi phân giải độ tương phản thông minh và khôi phục ngôn ngữ tiếng Việt.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Hộp kéo thả Dropzone */}
-              <div 
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                onClick={onButtonClick}
-                className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[250px] transition-all duration-200 ${
-                  dragActive 
-                    ? "border-emerald-500 bg-emerald-950/20" 
-                    : "border-slate-800 bg-slate-900 hover:border-emerald-500 hover:bg-slate-850"
-                }`}
-              >
-                <input 
-                  ref={fileInputRef}
-                  type="file" 
-                  className="hidden" 
-                  accept=".pdf,.png,.jpg,.jpeg" 
-                  onChange={handleFileInput}
-                />
-                <div className="h-14 w-14 bg-emerald-950/40 rounded-full flex items-center justify-center text-emerald-400 mb-4 border border-emerald-900/30">
-                  <UploadCloud className="h-7 w-7" />
-                </div>
-                <h3 className="font-bold text-slate-200 text-sm">
-                  Kéo thả tài liệu của bạn vào đây hoặc click để duyệt từ máy tính
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-1 max-w-sm">
-                  Hỗ trợ định dạng PDF, PNG, JPG (tối đa 50MB). Bản quét sẽ tự động được xử lý thông minh để khôi phục cấu trúc dòng tiếng Việt.
-                </p>
-                
-                <div className="mt-4 flex items-center justify-center space-x-2 text-[10px] text-slate-300 font-semibold font-mono bg-slate-950 border border-slate-800 rounded px-2.5 py-1">
-                  <Shield className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
-                </div>
-              </div>
-
-              {/* DANH SÁCH CÁC TRANG ẢNH ĐÃ PHÂN TÁCH RỜI RẠC */}
-              {slicedPages.length > 0 && (
-                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-xl space-y-4">
-                  <h4 className="font-bold text-slate-200 text-xs sm:text-sm flex items-center justify-between border-b border-slate-800 pb-3">
-                    <div className="flex items-center space-x-1.5">
-                      <Layers className="h-4 w-4 text-emerald-400" />
-                      <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({slicedPages.length} trang)</span>
+                  {/* Thanh tiến trình Shimmer */}
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-300 relative ${isBatchProcessing ? 'bg-gradient-to-r from-red-600 via-yellow-500 to-red-600' : 'bg-gradient-to-r from-emerald-500 to-yellow-400'}`}
+                      style={{ width: isBatchProcessing ? `${progress}%` : '100%' }}
+                    >
+                      {isBatchProcessing && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                      )}
                     </div>
-                    <span className="text-[10px] bg-emerald-950/40 text-emerald-400 px-2 py-0.5 rounded font-bold font-mono border border-emerald-900/30">DUNG LƯỢNG AN TOÀN API</span>
-                  </h4>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto p-2 border border-slate-850 rounded-lg bg-slate-950/50">
-                    {slicedPages.map((page) => (
-                      <div key={page.index} className="bg-slate-900 p-2 rounded-lg border border-slate-800 flex flex-col space-y-2 relative group hover:border-emerald-500 transition-all">
-                        <div className="aspect-[3/4] rounded bg-slate-950 overflow-hidden relative border border-slate-800">
-                          <img 
-                            referrerPolicy="no-referrer"
-                            src={page.dataUrl} 
-                            alt={`Trang ${page.index}`} 
-                            className="w-full h-full object-cover" 
-                          />
-                          <div className="absolute top-1 left-1 bg-slate-950/90 text-slate-100 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold border border-slate-800">
-                            Trang {page.index}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
-                          <span>Nén:</span>
-                          <span className="text-emerald-400 font-bold">{page.size}</span>
-                        </div>
-                      </div>
-                    ))}
                   </div>
-                  <p className="text-[10px] text-slate-400 italic leading-relaxed">
-                    *Ghi chú nghiệp vụ: Toàn bộ {slicedPages.length} trang tài liệu đã được nén về độ phân giải chuẩn và xuất JPEG 0.75 để giữ độ nét bóc tách tối đa của Gemini đồng thời bảo đảm an toàn payload.
+                  
+                  <p className="text-[10px] text-slate-500 italic leading-relaxed">
+                    {isBatchProcessing 
+                      ? "*Hệ thống đang nạp tệp và gửi tín hiệu bóc tách văn bản lên Serverless Edge Node tuần tự."
+                      : "*Tập tin PDF được bóc tách rời rạc thành từng trang ảnh. Hình ảnh đầu vào tự động nén để triệt tiêu lỗi quá tải tải trọng API."
+                    }
                   </p>
                 </div>
-              )}
-            </>
-          )}
-        </div>
+              </div>
+            )}
 
-        {/* RIGHT COLUMN SIDEBAR (1/3 width) */}
-        <div className="space-y-6">
-          {/* CARD 1: CẤU HÌNH HỆ THỐNG */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-            {/* ACTION BUTTON AT THE VERY TOP */}
-            <button
-              onClick={startOcrProcess}
-              disabled={!selectedFile || isProcessing}
-              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all duration-200 disabled:cursor-not-allowed disabled:pointer-events-none"
-            >
-              {isProcessing ? "Đang xử lý..." : "⚡ Bắt đầu trích xuất OCR"}
-            </button>
-
-            {/* PAGE RANGE INPUTS DIRECTLY BELOW THE BUTTON WITH CLEAN STYLED SMALLER LABELS */}
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wide">
-                  Phạm vi trích xuất (Page Range)
-                </label>
-                <div className="flex items-center space-x-3">
-                  <div className="w-1/2">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Từ trang"
-                      value={fromPage}
-                      onChange={(e) => setFromPage(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:ring-1 focus:ring-red-500 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none"
+            {/* DANH SÁCH HÀNG ĐỢI (QUEUE LIST) */}
+            {(queuedFiles || []).length > 0 && (
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5">
+                    <Layers className="h-4 w-4 text-emerald-600" />
+                    <span>Hàng đợi xử lý ({(queuedFiles || []).length} tệp)</span>
+                  </h4>
+                  <label className="flex items-center space-x-2 cursor-pointer bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={autoMerge} 
+                      onChange={(e) => setAutoMerge(e.target.checked)}
+                      className="form-checkbox h-4 w-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
                     />
-                  </div>
-                  <span className="text-slate-600 text-xs">—</span>
-                  <div className="w-1/2">
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Đến trang"
-                      value={toPage}
-                      onChange={(e) => setToPage(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 focus:ring-1 focus:ring-red-500 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-500 focus:outline-none"
-                    />
-                  </div>
+                    <span className="text-xs font-bold text-emerald-800">Tự động gộp văn bản</span>
+                  </label>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-2">*Để trống để quét toàn bộ dữ liệu hồ sơ.</p>
-              </div>
 
-              {/* YELLOW PROFESSIONAL NOTICE BOX INSIDE THIS NAVY SIDEBAR CONTAINER */}
-              <div className="flex items-start space-x-3 bg-yellow-950/20 text-yellow-250 p-4 rounded-lg border border-yellow-900/40">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-550 mt-0.5" />
-                <p className="text-[10px] leading-relaxed font-medium">
-                  <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt. Vui lòng tải kết quả về máy trước khi thoát.
-                </p>
+                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                  {(queuedFiles || []).map((q, index) => {
+                    if (!q) return null;
+                    return (
+                    <div key={q.id || Math.random()} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-emerald-300 transition-colors">
+                       <div className="flex flex-col overflow-hidden">
+                         <span className="text-sm font-semibold text-slate-800 truncate" title={q.file?.name}>{q.file?.name || 'Tệp không xác định'}</span>
+                         <span className="text-[10px] text-slate-500 mt-0.5">{q.size || ''} {(q.slicedPages || []).length > 0 ? `• ${(q.slicedPages || []).length} trang phân mảnh` : ''}</span>
+                       </div>
+                       <div className="flex items-center space-x-3 flex-shrink-0 ml-4">
+                         {q.status === 'error' ? (
+                           <XCircle className="h-4 w-4 text-red-500" />
+                         ) : q.status === 'done' ? (
+                           <CheckCircle2 className="h-4 w-4 text-green-500" />
+                         ) : q.status === 'processing' ? (
+                           <Activity className="h-4 w-4 text-blue-500 animate-spin" />
+                         ) : q.status === 'slicing' ? (
+                           <Layers className="h-4 w-4 text-yellow-500 animate-pulse" />
+                         ) : (
+                           <div className="h-2 w-2 bg-slate-300 rounded-full"></div>
+                         )}
+                         <span 
+                           onClick={() => {
+                             if (q.status === 'error' && fileErrors[index]) {
+                               setErrorModalMsg(`Chi tiết lỗi hệ thống tại trang này: ${fileErrors[index]}`);
+                             }
+                           }}
+                           className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                             q.status === 'error' ? 'cursor-pointer hover:bg-red-200 transition-colors' : ''
+                           } ${
+                           q.status === 'waiting' ? 'bg-slate-200 text-slate-600' :
+                           q.status === 'slicing' ? 'bg-yellow-100 text-yellow-700' :
+                           q.status === 'ready' ? 'bg-emerald-100 text-emerald-700' :
+                           q.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                           q.status === 'done' ? 'bg-green-100 text-green-700' :
+                           'bg-red-100 text-red-700'
+                         }`}>
+                           {q.status === 'waiting' && 'Đang đợi'}
+                           {q.status === 'slicing' && 'Đang bóc tách'}
+                           {q.status === 'ready' && 'Sẵn sàng'}
+                           {q.status === 'processing' && 'Đang trích xuất'}
+                           {q.status === 'done' && 'Hoàn thành'}
+                           {q.status === 'error' && 'LỖI'}
+                         </span>
+                       </div>
+                    </div>
+                    );
+                  })}
+                </div>
+                
+                {autoMerge && (
+                  <p className="text-[10px] text-slate-500 italic leading-relaxed pt-2 border-t border-slate-100">
+                    *Chế độ Gộp văn bản: Hệ thống sẽ tự động ghép nối kết quả từ tất cả các tệp theo thứ tự hàng đợi, sử dụng chuẩn phân cách hành chính (--- [TRANG KẾ TIẾP] ---).
+                  </p>
+                )}
               </div>
+            )}
+
+          </div>
+
+          {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
+          <div className="space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl text-slate-100 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
+              
+              <h4 className="font-bold text-xs uppercase tracking-widest text-slate-100 flex items-center mb-4 relative z-10">
+                <Settings className="h-4 w-4 mr-1.5 text-slate-100 animate-pulse" />
+                <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
+              </h4>
+
+              <div className="relative z-10 space-y-4">
+                {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
+                <button
+                  onClick={startOcrProcess}
+                  disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
+                >
+                  <ScanLine className="h-5 w-5" />
+                  <span>Bắt đầu trích xuất OCR</span>
+                </button>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-100 mb-1.5 uppercase tracking-wide">
+                    Phạm vi trích xuất (Page Range)
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-1/2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Từ trang"
+                        value={fromPage}
+                        onChange={(e) => setFromPage(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                        disabled={(queuedFiles || []).length > 1}
+                      />
+                    </div>
+                    <span className="text-slate-300 text-xs">—</span>
+                    <div className="w-1/2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Đến trang"
+                        value={toPage}
+                        onChange={(e) => setToPage(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                        disabled={(queuedFiles || []).length > 1}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1.5">*Chỉ khả dụng khi chọn 1 tệp duy nhất.</p>
+                </div>
+
+                <div className="flex items-start space-x-3 bg-yellow-50 text-yellow-800 p-3.5 rounded-lg border border-yellow-200 mt-4">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-600 mt-0.5" />
+                  <p className="text-[10px] leading-relaxed font-medium">
+                    <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
+              <h5 className="text-xs font-bold text-slate-700 flex items-center justify-center space-x-1.5">
+                <Shield className="h-4 w-4 text-emerald-500" />
+                <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
+              </h5>
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối.
+              </p>
             </div>
           </div>
 
-          {/* CARD 2: TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-            <h5 className="text-xs font-bold text-slate-200 flex items-center justify-center space-x-1.5 mb-2">
-              <Shield className="h-4 w-4 text-emerald-400" />
-              <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
-            </h5>
-            <p className="text-[11px] text-slate-400 leading-relaxed font-medium text-center">
-              Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối và tự động hủy hoàn toàn ngay sau khi kết thúc phiên làm việc, cam kết không lưu vết hồ sơ nghiệp vụ trên máy chủ.
+        </div>
+      </div>
+
+      {/* ERROR MODAL */}
+      {errorModalMsg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full animate-in fade-in duration-200">
+            <div className="flex items-center space-x-2 text-red-600 mb-4">
+              <AlertTriangle className="h-6 w-6" />
+              <h3 className="text-lg font-bold">Lỗi hệ thống</h3>
+            </div>
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+              {errorModalMsg}
             </p>
+            <div className="flex justify-end">
+              <button 
+                onClick={() => setErrorModalMsg(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
-
-      </div>
+      )}
     </div>
   );
 }

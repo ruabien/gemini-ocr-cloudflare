@@ -1,5 +1,7 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; worker-src 'self' blob:; img-src 'self' data: blob: https://lh3.googleusercontent.com https://api.vietqr.io; connect-src 'self' https://api.ocr.space https://api.vietqr.io; frame-src 'self' blob:;
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; img-src * data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://gemini-ocr-backend.ruabien1504.workers.dev/ https://generativelanguage.googleapis.com; frame-src 'self' blob:;
   X-Frame-Options: SAMEORIGIN
   X-Content-Type-Options: nosniff
   Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
