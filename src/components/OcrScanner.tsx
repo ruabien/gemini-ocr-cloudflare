@@ -199,14 +199,31 @@ if (xhr.status >= 200 && xhr.status < 300) {
       setProcessingFile(file.name);
     
       try {
-        setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...`);
-        
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("apiKey", apiKey);
-        if (model) formData.append("model", model);
-        
-        await sendFileToBackend(formData);
+        let attempts = 0;
+        let success = false;
+        while (attempts < 3 && !success) {
+          try {
+            setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...${attempts > 0 ? ` (Thử lại lần ${attempts})` : ''}`);
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("apiKey", apiKey);
+            if (model) formData.append("model", model);
+            
+            await sendFileToBackend(formData);
+            success = true;
+          } catch (err: any) {
+            attempts++;
+            const errMsg = err?.message || '';
+            const isCongested = errMsg.toLowerCase().includes("high demand") || errMsg.toLowerCase().includes("temporary");
+            
+            if (attempts < 3 && isCongested) {
+              await new Promise((res) => setTimeout(res, 2000)); // Wait 2s before retrying
+            } else {
+              throw err; // Out of attempts or not congested, finally mark as error
+            }
+          }
+        }
         
         updateFileStatus(i, "completed");
       } catch (err: any) {
