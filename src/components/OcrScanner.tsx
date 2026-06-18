@@ -142,7 +142,20 @@ const startOcrProcess = async () => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
        
-const userApiKey = localStorage.getItem("gemini_api_key") || "";
+const userApiKey = (() => {
+  const stored = localStorage.getItem("vks_gemini_api_keys");
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed[0] || "";
+      }
+    } catch (e) {
+      // ignore JSON parse errors
+    }
+  }
+  return "";
+})();
 xhr.open("POST", `/api/ocr/?cb=${new Date().getTime()}&userKey=${encodeURIComponent(userApiKey)}`, true);
         
         xhr.upload.onprogress = (e) => {
