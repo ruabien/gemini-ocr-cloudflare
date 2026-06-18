@@ -8,6 +8,6 @@
   ],
   "usage_model": "unbound",
   "placement": {
-    "mode": "smart"
+    "mode": "off"
   }
 }
