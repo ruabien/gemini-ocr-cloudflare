@@ -32,9 +32,9 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
           
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight max-w-4xl mx-auto">
             Số hóa hồ sơ vụ án chuyên sâu với{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-yellow-300 to-red-500">
-              VKS OCR
-            </span>
+<span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-yellow-300 to-red-500">
+  LexOCR
+</span>
           </h1>
           
           <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
@@ -271,7 +271,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       {/* Footer hành chính */}
       <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between text-xs gap-4">
-          <p>© 2026 VKS OCR. Giải pháp đồng hành cùng Kiểm sát viên Viện kiểm sát nhân dân Việt Nam.</p>
+          <p>© 2026 LexOCR. Giải pháp đồng hành cùng Kiểm sát viên Viện kiểm sát nhân dân Việt Nam.</p>
           <p className="flex items-center space-x-4">
             <span className="hover:text-white cursor-pointer">Hướng dẫn lập mẫu excel danh mục đối tượng</span>
             <span>•</span>

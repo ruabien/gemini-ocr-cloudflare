@@ -39,22 +39,22 @@ export default function UpgradeComponent({
       amount: 450000,
       display: "450.000 đ",
       sub: "/ tháng",
-      code: "VKS_OCR_MON_PRO"
+      code: "LEXOCR_MON_PRO"
     },
     yearly: {
       amount: 3200000,
       display: "3.200.000 đ",
       sub: "/ năm",
       details: "Tiết kiệm 40% so với gói tháng",
-      code: "VKS_OCR_YEA_PRO"
+      code: "LEXOCR_YEA_PRO"
     }
   };
 
   const activePlan = billingCycle === "monthly" ? prices.monthly : prices.yearly;
 
   // Real VietQR Image generation using public vietqr api
-  const formattedAccountName = encodeURIComponent("DU AN VKS OCR CHUYEN NGHIEP");
-  const formattedInfo = encodeURIComponent(`VKS PRO ${session.name.toUpperCase().replace(/[^A-Z ]/g, "")} ${billingCycle === "yearly" ? "1Y" : "1M"}`);
+  const formattedAccountName = encodeURIComponent("DU AN LEXOCR CHUYEN NGHIEP");
+  const formattedInfo = encodeURIComponent(`LEXOCR PRO ${session.name.toUpperCase().replace(/[^A-Z ]/g, "")} ${billingCycle === "yearly" ? "1Y" : "1M"}`);
   
   const vietQrUrl = `https://api.vietqr.io/image/970422-190820268888-qF68VpM.jpg?accountName=${formattedAccountName}&amount=${activePlan.amount}&addInfo=${formattedInfo}`;
 
@@ -105,7 +105,7 @@ export default function UpgradeComponent({
       timeoutIds.push(setTimeout(() => {
         setPaymentStatus("success");
         setMembershipRole("Pro");
-        setLogs(prev => [...prev, "KÍCH HOẠT THÀNH CÔNG: Tài khoản VKS PRO đã được mở khóa!"]);
+        setLogs(prev => [...prev, "KÍCH HOẠT THÀNH CÔNG: Tài khoản LEXOCR PRO đã được mở khóa!"]);
       }, 9500));
     }
 
@@ -141,7 +141,7 @@ export default function UpgradeComponent({
             <span>NÂNG THẾ NGHIỆP VỤ CÔNG TỐ & KIỂM SÁT</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-sans font-bold text-slate-900 tracking-tight flex items-center">
-            Mở khóa Toàn năng Trợ lý Số hóa VKS PRO
+            Mở khóa Toàn năng Trợ lý Số hóa LexOCR PRO
           </h2>
           <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
             Mở rộng tính năng bóc tách tự động, cấu trúc tệp Cáo trạng/Bản án lớn và hỗ trợ đặc quyền Kiểm sát viên các cấp.
@@ -164,7 +164,7 @@ export default function UpgradeComponent({
               <UserCheck className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-amber-905">Độc quyền Tài khoản VKS PRO Đang hoạt động</h3>
+              <h3 className="font-bold text-base text-amber-905">Độc quyền Tài khoản LexOCR PRO Đang hoạt động</h3>
               <p className="text-xs text-slate-600 mt-1">
                 Kính gửi Kiểm sát viên <strong className="font-bold">{session.name}</strong>, đơn vị <strong className="font-bold">{session.department}</strong>. Toàn bộ tính năng cao cấp không giới hạn đã được mở khóa toàn diện.
               </p>
@@ -323,7 +323,7 @@ export default function UpgradeComponent({
 
             <div className="space-y-4">
               <h3 className="font-sans font-black text-slate-900 text-lg sm:text-xl flex items-center space-x-1">
-                <span>VKS OCR PRO</span>
+                <span>LEXOCR PRO</span>
                 <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded ml-2">PREMIUM</span>
               </h3>
               
@@ -447,7 +447,7 @@ export default function UpgradeComponent({
 
                     <div className="space-y-0.5">
                       <p className="text-slate-500 text-[10px] uppercase">Chủ tài khoản</p>
-                      <p className="text-slate-800 font-bold">DU AN CONG NGHE VKS OCR</p>
+                      <p className="text-slate-800 font-bold">DU AN CONG NGHE LEXOCR</p>
                     </div>
 
                     <div className="space-y-0.5">
@@ -458,7 +458,7 @@ export default function UpgradeComponent({
                     <div className="space-y-0.5">
                       <p className="text-slate-500 text-[10px] uppercase">Nội dung bắt buộc</p>
                       <p className="text-red-700 font-mono font-bold bg-white p-1.5 rounded border border-red-200 break-words select-all text-[11px]">
-                        VKS PRO {session.name.toUpperCase().replace(/[^A-Z ]/g, "")} {billingCycle === "yearly" ? "1Y" : "1M"}
+                        LEXOCR PRO {session.name.toUpperCase().replace(/[^A-Z ]/g, "")} {billingCycle === "yearly" ? "1Y" : "1M"}
                       </p>
                     </div>
                   </div>
@@ -545,7 +545,7 @@ export default function UpgradeComponent({
                       <Check className="h-8 w-8 text-emerald-600 font-black animate-scale" />
                     </div>
                     <div className="space-y-2">
-                      <h4 className="font-black text-slate-900 text-base">Nâng cấp VKS OCR PRO thành công!</h4>
+                      <h4 className="font-black text-slate-900 text-base">Nâng cấp LexOCR PRO thành công!</h4>
                       <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
                         Tài khoản Kiểm sát viên <strong className="font-bold">{session.name}</strong> đã tự động nâng cấp thành công lên quyền PRO vô hạn. Mở khóa xuất tệp Word lề tố tụng và Excel danh bị can ngay tức thì.
                       </p>
