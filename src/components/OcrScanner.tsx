@@ -236,15 +236,66 @@ const startOcrProcess = async () => {
          setProgress(percentComplete);
        }
      };
+
+     const runOcrSpaceFallback = (): Promise<string> => {
+       return new Promise<string>((resolveFallback, rejectFallback) => {
+         const ocrSpaceKey = localStorage.getItem("ocr_space_api_key") || localStorage.getItem("ocrSpaceApiKey") || "";
+         const formData = new FormData();
+         formData.append("language", "vie");
+         formData.append("isOverlayRequired", "false");
+         formData.append("OCREngine", "2");
+         formData.append("scale", "true");
+         
+         let ocrUrl = "https://api.ocr.space/parse/image";
+         if (ocrSpaceKey) {
+           formData.append("apikey", ocrSpaceKey);
+           formData.append("file", file);
+         } else {
+           ocrUrl = "/api/ocr-space";
+           formData.append("file", file);
+         }
+         
+         fetch(ocrUrl, {
+           method: "POST",
+           body: formData
+         })
+         .then(res => {
+           if (!res.ok) {
+             throw new Error(`OCR.space HTTP error ${res.status}`);
+           }
+           return res.json();
+         })
+         .then(data => {
+           let extractedText = "";
+           if (data.ParsedResults?.[0]?.ParsedText) {
+             extractedText = data.ParsedResults[0].ParsedText;
+           } else if (data.text) {
+             extractedText = data.text;
+           } else {
+             throw new Error("Không nhận dạng được văn bản nào từ phản hồi của OCR.space.");
+           }
+           
+           const finalText = extractedText.trim();
+           setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+           editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+           resolveFallback(finalText);
+         })
+         .catch(err => {
+           rejectFallback(err);
+         });
+       });
+     };
      
      xhr.onload = () => {
+       let shouldFallback = false;
        if (xhr.status >= 200 && xhr.status < 300) {
          try {
            const rawText = xhr.responseText;
            const cleanJson = JSON.parse(rawText);
            
+           const finishReason = cleanJson.candidates?.[0]?.finishReason;
            const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
-           const actualText = geminiText || cleanJson.text || rawText;
+           const actualText = geminiText || cleanJson.text || "";
            
            let lines = actualText.split('\n');
            if (lines.length > 0) {
@@ -256,29 +307,34 @@ const startOcrProcess = async () => {
            }
            const sanitizedText = lines.join('\n').trim();
            
-           setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-           editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
-           resolve(sanitizedText);
+           if (finishReason === "RECITATION" || !sanitizedText) {
+             shouldFallback = true;
+           } else {
+             setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+             editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+             resolve(sanitizedText);
+             return;
+           }
          } catch (e) {
-           reject(e);
+           shouldFallback = true;
          }
        } else {
-         // Extract error information
-         let errMsg = `HTTP error ${xhr.status}`;
-         try {
-           const errJson = JSON.parse(xhr.responseText);
-           errMsg = errJson?.error?.message || errJson?.error || errMsg;
-         } catch {}
-         reject({ status: xhr.status, message: errMsg });
+         shouldFallback = true;
+       }
+
+       if (shouldFallback) {
+         runOcrSpaceFallback().then(resolve).catch(reject);
        }
      };
      
-     xhr.onerror = () => reject({ status: 0, message: "Network Error" });
+     xhr.onerror = () => {
+       runOcrSpaceFallback().then(resolve).catch(reject);
+     };
      
       const payload = {
         "contents": [{
           "parts": [
-            {"text": "Hãy đóng vai chuyên gia số hóa dữ liệu tư pháp, phân tích hình ảnh này và trích xuất toàn bộ nội dung văn bản tìm thấy sang tiếng Việt chuẩn, giữ nguyên định dạng xuống dòng. Tuyệt đối không được bỏ sót bất kỳ từ nào, kể cả quốc huy hay con dấu."},
+            {"text": "Trích xuất chính xác 100% toàn bộ nội dung văn bản có trong hình ảnh này sang tiếng Việt. Giữ nguyên định dạng, không thêm bớt bất kỳ từ ngữ hay lời giải thích nào."},
             {"inlineData": {
               "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
               "data": base64Data
