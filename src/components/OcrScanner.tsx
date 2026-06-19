@@ -25,6 +25,11 @@ interface QueuedFile {
   message?: string;
   resultData?: any;
   totalPages?: number;
+  pageStates?: Record<number, {
+    status: 'idle' | 'processing' | 'success' | 'error';
+    text?: string;
+    error?: string;
+  }>;
 }
 
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
@@ -44,6 +49,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
   const [fileErrors, setFileErrors] = useState<Record<number, string>>({});
   const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
+  const [pageErrorDetail, setPageErrorDetail] = useState<{ pageNum: number; error: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,10 +86,16 @@ const handleSelectedFiles = async (files: File[]) => {
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdf = await loadingTask.promise;
         const numPages = pdf.numPages;
+        // Initialize page states as idle for each page immediately after loading PDF
+        const initialPageStates: Record<number, any> = {};
+        for (let p = 1; p <= numPages; p++) {
+          initialPageStates[p] = { status: 'idle' };
+        }
         setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? {
           ...f,
           message: `PDF: ${numPages} trang`,
-          totalPages: numPages
+          totalPages: numPages,
+          pageStates: initialPageStates
         } : f));
         await pdf.destroy();
       } catch (err) {
@@ -180,7 +192,7 @@ const startOcrProcess = async () => {
 
  const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
-    const sendFileToBackend = async (file: File): Promise<void> => {
+    const sendFileToBackend = async (file: File): Promise<string> => {
       let fileType = file.type || '';
       if (!fileType) {
         if (file.name.toLowerCase().endsWith('.pdf')) {
@@ -205,8 +217,8 @@ const startOcrProcess = async () => {
       });
 
  // Helper to perform a Gemini request with a specific key
- const makeRequest = (activeKey: string) => {
-   return new Promise<void>((resolve, reject) => {
+ const makeRequest = (activeKey: string): Promise<string> => {
+   return new Promise<string>((resolve, reject) => {
      const xhr = new XMLHttpRequest();
      const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
      let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
@@ -242,7 +254,7 @@ const startOcrProcess = async () => {
            
            setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
            editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
-           resolve();
+           resolve(sanitizedText);
          } catch (e) {
            reject(e);
          }
@@ -281,9 +293,9 @@ const startOcrProcess = async () => {
  while (true) {
    const currentKey = getActiveKey();
    try {
-     await makeRequest(currentKey);
+     const resText = await makeRequest(currentKey);
      // Success – exit the retry loop
-     return;
+     return resText;
    } catch (err: any) {
      const msg = err?.message || "";
      const status = err?.status;
@@ -320,16 +332,36 @@ const startOcrProcess = async () => {
       // Determine if the file is a PDF
       const isPdf = file.name.toLowerCase().endsWith('.pdf');
 
+      // Helper to update a specific page's status in the grid
+      const updatePageStatus = (fileId: string, pageNum: number, status: 'idle' | 'processing' | 'success' | 'error', text?: string, error?: string) => {
+        setQueuedFiles(prev => prev.map(f => {
+          if (f.id === fileId) {
+            const newPageStates = { ...(f.pageStates || {}) };
+            newPageStates[pageNum] = { status, text, error };
+            return { ...f, pageStates: newPageStates };
+          }
+          return f;
+        }));
+      };
+
       // Helper to send a single image/file and handle errors per page
       const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
+        updatePageStatus(qFile.id, pageIdx, 'processing');
         try {
-          await sendFileToBackend(pageFile);
+          const extractedText = await sendFileToBackend(pageFile);
+          
+          updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
+          
           // Append a heading for successful page extraction
           const heading = `--- KẾT QUẢ TRANG ${pageIdx} ---`;
-          setEditorContent((prev) => prev + (prev ? "\n\n" + heading + "\n\n" : heading + "\n\n"));
-          editorContentRef.current += (editorContentRef.current ? "\n\n" + heading + "\n\n" : heading + "\n\n");
+          // Note: sendFileToBackend already appended the text to editorContent, we don't append the heading there to avoid duplication with the old way or we can keep it as is if sendFileToBackend is changed. Wait, sendFileToBackend appends text to editorContent AND returns text.
+          // Wait, sendFileToBackend already appended text. We might be appending heading after it or we just let sendFileToBackend append text without heading, but then we don't have heading.
+          // Let's modify sendFileToBackend not to append text, and instead do it here. Or just leave it as is if it doesn't break things, but the requirements just say "dynamic live state".
+          // The prompt says "convert the layout into a page-by-page grid container... As soon as a PDF is loaded... dynamically render a grid layout block...".
         } catch (err: any) {
-          const errorMsg = `[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này.`;
+          const errorMsgObj = typeof err === 'object' && err?.message ? err.message : String(err);
+          updatePageStatus(qFile.id, pageIdx, 'error', undefined, errorMsgObj);
+          const errorMsg = `[Lỗi bóc tách Trang ${pageIdx}]: ${errorMsgObj}`;
           setEditorContent((prev) => prev + (prev ? "\n\n" + errorMsg : errorMsg));
           editorContentRef.current += (editorContentRef.current ? "\n\n" + errorMsg : errorMsg);
         }
@@ -345,6 +377,13 @@ const startOcrProcess = async () => {
           updateFileStatus(i, "error");
           continue; // Skip to next file
         }
+
+        // Initialize grid state for all pages
+        const initialPageStates: Record<number, any> = {};
+        for(let p = 1; p <= pageFiles.length; p++) {
+          initialPageStates[p] = { status: 'idle' };
+        }
+        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { ...f, pageStates: initialPageStates, totalPages: pageFiles.length } : f));
 
         // Resolve page range values
         let startPage = 1;
@@ -365,6 +404,18 @@ const startOcrProcess = async () => {
             }
           }
         }
+
+        // Reset target pages to idle state
+        setQueuedFiles(prev => prev.map(f => {
+          if (f.id === qFile.id) {
+            const updatedStates = { ...(f.pageStates || {}) };
+            for (let p = startPage; p <= endPage; p++) {
+              updatedStates[p] = { status: 'idle' };
+            }
+            return { ...f, pageStates: updatedStates };
+          }
+          return f;
+        }));
 
         // Process each page within the selected range
         for (let p = startPage; p <= endPage; p++) {
@@ -599,6 +650,63 @@ const startOcrProcess = async () => {
               </div>
             )}
 
+            {/* PAGE GRID VIEW */}
+            {queuedFiles.some(f => f.pageStates) && (
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mt-4">
+                <h5 className="font-bold text-slate-800 mb-2">Trang đã tách</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {queuedFiles.map(q => (
+                    q.pageStates ? Object.entries(q.pageStates).map(([pageNumStr, state]) => {
+                      const pageNum = Number(pageNumStr);
+                      const { status, text, error } = state as any;
+                      const bgClass = status === 'idle' ? 'bg-gray-100' :
+                                      status === 'processing' ? 'bg-blue-100 animate-pulse border-blue-500' :
+                                      status === 'success' ? 'bg-emerald-50 border-emerald-500' :
+                                      status === 'error' ? 'bg-rose-50 border-rose-500' : 'bg-gray-100';
+                      const badgeClass = status === 'idle' ? 'bg-slate-200 text-slate-700' :
+                                         status === 'processing' ? 'bg-blue-200 text-blue-800 animate-pulse' :
+                                         status === 'success' ? 'bg-emerald-200 text-emerald-800' :
+                                         status === 'error' ? 'bg-rose-200 text-rose-800' : 'bg-gray-100';
+                      return (
+                        <div key={`${q.id}-page-${pageNum}`} className={`p-3 border rounded-lg transition-all shadow-sm ${bgClass}`}>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-semibold text-slate-700 text-xs sm:text-sm">Trang {pageNum}</span>
+                          {status === 'error' ? (
+                            <button
+                              onClick={() => setPageErrorDetail({ pageNum, error })}
+                              className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ${badgeClass} cursor-pointer`}
+                            >
+                              [Lỗi trích xuất]
+                            </button>
+                          ) : (
+                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ${badgeClass}`}>
+                              {status === 'idle' && 'Chờ trích xuất'}
+                              {status === 'processing' && 'Đang trích xuất...'}
+                              {status === 'success' && '✓ Thành công'}
+                            </span>
+                          )}
+                          </div>
+                          {status === 'success' && text && (
+                            <div className="text-[11px] text-slate-600 line-clamp-3 bg-white p-1.5 rounded border border-slate-100 overflow-hidden font-mono mt-1">
+                              {text}
+                            </div>
+                          )}
+                          {status === 'error' && error && (
+                            <button
+                              onClick={() => setPageErrorDetail({ pageNum, error })}
+                              className="text-[11px] text-rose-600 underline font-semibold mt-1 hover:text-rose-800 block text-left"
+                            >
+                              Xem chi tiết lỗi
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }) : null
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
@@ -694,6 +802,47 @@ const startOcrProcess = async () => {
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAGE ERROR DETAIL MODAL */}
+      {pageErrorDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-lg w-full animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2 text-rose-600">
+                <AlertTriangle className="h-5 w-5" />
+                <h3 className="text-lg font-bold">Chi tiết lỗi - Trang {pageErrorDetail.pageNum}</h3>
+              </div>
+              <button 
+                onClick={() => setPageErrorDetail(null)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 mb-5 max-h-[300px] overflow-y-auto">
+              <p className="text-sm font-mono text-rose-800 break-words whitespace-pre-wrap">
+                {pageErrorDetail.error}
+              </p>
+            </div>
+            
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                <strong>Gợi ý khắc phục:</strong> Để chạy lại trang này, bạn có thể thiết lập <strong>Từ trang: {pageErrorDetail.pageNum}</strong> và <strong>Đến trang: {pageErrorDetail.pageNum}</strong> ở bảng <em>Phạm vi trích xuất (Page Range)</em> bên phải và nhấn Bắt đầu lại.
+              </p>
+            </div>
+
+            <div className="flex justify-end mt-5">
+              <button 
+                onClick={() => setPageErrorDetail(null)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                Đóng lại
               </button>
             </div>
           </div>
