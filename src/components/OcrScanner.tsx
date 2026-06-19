@@ -147,11 +147,13 @@ const startOcrProcess = async () => {
 
  // Retrieve Gemini API keys with round‑robin support
  const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
- let keysArray = rawKeys.split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
+ let keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[^a-zA-Z0-9-_]/g, '').trim()).filter(Boolean);
  // Fallback to legacy single‑key storage
  if (keysArray.length === 0) {
    const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
-   if (fallback) keysArray = [fallback];
+   if (fallback) {
+     keysArray = [fallback.replace(/[^a-zA-Z0-9-_]/g, '').trim()];
+   }
  }
  if (keysArray.length === 0) {
    console.error('Missing Gemini API Key.');
@@ -160,7 +162,10 @@ const startOcrProcess = async () => {
    return;
  }
  let activeKeyIndex = 0;
- const getActiveKey = () => keysArray[activeKeyIndex];
+ const getActiveKey = () => {
+   const key = keysArray[activeKeyIndex];
+   return key ? key.replace(/[^a-zA-Z0-9-_]/g, '').trim() : '';
+ };
 
  const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
@@ -180,7 +185,9 @@ const startOcrProcess = async () => {
         const reader = new FileReader();
         reader.onload = () => {
           const result = reader.result as string;
-          resolve(result.split(',')[1]);
+          const rawBase64 = result.includes(',') ? result.split(',')[1] : result;
+          const cleanBase64 = rawBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+          resolve(cleanBase64);
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
@@ -234,7 +241,7 @@ const startOcrProcess = async () => {
            const errJson = JSON.parse(xhr.responseText);
            errMsg = errJson?.error?.message || errJson?.error || errMsg;
          } catch {}
-         reject({ status: xhr.status, message: errMsg });
+         reject({ status: xhr.status, message: errMsg, responseText: xhr.responseText });
        }
      };
      
@@ -244,15 +251,12 @@ const startOcrProcess = async () => {
        "contents": [{
          "parts": [
            {"text": "Bóc tách toàn bộ văn bản trong ảnh này sang tiếng Việt chuẩn."},
-           {"inlineData": {"mimeType": fileType, "data": base64Data}}
+           {"inlineData": {
+             "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
+             "data": base64Data
+           }}
          ]
-       }],
-       "safetySettings": [
-         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-         {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-       ]
+       }]
      };
      
      xhr.send(JSON.stringify(payload));
@@ -314,7 +318,8 @@ const startOcrProcess = async () => {
           editorContentRef.current += (editorContentRef.current ? "\n\n" + heading + "\n\n" : heading + "\n\n");
         } catch (err: any) {
           console.error(`Error extracting page ${pageIdx} of ${file.name}:`, err);
-          const errorMsg = `[Lỗi hệ thống: Không thể trích xuất nội dung Trang ${pageIdx}. Vui lòng chọn Page Range để quét lại trang này]`;
+          const errorDetail = `Status: ${err?.status !== undefined ? err.status : 'N/A'}, Response: ${err?.responseText || err?.message || JSON.stringify(err)}`;
+          const errorMsg = `[Lỗi hệ thống: Không thể trích xuất nội dung Trang ${pageIdx}. Chi tiết: ${errorDetail}]`;
           setEditorContent((prev) => prev + (prev ? "\n\n" + errorMsg : errorMsg));
           editorContentRef.current += (editorContentRef.current ? "\n\n" + errorMsg : errorMsg);
         }
@@ -370,9 +375,10 @@ const startOcrProcess = async () => {
           updateFileStatus(i, "completed");
         } catch (err: any) {
           console.error(`Error at index ${i}:`, err);
+          const errorDetail = `Status: ${err?.status !== undefined ? err.status : 'N/A'}, Response: ${err?.responseText || err?.message || JSON.stringify(err)}`;
           setFileErrors(prev => ({
             ...prev,
-            [i]: err?.message || 'Lỗi không xác định'
+            [i]: errorDetail
           }));
           updateFileStatus(i, "error");
         }
