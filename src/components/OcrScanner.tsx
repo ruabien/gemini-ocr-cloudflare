@@ -271,17 +271,40 @@ const startOcrProcess = async () => {
      
      xhr.onerror = () => reject({ status: 0, message: "Network Error" });
      
-     const payload = {
-       "contents": [{
-         "parts": [
-           {"text": "Bóc tách toàn bộ văn bản trong ảnh này sang tiếng Việt chuẩn."},
-           {"inlineData": {
-             "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
-             "data": base64Data
-           }}
-         ]
-       }]
-     };
+      const payload = {
+        "contents": [{
+          "parts": [
+            {"text": "Hãy đóng vai chuyên gia số hóa dữ liệu tư pháp, phân tích hình ảnh này và trích xuất toàn bộ nội dung văn bản tìm thấy sang tiếng Việt chuẩn, giữ nguyên định dạng xuống dòng. Tuyệt đối không được bỏ sót bất kỳ từ nào, kể cả quốc huy hay con dấu."},
+            {"inlineData": {
+              "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
+              "data": base64Data
+            }}
+          ]
+        }],
+        "generationConfig": {
+          "temperature": 0.0,
+          "topP": 0.95,
+          "candidateCount": 1
+        },
+        "safetySettings": [
+          {
+            "category": "HARM_CATEGORY_HARASSMENT",
+            "threshold": "BLOCK_NONE"
+          },
+          {
+            "category": "HARM_CATEGORY_HATE_SPEECH",
+            "threshold": "BLOCK_NONE"
+          },
+          {
+            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            "threshold": "BLOCK_NONE"
+          },
+          {
+            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+            "threshold": "BLOCK_NONE"
+          }
+        ]
+      };
      
      xhr.send(JSON.stringify(payload));
    });
@@ -423,7 +446,7 @@ const startOcrProcess = async () => {
           setBatchProgressText(`Đang bóc tách ${file.name} - Trang ${p}/${endPage}...`);
           await processSinglePage(pageFile, p, endPage);
           // Throttle between pages
-          await new Promise((res) => setTimeout(res, 200));
+          await new Promise((res) => setTimeout(res, 2500));
         }
 
         // Mark as completed if no fatal error occurred
@@ -442,9 +465,9 @@ const startOcrProcess = async () => {
         }
       }
 
-      // Explicit safety throttle delay of 200 ms to prevent Gemini Rate Limit
+      // Explicit safety throttle delay of 2500 ms to prevent Gemini Rate Limit
       if (i < filesToProcess.length - 1) {
-        await new Promise((res) => setTimeout(res, 200));
+        await new Promise((res) => setTimeout(res, 2500));
       }
     }
 
