@@ -147,7 +147,17 @@ const startOcrProcess = async () => {
 
  // Retrieve Gemini API keys with round‑robin support
  const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
- let keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
+ let keysArray: string[] = [];
+ try {
+   const parsed = JSON.parse(rawKeys);
+   if (Array.isArray(parsed)) {
+     keysArray = parsed.map(k => String(k));
+   } else {
+     keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
+   }
+ } catch (e) {
+   keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
+ }
  // Fallback to legacy single‑key storage
  if (keysArray.length === 0) {
    const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
@@ -195,11 +205,12 @@ const startOcrProcess = async () => {
       });
 
  // Helper to perform a Gemini request with a specific key
- const makeRequest = (key: string) => {
+ const makeRequest = (activeKey: string) => {
    return new Promise<void>((resolve, reject) => {
      const xhr = new XMLHttpRequest();
      const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
-     const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${key}`;
+     let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
+     const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
      xhr.open("POST", googleUrl, true);
      xhr.setRequestHeader("Content-Type", "application/json");
      
