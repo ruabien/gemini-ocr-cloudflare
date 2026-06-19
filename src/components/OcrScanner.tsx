@@ -87,7 +87,7 @@ const handleSelectedFiles = async (files: File[]) => {
         } : f));
         await pdf.destroy();
       } catch (err) {
-        console.error("Lỗi đọc số trang PDF:", err);
+        // Safe placeholder
       }
     }
   }
@@ -156,7 +156,6 @@ const startOcrProcess = async () => {
    }
  }
  if (keysArray.length === 0) {
-   console.error('Missing Gemini API Key.');
    alert('Missing Gemini API Key. Please configure it in Settings.');
    setIsBatchProcessing(false);
    return;
@@ -243,7 +242,7 @@ const startOcrProcess = async () => {
            const errJson = JSON.parse(xhr.responseText);
            errMsg = errJson?.error?.message || errJson?.error || errMsg;
          } catch {}
-         reject({ status: xhr.status, message: errMsg, responseText: xhr.responseText });
+         reject({ status: xhr.status, message: errMsg });
        }
      };
      
@@ -319,9 +318,7 @@ const startOcrProcess = async () => {
           setEditorContent((prev) => prev + (prev ? "\n\n" + heading + "\n\n" : heading + "\n\n"));
           editorContentRef.current += (editorContentRef.current ? "\n\n" + heading + "\n\n" : heading + "\n\n");
         } catch (err: any) {
-          console.error(`Error extracting page ${pageIdx} of ${file.name}:`, err);
-          const errorDetail = `Status: ${err?.status !== undefined ? err.status : 'N/A'}, Response: ${err?.responseText || err?.message || JSON.stringify(err)}`;
-          const errorMsg = `[Lỗi hệ thống: Không thể trích xuất nội dung Trang ${pageIdx}. Chi tiết: ${errorDetail}]`;
+          const errorMsg = `[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này.`;
           setEditorContent((prev) => prev + (prev ? "\n\n" + errorMsg : errorMsg));
           editorContentRef.current += (editorContentRef.current ? "\n\n" + errorMsg : errorMsg);
         }
@@ -333,8 +330,7 @@ const startOcrProcess = async () => {
         try {
           pageFiles = await splitPdfToImages(file, () => {});
         } catch (err: any) {
-          console.error(`Lỗi phân tách PDF ${file.name}:`, err);
-          setFileErrors(prev => ({ ...prev, [i]: err?.message || 'Lỗi phân tách PDF' }));
+          setFileErrors(prev => ({ ...prev, [i]: "[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này." }));
           updateFileStatus(i, "error");
           continue; // Skip to next file
         }
@@ -376,11 +372,9 @@ const startOcrProcess = async () => {
           await sendFileToBackend(file);
           updateFileStatus(i, "completed");
         } catch (err: any) {
-          console.error(`Error at index ${i}:`, err);
-          const errorDetail = `Status: ${err?.status !== undefined ? err.status : 'N/A'}, Response: ${err?.responseText || err?.message || JSON.stringify(err)}`;
           setFileErrors(prev => ({
             ...prev,
-            [i]: errorDetail
+            [i]: "[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này."
           }));
           updateFileStatus(i, "error");
         }
