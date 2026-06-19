@@ -244,6 +244,40 @@ const startOcrProcess = async () => {
           let ocrUrl = "https://api.ocr.space/parse/image";
           const formData = new FormData();
           
+          const executeFetch = () => {
+            fetch(ocrUrl, {
+              method: "POST",
+              headers: ocrSpaceKey ? {} : {
+                "X-Ocr-Provider": "ocr_space"
+              },
+              body: formData
+            })
+            .then(res => {
+              if (!res.ok) {
+                throw new Error(`OCR.space HTTP error ${res.status}`);
+              }
+              return res.json();
+            })
+            .then(data => {
+              let extractedText = "";
+              if (data.ParsedResults?.[0]?.ParsedText) {
+                extractedText = data.ParsedResults[0].ParsedText;
+              } else if (data.text) {
+                extractedText = data.text;
+              } else {
+                throw new Error("Không nhận dạng được văn bản nào từ phản hồi của OCR.space.");
+              }
+              
+              const finalText = extractedText.trim();
+              setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+              editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+              resolveFallback(finalText);
+            })
+            .catch(err => {
+              rejectFallback(err);
+            });
+          };
+
           if (ocrSpaceKey) {
             formData.append("language", "vie");
             formData.append("isOverlayRequired", "false");
@@ -251,46 +285,44 @@ const startOcrProcess = async () => {
             formData.append("scale", "true");
             formData.append("apikey", ocrSpaceKey);
             formData.append("file", file);
+            executeFetch();
           } else {
             ocrUrl = "/api/ocr";
-            const currentMimeType = fileType.startsWith("image/") ? fileType : "image/jpeg";
-            formData.append("base64Image", `data:${currentMimeType};base64,${base64Data}`);
-            formData.append("provider", "ocr_space");
+            const img = new Image();
+            img.onload = () => {
+              URL.revokeObjectURL(img.src);
+              const canvas = document.createElement("canvas");
+              let width = img.width;
+              let height = img.height;
+              
+              // Analytical downscale loop to scale bounds proportionally
+              let scale = 1.0;
+              while (width * scale > 1600 || height * scale > 1600) {
+                scale *= 0.9;
+              }
+              width = Math.round(width * scale);
+              height = Math.round(height * scale);
+              
+              canvas.width = width;
+              canvas.height = height;
+              
+              const ctx = canvas.getContext("2d");
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+              }
+              
+              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+              formData.append("base64Image", compressedBase64);
+              formData.append("provider", "ocr_space");
+              executeFetch();
+            };
+            img.onerror = () => {
+              rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
+            };
+            img.src = URL.createObjectURL(file);
           }
-          
-          fetch(ocrUrl, {
-            method: "POST",
-            headers: ocrSpaceKey ? {} : {
-              "X-Ocr-Provider": "ocr_space"
-            },
-            body: formData
-          })
-          .then(res => {
-           if (!res.ok) {
-             throw new Error(`OCR.space HTTP error ${res.status}`);
-           }
-           return res.json();
-         })
-         .then(data => {
-           let extractedText = "";
-           if (data.ParsedResults?.[0]?.ParsedText) {
-             extractedText = data.ParsedResults[0].ParsedText;
-           } else if (data.text) {
-             extractedText = data.text;
-           } else {
-             throw new Error("Không nhận dạng được văn bản nào từ phản hồi của OCR.space.");
-           }
-           
-           const finalText = extractedText.trim();
-           setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-           editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-           resolveFallback(finalText);
-         })
-         .catch(err => {
-           rejectFallback(err);
-         });
-       });
-     };
+        });
+      };
      
      xhr.onload = () => {
        let shouldFallback = false;
