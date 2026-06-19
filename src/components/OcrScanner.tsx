@@ -567,134 +567,6 @@ const startOcrProcess = async () => {
               </div>
             </div>
 
-            {/* HIỂN THỊ TIẾN TRÌNH KHI ĐANG BATCH PROCESSING OR SLICING */}
-            {(isSlicing || isBatchProcessing) && (
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex flex-col items-center justify-center min-h-[200px]">
-                <div className={`absolute inset-0 bg-gradient-to-r ${isBatchProcessing ? 'from-red-50/50 via-yellow-50/50 to-red-50/50' : 'from-emerald-50/50 via-yellow-50/50 to-emerald-50/50'} animate-pulse`} />
-                
-                <div className="relative z-10 flex flex-col items-center max-w-md text-center space-y-4">
-                  <div className={`relative h-14 w-14 ${isBatchProcessing ? 'bg-red-100 border-red-200' : 'bg-emerald-100 border-emerald-200'} rounded-full flex items-center justify-center border-2 shadow-sm animate-bounce duration-1000`}>
-                    {isBatchProcessing ? (
-                      <Activity className="h-7 w-7 text-red-600 animate-spin duration-3000" />
-                    ) : (
-                      <Layers className="h-7 w-7 text-emerald-600 animate-spin" style={{ animationDuration: "3s" }} />
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest font-sans flex items-center justify-center">
-                      <span>{isBatchProcessing ? 'Đang bóc tách văn bản nghiệp vụ...' : 'Tiền xử lý tập tin tư pháp...'}</span>
-                    </h3>
-                    <p className={`text-xs font-mono mt-1 font-semibold ${isBatchProcessing ? 'text-red-600' : 'text-emerald-600'}`}>
-                      {isBatchProcessing ? batchProgressText : slicingMessage}
-                    </p>
-                    {isBatchProcessing && processingFile && (
-                      <p className="text-[10px] text-slate-500 mt-1">Đang chạy: {processingFile}</p>
-                    )}
-                  </div>
-
-                  {/* Thanh tiến trình Shimmer */}
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-300 relative ${isBatchProcessing ? 'bg-gradient-to-r from-red-600 via-yellow-500 to-red-600' : 'bg-gradient-to-r from-emerald-500 to-yellow-400'}`}
-                      style={{ width: isBatchProcessing ? `${progress}%` : '100%' }}
-                    >
-                      {isBatchProcessing && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
-                      )}
-                    </div>
-                  </div>
-                  
-                  <p className="text-[10px] text-slate-500 italic leading-relaxed">
-                    {isBatchProcessing 
-                      ? "*Hệ thống đang nạp tệp và gửi tín hiệu bóc tách văn bản lên Serverless Edge Node tuần tự."
-                      : "*Tập tin PDF được bóc tách rời rạc thành từng trang ảnh. Hình ảnh đầu vào tự động nén để triệt tiêu lỗi quá tải tải trọng API."
-                    }
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* DANH SÁCH HÀNG ĐỢI (QUEUE LIST) */}
-            {(queuedFiles || []).length > 0 && (
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5">
-                    <Layers className="h-4 w-4 text-emerald-600" />
-                    <span>Hàng đợi xử lý ({(queuedFiles || []).length} tệp)</span>
-                  </h4>
-                  <label className="flex items-center space-x-2 cursor-pointer bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors">
-                    <input 
-                      type="checkbox" 
-                      checked={autoMerge} 
-                      onChange={(e) => setAutoMerge(e.target.checked)}
-                      className="form-checkbox h-4 w-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
-                    />
-                    <span className="text-xs font-bold text-emerald-800">Tự động gộp văn bản</span>
-                  </label>
-                </div>
-
-                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                  {(queuedFiles || []).map((q, index) => {
-                    if (!q) return null;
-                    return (
-                    <div key={q.id || Math.random()} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-emerald-300 transition-colors">
-                       <div className="flex flex-col overflow-hidden">
-                         <span className="text-sm font-semibold text-slate-800 truncate" title={q.file?.name}>{q.file?.name || 'Tệp không xác định'}</span>
-                         <span className="text-[10px] text-slate-500 mt-0.5">
-                           {q.size || ''} 
-                           {(q.slicedPages || []).length > 0 ? ` • ${(q.slicedPages || []).length} trang phân mảnh` : q.message ? ` • ${q.message}` : ''}
-                         </span>
-                       </div>
-                       <div className="flex items-center space-x-3 flex-shrink-0 ml-4">
-                         {q.status === 'error' ? (
-                           <XCircle className="h-4 w-4 text-red-500" />
-                         ) : q.status === 'done' ? (
-                           <CheckCircle2 className="h-4 w-4 text-green-500" />
-                         ) : q.status === 'processing' ? (
-                           <Activity className="h-4 w-4 text-blue-500 animate-spin" />
-                         ) : q.status === 'slicing' ? (
-                           <Layers className="h-4 w-4 text-yellow-500 animate-pulse" />
-                         ) : (
-                           <div className="h-2 w-2 bg-slate-300 rounded-full"></div>
-                         )}
-                         <span 
-                           onClick={() => {
-                             if (q.status === 'error' && fileErrors[index]) {
-                               setErrorModalMsg(`Chi tiết lỗi hệ thống tại trang này: ${fileErrors[index]}`);
-                             }
-                           }}
-                           className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                             q.status === 'error' ? 'cursor-pointer hover:bg-red-200 transition-colors' : ''
-                           } ${
-                           q.status === 'waiting' ? 'bg-slate-200 text-slate-600' :
-                           q.status === 'slicing' ? 'bg-yellow-100 text-yellow-700' :
-                           q.status === 'ready' ? 'bg-emerald-100 text-emerald-700' :
-                           q.status === 'processing' ? 'bg-blue-100 text-blue-700' :
-                           q.status === 'done' ? 'bg-green-100 text-green-700' :
-                           'bg-red-100 text-red-700'
-                         }`}>
-                           {q.status === 'waiting' && 'Đang đợi'}
-                           {q.status === 'slicing' && 'Đang bóc tách'}
-                           {q.status === 'ready' && 'Sẵn sàng'}
-                           {q.status === 'processing' && 'Đang trích xuất'}
-                           {q.status === 'done' && 'Hoàn thành'}
-                           {q.status === 'error' && 'LỖI'}
-                         </span>
-                       </div>
-                    </div>
-                    );
-                  })}
-                </div>
-                
-                {autoMerge && (
-                  <p className="text-[10px] text-slate-500 italic leading-relaxed pt-2 border-t border-slate-100">
-                    *Chế độ Gộp văn bản: Hệ thống sẽ tự động ghép nối kết quả từ tất cả các tệp theo thứ tự hàng đợi, sử dụng chuẩn phân cách hành chính (--- [TRANG KẾ TIẾP] ---).
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* PAGE GRID VIEW - Converted to Balanced Two-Column List Layout */}
             {queuedFiles.some(f => f.pageStates) && (
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-4">
@@ -781,19 +653,6 @@ const startOcrProcess = async () => {
                           </div>
                         </div>
 
-                        {status === 'success' && text && (
-                          <div className="text-[11px] text-slate-600 line-clamp-2 bg-white p-2 rounded border border-slate-150 overflow-hidden font-mono mt-2 select-all">
-                            {text}
-                          </div>
-                        )}
-                        {status === 'error' && error && (
-                          <button
-                            onClick={() => setPageErrorDetail({ pageNum, error })}
-                            className="text-[11px] text-red-650 hover:underline font-semibold mt-2 text-left block"
-                          >
-                            Xem chi tiết lỗi
-                          </button>
-                        )}
                       </div>
                     );
                   };
@@ -806,9 +665,6 @@ const startOcrProcess = async () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Left List: Odd page indexes */}
                         <div className="space-y-3">
-                          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-[11px] text-slate-600 uppercase tracking-wider text-center">
-                            Cột Trái (Trang lẻ)
-                          </div>
                           <div className="space-y-3">
                             {oddPages.map(p => renderPageRow(p.pageNum, p.state))}
                             {oddPages.length === 0 && (
@@ -821,9 +677,6 @@ const startOcrProcess = async () => {
 
                         {/* Right List: Even page indexes */}
                         <div className="space-y-3">
-                          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-[11px] text-slate-600 uppercase tracking-wider text-center">
-                            Cột Phải (Trang chẵn)
-                          </div>
                           <div className="space-y-3">
                             {evenPages.map(p => renderPageRow(p.pageNum, p.state))}
                             {evenPages.length === 0 && (
