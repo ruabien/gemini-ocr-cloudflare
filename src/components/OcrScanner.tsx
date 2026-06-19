@@ -6,6 +6,8 @@
 import React, { useState, useRef } from "react";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle } from "lucide-react";
 import { OcrConfig } from "../types";
+// @ts-ignore
+import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
 
 interface OcrScannerProps {
   onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[] }) => void;
@@ -22,6 +24,7 @@ interface QueuedFile {
   pagesBase64Array: string[];
   message?: string;
   resultData?: any;
+  totalPages?: number;
 }
 
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
@@ -48,7 +51,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [fromPage, setFromPage] = useState<string>("");
   const [toPage, setToPage] = useState<string>("");
 
-  const handleSelectedFiles = (files: File[]) => {
+  const handleSelectedFiles = async (files: File[]) => {
     const newQueued: QueuedFile[] = files.map(f => ({
       id: Math.random().toString(36).substring(2, 11),
       file: f,
@@ -59,6 +62,28 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
     }));
     
     setQueuedFiles(prev => [...prev, ...newQueued]);
+
+    for (const qFile of newQueued) {
+      if (qFile.file.name.toLowerCase().endsWith('.pdf')) {
+        try {
+          const pdfjsLib = await loadPdfJs();
+          const arrayBuffer = await qFile.file.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          const pdf = await loadingTask.promise;
+          const numPages = pdf.numPages;
+          
+          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { 
+            ...f, 
+            message: `PDF: ${numPages} trang`,
+            totalPages: numPages 
+          } : f));
+          
+          await pdf.destroy();
+        } catch (err) {
+          console.error("Lỗi đọc số trang PDF:", err);
+        }
+      }
+    }
   };
 
   // Xử lý sự kiện Drag
@@ -233,51 +258,93 @@ const startOcrProcess = async () => {
     };
 
     // Inside the true sequential handler
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
-      
+    for (let i = 0; i < filesToProcess.length; i++) {
+      const qFile = filesToProcess[i];
+      const file = qFile.file;
+
       // Update UI status for this specific index to "Đang bóc tách"
       updateFileStatus(i, "processing"); 
       setProcessingFile(file.name);
-    
-      try {
-        let attempts = 0;
-        let success = false;
-        while (attempts < 3 && !success) {
-          try {
-            setBatchProgressText(`Đang gửi yêu cầu bóc tách tài liệu ${file.name}...${attempts > 0 ? ` (Thử lại lần ${attempts})` : ''}`);
-            
-            await sendFileToBackend(file);
-            success = true;
-          } catch (err: any) {
-            attempts++;
-            const errMsg = err?.message || '';
-            const isCongested = errMsg.toLowerCase().includes("high demand") || errMsg.toLowerCase().includes("temporary");
-            
-            if (attempts < 3 && isCongested) {
-              await new Promise((res) => setTimeout(res, 2000)); // Wait 2s before retrying
-            } else {
-              throw err; // Out of attempts or not congested, finally mark as error
+
+      // Determine if the file is a PDF
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+
+      // Helper to send a single image/file and handle errors per page
+      const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
+        try {
+          await sendFileToBackend(pageFile);
+          // Append a heading for successful page extraction
+          const heading = `--- KẾT QUẢ TRANG ${pageIdx} ---`;
+          setEditorContent((prev) => prev + (prev ? "\n\n" + heading + "\n\n" : heading + "\n\n"));
+          editorContentRef.current += (editorContentRef.current ? "\n\n" + heading + "\n\n" : heading + "\n\n");
+        } catch (err: any) {
+          console.error(`Error extracting page ${pageIdx} of ${file.name}:`, err);
+          const errorMsg = `[Lỗi hệ thống: Không thể trích xuất nội dung Trang ${pageIdx}. Vui lòng chọn Page Range để quét lại trang này]`;
+          setEditorContent((prev) => prev + (prev ? "\n\n" + errorMsg : errorMsg));
+          editorContentRef.current += (editorContentRef.current ? "\n\n" + errorMsg : errorMsg);
+        }
+      };
+
+      if (isPdf) {
+        // Split PDF into images (all pages)
+        let pageFiles: File[] = [];
+        try {
+          pageFiles = await splitPdfToImages(file, () => {});
+        } catch (err: any) {
+          console.error(`Lỗi phân tách PDF ${file.name}:`, err);
+          setFileErrors(prev => ({ ...prev, [i]: err?.message || 'Lỗi phân tách PDF' }));
+          updateFileStatus(i, "error");
+          continue; // Skip to next file
+        }
+
+        // Resolve page range values
+        let startPage = 1;
+        let endPage = pageFiles.length;
+
+        if (filesToProcess.length === 1) {
+          // Only respect user inputs when a single file is queued
+          if (fromPage) {
+            const parsedFrom = parseInt(fromPage, 10);
+            if (!isNaN(parsedFrom) && parsedFrom >= 1) {
+              startPage = Math.max(1, Math.min(parsedFrom, pageFiles.length));
+            }
+          }
+          if (toPage) {
+            const parsedTo = parseInt(toPage, 10);
+            if (!isNaN(parsedTo) && parsedTo >= 1) {
+              endPage = Math.min(pageFiles.length, Math.max(startPage, parsedTo));
             }
           }
         }
-        
+
+        // Process each page within the selected range
+        for (let p = startPage; p <= endPage; p++) {
+          const pageFile = pageFiles[p - 1]; // zero‑based index
+          setBatchProgressText(`Đang bóc tách ${file.name} - Trang ${p}/${endPage}...`);
+          await processSinglePage(pageFile, p, endPage);
+          // Throttle between pages
+          await new Promise((res) => setTimeout(res, 200));
+        }
+
+        // Mark as completed if no fatal error occurred
         updateFileStatus(i, "completed");
-      } catch (err: any) {
-        console.error(`Error at index ${i}:`, err);
-        
-        setFileErrors(prev => {
-          const qFile = filesToProcess[i];
-          const actualIndex = (queuedFiles || []).findIndex(f => f.id === qFile?.id);
-          const finalIndex = actualIndex >= 0 ? actualIndex : i;
-          return { ...prev, [finalIndex]: err.message || 'Lỗi không xác định' };
-        });
-        
-        updateFileStatus(i, "error");
+      } else {
+        // Non‑PDF file: process normally with a single request
+        try {
+          await sendFileToBackend(file);
+          updateFileStatus(i, "completed");
+        } catch (err: any) {
+          console.error(`Error at index ${i}:`, err);
+          setFileErrors(prev => ({
+            ...prev,
+            [i]: err?.message || 'Lỗi không xác định'
+          }));
+          updateFileStatus(i, "error");
+        }
       }
 
       // Explicit safety throttle delay of 200 ms to prevent Gemini Rate Limit
-      if (i < selectedFiles.length - 1) {
+      if (i < filesToProcess.length - 1) {
         await new Promise((res) => setTimeout(res, 200));
       }
     }
@@ -289,12 +356,12 @@ const startOcrProcess = async () => {
 
       const finalContent = editorContentRef.current;
       if (finalContent && finalContent.trim() !== "") {
-        const outputMime = selectedFiles.length > 0 ? selectedFiles[0]?.type : "application/pdf";
+        const outputMime = filesToProcess.length > 0 ? filesToProcess[0]?.file?.type : "application/pdf";
         onFileLoaded({ 
-          name: selectedFiles.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (selectedFiles[0]?.name || "Tài Liệu OCR"), 
+          name: filesToProcess.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (filesToProcess[0]?.file?.name || "Tài Liệu OCR"), 
           content: finalContent, 
           mimeType: outputMime, 
-          selectedFile: selectedFiles 
+          selectedFile: filesToProcess.map(f => f.file) 
         });
       }
     }, 1000);
@@ -430,7 +497,10 @@ const startOcrProcess = async () => {
                     <div key={q.id || Math.random()} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-emerald-300 transition-colors">
                        <div className="flex flex-col overflow-hidden">
                          <span className="text-sm font-semibold text-slate-800 truncate" title={q.file?.name}>{q.file?.name || 'Tệp không xác định'}</span>
-                         <span className="text-[10px] text-slate-500 mt-0.5">{q.size || ''} {(q.slicedPages || []).length > 0 ? `• ${(q.slicedPages || []).length} trang phân mảnh` : ''}</span>
+                         <span className="text-[10px] text-slate-500 mt-0.5">
+                           {q.size || ''} 
+                           {(q.slicedPages || []).length > 0 ? ` • ${(q.slicedPages || []).length} trang phân mảnh` : q.message ? ` • ${q.message}` : ''}
+                         </span>
                        </div>
                        <div className="flex items-center space-x-3 flex-shrink-0 ml-4">
                          {q.status === 'error' ? (
