@@ -51,40 +51,47 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [fromPage, setFromPage] = useState<string>("");
   const [toPage, setToPage] = useState<string>("");
 
-  const handleSelectedFiles = async (files: File[]) => {
-    const newQueued: QueuedFile[] = files.map(f => ({
-      id: Math.random().toString(36).substring(2, 11),
-      file: f,
-      status: 'waiting',
-      size: `${(f.size / 1024 / 1024).toFixed(2)} MB`,
-      slicedPages: [],
-      pagesBase64Array: []
-    }));
-    
-    setQueuedFiles(prev => [...prev, ...newQueued]);
+const handleSelectedFiles = async (files: File[]) => {
+  // Validation: allow bulk image uploads, but restrict to a single PDF at a time
+  const pdfFilesInSelection = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+  const existingPdfCount = (queuedFiles || []).filter(q => q.file.name.toLowerCase().endsWith('.pdf')).length;
+  const totalPdfCount = existingPdfCount + pdfFilesInSelection.length;
+  if (pdfFilesInSelection.length > 0 && totalPdfCount > 1) {
+    alert("Hệ thống chỉ hỗ trợ xử lý mỗi lần 1 tệp PDF. Vui lòng tải lên từng tệp một để đảm bảo hiệu năng.");
+    return;
+  }
 
-    for (const qFile of newQueued) {
-      if (qFile.file.name.toLowerCase().endsWith('.pdf')) {
-        try {
-          const pdfjsLib = await loadPdfJs();
-          const arrayBuffer = await qFile.file.arrayBuffer();
-          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-          const pdf = await loadingTask.promise;
-          const numPages = pdf.numPages;
-          
-          setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? { 
-            ...f, 
-            message: `PDF: ${numPages} trang`,
-            totalPages: numPages 
-          } : f));
-          
-          await pdf.destroy();
-        } catch (err) {
-          console.error("Lỗi đọc số trang PDF:", err);
-        }
+  const newQueued: QueuedFile[] = files.map(f => ({
+    id: Math.random().toString(36).substring(2, 11),
+    file: f,
+    status: 'waiting',
+    size: `${(f.size / 1024 / 1024).toFixed(2)} MB`,
+    slicedPages: [],
+    pagesBase64Array: []
+  }));
+  
+  setQueuedFiles(prev => [...prev, ...newQueued]);
+
+  for (const qFile of newQueued) {
+    if (qFile.file.name.toLowerCase().endsWith('.pdf')) {
+      try {
+        const pdfjsLib = await loadPdfJs();
+        const arrayBuffer = await qFile.file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const numPages = pdf.numPages;
+        setQueuedFiles(prev => prev.map(f => f.id === qFile.id ? {
+          ...f,
+          message: `PDF: ${numPages} trang`,
+          totalPages: numPages
+        } : f));
+        await pdf.destroy();
+      } catch (err) {
+        console.error("Lỗi đọc số trang PDF:", err);
       }
     }
-  };
+  }
+};
 
   // Xử lý sự kiện Drag
   const handleDrag = (e: React.DragEvent) => {
@@ -138,28 +145,24 @@ const startOcrProcess = async () => {
       setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
     };
 
-    // Retrieve Gemini API key and model
-    let apiKey = "";
-    try {
-      const stored = localStorage.getItem('vks_gemini_api_keys');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          apiKey = parsed[0];
-        }
-      }
-    } catch (e) {}
+ // Retrieve Gemini API keys with round‑robin support
+ const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
+ let keysArray = rawKeys.split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
+ // Fallback to legacy single‑key storage
+ if (keysArray.length === 0) {
+   const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
+   if (fallback) keysArray = [fallback];
+ }
+ if (keysArray.length === 0) {
+   console.error('Missing Gemini API Key.');
+   alert('Missing Gemini API Key. Please configure it in Settings.');
+   setIsBatchProcessing(false);
+   return;
+ }
+ let activeKeyIndex = 0;
+ const getActiveKey = () => keysArray[activeKeyIndex];
 
-    // Check key
-    const userApiKey = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key") || apiKey || "";
-    if (!userApiKey) {
-      console.error('Missing Gemini API Key.');
-      alert('Missing Gemini API Key. Please configure it in Settings.');
-      setIsBatchProcessing(false);
-      return;
-    }
-
-    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
+ const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
     const sendFileToBackend = async (file: File): Promise<void> => {
       let fileType = file.type || '';
@@ -183,78 +186,110 @@ const startOcrProcess = async () => {
         reader.readAsDataURL(file);
       });
 
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-       
-        const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
-        const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${userApiKey}`;
-        xhr.open("POST", googleUrl, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const percentComplete = Math.round((e.loaded / e.total) * 100);
-            setProgress(percentComplete);
-          }
-        };
+ // Helper to perform a Gemini request with a specific key
+ const makeRequest = (key: string) => {
+   return new Promise<void>((resolve, reject) => {
+     const xhr = new XMLHttpRequest();
+     const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
+     const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${key}`;
+     xhr.open("POST", googleUrl, true);
+     xhr.setRequestHeader("Content-Type", "application/json");
+     
+     xhr.upload.onprogress = (e) => {
+       if (e.lengthComputable) {
+         const percentComplete = Math.round((e.loaded / e.total) * 100);
+         setProgress(percentComplete);
+       }
+     };
+     
+     xhr.onload = () => {
+       if (xhr.status >= 200 && xhr.status < 300) {
+         try {
+           const rawText = xhr.responseText;
+           const cleanJson = JSON.parse(rawText);
+           
+           const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
+           const actualText = geminiText || cleanJson.text || rawText;
+           
+           let lines = actualText.split('\n');
+           if (lines.length > 0) {
+             const firstLine = lines[0].trim();
+             const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+             if (isAiIntro) {
+               lines.shift();
+             }
+           }
+           const sanitizedText = lines.join('\n').trim();
+           
+           setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+           editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+           resolve();
+         } catch (e) {
+           reject(e);
+         }
+       } else {
+         // Extract error information
+         let errMsg = `HTTP error ${xhr.status}`;
+         try {
+           const errJson = JSON.parse(xhr.responseText);
+           errMsg = errJson?.error?.message || errJson?.error || errMsg;
+         } catch {}
+         reject({ status: xhr.status, message: errMsg });
+       }
+     };
+     
+     xhr.onerror = () => reject({ status: 0, message: "Network Error" });
+     
+     const payload = {
+       "contents": [{
+         "parts": [
+           {"text": "Bóc tách toàn bộ văn bản trong ảnh này sang tiếng Việt chuẩn."},
+           {"inlineData": {"mimeType": fileType, "data": base64Data}}
+         ]
+       }],
+       "safetySettings": [
+         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+         {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+       ]
+     };
+     
+     xhr.send(JSON.stringify(payload));
+   });
+ };
 
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const rawText = xhr.responseText;
-              const cleanJson = JSON.parse(rawText);
-              
-              // Extract text from Gemini's standard response format
-              const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
-              const actualText = geminiText || cleanJson.text || rawText;
-
-              let lines = actualText.split('\n');
-              if (lines.length > 0) {
-                const firstLine = lines[0].trim();
-                const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
-                if (isAiIntro) {
-                  lines.shift(); // Remove only the rogue chatbot greeting line
-                }
-              }
-              let sanitizedText = lines.join('\n').trim();
-
-              setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-              editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
-              resolve();
-            } catch (e) {
-              reject(e);
-            }
-          } else {
-            // Try to parse the server's JSON error payload for a richer message
-            try {
-              const errJson = JSON.parse(xhr.responseText);
-              const msg = errJson?.error?.message || errJson?.error || `HTTP error ${xhr.status}`;
-              reject(new Error(msg));
-            } catch {
-              reject(new Error(`HTTP error ${xhr.status}`));
-            }
-          }
-        };
-
-        xhr.onerror = () => reject(new Error("Network Error"));
-        
-        const payload = {
-          "contents": [{
-            "parts":[
-              {"text": "Bóc tách toàn bộ văn bản trong ảnh này sang tiếng Việt chuẩn."},
-              {"inlineData": {"mimeType": fileType, "data": base64Data}}
-            ]
-          }],
-          "safetySettings": [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-          ]
-        };
-        
-        xhr.send(JSON.stringify(payload));
-      });
+ // Retry loop with round‑robin key rotation on quota errors
+ const maxAttempts = keysArray.length;
+ let attempts = 0;
+ while (true) {
+   const currentKey = getActiveKey();
+   try {
+     await makeRequest(currentKey);
+     // Success – exit the retry loop
+     return;
+   } catch (err: any) {
+     const msg = err?.message || "";
+     const status = err?.status;
+     const isQuota = status === 429 || /RESOURCE_EXHAUSTED|Quota exceeded/.test(msg);
+     if (isQuota) {
+       // Rotate to next key
+       if (keysArray.length > 1) {
+         activeKeyIndex = (activeKeyIndex + 1) % keysArray.length;
+       }
+       attempts++;
+       if (attempts >= maxAttempts) {
+         // All keys exhausted – pause before next retry cycle
+         console.warn("Tất cả API keys đã hết hạn ngạch. Hệ thống tạm dừng 5-10 giây trước khi thử lại...");
+         await new Promise(r => setTimeout(r, Math.random() * 5000 + 5000));
+         attempts = 0;
+       }
+       continue; // retry with next key
+     }
+     // Non‑quota error – propagate
+     throw err;
+   }
+ }
     };
 
     // Inside the true sequential handler
