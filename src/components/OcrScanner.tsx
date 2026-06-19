@@ -147,12 +147,12 @@ const startOcrProcess = async () => {
 
  // Retrieve Gemini API keys with round‑robin support
  const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
- let keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[^a-zA-Z0-9-_]/g, '').trim()).filter(Boolean);
+ let keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
  // Fallback to legacy single‑key storage
  if (keysArray.length === 0) {
    const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
    if (fallback) {
-     keysArray = [fallback.replace(/[^a-zA-Z0-9-_]/g, '').trim()];
+     keysArray = [fallback.replace(/[\r\n\s]/g, '')];
    }
  }
  if (keysArray.length === 0) {
@@ -163,8 +163,10 @@ const startOcrProcess = async () => {
  }
  let activeKeyIndex = 0;
  const getActiveKey = () => {
-   const key = keysArray[activeKeyIndex];
-   return key ? key.replace(/[^a-zA-Z0-9-_]/g, '').trim() : '';
+   const activeKey = keysArray[activeKeyIndex];
+   if (!activeKey) return '';
+   const cleanKey = activeKey.replace(/[\r\n\s]/g, '');
+   return cleanKey;
  };
 
  const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
