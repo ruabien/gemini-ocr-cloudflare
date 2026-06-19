@@ -237,29 +237,35 @@ const startOcrProcess = async () => {
        }
      };
 
-     const runOcrSpaceFallback = (): Promise<string> => {
-       return new Promise<string>((resolveFallback, rejectFallback) => {
-         const ocrSpaceKey = localStorage.getItem("ocr_space_api_key") || localStorage.getItem("ocrSpaceApiKey") || "";
-         const formData = new FormData();
-         formData.append("language", "vie");
-         formData.append("isOverlayRequired", "false");
-         formData.append("OCREngine", "2");
-         formData.append("scale", "true");
-         
-         let ocrUrl = "https://api.ocr.space/parse/image";
-         if (ocrSpaceKey) {
-           formData.append("apikey", ocrSpaceKey);
-           formData.append("file", file);
-         } else {
-           ocrUrl = "/api/ocr-space";
-           formData.append("file", file);
-         }
-         
-         fetch(ocrUrl, {
-           method: "POST",
-           body: formData
-         })
-         .then(res => {
+      const runOcrSpaceFallback = (): Promise<string> => {
+        return new Promise<string>((resolveFallback, rejectFallback) => {
+          const ocrSpaceKey = localStorage.getItem("ocr_space_api_key") || localStorage.getItem("ocrSpaceApiKey") || "";
+          
+          let ocrUrl = "https://api.ocr.space/parse/image";
+          const formData = new FormData();
+          
+          if (ocrSpaceKey) {
+            formData.append("language", "vie");
+            formData.append("isOverlayRequired", "false");
+            formData.append("OCREngine", "2");
+            formData.append("scale", "true");
+            formData.append("apikey", ocrSpaceKey);
+            formData.append("file", file);
+          } else {
+            ocrUrl = "/api/ocr";
+            const currentMimeType = fileType.startsWith("image/") ? fileType : "image/jpeg";
+            formData.append("base64Image", `data:${currentMimeType};base64,${base64Data}`);
+            formData.append("provider", "ocr_space");
+          }
+          
+          fetch(ocrUrl, {
+            method: "POST",
+            headers: ocrSpaceKey ? {} : {
+              "X-Ocr-Provider": "ocr_space"
+            },
+            body: formData
+          })
+          .then(res => {
            if (!res.ok) {
              throw new Error(`OCR.space HTTP error ${res.status}`);
            }
