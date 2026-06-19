@@ -1,4 +1,6 @@
 /* ==== MOCK DATA ==== */
+let ocrKeyRoundRobinIndex = 0;
+let ocrSpaceKeyRoundRobinIndex = 0;
 const MOCK_LEGAL_DOC_TEXT = `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
 Độc lập - Tự do - Hạnh phúc
 ---------------
@@ -72,15 +74,22 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
     let success = false;
     let lastErrorMsg = "";
 
+    // Xoay tua key bắt đầu từ ocrSpaceKeyRoundRobinIndex
+    const totalKeys = ocrSpaceKeys.length;
+    const startIndex = ocrSpaceKeyRoundRobinIndex % totalKeys;
+
     try {
-      for (let k = 0; k < ocrSpaceKeys.length; k++) {
-        const selectedOcrKey = ocrSpaceKeys[k];
+      for (let attempt = 0; attempt < totalKeys; attempt++) {
+        const currentIndex = (startIndex + attempt) % totalKeys;
+        const selectedOcrKey = ocrSpaceKeys[currentIndex];
         try {
           const formData = new FormData();
           const currentMimeType = mimeType || "image/png";
           formData.append("base64Image", `data:${currentMimeType};base64,${virtualBase64}`);
           formData.append("language", "vie");
           formData.append("isOverlayRequired", "false");
+          formData.append("OCREngine", "2");
+          formData.append("scale", "true");
 
           const ocrSpaceResponse = await fetch("https://api.ocr.space/parse/image", {
             method: "POST",
@@ -97,7 +106,8 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
             ocrSpaceData.IsErroredOnProcessing ||
             ocrSpaceData.OCRExitCode === 99 ||
             !ocrSpaceData.ParsedResults ||
-            ocrSpaceData.ParsedResults.length === 0
+            ocrSpaceData.ParsedResults.length === 0 ||
+            (ocrSpaceData.ErrorMessage && String(ocrSpaceData.ErrorMessage).includes("E201"))
           ) {
             const errMsg = Array.isArray(ocrSpaceData.ErrorMessage)
               ? ocrSpaceData.ErrorMessage.join(", ")
@@ -107,13 +117,16 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
 
           pageText = ocrSpaceData.ParsedResults[0].ParsedText;
           success = true;
+          // Ghi nhớ key thành công tiếp theo để tối ưu round-robin
+          ocrSpaceKeyRoundRobinIndex = (currentIndex + 1) % totalKeys;
           break;
         } catch (err: any) {
           console.warn(
-            `OCR.space API Key chỉ số ${k} thất bại ở trang ${pageIndex}:`,
+            `OCR.space API Key chỉ số ${currentIndex} thất bại ở trang ${pageIndex}:`,
             err.message || err
           );
           lastErrorMsg = err.message || String(err);
+          // Cho phép thử key tiếp theo bằng cách tăng vòng lặp
         }
       }
 
@@ -156,12 +169,11 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       );
     }
 
-    // Setup OCR.space rotation keys properly from context.env/env
-    const ocrSpaceKeys = [];
-    if (env) {
-      if (env.OCR_SPACE_API_KEY) ocrSpaceKeys.push(env.OCR_SPACE_API_KEY);
-      if (env.OCR_SPACE_API_KEY_1) ocrSpaceKeys.push(env.OCR_SPACE_API_KEY_1);
-    }
+let ocrSpaceKeys: string[] = [];
+if (env) {
+  if (env.OCR_SPACE_API_KEY) ocrSpaceKeys.push(env.OCR_SPACE_API_KEY);
+  if (env.OCR_SPACE_API_KEY_1) ocrSpaceKeys.push(env.OCR_SPACE_API_KEY_1);
+}
 
     // Bóc tách danh sách Gemini Keys từ headers
     let geminiKeys: string[] = [];

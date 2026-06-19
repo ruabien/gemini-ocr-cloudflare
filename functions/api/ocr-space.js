@@ -33,38 +33,7 @@ export async function onRequestOptions(context) {
 }
 
 // Warm-start in-memory cache for round-robin key rotation
-let lastSuccessfulKeyIndex = 0;
-
-/**
- * Lấy danh sách các API Keys OCR.space có sẵn và hợp lệ từ môi trường (env)
- */
-function getAvailableOcrSpaceKeys(env) {
-  const keys = [];
-  
-  // 1. Thử lấy từ key mặc định/legacy
-  if (env.OCR_SPACE_API_KEY && env.OCR_SPACE_API_KEY.trim()) {
-    keys.push({ key: env.OCR_SPACE_API_KEY.trim(), name: "OCR_SPACE_API_KEY" });
-  }
-
-  // 2. Thử các key OCR_SPACE_API_KEY_1 và OCR_SPACE_API_KEY_2
-  if (env.OCR_SPACE_API_KEY_1 && env.OCR_SPACE_API_KEY_1.trim()) {
-    keys.push({ key: env.OCR_SPACE_API_KEY_1.trim(), name: "OCR_SPACE_API_KEY_1" });
-  }
-  if (env.OCR_SPACE_API_KEY_2 && env.OCR_SPACE_API_KEY_2.trim()) {
-    keys.push({ key: env.OCR_SPACE_API_KEY_2.trim(), name: "OCR_SPACE_API_KEY_2" });
-  }
-
-  // Loại bỏ các key trùng lặp
-  const uniqueKeys = [];
-  const seen = new Set();
-  for (const item of keys) {
-    if (!seen.has(item.key)) {
-      seen.add(item.key);
-      uniqueKeys.push(item);
-    }
-  }
-  return uniqueKeys;
-}
+let localIndexPointer = 0;
 
 /**
  * Phân loại lỗi có được phép xoay key hay không
@@ -202,17 +171,17 @@ export async function onRequestPost(context) {
       );
     }
 
-    const keys = getAvailableOcrSpaceKeys(env);
+    const ocrSpaceKeys = [env.OCR_SPACE_API_KEY, env.OCR_SPACE_API_KEY_1].filter(Boolean);
 
     // Log dev mode: số lượng key được load
-    console.log(`[OCR.space Key Pool Info] Loaded keys count: ${keys.length}`);
+    console.log(`[OCR.space Key Pool Info] Loaded keys count: ${ocrSpaceKeys.length}`);
 
-    if (keys.length === 0) {
+    if (ocrSpaceKeys.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: false,
           errorCode: 'OCR_SPACE_NOT_CONFIGURED', 
-          message: 'OCR.space chưa được cấu hình. Vui lòng thiết lập OCR_SPACE_API_KEY_1 trong biến môi trường.' 
+          message: 'OCR.space chưa được cấu hình. Vui lòng thiết lập OCR_SPACE_API_KEY và OCR_SPACE_API_KEY_1 trong biến môi trường.' 
         }), 
         {
           status: 400,
@@ -404,36 +373,39 @@ export async function onRequestPost(context) {
     let retryCount = 0;
     let keyIndexUsed = -1;
     
-    const totalKeys = keys.length;
-    const startIndex = lastSuccessfulKeyIndex % totalKeys;
+    const totalKeys = ocrSpaceKeys.length;
+    let startIndex = localIndexPointer % totalKeys;
 
     for (let attempt = 0; attempt < totalKeys; attempt++) {
       const currentIndex = (startIndex + attempt) % totalKeys;
-      const keyObj = keys[currentIndex];
+      const activeKey = ocrSpaceKeys[currentIndex];
       keyIndexUsed = currentIndex;
 
       // Log dev mode: key index đang thử
       console.log(`[OCR.space Attempt] keyIndex: ${currentIndex}`);
 
-      const res = await runOcrWithKey(keyObj, currentLanguage);
+      const res = await runOcrWithKey({ key: activeKey }, currentLanguage);
 
       if (res.success) {
         success = true;
         finalResult = res.text;
 
         // Ghi nhớ key thành công tiếp theo để tối ưu round-robin
-        lastSuccessfulKeyIndex = (currentIndex + 1) % totalKeys;
+        localIndexPointer = (currentIndex + 1) % totalKeys;
         break;
       } else {
         retryCount++;
-        failReasons.push(`Key #${currentIndex} (${keyObj.name}): ${res.code} - ${res.message}`);
+        failReasons.push(`Key #${currentIndex}: ${res.code} - ${res.message}`);
 
         // Log dev mode: reason fail (nếu fail)
         console.log(`[OCR.space Attempt Failed] keyIndex: ${currentIndex}, reason: ${res.code} (${res.message})`);
 
         // Kiểm tra xem lỗi này có được phép xoay sang key khác không
         const rotatable = isRotatableError(res);
-        if (!rotatable) {
+        if (rotatable) {
+          // Xoay sang token tiếp theo
+          localIndexPointer = (localIndexPointer + 1) % totalKeys;
+        } else {
           // Báo lỗi fail fast ngay lập tức, không xoay key tiếp
           finalErrorResponse = new Response(
             JSON.stringify({
