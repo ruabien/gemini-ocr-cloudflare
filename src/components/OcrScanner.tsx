@@ -240,23 +240,23 @@ const startOcrProcess = async () => {
 const runOcrSpaceFallback = (): Promise<string> => {
           return new Promise<string>((resolveFallback, rejectFallback) => {
               // 1. Fetch backend keys from the lightweight secure token gateway
-              fetch("/api/ocr")
-                .then(res => {
-                  if (!res.ok) {
-                    throw new Error("Failed to retrieve OCR.space credentials from API gateway");
-                  }
-                  return res.json();
-                })
-                .then((keysData: any) => {
-                  const primaryKey = keysData?.primary || localStorage.getItem("ocr_space_api_key") || "";
-                  const secondaryKey = keysData?.backup || localStorage.getItem("ocr_space_api_key_1") || "";
-                  const ocrKeys: string[] = [];
-                  if (primaryKey) ocrKeys.push(primaryKey);
-                  if (secondaryKey) ocrKeys.push(secondaryKey);
-                  
-                  if (ocrKeys.length === 0) {
-                    throw new Error("Missing OCR.space API Key. Configure keys in your environment secrets or locally.");
-                  }
+               fetch("/api/ocr")
+                 .then(res => {
+                   if (!res.ok) {
+                     throw new Error("Failed to retrieve OCR.space credentials from API gateway");
+                   }
+                   return res.json();
+                 })
+                 .then((keysData: any) => {
+                   const primaryKey = keysData?.primary || localStorage.getItem("ocr_space_api_key") || "";
+                   const secondaryKey = keysData?.backup || localStorage.getItem("ocr_space_api_key_1") || "";
+                   const ocrKeys: string[] = [];
+                   if (primaryKey) ocrKeys.push(primaryKey);
+                   if (secondaryKey) ocrKeys.push(secondaryKey);
+                   
+                   if (ocrKeys.length === 0) {
+                     throw new Error("Missing OCR.space API Key. Configure keys in your environment secrets or locally.");
+                   }
                   
                   // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
                   const img = new Image();
