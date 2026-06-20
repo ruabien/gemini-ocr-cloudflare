@@ -305,16 +305,15 @@ const runOcrSpaceFallback = (): Promise<string> => {
                     }
                     
                     // 3. Perform a single OCR.space request with strict FormData
+                    const compressedBase64 = lightBase64;
+                    const pureBase64 = compressedBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+                    
                     const cleanFormData = new FormData();
                     const apikeyToUse = primaryKey || "helloworld";
                     cleanFormData.append('apikey', String(apikeyToUse).trim());
                     cleanFormData.append('language', 'vie');
                     cleanFormData.append('isOverlayRequired', 'false');
-                    const compressedBase64 = lightBase64;
-                    const rawBase64 = compressedBase64.startsWith('data:')
-                      ? compressedBase64
-                      : `data:image/jpeg;base64,${compressedBase64}`;
-                    cleanFormData.append('base64Image', rawBase64);
+                    cleanFormData.append('base64Image', pureBase64); // Strict pure alphanumeric base64 string
                     cleanFormData.append('OcrEngine', '2');
 
                     fetch("https://api.ocr.space/parse/image", {
