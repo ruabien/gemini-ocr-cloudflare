@@ -301,12 +301,14 @@ const runOcrSpaceFallback = (): Promise<string> => {
                     
                     const attemptFetch = () => {
                       const currentKey = ocrKeys[currentKeyIndex];
-                      const ocrFormData = new FormData();
-                      ocrFormData.append('apikey', currentKey);
-                      ocrFormData.append('language', 'vie');
-                      ocrFormData.append('OcrEngine', '2');
-                      ocrFormData.append('isOverlayRequired', 'false');
-                      ocrFormData.append('base64Image', lightBase64);
+                    const ocrFormData = new FormData();
+                    ocrFormData.append('apikey', currentKey);
+                    ocrFormData.append('language', 'vie');
+                    ocrFormData.append('OcrEngine', '2');
+                    ocrFormData.append('isOverlayRequired', 'false');
+                    // Strip data URI prefix before appending
+                    const rawBase64String = lightBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+                    ocrFormData.append('base64Image', rawBase64String);
                       
                       fetch("https://api.ocr.space/parse/image", {
                         method: "POST",
