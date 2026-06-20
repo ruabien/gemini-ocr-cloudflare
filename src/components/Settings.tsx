@@ -40,6 +40,15 @@ export default function SettingsComponent({
   const [showKey, setShowKey] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [upgradeAnim, setUpgradeAnim] = useState(false);
+  const [geminiModel, setGeminiModel] = useState<string>(() => {
+    return localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
+  });
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const model = e.target.value;
+    setGeminiModel(model);
+    localStorage.setItem("gemini_model_alias", model);
+  };
 
   // Lưu khoá API
   const handleSaveApiKey = (e: React.FormEvent) => {
@@ -198,13 +207,28 @@ export default function SettingsComponent({
               )}
             </div>
 
+            {/* CẤU HÌNH MODEL GEMINI */}
+            <div className="space-y-3 pt-3 border-t border-slate-100">
+              <label className="block text-[11px] font-bold text-slate-650 text-slate-600 uppercase tracking-wide">
+                Gemini Model
+              </label>
+              <select
+                value={geminiModel}
+                onChange={handleModelChange}
+                className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-3.5 pr-3.5 text-sm text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all cursor-pointer"
+              >
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Mặc định)</option>
+                <option value="gemini-3.5-flash">Gemini 3.5 Flash (Mới nhất)</option>
+              </select>
+            </div>
+
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
               <h4 className="text-xs font-bold text-slate-750 text-slate-800 flex items-center space-x-1.5">
                 <AlertCircle className="h-4 w-4 text-red-500" />
                 <span>Lưu ý khi sử dụng:</span>
               </h4>
               <ul className="list-disc pl-4 text-[10.5px] text-slate-500 space-y-1.5 leading-relaxed">
-                <li>Key được sử dụng trực tiếp để gửi truy vấn OCR/Phân tích tới mô hình <code className="font-mono text-slate-850 bg-slate-200 px-1 py-0.5 rounded">gemini-3.5-flash</code>.</li>
+                <li>Key được sử dụng trực tiếp để gửi truy vấn OCR/Phân tích tới mô hình <code className="font-mono text-slate-850 bg-slate-200 px-1 py-0.5 rounded">{geminiModel}</code>.</li>
                 <li>Bạn có thể lấy Gemini API Key hoàn toàn miễn phí từ <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="text-red-650 text-red-600 font-bold hover:underline">Google AI Studio</a>.</li>
                 <li>Nếu chưa cấu hình Key, hệ thống sẽ chỉ khả dụng cho các tệp hồ sơ mẫu pháp quy có sẵn.</li>
               </ul>
