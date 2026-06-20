@@ -237,99 +237,128 @@ const startOcrProcess = async () => {
        }
      };
 
-      const runOcrSpaceFallback = (): Promise<string> => {
-        return new Promise<string>((resolveFallback, rejectFallback) => {
-          const ocrSpaceKey = localStorage.getItem("ocr_space_api_key") || localStorage.getItem("ocrSpaceApiKey") || "";
-          
-          let ocrUrl = "https://api.ocr.space/parse/image";
-          const formData = new FormData();
-          
-          const executeFetch = () => {
-            fetch(ocrUrl, {
-              method: "POST",
-              headers: ocrSpaceKey ? {} : {
-                "X-Ocr-Provider": "ocr_space"
-              },
-              body: formData
-            })
-            .then(res => {
-              if (!res.ok) {
-                throw new Error(`OCR.space HTTP error ${res.status}`);
-              }
-              return res.json();
-            })
-            .then(data => {
-              let extractedText = "";
-              if (data.ParsedResults?.[0]?.ParsedText) {
-                extractedText = data.ParsedResults[0].ParsedText;
-              } else if (data.text) {
-                extractedText = data.text;
-              } else {
-                throw new Error("Không nhận dạng được văn bản nào từ phản hồi của OCR.space.");
-              }
-              
-              const finalText = extractedText.trim();
-              setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-              editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-              resolveFallback(finalText);
-            })
-            .catch(err => {
-              rejectFallback(err);
+const runOcrSpaceFallback = (): Promise<string> => {
+          return new Promise<string>((resolveFallback, rejectFallback) => {
+              // 1. Fetch backend keys from the lightweight secure token gateway
+              fetch("/api/ocr")
+                .then(res => {
+                  if (!res.ok) {
+                    throw new Error("Failed to retrieve OCR.space credentials from API gateway");
+                  }
+                  return res.json();
+                })
+                .then((keysData: any) => {
+                  const primaryKey = keysData?.primary || localStorage.getItem("ocr_space_api_key") || "";
+                  const secondaryKey = keysData?.backup || localStorage.getItem("ocr_space_api_key_1") || "";
+                  const ocrKeys: string[] = [];
+                  if (primaryKey) ocrKeys.push(primaryKey);
+                  if (secondaryKey) ocrKeys.push(secondaryKey);
+                  
+                  if (ocrKeys.length === 0) {
+                    throw new Error("Missing OCR.space API Key. Configure keys in your environment secrets or locally.");
+                  }
+                  
+                  // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
+                  const img = new Image();
+                  img.onload = () => {
+                    URL.revokeObjectURL(img.src);
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDimension = 1200;
+                    
+                    if (width > maxDimension || height > maxDimension) {
+                      if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                      } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                      }
+                    }
+                    
+                    const downscaledCanvas = document.createElement("canvas");
+                    downscaledCanvas.width = width;
+                    downscaledCanvas.height = height;
+                    
+                    const ctx = downscaledCanvas.getContext("2d");
+                    if (ctx) {
+                      ctx.drawImage(img, 0, 0, width, height);
+                    }
+                    
+                    let lightBase64 = downscaledCanvas.toDataURL('image/jpeg', 0.7);
+                    if (lightBase64 && !lightBase64.startsWith("data:image/jpeg;base64,")) {
+                      const rawBase64 = lightBase64.includes(",") ? lightBase64.split(",")[1] : lightBase64;
+                      lightBase64 = `data:image/jpeg;base64,${rawBase64}`;
+                    }
+                    
+                    // 3. Initiate fetch loop with keys directly from the browser window
+                    let currentKeyIndex = 0;
+                    
+                    const attemptFetch = () => {
+                      const currentKey = ocrKeys[currentKeyIndex];
+                      const formData = new FormData();
+                      formData.append("language", "vie");
+                      formData.append("isOverlayRequired", "false");
+                      formData.append("OCREngine", "2");
+                      formData.append("scale", "true");
+                      formData.append("apikey", currentKey);
+                      formData.append("base64Image", lightBase64);
+                      
+                      fetch("https://api.ocr.space/parse/image", {
+                        method: "POST",
+                        body: formData
+                      })
+                      .then(res => {
+                        if (!res.ok) {
+                          throw new Error(`OCR.space HTTP error ${res.status}`);
+                        }
+                        return res.json();
+                      })
+                      .then(data => {
+                        if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
+                          const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || "");
+                          throw new Error(errMsgs || "OCR.space processing error");
+                        }
+                        
+                        let extractedText = "";
+                        if (data.ParsedResults?.[0]?.ParsedText) {
+                          extractedText = data.ParsedResults[0].ParsedText;
+                        } else if (data.text) {
+                          extractedText = data.text;
+                        } else {
+                          throw new Error("Không nhận dạng được văn bản nào từ phản hồi của OCR.space.");
+                        }
+                        
+                        const finalText = extractedText.trim();
+                        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+                        resolveFallback(finalText);
+                      })
+                      .catch(err => {
+                        const msg = err?.message || "";
+                        // If quota limit or rate limit error, rotate and retry once
+                        const isQuotaOrLimitError = /RESOURCE_EXHAUSTED|Quota exceeded|429|limit/i.test(msg);
+                        if (isQuotaOrLimitError && currentKeyIndex + 1 < ocrKeys.length) {
+                          currentKeyIndex++;
+                          attemptFetch();
+                        } else {
+                          rejectFallback(err);
+                        }
+                      });
+                    };
+                    
+                    attemptFetch();
+                  };
+                  img.onerror = () => {
+                    rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
+                  };
+                  img.src = URL.createObjectURL(file);
+                })
+                .catch(err => {
+                  rejectFallback(err);
+                });
             });
-          };
-
-          if (ocrSpaceKey) {
-            formData.append("language", "vie");
-            formData.append("isOverlayRequired", "false");
-            formData.append("OCREngine", "2");
-            formData.append("scale", "true");
-            formData.append("apikey", ocrSpaceKey);
-            formData.append("file", file);
-            executeFetch();
-          } else {
-            ocrUrl = "/api/ocr";
-            const img = new Image();
-            img.onload = () => {
-              URL.revokeObjectURL(img.src);
-              let width = img.width;
-              let height = img.height;
-              const maxDimension = 1200;
-              
-              if (width > maxDimension || height > maxDimension) {
-                if (width > height) {
-                  height = Math.round((height * maxDimension) / width);
-                  width = maxDimension;
-                } else {
-                  width = Math.round((width * maxDimension) / height);
-                  height = maxDimension;
-                }
-              }
-              
-              const downscaledCanvas = document.createElement("canvas");
-              downscaledCanvas.width = width;
-              downscaledCanvas.height = height;
-              
-              const ctx = downscaledCanvas.getContext("2d");
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, width, height);
-              }
-              
-              let lightBase64 = downscaledCanvas.toDataURL('image/jpeg', 0.7);
-              if (lightBase64 && !lightBase64.startsWith("data:image/jpeg;base64,")) {
-                const rawBase64 = lightBase64.includes(",") ? lightBase64.split(",")[1] : lightBase64;
-                lightBase64 = `data:image/jpeg;base64,${rawBase64}`;
-              }
-              formData.append("base64Image", lightBase64);
-              formData.append("provider", "ocr_space");
-              executeFetch();
-            };
-            img.onerror = () => {
-              rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
-            };
-            img.src = URL.createObjectURL(file);
-          }
-        });
-      };
+        };
      
      xhr.onload = () => {
        let shouldFallback = false;
