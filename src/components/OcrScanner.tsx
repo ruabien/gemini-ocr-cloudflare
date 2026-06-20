@@ -54,6 +54,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isProcessingRef = useRef(false);
+  const pageProcessingLockRef = useRef<{ [key: number]: boolean }>({});
 
   // Range State
   const [fromPage, setFromPage] = useState<string>("");
@@ -209,10 +210,17 @@ const startOcrProcess = async () => {
 
     const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
-    const sendFileToBackend = async (file: File): Promise<string> => {
-      // CLEANUP AND SINGLE-SHOT FETCH FOR BOTH GEMINI AND OCR.SPACE
-      console.log("--- EXECUTING SINGLE OCR RUN FOR PAGE 6 ---");
-      let fileType = file.type || '';
+    const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
+      const pageNum = pageNumParam; // or dynamic page index variable
+      if (pageProcessingLockRef.current[pageNum]) {
+          console.log(`[MUTEX] Blocked duplicated concurrent run attempt for Page ${pageNum}`);
+          return "";
+      }
+      pageProcessingLockRef.current[pageNum] = true;
+
+      console.log(`--- EXECUTING SINGLE OCR RUN FOR PAGE ${pageNum} ---`);
+      try {
+        let fileType = file.type || '';
       if (!fileType) {
         if (file.name.toLowerCase().endsWith('.pdf')) {
           fileType = 'application/pdf';
@@ -487,7 +495,11 @@ const startOcrProcess = async () => {
 
       // strictly once per manual action: direct single request, no retry loop or key rotation cycle
       const currentKey = getActiveKey();
-      return await makeRequest(currentKey);
+      const result = await makeRequest(currentKey);
+      return result;
+      } finally {
+        pageProcessingLockRef.current[pageNum] = false;
+      }
     };
 
     // Inside the true sequential handler
@@ -518,7 +530,7 @@ const startOcrProcess = async () => {
       const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
         updatePageStatus(qFile.id, pageIdx, 'processing');
         try {
-          const extractedText = await sendFileToBackend(pageFile);
+          const extractedText = await sendFileToBackend(pageFile, pageIdx);
           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
         } catch (err: any) {
           const errorMsgObj = typeof err === 'object' && err?.message ? err.message : String(err);
@@ -604,7 +616,7 @@ const startOcrProcess = async () => {
       } else {
         // Non‑PDF file: process normally with a single request
         try {
-          await sendFileToBackend(file);
+          await sendFileToBackend(file, 1);
           updateFileStatus(i, "completed");
         } catch (err: any) {
           setFileErrors(prev => ({
