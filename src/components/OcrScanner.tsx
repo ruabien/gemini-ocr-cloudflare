@@ -251,8 +251,8 @@ const runOcrSpaceFallback = (): Promise<string> => {
                    // Ensure it correctly logs and checks data.primary and data.backup
                    console.log("Fetched OCR keys:", { hasPrimary: !!data?.primary, hasBackup: !!data?.backup });
                    
-                   const primaryKey = data?.primary || localStorage.getItem("ocr_space_api_key") || "";
-                   const secondaryKey = data?.backup || localStorage.getItem("ocr_space_api_key_1") || "";
+                   const primaryKey = (data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || "");
+                   const secondaryKey = (data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || "");
                    const ocrKeys: string[] = [];
                    if (primaryKey) ocrKeys.push(primaryKey);
                    if (secondaryKey) ocrKeys.push(secondaryKey);
@@ -291,7 +291,7 @@ const runOcrSpaceFallback = (): Promise<string> => {
                     }
                     
                     let lightBase64 = downscaledCanvas.toDataURL('image/jpeg', 0.7);
-                    if (lightBase64 && !lightBase64.startsWith("data:image/jpeg;base64,")) {
+                    if (lightBase64) {
                       const rawBase64 = lightBase64.includes(",") ? lightBase64.split(",")[1] : lightBase64;
                       lightBase64 = `data:image/jpeg;base64,${rawBase64}`;
                     }
@@ -304,6 +304,7 @@ const runOcrSpaceFallback = (): Promise<string> => {
                       const ocrFormData = new FormData();
                       ocrFormData.append('apikey', currentKey);
                       ocrFormData.append('language', 'vie');
+                      ocrFormData.append('OcrEngine', '2');
                       ocrFormData.append('isOverlayRequired', 'false');
                       ocrFormData.append('base64Image', lightBase64);
                       
