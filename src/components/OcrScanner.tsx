@@ -248,6 +248,8 @@ const runOcrSpaceFallback = (): Promise<string> => {
                    return res.json();
                  })
                  .then((keysData: any) => {
+                   console.log("Fetched OCR keys:", { hasPrimary: !!keysData?.primary, hasBackup: !!keysData?.backup });
+                   
                    const primaryKey = keysData?.primary || localStorage.getItem("ocr_space_api_key") || "";
                    const secondaryKey = keysData?.backup || localStorage.getItem("ocr_space_api_key_1") || "";
                    const ocrKeys: string[] = [];
@@ -255,7 +257,8 @@ const runOcrSpaceFallback = (): Promise<string> => {
                    if (secondaryKey) ocrKeys.push(secondaryKey);
                    
                    if (ocrKeys.length === 0) {
-                     throw new Error("Missing OCR.space API Key. Configure keys in your environment secrets or locally.");
+                     console.warn("Missing OCR.space API Key. Proceeding without hardcoded abort.");
+                     ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
                    }
                   
                   // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client

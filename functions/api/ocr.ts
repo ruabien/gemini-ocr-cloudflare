@@ -16,31 +16,20 @@ const getCorsHeaders = (request: Request) => {
   };
 };
 
-export async function onRequestOptions(context: any) {
-  return new Response(null, {
-    status: 204,
-    headers: getCorsHeaders(context.request)
-  });
-}
-
-export async function onRequestGet(context: any) {
+export const onRequest = async (context: { request: Request; env: { OCR_SPACE_API_KEY: string; OCR_SPACE_API_KEY_1: string } }) => {
   const corsHeaders = getCorsHeaders(context.request);
-  return new Response(JSON.stringify({ 
-    primary: context.env.OCR_SPACE_API_KEY || "", 
-    backup: context.env.OCR_SPACE_API_KEY_1 || "" 
-  }), { 
-    status: 200, 
-    headers: { "Content-Type": "application/json", ...corsHeaders } 
-  });
-}
+  if (context.request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
+  }
 
-export async function onRequestPost(context: any) {
-  const corsHeaders = getCorsHeaders(context.request);
-  return new Response(JSON.stringify({ 
-    primary: context.env.OCR_SPACE_API_KEY || "", 
-    backup: context.env.OCR_SPACE_API_KEY_1 || "" 
-  }), { 
-    status: 200, 
-    headers: { "Content-Type": "application/json", ...corsHeaders } 
+  const primary = context.env.OCR_SPACE_API_KEY || "";
+  const backup = context.env.OCR_SPACE_API_KEY_1 || "";
+  
+  return new Response(JSON.stringify({ primary, backup }), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ...corsHeaders }
   });
-}
+};
