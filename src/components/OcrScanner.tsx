@@ -251,8 +251,16 @@ const runOcrSpaceFallback = (): Promise<string> => {
                    // Ensure it correctly logs and checks data.primary and data.backup
                    console.log("Fetched OCR keys:", { hasPrimary: !!data?.primary, hasBackup: !!data?.backup });
                    
-                   const primaryKey = (data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || "");
-                   const secondaryKey = (data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || "");
+                   const fetchedKeys = data || {};
+                   const cleanKey = (key: any) => {
+                     if (!key) return "";
+                     const s = String(key).trim();
+                     if (s === "undefined" || s === "null" || s === "") return "";
+                     return s;
+                   };
+
+                   const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
+                   const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
                    const ocrKeys: string[] = [];
                    if (primaryKey) ocrKeys.push(primaryKey);
                    if (secondaryKey) ocrKeys.push(secondaryKey);
@@ -300,23 +308,32 @@ const runOcrSpaceFallback = (): Promise<string> => {
                     let currentKeyIndex = 0;
                     
                     const attemptFetch = () => {
-                      const currentKey = ocrKeys[currentKeyIndex];
-                    const ocrFormData = new FormData();
-                    ocrFormData.append('apikey', currentKey);
-                    ocrFormData.append('language', 'vie');
-                    ocrFormData.append('OcrEngine', '2');
-                    ocrFormData.append('isOverlayRequired', 'false');
-                    // Strip data URI prefix before appending
-                    const rawBase64String = lightBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-                    ocrFormData.append('base64Image', rawBase64String);
+                      let currentKey = ocrKeys[currentKeyIndex];
+                      if (!currentKey || currentKey === "undefined" || currentKey === "null") {
+                        currentKey = "helloworld";
+                      }
+                      const ocrFormData = new FormData();
+                      
+                      console.log("CRITICAL DEBUG - Injecting API key string:", fetchedKeys.primary ? "Valid Length" : "EMPTY", typeof fetchedKeys.primary);
+                      
+                      ocrFormData.append('apikey', currentKey);
+                      ocrFormData.append('language', 'vie');
+                      ocrFormData.append('OcrEngine', '2');
+                      ocrFormData.append('isOverlayRequired', 'false');
+                      // Strip data URI prefix before appending
+                      const rawBase64String = lightBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+                      ocrFormData.append('base64Image', rawBase64String);
                       
                       fetch("https://api.ocr.space/parse/image", {
                         method: "POST",
                         body: ocrFormData
                       })
-                      .then(res => {
+                      .then(async res => {
                         if (!res.ok) {
-                          throw new Error(`OCR.space HTTP error ${res.status}`);
+                          const badRequestText = await res.text();
+                          console.error("OCR.space Error response:", badRequestText);
+                          alert(`OCR.space Error: ${res.status} - ${badRequestText}`);
+                          throw new Error(`OCR.space HTTP error ${res.status}: ${badRequestText}`);
                         }
                         return res.json();
                       })
