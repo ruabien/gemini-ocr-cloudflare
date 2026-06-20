@@ -291,28 +291,31 @@ const startOcrProcess = async () => {
             const img = new Image();
             img.onload = () => {
               URL.revokeObjectURL(img.src);
-              const canvas = document.createElement("canvas");
               let width = img.width;
               let height = img.height;
+              const maxDimension = 1200;
               
-              // Analytical downscale loop to scale bounds proportionally
-              let scale = 1.0;
-              while (width * scale > 1600 || height * scale > 1600) {
-                scale *= 0.9;
+              if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                  height = Math.round((height * maxDimension) / width);
+                  width = maxDimension;
+                } else {
+                  width = Math.round((width * maxDimension) / height);
+                  height = maxDimension;
+                }
               }
-              width = Math.round(width * scale);
-              height = Math.round(height * scale);
               
-              canvas.width = width;
-              canvas.height = height;
+              const downscaledCanvas = document.createElement("canvas");
+              downscaledCanvas.width = width;
+              downscaledCanvas.height = height;
               
-              const ctx = canvas.getContext("2d");
+              const ctx = downscaledCanvas.getContext("2d");
               if (ctx) {
                 ctx.drawImage(img, 0, 0, width, height);
               }
               
-              const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-              formData.append("base64Image", compressedBase64);
+              const lightBase64 = downscaledCanvas.toDataURL('image/jpeg', 0.7);
+              formData.append("base64Image", lightBase64);
               formData.append("provider", "ocr_space");
               executeFetch();
             };
