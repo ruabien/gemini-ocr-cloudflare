@@ -84,13 +84,25 @@ export async function onRequestPost(context: any) {
       const currentKey = ocrKeys[currentIndex];
       
       try {
+        // Clean and normalize base64Image string
+        const cleanBase64 = base64Image.trim().replace(/\s/g, "");
+        if (!cleanBase64) {
+          throw new Error("Base64 image data is empty or invalid after cleaning");
+        }
+
+        // Ensure the base64 payload starts with the required scheme
+        let payloadBase64 = cleanBase64;
+        if (!payloadBase64.startsWith("data:image/")) {
+          payloadBase64 = `data:image/jpeg;base64,${payloadBase64}`;
+        }
+
         const formData = new FormData();
         formData.append("apikey", currentKey);
         formData.append("language", "vie");
         formData.append("isOverlayRequired", "false");
         formData.append("OCREngine", "2");
         formData.append("scale", "true");
-        formData.append("base64Image", base64Image);
+        formData.append("base64Image", payloadBase64);
 
         const response = await fetch("https://api.ocr.space/parse/image", {
           method: "POST",
@@ -103,8 +115,8 @@ export async function onRequestPost(context: any) {
           // Check for OCR.space level errors
           if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
             const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || "");
-            lastErrorMsg = errMsgs;
-            // Continue to next key on error
+            lastErrorMsg = `OCR.space API error: ${errMsgs}`;
+            // Continue to next key on error (e.g. key/tier limitations)
           } else {
             // Success
             let text = "";
@@ -122,7 +134,7 @@ export async function onRequestPost(context: any) {
             );
           }
         } else {
-          lastErrorMsg = `HTTP Error ${response.status}`;
+          lastErrorMsg = `HTTP Error ${response.status} from OCR.space`;
         }
       } catch (e: any) {
         lastErrorMsg = e.message || "Unknown network error";

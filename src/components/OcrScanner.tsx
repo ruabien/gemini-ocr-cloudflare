@@ -314,7 +314,11 @@ const startOcrProcess = async () => {
                 ctx.drawImage(img, 0, 0, width, height);
               }
               
-              const lightBase64 = downscaledCanvas.toDataURL('image/jpeg', 0.7);
+              let lightBase64 = downscaledCanvas.toDataURL('image/jpeg', 0.7);
+              if (lightBase64 && !lightBase64.startsWith("data:image/jpeg;base64,")) {
+                const rawBase64 = lightBase64.includes(",") ? lightBase64.split(",")[1] : lightBase64;
+                lightBase64 = `data:image/jpeg;base64,${rawBase64}`;
+              }
               formData.append("base64Image", lightBase64);
               formData.append("provider", "ocr_space");
               executeFetch();
