@@ -247,15 +247,17 @@ const runOcrSpaceFallback = (): Promise<string> => {
                    }
                    return res.json();
                  })
-                 .then((keysData: any) => {
-                   console.log("Fetched OCR keys:", { hasPrimary: !!keysData?.primary, hasBackup: !!keysData?.backup });
+                 .then((data: any) => {
+                   // Ensure it correctly logs and checks data.primary and data.backup
+                   console.log("Fetched OCR keys:", { hasPrimary: !!data?.primary, hasBackup: !!data?.backup });
                    
-                   const primaryKey = keysData?.primary || localStorage.getItem("ocr_space_api_key") || "";
-                   const secondaryKey = keysData?.backup || localStorage.getItem("ocr_space_api_key_1") || "";
+                   const primaryKey = data?.primary || localStorage.getItem("ocr_space_api_key") || "";
+                   const secondaryKey = data?.backup || localStorage.getItem("ocr_space_api_key_1") || "";
                    const ocrKeys: string[] = [];
                    if (primaryKey) ocrKeys.push(primaryKey);
                    if (secondaryKey) ocrKeys.push(secondaryKey);
                    
+                   // Remove any premature blocking check that throws a string alert
                    if (ocrKeys.length === 0) {
                      console.warn("Missing OCR.space API Key. Proceeding without hardcoded abort.");
                      ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
