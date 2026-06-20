@@ -317,12 +317,17 @@ const runOcrSpaceFallback = (): Promise<string> => {
                       console.log("CRITICAL DEBUG - Injecting API key string:", fetchedKeys.primary ? "Valid Length" : "EMPTY", typeof fetchedKeys.primary);
                       
                       ocrFormData.append('apikey', currentKey);
+                      ocrFormData.append('isOverlayRequired', 'false');
+                      
+                      const compressedBase64 = lightBase64;
+                      // Ensure the string explicitly starts with "data:image/jpeg;base64,"
+                      const fullBase64Image = compressedBase64.startsWith('data:') 
+                        ? compressedBase64 
+                        : `data:image/jpeg;base64,${compressedBase64}`;
+
+                      ocrFormData.append('base64Image', fullBase64Image);
                       ocrFormData.append('language', 'vie');
                       ocrFormData.append('OcrEngine', '2');
-                      ocrFormData.append('isOverlayRequired', 'false');
-                      // Strip data URI prefix before appending
-                      const rawBase64String = lightBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-                      ocrFormData.append('base64Image', rawBase64String);
                       
                       fetch("https://api.ocr.space/parse/image", {
                         method: "POST",
