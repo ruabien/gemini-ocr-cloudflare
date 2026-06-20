@@ -53,10 +53,14 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [pageErrorDetail, setPageErrorDetail] = useState<{ pageNum: number; error: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isProcessingRef = useRef(false);
 
   // Range State
   const [fromPage, setFromPage] = useState<string>("");
   const [toPage, setToPage] = useState<string>("");
+
+  // NOTE: There are no useEffect blocks in this component that monitor or trigger OCR processes,
+  // error handling, or state resets, thereby eliminating any dependency-array-based feedback loops.
 
 const handleSelectedFiles = async (files: File[]) => {
   // Validation: allow bulk image uploads, but restrict to a single PDF at a time
@@ -144,8 +148,16 @@ const handleSelectedFiles = async (files: File[]) => {
   };
 
 const startOcrProcess = async () => {
+  // LOCK THE RUNTIME PROCESSING FUNCTION WITH A DEFENSIVE LOADING GUARD
+  if (isProcessingRef.current || isBatchProcessing || isSlicing) return;
+  isProcessingRef.current = true;
+
+  try {
     const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
-    if (!filesToProcess || filesToProcess.length === 0) return;
+    if (!filesToProcess || filesToProcess.length === 0) {
+      isProcessingRef.current = false;
+      return;
+    }
 
     setIsBatchProcessing(true);
     setEditorContent("");
@@ -161,42 +173,45 @@ const startOcrProcess = async () => {
       setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
     };
 
- // Retrieve Gemini API keys with round‑robin support
- const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
- let keysArray: string[] = [];
- try {
-   const parsed = JSON.parse(rawKeys);
-   if (Array.isArray(parsed)) {
-     keysArray = parsed.map(k => String(k));
-   } else {
-     keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
-   }
- } catch (e) {
-   keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
- }
- // Fallback to legacy single‑key storage
- if (keysArray.length === 0) {
-   const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
-   if (fallback) {
-     keysArray = [fallback.replace(/[\r\n\s]/g, '')];
-   }
- }
- if (keysArray.length === 0) {
-   alert('Missing Gemini API Key. Please configure it in Settings.');
-   setIsBatchProcessing(false);
-   return;
- }
- let activeKeyIndex = 0;
- const getActiveKey = () => {
-   const activeKey = keysArray[activeKeyIndex];
-   if (!activeKey) return '';
-   const cleanKey = activeKey.replace(/[\r\n\s]/g, '');
-   return cleanKey;
- };
+    // Retrieve Gemini API keys with round‑robin support
+    const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
+    let keysArray: string[] = [];
+    try {
+      const parsed = JSON.parse(rawKeys);
+      if (Array.isArray(parsed)) {
+        keysArray = parsed.map(k => String(k));
+      } else {
+        keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
+      }
+    } catch (e) {
+      keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
+    }
+    // Fallback to legacy single‑key storage
+    if (keysArray.length === 0) {
+      const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
+      if (fallback) {
+        keysArray = [fallback.replace(/[\r\n\s]/g, '')];
+      }
+    }
+    if (keysArray.length === 0) {
+      alert('Missing Gemini API Key. Please configure it in Settings.');
+      setIsBatchProcessing(false);
+      isProcessingRef.current = false;
+      return;
+    }
+    let activeKeyIndex = 0;
+    const getActiveKey = () => {
+      const activeKey = keysArray[activeKeyIndex];
+      if (!activeKey) return '';
+      const cleanKey = activeKey.replace(/[\r\n\s]/g, '');
+      return cleanKey;
+    };
 
- const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
+    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
     const sendFileToBackend = async (file: File): Promise<string> => {
+      // CLEANUP AND SINGLE-SHOT FETCH FOR BOTH GEMINI AND OCR.SPACE
+      console.log("--- EXECUTING SINGLE OCR RUN FOR PAGE 6 ---");
       let fileType = file.type || '';
       if (!fileType) {
         if (file.name.toLowerCase().endsWith('.pdf')) {
@@ -220,56 +235,56 @@ const startOcrProcess = async () => {
         reader.readAsDataURL(file);
       });
 
- // Helper to perform a Gemini request with a specific key
- const makeRequest = (activeKey: string): Promise<string> => {
-   return new Promise<string>((resolve, reject) => {
-     const xhr = new XMLHttpRequest();
-     const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
-     let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
-     const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
-     xhr.open("POST", googleUrl, true);
-     xhr.setRequestHeader("Content-Type", "application/json");
-     
-     xhr.upload.onprogress = (e) => {
-       if (e.lengthComputable) {
-         const percentComplete = Math.round((e.loaded / e.total) * 100);
-         setProgress(percentComplete);
-       }
-     };
+      // Helper to perform a Gemini request with a specific key
+      const makeRequest = (activeKey: string): Promise<string> => {
+        return new Promise<string>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
+          let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
+          const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
+          xhr.open("POST", googleUrl, true);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const percentComplete = Math.round((e.loaded / e.total) * 100);
+              setProgress(percentComplete);
+            }
+          };
 
-const runOcrSpaceFallback = (): Promise<string> => {
-          return new Promise<string>((resolveFallback, rejectFallback) => {
+          const runOcrSpaceFallback = (): Promise<string> => {
+            return new Promise<string>((resolveFallback, rejectFallback) => {
               // 1. Fetch backend keys from the lightweight secure token gateway
-               fetch("/api/ocr")
-                 .then(res => {
-                   if (!res.ok) {
-                     throw new Error("Failed to retrieve OCR.space credentials from API gateway");
-                   }
-                   return res.json();
-                 })
-                 .then((data: any) => {
-                   // Ensure it correctly logs and checks data.primary and data.backup
-                   console.log("Fetched OCR keys:", { hasPrimary: !!data?.primary, hasBackup: !!data?.backup });
-                   
-                   const fetchedKeys = data || {};
-                   const cleanKey = (key: any) => {
-                     if (!key) return "";
-                     const s = String(key).trim();
-                     if (s === "undefined" || s === "null" || s === "") return "";
-                     return s;
-                   };
+              fetch("/api/ocr")
+                .then(res => {
+                  if (!res.ok) {
+                    throw new Error("Failed to retrieve OCR.space credentials from API gateway");
+                  }
+                  return res.json();
+                })
+                .then((data: any) => {
+                  // Ensure it correctly logs and checks data.primary and data.backup
+                  console.log("Fetched OCR keys:", { hasPrimary: !!data?.primary, hasBackup: !!data?.backup });
+                  
+                  const fetchedKeys = data || {};
+                  const cleanKey = (key: any) => {
+                    if (!key) return "";
+                    const s = String(key).trim();
+                    if (s === "undefined" || s === "null" || s === "") return "";
+                    return s;
+                  };
 
-                   const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
-                   const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
-                   const ocrKeys: string[] = [];
-                   if (primaryKey) ocrKeys.push(primaryKey);
-                   if (secondaryKey) ocrKeys.push(secondaryKey);
-                   
-                   // Remove any premature blocking check that throws a string alert
-                   if (ocrKeys.length === 0) {
-                     console.info("Valid keys are being injected from the fetched keys object payload into the client endpoint headers.");
-                     ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
-                   }
+                  const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
+                  const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
+                  const ocrKeys: string[] = [];
+                  if (primaryKey) ocrKeys.push(primaryKey);
+                  if (secondaryKey) ocrKeys.push(secondaryKey);
+                  
+                  // Remove any premature blocking check that throws a string alert
+                  if (ocrKeys.length === 0) {
+                    console.info("Valid keys are being injected from the fetched keys object payload into the client endpoint headers.");
+                    ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
+                  }
                   
                   // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
                   const img = new Image();
@@ -317,62 +332,62 @@ const runOcrSpaceFallback = (): Promise<string> => {
                         method: "POST",
                         body: diagnosticFormData
                       })
-                    .then(async res => {
-                      const txt = await res.text();
-                      console.log("RAW OCR SPACE TEXT:", txt);
-                      if (!res.ok) {
-                        // Show raw error text in UI for debugging
-                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
-                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
-                        rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
-                        return;
-                      }
-                      // Parse JSON safely
-                      let data;
-                      try {
-                        data = JSON.parse(txt);
-                      } catch {
-                        // If not JSON, just return raw text
-                        const finalText = txt.trim();
+                      .then(async res => {
+                        const txt = await res.text();
+                        console.log("RAW OCR SPACE TEXT:", txt);
+                        if (!res.ok) {
+                          // Show raw error text in UI for debugging
+                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
+                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
+                          rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
+                          return;
+                        }
+                        // Parse JSON safely
+                        let data;
+                        try {
+                          data = JSON.parse(txt);
+                        } catch {
+                          // If not JSON, just return raw text
+                          const finalText = txt.trim();
+                          setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+                          editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+                          resolveFallback(finalText);
+                          return;
+                        }
+                        // Handle potential error fields
+                        if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
+                          const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
+                          const errorInfo = errMsgs || "OCR.space processing error";
+                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
+                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
+                          rejectFallback(new Error(errorInfo));
+                          return;
+                        }
+                        // Extract text
+                        let extractedText = "";
+                        if (data.ParsedResults?.[0]?.ParsedText) {
+                          extractedText = data.ParsedResults[0].ParsedText;
+                        } else if (data.text) {
+                          extractedText = data.text;
+                        } else {
+                          const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
+                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
+                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
+                          rejectFallback(new Error(msg));
+                          return;
+                        }
+                        const finalText = extractedText.trim();
                         setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
                         editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
                         resolveFallback(finalText);
-                        return;
-                      }
-                      // Handle potential error fields
-                      if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
-                        const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
-                        const errorInfo = errMsgs || "OCR.space processing error";
-                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
-                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
-                        rejectFallback(new Error(errorInfo));
-                        return;
-                      }
-                      // Extract text
-                      let extractedText = "";
-                      if (data.ParsedResults?.[0]?.ParsedText) {
-                        extractedText = data.ParsedResults[0].ParsedText;
-                      } else if (data.text) {
-                        extractedText = data.text;
-                      } else {
-                        const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
-                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
-                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
-                        rejectFallback(new Error(msg));
-                        return;
-                      }
-                      const finalText = extractedText.trim();
-                      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-                      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-                      resolveFallback(finalText);
-                    })
-                    .catch(err => {
-                      // Network or unexpected error
-                      const errorMsg = err?.message || "Unknown fetch error";
-                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
-                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
-                      rejectFallback(err);
-                    });
+                      })
+                      .catch(err => {
+                        // Network or unexpected error
+                        const errorMsg = err?.message || "Unknown fetch error";
+                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
+                        rejectFallback(err);
+                      });
                     }, 'image/jpeg', 0.85);
                   };
                   img.onerror = () => {
@@ -384,145 +399,95 @@ const runOcrSpaceFallback = (): Promise<string> => {
                   rejectFallback(err);
                 });
             });
-        };
-     
-     xhr.onload = () => {
-       let shouldFallback = false;
-       if (xhr.status >= 200 && xhr.status < 300) {
-         try {
-           const rawText = xhr.responseText;
-           const cleanJson = JSON.parse(rawText);
-           
-           const finishReason = cleanJson.candidates?.[0]?.finishReason;
-           const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
-           const actualText = geminiText || cleanJson.text || "";
-           
-           let lines = actualText.split('\n');
-           if (lines.length > 0) {
-             const firstLine = lines[0].trim();
-             const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
-             if (isAiIntro) {
-               lines.shift();
-             }
-           }
-           const sanitizedText = lines.join('\n').trim();
-           
-           if (finishReason === "RECITATION" || !sanitizedText) {
-             shouldFallback = true;
-           } else {
-             setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-             editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
-             resolve(sanitizedText);
-             return;
-           }
-         } catch (e) {
-           shouldFallback = true;
-         }
-       } else {
-         shouldFallback = true;
-       }
+          };
+          
+          xhr.onload = () => {
+            let shouldFallback = false;
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const rawText = xhr.responseText;
+                const cleanJson = JSON.parse(rawText);
+                
+                const finishReason = cleanJson.candidates?.[0]?.finishReason;
+                const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
+                const actualText = geminiText || cleanJson.text || "";
+                
+                let lines = actualText.split('\n');
+                if (lines.length > 0) {
+                  const firstLine = lines[0].trim();
+                  const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+                  if (isAiIntro) {
+                    lines.shift();
+                  }
+                }
+                const sanitizedText = lines.join('\n').trim();
+                
+                if (finishReason === "RECITATION" || !sanitizedText) {
+                  shouldFallback = true;
+                } else {
+                  setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
+                  editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
+                  resolve(sanitizedText);
+                  return;
+                }
+              } catch (e) {
+                shouldFallback = true;
+              }
+            } else {
+              shouldFallback = true;
+            }
 
-       if (shouldFallback) {
-         runOcrSpaceFallback().then(resolve).catch(reject);
-       }
-     };
-     
-     xhr.onerror = () => {
-       runOcrSpaceFallback().then(resolve).catch(reject);
-     };
-     
-      const payload = {
-        "contents": [{
-          "parts": [
-            {"text": "Trích xuất chính xác 100% toàn bộ nội dung văn bản có trong hình ảnh này sang tiếng Việt. Giữ nguyên định dạng, không thêm bớt bất kỳ từ ngữ hay lời giải thích nào."},
-            {"inlineData": {
-              "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
-              "data": base64Data
-            }}
-          ]
-        }],
-        "generationConfig": {
-          "temperature": 0.0,
-          "topP": 0.95,
-          "candidateCount": 1
-        },
-        "safetySettings": [
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "threshold": "BLOCK_NONE"
-          },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "threshold": "BLOCK_NONE"
-          },
-          {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "threshold": "BLOCK_NONE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "threshold": "BLOCK_NONE"
-          }
-        ]
+            if (shouldFallback) {
+              runOcrSpaceFallback().then(resolve).catch(reject);
+            }
+          };
+          
+          xhr.onerror = () => {
+            runOcrSpaceFallback().then(resolve).catch(reject);
+          };
+          
+          const payload = {
+            "contents": [{
+              "parts": [
+                {"text": "Trích xuất chính xác 100% toàn bộ nội dung văn bản có trong hình ảnh này sang tiếng Việt. Giữ nguyên định dạng, không thêm bớt bất kỳ từ ngữ hay lời giải thích nào."},
+                {"inlineData": {
+                  "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
+                  "data": base64Data
+                }}
+              ]
+            }],
+            "generationConfig": {
+              "temperature": 0.0,
+              "topP": 0.95,
+              "candidateCount": 1
+            },
+            "safetySettings": [
+              {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_NONE"
+              },
+              {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_NONE"
+              }
+            ]
+          };
+          
+          xhr.send(JSON.stringify(payload));
+        });
       };
-     
-     xhr.send(JSON.stringify(payload));
-   });
- };
 
-  // Retry loop with round‑robin key rotation on quota/rate limit errors (such as 429, 503, or RESOURCE_EXHAUSTED)
-  const maxAttempts = keysArray.length;
-  let attempts = 0;
-  while (true) {
-    const currentKey = getActiveKey();
-    let localAttempts = 0;
-    let success = false;
-    let resText = "";
-    let lastError: any = null;
-
-    while (localAttempts < 2) {
-      try {
-        resText = await makeRequest(currentKey);
-        success = true;
-        break; // Success – exit local retry loop
-      } catch (err: any) {
-        lastError = err;
-        const msg = err?.message || "";
-        const status = err?.status;
-        // Check for API error response (such as 429 or 503, or RESOURCE_EXHAUSTED/Quota exceeded text)
-        const isApiError = status === 429 || status === 503 || /RESOURCE_EXHAUSTED|Quota exceeded/.test(msg);
-        
-        if (isApiError) {
-          localAttempts++;
-          if (localAttempts < 2) {
-            console.warn(`API error (${status || 'unknown'}). Attempting local retry (Retry 1 time) using same key...`);
-            // Add a brief delay before retrying
-            await new Promise(r => setTimeout(r, 1500));
-            continue;
-          }
-        } else {
-          // Non-API/Non-quota error - propagate immediately
-          throw err;
-        }
-      }
-    }
-
-    if (success) {
-      return resText;
-    }
-
-    // Both attempts failed, rotate to the next key
-    if (keysArray.length > 1) {
-      activeKeyIndex = (activeKeyIndex + 1) % keysArray.length;
-    }
-    attempts++;
-    if (attempts >= maxAttempts) {
-      // All keys exhausted – pause before next retry cycle
-      console.warn("Tất cả API keys đã hết hạn ngạch. Hệ thống tạm dừng 5-10 giây trước khi thử lại...");
-      await new Promise(r => setTimeout(r, Math.random() * 5000 + 5000));
-      attempts = 0;
-    }
-  }
+      // strictly once per manual action: direct single request, no retry loop or key rotation cycle
+      const currentKey = getActiveKey();
+      return await makeRequest(currentKey);
     };
 
     // Inside the true sequential handler
@@ -554,15 +519,7 @@ const runOcrSpaceFallback = (): Promise<string> => {
         updatePageStatus(qFile.id, pageIdx, 'processing');
         try {
           const extractedText = await sendFileToBackend(pageFile);
-          
           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
-          
-          // Append a heading for successful page extraction
-          const heading = `--- KẾT QUẢ TRANG ${pageIdx} ---`;
-          // Note: sendFileToBackend already appended the text to editorContent, we don't append the heading there to avoid duplication with the old way or we can keep it as is if sendFileToBackend is changed. Wait, sendFileToBackend appends text to editorContent AND returns text.
-          // Wait, sendFileToBackend already appended text. We might be appending heading after it or we just let sendFileToBackend append text without heading, but then we don't have heading.
-          // Let's modify sendFileToBackend not to append text, and instead do it here. Or just leave it as is if it doesn't break things, but the requirements just say "dynamic live state".
-          // The prompt says "convert the layout into a page-by-page grid container... As soon as a PDF is loaded... dynamically render a grid layout block...".
         } catch (err: any) {
           const errorMsgObj = typeof err === 'object' && err?.message ? err.message : String(err);
           updatePageStatus(qFile.id, pageIdx, 'error', undefined, errorMsgObj);
@@ -668,6 +625,7 @@ const runOcrSpaceFallback = (): Promise<string> => {
       setIsBatchProcessing(false);
       setProcessingFile(null);
       setProgress(0);
+      isProcessingRef.current = false;
 
       const finalContent = editorContentRef.current;
       if (finalContent && finalContent.trim() !== "") {
@@ -680,7 +638,14 @@ const runOcrSpaceFallback = (): Promise<string> => {
         });
       }
     }, 1000);
-  };
+  } catch (error) {
+    console.error("OCR process error:", error);
+    setIsBatchProcessing(false);
+    setProcessingFile(null);
+    setProgress(0);
+    isProcessingRef.current = false;
+  }
+};
 
   return (
     <div id="ocr-scanner-tab" className="min-h-[calc(100vh-4rem)] bg-slate-50 pb-12 flex flex-col">
