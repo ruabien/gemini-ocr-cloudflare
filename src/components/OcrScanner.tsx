@@ -298,29 +298,20 @@ const runOcrSpaceFallback = (): Promise<string> => {
                       ctx.drawImage(img, 0, 0, width, height);
                     }
                     
-                    let lightBase64 = downscaledCanvas.toDataURL('image/jpeg', 0.7);
-                    if (lightBase64) {
-                      const rawBase64 = lightBase64.includes(",") ? lightBase64.split(",")[1] : lightBase64;
-                      lightBase64 = `data:image/jpeg;base64,${rawBase64}`;
-                    }
-                    
-                     // 3. Perform a single OCR.space request with strict FormData
-                      const compressedBase64 = lightBase64;
-                      const rawData = compressedBase64.includes(',') ? compressedBase64.split(',')[1] : compressedBase64;
-                      const byteString = atob(rawData);
-                      const ab = new ArrayBuffer(byteString.length);
-                      const ia = new Uint8Array(ab);
-                      for (let i = 0; i < byteString.length; i++) {
-                          ia[i] = byteString.charCodeAt(i);
+                    // 3. Use standard canvas.toBlob to avoid corrupted manual Base64 manipulation
+                    downscaledCanvas.toBlob((blob) => {
+                      if (!blob) {
+                        console.error("Canvas toBlob failed - asset is empty!");
+                        rejectFallback(new Error("Canvas toBlob failed - asset is empty!"));
+                        return;
                       }
-                      const imageBlob = new Blob([ab], { type: 'image/jpeg' });
 
                       const diagnosticFormData = new FormData();
                       diagnosticFormData.append('apikey', 'helloworld'); // Explicitly bypass our restricted environment tokens
                       diagnosticFormData.append('language', 'vie');
                       diagnosticFormData.append('isOverlayRequired', 'false');
                       diagnosticFormData.append('OcrEngine', '1'); // Fallback to stable engine 1 to prevent formatting constraints
-                      diagnosticFormData.append('file', imageBlob, 'page6.jpg');
+                      diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
                       
                       fetch("https://api.ocr.space/parse/image", {
                         method: "POST",
@@ -382,6 +373,7 @@ const runOcrSpaceFallback = (): Promise<string> => {
                       editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
                       rejectFallback(err);
                     });
+                    }, 'image/jpeg', 0.85);
                   };
                   img.onerror = () => {
                     rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
