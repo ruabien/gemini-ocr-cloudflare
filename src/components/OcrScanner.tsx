@@ -305,25 +305,23 @@ const runOcrSpaceFallback = (): Promise<string> => {
                     }
                     
                     // 3. Perform a single OCR.space request with strict FormData
-                    const compressedBase64 = lightBase64;
-                    const fullBase64 = compressedBase64.startsWith('data:') 
-                      ? compressedBase64 
-                      : `data:image/jpeg;base64,${compressedBase64}`;
-                    
-                    // URL-encode the string to protect +, /, and = characters during transport
-                    const safeUrlEncodedBase64 = encodeURIComponent(fullBase64);
-                    
-                    const cleanFormData = new FormData();
-                    cleanFormData.append('apikey', String(fetchedKeys.primary).trim());
-                    cleanFormData.append('language', 'vie');
-                    cleanFormData.append('isOverlayRequired', 'false');
-                    cleanFormData.append('base64Image', safeUrlEncodedBase64);
-                    cleanFormData.append('OcrEngine', '2');
-
-                    fetch("https://api.ocr.space/parse/image", {
-                      method: "POST",
-                      body: cleanFormData
-                    })
+                     const compressedBase64 = lightBase64;
+                     const fullBase64 = compressedBase64.startsWith('data:') 
+                       ? compressedBase64 
+                       : `data:image/jpeg;base64,${compressedBase64}`;
+                     
+                     const searchParams = new URLSearchParams();
+                     searchParams.append('apikey', String(fetchedKeys.primary).trim());
+                     searchParams.append('language', 'vie');
+                     searchParams.append('isOverlayRequired', 'false');
+                     searchParams.append('base64Image', fullBase64);
+                     searchParams.append('OcrEngine', '2');
+                     
+                     fetch("https://api.ocr.space/parse/image", {
+                       method: "POST",
+                       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                       body: searchParams.toString()
+                     })
                     .then(async res => {
                       const txt = await res.text();
                       console.log("RAW OCR SPACE TEXT:", txt);
