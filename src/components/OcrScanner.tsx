@@ -304,103 +304,79 @@ const runOcrSpaceFallback = (): Promise<string> => {
                       lightBase64 = `data:image/jpeg;base64,${rawBase64}`;
                     }
                     
-                    // 3. Initiate fetch loop with keys directly from the browser window
-                    let currentKeyUsed = primaryKey || "helloworld";
-                    let backupTried = false;
-                    const backupKey = secondaryKey || cleanKey(fetchedKeys.backup);
-                    
-                    const attemptFetch = () => {
-                      const ocrFormData = new FormData();
-                      
-                      console.log("CRITICAL DEBUG - Injecting API key string:", currentKeyUsed ? "Valid Length" : "EMPTY", typeof currentKeyUsed);
-                      
-                      ocrFormData.append('apikey', currentKeyUsed);
-                      ocrFormData.append('isOverlayRequired', 'false');
-                      
-                      const compressedBase64 = lightBase64;
-                      // Ensure the string explicitly starts with "data:image/jpeg;base64,"
-                      const fullBase64Image = compressedBase64.startsWith('data:') 
-                        ? compressedBase64 
-                        : `data:image/jpeg;base64,${compressedBase64}`;
+                    // 3. Perform a single OCR.space request with strict FormData
+                    const cleanFormData = new FormData();
+                    const apikeyToUse = primaryKey || "helloworld";
+                    cleanFormData.append('apikey', String(apikeyToUse).trim());
+                    cleanFormData.append('language', 'vie');
+                    cleanFormData.append('isOverlayRequired', 'false');
+                    const compressedBase64 = lightBase64;
+                    const rawBase64 = compressedBase64.startsWith('data:')
+                      ? compressedBase64
+                      : `data:image/jpeg;base64,${compressedBase64}`;
+                    cleanFormData.append('base64Image', rawBase64);
+                    cleanFormData.append('OcrEngine', '2');
 
-                      ocrFormData.append('base64Image', fullBase64Image);
-                      ocrFormData.append('language', 'vie');
-                      ocrFormData.append('OcrEngine', '2');
-                      
-                      const executeRequest = () => {
-                        fetch("https://api.ocr.space/parse/image", {
-                          method: "POST",
-                          body: ocrFormData
-                        })
-                        .then(async res => {
-                          if (res.status === 429) {
-                            if (backupKey && !backupTried) {
-                              console.log("Primary key rate-limited (429). Rotating to OCR_SPACE_API_KEY_1 backup token now...");
-                              backupTried = true;
-                              currentKeyUsed = backupKey;
-                              ocrFormData.set('apikey', backupKey);
-                              executeRequest();
-                              return;
-                            }
-                          }
-                          if (!res.ok) {
-                            const badRequestText = await res.text();
-                            console.error("OCR.space Error response:", badRequestText);
-                            throw new Error(`OCR.space HTTP error ${res.status}: ${badRequestText}`);
-                          }
-                          return res.json();
-                        })
-                        .then(data => {
-                          if (!data) return; // request was rotated and refired
-                          
-                          const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || "");
-                          const isQuotaOrLimitError = /RESOURCE_EXHAUSTED|Quota exceeded|429|limit/i.test(errMsgs) || data.IsErroredOnProcessing || data.OCRExitCode > 1;
-                          
-                          if (isQuotaOrLimitError) {
-                            if (backupKey && !backupTried) {
-                              console.log("Primary key rate-limited (429). Rotating to OCR_SPACE_API_KEY_1 backup token now...");
-                              backupTried = true;
-                              currentKeyUsed = backupKey;
-                              ocrFormData.set('apikey', backupKey);
-                              executeRequest();
-                              return;
-                            }
-                            throw new Error(errMsgs || "OCR.space processing error");
-                          }
-                          
-                          let extractedText = "";
-                          if (data.ParsedResults?.[0]?.ParsedText) {
-                            extractedText = data.ParsedResults[0].ParsedText;
-                          } else if (data.text) {
-                            extractedText = data.text;
-                          } else {
-                            throw new Error("Không nhận dạng được văn bản nào từ phản hồi của OCR.space.");
-                          }
-                          
-                          const finalText = extractedText.trim();
-                          setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-                          editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-                          resolveFallback(finalText);
-                        })
-                        .catch(err => {
-                          const msg = err?.message || "";
-                          const isQuotaOrLimitError = /RESOURCE_EXHAUSTED|Quota exceeded|429|limit/i.test(msg);
-                          if (isQuotaOrLimitError && backupKey && !backupTried) {
-                            console.log("Primary key rate-limited (429). Rotating to OCR_SPACE_API_KEY_1 backup token now...");
-                            backupTried = true;
-                            currentKeyUsed = backupKey;
-                            ocrFormData.set('apikey', backupKey);
-                            executeRequest();
-                          } else {
-                            rejectFallback(err);
-                          }
-                        });
-                      };
-                      
-                      executeRequest();
-                    };
-                    
-                    attemptFetch();
+                    fetch("https://api.ocr.space/parse/image", {
+                      method: "POST",
+                      body: cleanFormData
+                    })
+                    .then(async res => {
+                      const txt = await res.text();
+                      console.log("RAW OCR SPACE TEXT:", txt);
+                      if (!res.ok) {
+                        // Show raw error text in UI for debugging
+                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
+                        rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
+                        return;
+                      }
+                      // Parse JSON safely
+                      let data;
+                      try {
+                        data = JSON.parse(txt);
+                      } catch {
+                        // If not JSON, just return raw text
+                        const finalText = txt.trim();
+                        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+                        resolveFallback(finalText);
+                        return;
+                      }
+                      // Handle potential error fields
+                      if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
+                        const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
+                        const errorInfo = errMsgs || "OCR.space processing error";
+                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
+                        rejectFallback(new Error(errorInfo));
+                        return;
+                      }
+                      // Extract text
+                      let extractedText = "";
+                      if (data.ParsedResults?.[0]?.ParsedText) {
+                        extractedText = data.ParsedResults[0].ParsedText;
+                      } else if (data.text) {
+                        extractedText = data.text;
+                      } else {
+                        const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
+                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
+                        rejectFallback(new Error(msg));
+                        return;
+                      }
+                      const finalText = extractedText.trim();
+                      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+                      resolveFallback(finalText);
+                    })
+                    .catch(err => {
+                      // Network or unexpected error
+                      const errorMsg = err?.message || "Unknown fetch error";
+                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
+                      rejectFallback(err);
+                    });
                   };
                   img.onerror = () => {
                     rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
