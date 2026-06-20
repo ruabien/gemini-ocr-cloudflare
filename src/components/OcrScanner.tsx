@@ -304,24 +304,28 @@ const runOcrSpaceFallback = (): Promise<string> => {
                       lightBase64 = `data:image/jpeg;base64,${rawBase64}`;
                     }
                     
-                    // 3. Perform a single OCR.space request with strict FormData
-                     const compressedBase64 = lightBase64;
-                     const fullBase64 = compressedBase64.startsWith('data:') 
-                       ? compressedBase64 
-                       : `data:image/jpeg;base64,${compressedBase64}`;
-                     
-                     const searchParams = new URLSearchParams();
-                     searchParams.append('apikey', String(fetchedKeys.primary).trim());
-                     searchParams.append('language', 'vie');
-                     searchParams.append('isOverlayRequired', 'false');
-                     searchParams.append('base64Image', fullBase64);
-                     searchParams.append('OcrEngine', '2');
-                     
-                     fetch("https://api.ocr.space/parse/image", {
-                       method: "POST",
-                       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                       body: searchParams.toString()
-                     })
+                     // 3. Perform a single OCR.space request with strict FormData
+                      const compressedBase64 = lightBase64;
+                      const byteString = atob(compressedBase64.split(',')[1]);
+                      const mimeString = compressedBase64.split(',')[0].split(':')[1].split(';')[0];
+                      const ab = new ArrayBuffer(byteString.length);
+                      const ia = new Uint8Array(ab);
+                      for (let i = 0; i < byteString.length; i++) {
+                          ia[i] = byteString.charCodeAt(i);
+                      }
+                      const imageBlob = new Blob([ab], { type: mimeString });
+
+                      const fileFormData = new FormData();
+                      fileFormData.append('apikey', String(fetchedKeys.primary).trim());
+                      fileFormData.append('language', 'vie');
+                      fileFormData.append('isOverlayRequired', 'false');
+                      fileFormData.append('OcrEngine', '2');
+                      fileFormData.append('file', imageBlob, 'page6.jpg'); // Appending as a physical file asset
+                      
+                      fetch("https://api.ocr.space/parse/image", {
+                        method: "POST",
+                        body: fileFormData
+                      })
                     .then(async res => {
                       const txt = await res.text();
                       console.log("RAW OCR SPACE TEXT:", txt);
