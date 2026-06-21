@@ -56,7 +56,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
           </h1>
           
           <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Tự động bóc tách Cáo trạng, Bản án, Quyết định thụ lý và xuất dữ liệu phục vụ nghiên cứu hồ sơ, thống kê và thực hành quyền công tố.
+            Tự động bóc tách hình ảnh, pdf và xuất dữ liệu phục vụ nghiên cứu hồ sơ, thống kê, thực hành quyền công tố và kiểm sát các vụ án.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -90,7 +90,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-8">
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-              Hỗ trợ bóc tách các loại hồ sơ tố tụng chủ chốt
+              Hỗ trợ bóc tách các loại hồ sơ tố tụng
             </h2>
             <p className="mt-2 text-slate-500 text-xs sm:text-sm">
               Thiết kế tối ưu cho nghiệp vụ tư pháp giúp số hóa nhanh chóng và chính xác các mẫu văn bản tố tụng phổ biến.
@@ -105,9 +105,9 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
               </div>
               <div>
                 <h4 className="font-bold text-slate-800 text-sm flex items-center">
-                  <span className="text-emerald-600 mr-1.5">✓</span> Cáo trạng & Quyết định truy tố
+                  <span className="text-emerald-600 mr-1.5">✓</span> Kết luận điều tra
                 </h4>
-                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất tự động danh sách bị can, người làm chứng, hành động bị quy buộc, và định danh tội danh theo Bộ luật Hình sự.</p>
+                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất tự động danh sách bị can, người làm chứng, hành vi phạm tội, và tội danh đề nghị truy tố theo Bộ luật Hình sự.</p>
               </div>
             </div>
 
@@ -120,7 +120,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
                 <h4 className="font-bold text-slate-800 text-sm flex items-center">
                   <span className="text-emerald-600 mr-1.5">✓</span> Bản án hình sự / dân sự
                 </h4>
-                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Đọc hiểu cáo buộc, tình tiết tăng nặng/giảm nhẹ trách nhiệm pháp lý, phán quyết hình phạt và nghĩa vụ án phí.</p>
+                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất thông tin bị cáo, thông tin đương sự, nội dung vụ án, phán quyết của Tòa án.</p>
               </div>
             </div>
 
@@ -131,9 +131,9 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
               </div>
               <div>
                 <h4 className="font-bold text-slate-800 text-sm flex items-center">
-                  <span className="text-emerald-600 mr-1.5">✓</span> Quyết định thụ lý & Đương đơn
+                  <span className="text-emerald-600 mr-1.5">✓</span> Quyết định thụ lý
                 </h4>
-                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Xác định thời hạn thụ lý vụ án, lấy danh sách nguyên đơn, bị đơn, người có quyền lợi và nghĩa vụ liên quan trong án dân sự.</p>
+                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Giúp nhập liệu nhanh thông tin thụ lý vụ án, danh sách nguyên đơn, bị đơn, người có quyền lợi và nghĩa vụ liên quan trong án dân sự.</p>
               </div>
             </div>
           </div>
