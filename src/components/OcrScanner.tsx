@@ -1110,12 +1110,7 @@ while (true) {
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-4">
                 <h5 className="font-bold text-slate-850 text-sm sm:text-base flex flex-wrap items-center gap-2">
-                  <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>
-                  <span className="flex items-center gap-1.5 ml-2">
-                    <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">DUNG LƯỢNG</span>
-                    <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">AN TOÀN</span>
-                    <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">API</span>
-                  </span>
+                  <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>                  
                 </h5>
               </div>
 

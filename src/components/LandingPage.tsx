@@ -92,7 +92,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
               Hỗ trợ các loại hồ sơ tố tụng phổ biến
             </h2>
             <p className="mt-2 text-slate-500 text-xs sm:text-sm">
-              Người dùng nhìn vào thấy ngay tài liệu của mình nằm trong phạm vi hỗ trợ bóc tách và nghiên cứu.
+              Các văn bản, tài liệu nằm trong phạm vi hỗ trợ bóc tách và nghiên cứu.
             </p>
           </div>
 
