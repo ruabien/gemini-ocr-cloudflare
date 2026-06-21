@@ -37,9 +37,10 @@ export async function optimizeImageForOcr(file: File): Promise<OptimizeResult> {
       const height = img.height;
       const originalSize = file.size;
 
-      const needsOptimization = originalSize > OPTIMIZE_THRESHOLD_BYTES || width > MAX_OCR_IMAGE_DIMENSION || height > MAX_OCR_IMAGE_DIMENSION;
+      const maxDimension = Math.max(width, height);
+      const isSmallAndLowResolution = originalSize <= OPTIMIZE_THRESHOLD_BYTES && maxDimension <= MAX_OCR_IMAGE_DIMENSION;
 
-      if (!needsOptimization) {
+      if (isSmallAndLowResolution) {
         resolve({
           optimizedBlob: file,
           optimizedFile: file,
@@ -91,15 +92,28 @@ export async function optimizeImageForOcr(file: File): Promise<OptimizeResult> {
           lastModified: Date.now()
         });
 
-        resolve({
-          optimizedBlob: blob,
-          optimizedFile: optimizedFile,
-          originalSize,
-          optimizedSize: blob.size,
-          width: newWidth,
-          height: newHeight,
-          wasOptimized: true
-        });
+        const isActuallySmaller = blob.size > 0 && blob.size <= originalSize * 0.95;
+        if (isActuallySmaller) {
+          resolve({
+            optimizedBlob: blob,
+            optimizedFile: optimizedFile,
+            originalSize,
+            optimizedSize: blob.size,
+            width: newWidth,
+            height: newHeight,
+            wasOptimized: true
+          });
+        } else {
+          resolve({
+            optimizedBlob: file,
+            optimizedFile: file,
+            originalSize,
+            optimizedSize: originalSize,
+            width,
+            height,
+            wasOptimized: false,
+          });
+        }
       }, 'image/jpeg', JPEG_QUALITY);
     };
 

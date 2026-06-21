@@ -1106,12 +1106,12 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
 <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500">
   {q.optimizedInfo && q.optimizedInfo.wasOptimized ? (
     <>
-      <span>Gốc: {(q.optimizedInfo.originalSize / 1024 / 1024).toFixed(1)} MB</span>
+      <span>Gốc: {q.optimizedInfo.originalSize > 1024 * 1024 ? (q.optimizedInfo.originalSize / 1024 / 1024).toFixed(1) + ' MB' : Math.round(q.optimizedInfo.originalSize / 1024) + ' KB'}</span>
       <span className="font-semibold text-emerald-650 font-mono">Nén: {Math.round(q.optimizedInfo.optimizedSize / 1024)} KB</span>
     </>
   ) : (
     <>
-      <span>Gốc: {slicedPage?.size || "—"}</span>
+      <span>Gốc: {q.optimizedInfo ? (q.optimizedInfo.originalSize > 1024 * 1024 ? (q.optimizedInfo.originalSize / 1024 / 1024).toFixed(1) + ' MB' : Math.round(q.optimizedInfo.originalSize / 1024) + ' KB') : (slicedPage?.size || "—")}</span>
     </>
   )}
 </div>
