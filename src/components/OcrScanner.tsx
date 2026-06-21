@@ -55,6 +55,20 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isProcessingRef = useRef(false);
   const pageProcessingLockRef = useRef<{ [key: number]: boolean }>({});
+  const revocationRefs = useRef<Map<string, string>>(new Map());
+
+  React.useEffect(() => {
+    return () => {
+      revocationRefs.current.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          // ignore
+        }
+      });
+      revocationRefs.current.clear();
+    };
+  }, []);
 
   // Range State
   const [fromPage, setFromPage] = useState<string>("");
@@ -89,11 +103,15 @@ const handleSelectedFiles = async (files: File[]) => {
       try {
         const pageFiles = await splitPdfToImages(qFile.file, () => {});
         const numPages = pageFiles.length;
-        const sliced = pageFiles.map((pFile, idx) => ({
-          index: idx + 1,
-          dataUrl: URL.createObjectURL(pFile),
-          size: `${(pFile.size / 1024).toFixed(0)} KB`
-        }));
+        const sliced = pageFiles.map((pFile, idx) => {
+          const url = URL.createObjectURL(pFile);
+          revocationRefs.current.set(`${qFile.id}-${idx + 1}`, url);
+          return {
+            index: idx + 1,
+            dataUrl: url,
+            size: `${(pFile.size / 1024).toFixed(0)} KB`
+          };
+        });
         // Initialize page states as idle for each page immediately after loading PDF
         const initialPageStates: Record<number, any> = {};
         for (let p = 1; p <= numPages; p++) {
@@ -212,13 +230,13 @@ const startOcrProcess = async () => {
 
     const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
       const pageNum = pageNumParam; // or dynamic page index variable
-      if (pageProcessingLockRef.current[pageNum]) {
-          console.log(`[MUTEX] Blocked duplicated concurrent run attempt for Page ${pageNum}`);
-          return "";
-      }
+if (pageProcessingLockRef.current[pageNum]) {
+    // Development info removed for production
+    return "";
+}
       pageProcessingLockRef.current[pageNum] = true;
 
-      console.log(`--- EXECUTING SINGLE OCR RUN FOR PAGE ${pageNum} ---`);
+      console.info(`--- EXECUTING SINGLE OCR RUN FOR PAGE ${pageNum} ---`);
       try {
         let fileType = file.type || '';
       if (!fileType) {
@@ -272,7 +290,6 @@ const startOcrProcess = async () => {
                 })
                 .then((data: any) => {
                   // Ensure it correctly logs and checks data.primary and data.backup
-                  console.log("Fetched OCR keys:", { hasPrimary: !!data?.primary, hasBackup: !!data?.backup });
                   
                   const fetchedKeys = data || {};
                   const cleanKey = (key: any) => {
@@ -290,7 +307,7 @@ const startOcrProcess = async () => {
                   
                   // Remove any premature blocking check that throws a string alert
                   if (ocrKeys.length === 0) {
-                    console.info("Valid keys are being injected from the fetched keys object payload into the client endpoint headers.");
+    // Development info removed for production
                     ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
                   }
                   
@@ -336,12 +353,6 @@ diagnosticFormData.append('isOverlayRequired', 'false');
 diagnosticFormData.append('OcrEngine', '2');
 diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
 // Log request params before OCR.space fallback
-console.log("OCR REQUEST PARAMS", {
-  language: 'auto',
-  OCREngine: '2',
-  apiKeyPresent: true,
-  fileType: blob.type || 'image/jpeg'
-});
                       
                       fetch("https://api.ocr.space/parse/image", {
                         method: "POST",
@@ -349,7 +360,6 @@ console.log("OCR REQUEST PARAMS", {
                       })
                       .then(async res => {
                         const txt = await res.text();
-                        console.log("RAW OCR SPACE TEXT:", txt);
                         if (!res.ok) {
                           // Show raw error text in UI for debugging
                           setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
@@ -545,6 +555,18 @@ console.log("OCR REQUEST PARAMS", {
           const errorMsg = `[Lỗi bóc tách Trang ${pageIdx}]: ${errorMsgObj}`;
           setEditorContent((prev) => prev + (prev ? "\n\n" + errorMsg : errorMsg));
           editorContentRef.current += (editorContentRef.current ? "\n\n" + errorMsg : errorMsg);
+        } finally {
+          // Free resource from memory
+          const key = `${qFile.id}-${pageIdx}`;
+          const url = revocationRefs.current.get(key);
+          if (url) {
+            try {
+              URL.revokeObjectURL(url);
+            } catch (e) {
+              // ignore
+            }
+            revocationRefs.current.delete(key);
+          }
         }
       };
 
@@ -554,11 +576,15 @@ console.log("OCR REQUEST PARAMS", {
         if (pageFiles.length === 0) {
           try {
             pageFiles = await splitPdfToImages(file, () => {});
-            const sliced = pageFiles.map((pFile, idx) => ({
-              index: idx + 1,
-              dataUrl: URL.createObjectURL(pFile),
-              size: `${(pFile.size / 1024).toFixed(0)} KB`
-            }));
+            const sliced = pageFiles.map((pFile, idx) => {
+              const url = URL.createObjectURL(pFile);
+              revocationRefs.current.set(`${qFile.id}-${idx + 1}`, url);
+              return {
+                index: idx + 1,
+                dataUrl: url,
+                size: `${(pFile.size / 1024).toFixed(0)} KB`
+              };
+            });
             const initialPageStates: Record<number, any> = {};
             for(let p = 1; p <= pageFiles.length; p++) {
               initialPageStates[p] = { status: 'idle' };

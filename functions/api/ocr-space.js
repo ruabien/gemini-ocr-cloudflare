@@ -173,8 +173,6 @@ export async function onRequestPost(context) {
 
     const ocrSpaceKeys = [env.OCR_SPACE_API_KEY, env.OCR_SPACE_API_KEY_1].filter(Boolean);
 
-    // Log dev mode: số lượng key được load
-    console.log(`[OCR.space Key Pool Info] Loaded keys count: ${ocrSpaceKeys.length}`);
 
     if (ocrSpaceKeys.length === 0) {
       return new Response(
@@ -208,12 +206,6 @@ export async function onRequestPost(context) {
         ocrFormData.append('scale', 'true');
         ocrFormData.append('file', file);
 
-        console.log("OCR REQUEST PARAMS", {
-          language: l,
-          OCREngine: "2",
-          apiKeyPresent: !!apiKeyObj.key,
-          fileType: file.type || (file.name ? file.name.split('.').pop() : "")
-        });
 
         // Client timeout 45s
         const controller = new AbortController();
@@ -388,8 +380,6 @@ export async function onRequestPost(context) {
       const activeKey = ocrSpaceKeys[currentIndex];
       keyIndexUsed = currentIndex;
 
-      // Log dev mode: key index đang thử
-      console.log(`[OCR.space Attempt] keyIndex: ${currentIndex}`);
 
       const res = await runOcrWithKey({ key: activeKey }, currentLanguage);
 
@@ -404,8 +394,7 @@ export async function onRequestPost(context) {
         retryCount++;
         failReasons.push(`Key #${currentIndex}: ${res.code} - ${res.message}`);
 
-        // Log dev mode: reason fail (nếu fail)
-        console.log(`[OCR.space Attempt Failed] keyIndex: ${currentIndex}, reason: ${res.code} (${res.message})`);
+        console.warn(`[OCR.space Attempt Failed] keyIndex: ${currentIndex}, reason: ${res.code} (${res.message})`);
 
         // Kiểm tra xem lỗi này có được phép xoay sang key khác không
         const rotatable = isRotatableError(res);
