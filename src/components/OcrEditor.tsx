@@ -4,60 +4,31 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import { 
-  ArrowLeft, FileText, Download, Shield, Eye, EyeOff, Edit3, 
-  Settings, Bold, Italic, Underline, AlignJustify, RefreshCw, 
-  FileSpreadsheet, Sparkles, CheckCircle2, AlertTriangle, Plus, Trash2, ShieldAlert,
-  ChevronUp, ChevronDown, Save, BookOpen, X
+import {
+  ArrowLeft,
+  FileText,
+  Download,
+  Shield,
+  Eye,
+  EyeOff,
+  Bold,
+  Italic,
+  Underline,
+  AlignJustify,
+  AlertTriangle,
+  CheckCircle2,
+  X,
+  Sparkles
 } from "lucide-react";
-import { OcrDocument, ExtractionField } from "../types";
-import * as pdfjs from 'pdfjs-dist';
-
-export interface ExportTemplate {
-  id: string;
-  name: string;
-  fields: ExtractionField[];
-}
-
-export const DEFAULT_TEMPLATES: ExportTemplate[] = [
-  {
-    id: "default-1",
-    name: "Mẫu Quyết định hành chính (Mặc định)",
-    fields: [
-      { id: "1", name: "Họ và tên", key: "Họ tên", type: "text" },
-      { id: "2", name: "Số CCCD / Định danh", key: "CCCD", type: "text" },
-      { id: "3", name: "Ngày sinh / Năm sinh", key: "sinh", type: "date" },
-      { id: "4", name: "Địa chỉ liên hệ", key: "ngụ tại", type: "text" }
-    ]
-  },
-  {
-    id: "default-2",
-    name: "Mẫu Lý lịch tư pháp chuyên sâu",
-    fields: [
-      { id: "ll-1", name: "Hộ và tên đối tượng", key: "Họ tên", type: "text" },
-      { id: "ll-2", name: "Thời gian cư trú", key: "ngụ tại", type: "text" },
-      { id: "ll-3", name: "Nghề nghiệp / Đơn vị tuyển dụng", key: "đơn vị", type: "text" },
-      { id: "ll-4", name: "Tiền án tiền sự", key: "án tích", type: "text" }
-    ]
-  },
-  {
-    id: "default-3",
-    name: "Mẫu Trích lục hồ sơ Khai sinh / Kết hôn",
-    fields: [
-      { id: "ks-1", name: "Họ tên đứa trẻ / Đương sự chính", key: "Nguyễn", type: "text" },
-      { id: "ks-2", name: "Họ tên cha", key: "Bố", type: "text" },
-      { id: "ks-3", name: "Họ tên mẹ", key: "Mẹ", type: "text" },
-      { id: "ks-4", name: "Số quyển đăng ký", key: "Số đăng ký", type: "text" }
-    ]
-  }
-];
+import { OcrDocument } from "../types";
+import * as pdfjs from "pdfjs-dist";
 
 const sanitizeText = (raw: string) => {
   if (!raw) return "";
   return raw
-    .replace(/\*\*/g, "") // Xóa dấu in đậm Markdown
-    .replace(/\*/g, "")   // Xóa dấu in nghiêng Markdown
-    .replace(/_/g, "")    // Xóa triệt để các ký tự gạch dưới bị rò rỉ
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .replace(/_/g, "")
     .trim();
 };
 
@@ -68,7 +39,12 @@ interface OcrEditorProps {
   setActiveTab: (tab: string) => void;
 }
 
-export default function OcrEditor({ document, onBack, membershipRole, setActiveTab }: OcrEditorProps) {
+export default function OcrEditor({
+  document,
+  onBack,
+  membershipRole,
+  setActiveTab
+}: OcrEditorProps) {
   if (!document) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 text-center">
@@ -78,7 +54,8 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             Chưa có dữ liệu hồ sơ được chọn.
           </h2>
           <p className="text-slate-600 mb-6">
-            Vui lòng quay lại trang Phân tích OCR để chọn file và tiến hành bóc tách.
+            Vui lòng quay lại trang Phân tích OCR để chọn file và tiến hành bóc
+            tách.
           </p>
           <button
             onClick={onBack}
@@ -91,40 +68,46 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     );
   }
 
-  // Trạng thái nâng cấp & tính năng PRO
+  // Upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
-  // -------------------------------------------------
-  // Parse OCR data from `document.content` (backend response) 
-  // or fallback to legacy `document` fields.
-  // This ensures the editor never receives the literal string "undefined".
+
+  // Parse OCR data
   const parsedData = (() => {
     if (!document) return {};
     if (document.content) {
       try {
         return JSON.parse(document.content);
       } catch {
-        // Not a JSON string – may be a mock base64 placeholder or raw text.
         return { text: document.content };
       }
     }
     return {};
   })();
 
-  const ocrText    = sanitizeText(parsedData.text || parsedData.data?.text || document?.rawText || "");
-  const fileType   = parsedData.fileType   || document?.fileType   || "";
+  const ocrText = sanitizeText(
+    parsedData.text ||
+      parsedData.data?.text ||
+      document?.rawText ||
+      ""
+  );
+  const fileType = parsedData.fileType || document?.fileType || "";
   const resolution = parsedData.resolution || document?.resolution || "";
-  const uploader   = parsedData.uploader   || document?.uploader   || "";
-  const accuracy   = (parsedData.accuracy !== undefined ? parsedData.accuracy : document?.accuracy) ?? "";
-  const warnings   = parsedData.warnings ?? document?.warnings ?? [];
+  const uploader = parsedData.uploader || document?.uploader || "";
+  const accuracy = parsedData.accuracy ?? document?.accuracy ?? "";
+  const warnings = parsedData.warnings ?? document?.warnings ?? [];
 
-  // Trạng thái lưu trữ văn bản đang biên tập
   const [editorText, setEditorText] = useState(ocrText);
   const [isAnonymized, setIsAnonymized] = useState(false);
   const [originalBackup, setOriginalBackup] = useState(ocrText);
   const [isEncryptActive, setIsEncryptActive] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isRedacting, setIsRedacting] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
 
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // PDF / image preview
   useEffect(() => {
     const selectedFile = document?.selectedFile;
     if (!selectedFile || (Array.isArray(selectedFile) && selectedFile.length === 0)) {
@@ -142,31 +125,29 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
 
     if (isPdf) {
       if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        pdfjs.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
       }
-      const fileReader = new FileReader();
-      fileReader.onload = async function() {
+      const reader = new FileReader();
+      reader.onload = async function () {
         try {
           const typedarray = new Uint8Array(this.result as ArrayBuffer);
           const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-          const page = await pdf.getPage(1); // Get page 1
-          
+          const page = await pdf.getPage(1);
           const viewport = page.getViewport({ scale: 1.5 });
-          const canvas = window.document.createElement('canvas');
-          const context = canvas.getContext('2d');
+          const canvas = window.document.createElement("canvas");
+          const context = canvas.getContext("2d");
           if (context) {
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-            
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-            const imageBase64 = canvas.toDataURL('image/jpeg');
-            setPreviewUrl(imageBase64); // This base64 bypasses CSP iframe restrictions perfectly
+            await page.render({ canvasContext: context, viewport }).promise;
+            setPreviewUrl(canvas.toDataURL("image/jpeg"));
           }
         } catch (e) {
           console.error("PDF preview error:", e);
         }
       };
-      fileReader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(file);
     } else {
       try {
         const url = URL.createObjectURL(file);
@@ -181,33 +162,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     }
   }, [document?.selectedFile]);
 
-  // Trạng thái các trường Excel tự định nghĩa
-  const [exportFields, setExportFields] = useState<ExtractionField[]>([
-    { id: "1", name: "Họ và tên", key: "Họ tên", type: "text" },
-    { id: "2", name: "Số CCCD / Định danh", key: "CCCD", type: "text" },
-    { id: "3", name: "Ngày sinh / Năm sinh", key: "sinh", type: "date" },
-    { id: "4", name: "Địa chỉ liên hệ", key: "ngụ tại", type: "text" }
-  ]);
-
-  // Bộ quản lý template trong localStorage
-  const [userTemplates, setUserTemplates] = useState<ExportTemplate[]>(() => {
-    try {
-      const saved = localStorage.getItem("SOVEREIGN_OCR_EXCEL_TEMPLATES");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default-1");
-  const [templateSaveName, setTemplateSaveName] = useState<string>("");
-  
-  const [newFieldName, setNewFieldName] = useState("");
-  const [newFieldKey, setNewFieldKey] = useState("");
-  const [isExportingExcel, setIsExportingExcel] = useState(false);
-  const [isExportingDocx, setIsExportingDocx] = useState(false);
-  const [isRedacting, setIsRedacting] = useState(false);
-
+  // Sync editor text on OCR load
   useEffect(() => {
     if (ocrText && !editorText) {
       setEditorText(ocrText);
@@ -215,98 +170,14 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     }
   }, [ocrText]);
 
-  // Di chuyển trường dữ liệu lên trước (sắp xếp)
-  const moveFieldUp = (index: number) => {
-    if (index === 0) return;
-    const updated = [...exportFields];
-    const temp = updated[index];
-    updated[index] = updated[index - 1];
-    updated[index - 1] = temp;
-    setExportFields(updated);
-  };
-
-  // Di chuyển trường dữ liệu xuống sau (sắp xếp)
-  const moveFieldDown = (index: number) => {
-    if (index === exportFields.length - 1) return;
-    const updated = [...exportFields];
-    const temp = updated[index];
-    updated[index] = updated[index + 1];
-    updated[index + 1] = temp;
-    setExportFields(updated);
-  };
-
-  // Áp dụng mẫu trường được chọn
-  const handleApplyTemplate = (templateId: string) => {
-    setSelectedTemplateId(templateId);
-    
-    // Tìm trong Default và User Templates
-    const foundDefault = DEFAULT_TEMPLATES.find(t => t.id === templateId);
-    if (foundDefault) {
-      setExportFields([...foundDefault.fields]);
-      return;
-    }
-    
-    const foundUser = userTemplates.find(t => t.id === templateId);
-    if (foundUser) {
-      setExportFields([...foundUser.fields]);
-    }
-  };
-
-  // Lưu cấu hình trường hiện trị thành Template mới
-  const handleSaveAsTemplate = () => {
-    const trimmedName = templateSaveName.trim();
-    if (!trimmedName) return;
-    if (exportFields.length === 0) {
-      alert("Vui lòng thiết lập ít nhất một cột dữ liệu trước khi lưu thành mẫu.");
-      return;
-    }
-
-    const newTemplate: ExportTemplate = {
-      id: "user-" + Date.now().toString(),
-      name: trimmedName,
-      fields: [...exportFields]
-    };
-
-    const updated = [...userTemplates, newTemplate];
-    setUserTemplates(updated);
-    localStorage.setItem("SOVEREIGN_OCR_EXCEL_TEMPLATES", JSON.stringify(updated));
-    setSelectedTemplateId(newTemplate.id);
-    setTemplateSaveName("");
-    alert(`Đã lưu cấu hình làm mẫu "${trimmedName}" thành công! Mẫu này sẽ có sẵn cho tất cả các tài liệu sau.`);
-  };
-
-  // Xóa Template tự lưu
-  const handleDeleteTemplate = (templateId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    event.preventDefault();
-    const updated = userTemplates.filter(t => t.id !== templateId);
-    setUserTemplates(updated);
-    localStorage.setItem("SOVEREIGN_OCR_EXCEL_TEMPLATES", JSON.stringify(updated));
-    if (selectedTemplateId === templateId) {
-      setSelectedTemplateId("default-1");
-      setExportFields([...DEFAULT_TEMPLATES[0].fields]);
-    }
-  };
-  
-  // Trình soạn thảo Ref
-  const editorRef = useRef<HTMLDivElement>(null);
-
-  // Đồng bộ text biên tập với UI editorRef
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerText = editorText;
-    }
-  }, [editorText]);
-
-  // Áp dụng phong cách biên tập sành điệu
+  // Text styling commands
   const applyStyle = (command: string) => {
     window.document.execCommand(command, false, undefined);
   };
 
-  // 1. Logic Anonymization (Mật danh hóa thông tin đương sự qua API)
+  // Anonymization toggle
   const handleToggleAnonymize = async () => {
     if (isAnonymized) {
-      // Phục hồi nguyên bản
       setEditorText(originalBackup);
       setIsAnonymized(false);
     } else {
@@ -319,21 +190,20 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
         });
         const data = await response.json();
         if (data.success) {
-          // Lưu backup và cập nhật
           setOriginalBackup(editorText);
           setEditorText(data.anonymizedText);
           setIsAnonymized(true);
         }
       } catch (err) {
-        console.error("Lỗi mật danh hóa:", err);
-        // Fallback offline nhanh
-        const fallbackText = editorText
+        console.error("Anonymization error:", err);
+        // Simple fallback
+        const fallback = editorText
           .replace(/Nguyễn Văn A/g, "Nguyễn Văn ***")
           .replace(/Trần Văn B/g, "Trần Văn ***")
           .replace(/Nguyễn Thị C/g, "Nguyễn Thị ***")
           .replace(/\d{12}/g, "079*********");
         setOriginalBackup(editorText);
-        setEditorText(fallbackText);
+        setEditorText(fallback);
         setIsAnonymized(true);
       } finally {
         setIsRedacting(false);
@@ -341,21 +211,24 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
     }
   };
 
-  // 2. Logic Xuất file DOCX nghị định 30 qua API
+  // Export DOCX (Pro only)
   const handleExportDocx = async () => {
     if (membershipRole !== "Pro") {
-      setUpgradeFeature("Xuất tệp Word (.DOCX) chuẩn Nghị định 30/2020/NĐ-CP của khối Tố tụng, Tư pháp");
+      setUpgradeFeature(
+        "Xuất tệp Word (.DOCX) chuẩn Nghị định 30/2020/NĐ-CP"
+      );
       setShowUpgradeModal(true);
       return;
     }
     setIsExportingDocx(true);
     try {
-      const textToExport = editorText || "";
-      const cleanText = sanitizeText(textToExport);
       const response = await fetch("/api/ocr/export/docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: cleanText, fileName: document.name })
+        body: JSON.stringify({
+          text: sanitizeText(editorText),
+          fileName: document.name
+        })
       });
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
@@ -366,80 +239,28 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
       link.click();
       link.remove();
     } catch (err) {
-      console.error("Lỗi xuất DOCX:", err);
+      console.error("Export DOCX error:", err);
     } finally {
       setIsExportingDocx(false);
     }
   };
 
-  // 2b. Logic Xuất file văn bản thô mặc định (.TXT) - Dành cho tất cả thành viên
+  // Export TXT (always free)
   const handleExportTxt = () => {
     try {
-      const textToExport = editorText || "";
-      const cleanText = sanitizeText(textToExport);
-      const blob = new Blob([cleanText], { type: "text/plain;charset=utf-8" });
+      const blob = new Blob([sanitizeText(editorText)], {
+        type: "text/plain;charset=utf-8"
+      });
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement("a");
       link.href = url;
       link.download = `${document.name.replace(/\.[^/.]+$/, "")}_VKS.txt`;
       link.click();
     } catch (err) {
-      console.error("Lỗi xuất TXT:", err);
+      console.error("Export TXT error:", err);
     }
   };
 
-  // 3. Logic Xuất bảng trích xuất tùy chỉnh Excel qua API
-  const handleExportExcel = async () => {
-    if (membershipRole !== "Pro") {
-      setUpgradeFeature("Trích xuất cấu trúc trường dữ liệu sang Excel tùy biến (Họ tên bị can, Bị cáo, Tuổi, Ngày thụ lý...)");
-      setShowUpgradeModal(true);
-      return;
-    }
-
-    setIsExportingExcel(true);
-    try {
-      const textToAnalyze = editorRef.current ? editorRef.current.innerText : editorText;
-      const response = await fetch("/api/ocr/export/excel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToAnalyze, fields: exportFields })
-      });
-
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = window.document.createElement("a");
-      link.href = downloadUrl;
-      link.download = "VN_OCR_TRICH_XUAT.csv"; // CSV UTF-8 BOM hoàn hảo trên MS Excel
-      window.document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error("Lỗi trích xuất Excel:", err);
-    } finally {
-      setIsExportingExcel(false);
-    }
-  };
-
-  // Thêm trường trích xuất tùy định nghĩa của cán bộ
-  const handleAddExportField = () => {
-    if (!newFieldName.trim() || !newFieldKey.trim()) return;
-    const newField: ExtractionField = {
-      id: Date.now().toString(),
-      name: newFieldName.trim(),
-      key: newFieldKey.trim(),
-      type: "text"
-    };
-    setExportFields([...exportFields, newField]);
-    setNewFieldName("");
-    setNewFieldKey("");
-  };
-
-  // Xóa trường trích xuất
-  const handleRemoveExportField = (id: string) => {
-    setExportFields(exportFields.filter(f => f.id !== id));
-  };
-
-  // Xử lý thay đổi nội dung trực tiếp
   const handleEditorInput = () => {
     if (editorRef.current) {
       setEditorText(editorRef.current.innerText);
@@ -447,73 +268,83 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
   };
 
   return (
-    <div id="ocr-editor-view" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      
-      {/* THANH PANEL LỆNH TRÊN CÙNG */}
+    <div
+      id="ocr-editor-view"
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
+    >
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center space-x-3">
           <button
             onClick={onBack}
             className="p-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-slate-600 transition-colors cursor-pointer"
-            title="Quay lại scanner để tải tài liệu khác"
+            title="Quay lại scanner"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
-            <h2 className="text-sm sm:text-base font-bold text-slate-800 tracking-tight flex items-center">
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 flex items-center">
               <FileText className="h-4.5 w-4.5 text-red-600 mr-2" />
               <span>Workspace: {document.name}</span>
             </h2>
             <p className="text-[10px] text-slate-500 font-medium">
-              Định dạng quét: <span className="text-slate-700 font-bold">{fileType}</span> • {resolution} • Uploader: {uploader}
+              Định dạng: <span className="text-slate-700 font-bold">{fileType}</span>{" "}
+              • {resolution} • Người tải: {uploader}
             </p>
           </div>
         </div>
 
-        {/* Nút Xuất File và Trực quan Bảo mật */}
+        {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Trạng thái AES-256 */}
-          <div 
+          {/* AES toggle (visual only) */}
+          <div
             onClick={() => setIsEncryptActive(!isEncryptActive)}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold font-mono tracking-wider flex items-center space-x-1.5 cursor-pointer transition-all ${
-              isEncryptActive 
-                ? "bg-emerald-50 border-emerald-300 text-emerald-700" 
+            className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold font-mono flex items-center space-x-1.5 cursor-pointer transition-all ${
+              isEncryptActive
+                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                 : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
-            title="Bộ bảo vệ luồng dữ liệu AES-256"
           >
-            <Shield className={`h-3.5 w-3.5 ${isEncryptActive ? "text-emerald-600 animate-pulse" : "text-slate-400"}`} />
+            <Shield
+              className={`h-3.5 w-3.5 ${
+                isEncryptActive ? "text-emerald-600 animate-pulse" : "text-slate-400"
+              }`}
+            />
             <span>AES-256: {isEncryptActive ? "đang bảo mật" : "tắt"}</span>
           </div>
 
           <button
             onClick={handleToggleAnonymize}
             disabled={isRedacting}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-bold tracking-wide flex items-center space-x-1.5 transition-all ${
+            className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center space-x-1.5 transition-all ${
               isAnonymized
                 ? "bg-yellow-500 text-white border-yellow-600"
                 : "bg-white hover:bg-slate-50 text-slate-700 border-slate-300"
             }`}
           >
             {isAnonymized ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-slate-500" />}
-            <span>{isRedacting ? "Đang mã hóa..." : isAnonymized ? "Hiện thông tin đương sự" : "Mật danh hóa đương sự"}</span>
+            <span>
+              {isRedacting
+                ? "Đang mã hoá..."
+                : isAnonymized
+                ? "Hiện thông tin đương sự"
+                : "Mật danh hoá đương sự"}
+            </span>
           </button>
 
-          {/* Nút xuất văn bản TXT mặc định */}
           <button
             onClick={handleExportTxt}
-            className="bg-slate-900 hover:bg-slate-800 border border-transparent text-white px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide flex items-center space-x-1.5 shadow-sm cursor-pointer transition-all"
-            title="Xuất file văn bản thô không định dạng lề (Mặc định miễn phí)"
+            className="bg-slate-900 hover:bg-slate-800 border border-transparent text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-sm"
+            title="Xuất văn bản thô (.TXT)"
           >
             <Download className="h-4 w-4 text-slate-350" />
             <span>Xuất bản thô (.TXT)</span>
           </button>
 
-          {/* Nút xuất Word premium */}
           <button
             onClick={handleExportDocx}
             disabled={isExportingDocx}
-            className={`font-bold px-4 py-1.5 rounded-lg text-xs tracking-wide flex items-center space-x-1.5 shadow-md cursor-pointer transition-all ${
+            className={`font-bold px-4 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition-all ${
               membershipRole === "Pro"
                 ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-rose-500/10"
                 : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45"
@@ -525,73 +356,67 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
               <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
             )}
             <span>
-              {isExportingDocx ? "Đang xuất..." : membershipRole === "Pro" ? "Xuất Word (.DOCX)" : "Xuất Word PRO (.DOCX)"}
+              {isExportingDocx
+                ? "Đang xuất..."
+                : membershipRole === "Pro"
+                ? "Xuất Word (.DOCX)"
+                : "Xuất Word PRO (.DOCX)"}
             </span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* CỘT BÊN TRÁI (LỚP BIỂU DIỄN VĂN BẢN VÀ Ô NHẬN DIỆN MÀU VÀNG/ĐỎ) - Chiếm 5/12 cột */}
+        {/* Left column: preview */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between">
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center space-x-1.5">
-                <span className="h-2 w-2 rounded-full bg-yellow-500 inline-block animate-pulse" />
-                <span>Bản chụp tài liệu nguyên bản</span>
-              </h4>
-              <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-mono text-slate-500">
-                100% RAW SCAN
+            <div className="bg-slate-50 p-3 border-b border-slate-200 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">
+                Bản xem tài liệu gốc
               </span>
             </div>
-
-            {/* Khung hiển thị tài liệu gốc thực tế hoặc fallback mock */}
-            <div className="p-1 bg-slate-50 text-slate-600 relative h-[500px] overflow-hidden rounded-b-xl flex items-center justify-center">
+            <div className="p-4 max-h-[300px] overflow-y-auto bg-slate-55 text-xs text-slate-650 font-mono whitespace-pre-wrap">
               {previewUrl ? (
-                <img src={previewUrl} alt="Hồ sơ đại diện" className="max-w-full max-h-full object-contain rounded-lg" />
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="max-w-full max-h-full object-contain rounded"
+                />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-500 bg-white border border-dashed border-slate-200 rounded-xl p-6">
-                  <div className="p-4 bg-red-500/10 text-red-600 rounded-full mb-3">
-                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 text-center truncate max-w-full">
-                    {document?.name || "Workspace: Document"}
-                  </p>
-                  <span className="mt-2 px-2.5 py-1 text-xs font-medium bg-slate-150 text-slate-600 rounded-md border border-slate-200">
-                    {document?.selectedFile ? "Đang tạo bản xem trước..." : "Trang 1 / Hồ sơ gốc bảo mật"}
-                  </span>
-                </div>
+                <p className="text-slate-500">Không có preview.</p>
               )}
             </div>
           </div>
 
-          {/* SỬA NHANH & CHI TIẾT OCR (Accuracy Panel) */}
+          {/* Accuracy & warnings */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h4 className="font-bold text-slate-850 text-slate-800 text-xs uppercase tracking-wide flex items-center space-x-1.5 border-b border-slate-100 pb-2.5">
-              <Sparkles className="h-4 w-4 text-rose-600" />
-              <span>Chẩn đoán & Sửa nhanh lỗi scan</span>
+            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wide">
+              Đánh giá độ chính xác & cảnh báo
             </h4>
-
             <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-150">
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Độ chính xác bóc tách</p>
-                <p className="text-xl font-mono font-black text-emerald-600 mt-0.5">{accuracy}%</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                  Độ chính xác bóc tách
+                </p>
+                <p className="text-xl font-mono font-black text-emerald-600 mt-0.5">
+                  {accuracy}%
+                </p>
               </div>
-              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-200 block">
+              <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-200">
                 TỐI ƯU TIẾNG VIỆT
               </span>
             </div>
-
             <div className="space-y-2">
-              <p className="text-[10px] font-bold text-slate-500 uppercase">Phát hiện cảnh báo ({warnings.length})</p>
-              
-              <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
-                {warnings.map((warn: any, index: number) => (
-                  <div key={index} className="bg-yellow-50 border border-yellow-250 p-2 rounded flex items-start space-x-2 text-yellow-800 text-[10px] leading-relaxed">
-                    <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[10px] font-bold text-slate-500 uppercase">
+                Cảnh báo ({warnings.length})
+              </p>
+              <div className="max-h-32 overflow-y-auto space-y-2 custom-scrollbar">
+                {warnings.map((warn: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="bg-yellow-50 border border-yellow-250 p-2 rounded flex items-start space-x-2 text-yellow-800 text-[10px]"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-bold">Dòng {warn?.line}: "{warn?.text}"</p>
                       <p className="text-slate-600">{warn?.description}</p>
@@ -603,351 +428,130 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
           </div>
         </div>
 
-        {/* CỘT BÊN PHẢI (TRÌNH BIÊN TẬP VĂN BẢN VÀ PANEL EXCEL) - Chiếm 7/12 cột */}
+        {/* Right column: editor */}
         <div className="lg:col-span-7 space-y-6">
-          
-          {/* TRÌNH EDIT RICH TEXT CHUẨN NGHỊ ĐỊNH 30 */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-md paper-glow">
-            
-            {/* Thanh công cụ biên tập */}
+            {/* Toolbar */}
             <div className="bg-slate-50 p-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   onClick={() => applyStyle("bold")}
-                  className="p-1 px-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm transition-colors cursor-pointer"
-                  title="In đậm (CTRL+B)"
+                  className="p-1 px-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
                 >
                   <Bold className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => applyStyle("italic")}
-                  className="p-1 px-2 text-xs font-italic text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm transition-colors cursor-pointer"
-                  title="In nghiêng (CTRL+I)"
+                  className="p-1 px-2 text-xs italic text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
                 >
                   <Italic className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => applyStyle("underline")}
-                  className="p-1 px-2 text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm transition-colors cursor-pointer"
-                  title="Gạch chân (CTRL+U)"
+                  className="p-1 px-2 text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
                 >
                   <Underline className="h-3.5 w-3.5" />
                 </button>
                 <button
-                  onClick={() => applyStyle("justify") /* giả lập */}
-                  className="p-1 px-2 text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm transition-colors cursor-pointer"
-                  title="Căn đều hai bên"
+                  onClick={() => applyStyle("justify")}
+                  className="p-1 px-2 text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
                 >
                   <AlignJustify className="h-3.5 w-3.5" />
                 </button>
-
                 <span className="h-4 w-px bg-slate-300 mx-1" />
-
                 <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded font-mono border border-slate-300">
                   Times New Roman • 14pt (Nghị định 30)
                 </span>
               </div>
-
               <span className="text-[9px] text-slate-400 font-bold uppercase font-mono tracking-wider">
                 Sovereign Live Editor
               </span>
             </div>
 
-            {/* Khung nhập liệu Rich text */}
-            <div className="p-8 min-h-[440px] max-h-[500px] overflow-y-auto custom-scrollbar bg-white focus:outline-none focus:ring-0">
+            {/* Editable area */}
+            <div className="p-8 min-h-[440px] max-h-[500px] overflow-y-auto bg-white focus:outline-none">
               <div
                 ref={editorRef}
                 contentEditable
                 onInput={handleEditorInput}
-                className="legal-editor leading-[1.5] text-justify text-[14pt] text-black bg-white focus:outline-none"
+                className="legal-editor leading-[1.5] text-justify text-[14pt] text-black"
                 style={{
                   fontFamily: '"Times New Roman", Times, serif',
-                  fontSize: '14pt',
-                  lineHeight: '1.5',
-                  color: '#000000',
-                  textAlign: 'justify'
+                  lineHeight: "1.5"
                 }}
               />
             </div>
 
-            {/* Thanh trạng thái dưới cùng của trình soạn thảo */}
+            {/* Footer */}
             <div className="bg-slate-50 p-3 border-t border-slate-200 text-xs flex items-center justify-between text-slate-500 font-medium">
               <span className="flex items-center space-x-1.5 text-emerald-600 font-semibold">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Mẫu soạn thảo tương thích hoàn hảo MS Word (.doc/.docx)</span>
+                <span>Mẫu soạn thảo tương thích Word (.doc/.docx)</span>
               </span>
-              <span className="font-mono">Số ký tự: {(editorText || "").length} kự</span>
+              <span className="font-mono">
+                Số ký tự: {editorText.length}
+              </span>
             </div>
           </div>
-
-------- REPLACE
-          {/* PANEL KẾT XUẤT EXCEL TỰ ĐỊNH NGHĨA */}
-          {document?.outputMode === "structured" && (
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
-              
-              {/* Header / Export Button */}
-              <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5">
-                  <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-                  <span>Trích xuất bảng dữ liệu Excel mẫu tùy chỉnh</span>
-                </h4>
-                <p className="text-slate-400 text-[10px] mt-0.5">Đặt cấu hình các cột thông tin mà bạn muốn bóc tách từ tài liệu ra dạng bảng.</p>
-              </div>
-              <button
-                onClick={handleExportExcel}
-                disabled={isExportingExcel}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-sm border cursor-pointer w-full sm:w-auto justify-center transition-colors ${
-                  membershipRole === "Pro"
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500/10"
-                    : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45 animate-pulse"
-                }`}
-              >
-                {membershipRole === "Pro" ? (
-                  <FileSpreadsheet className="h-4 w-4" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5 text-amber-600 mr-0.5" />
-                )}
-                <span>{isExportingExcel ? "Đang xuất..." : membershipRole === "Pro" ? "Trích Xuất Excel (.XLSX)" : "Trích Xuất Excel PRO (.XLSX)"}</span>
-              </button>
-            </div>
-
-            {/* QUẢN LÝ TEMPLATES (MẪU TRƯỜNG DỮ LIỆU CHUYÊN SÂU LƯU TRÊN LOCALSTORAGE) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-slate-100 pb-5">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase flex items-center space-x-1">
-                  <BookOpen className="h-3 w-3 text-red-500" />
-                  <span>Chọn mẫu trường dữ liệu (Template):</span>
-                </label>
-                <select
-                  value={selectedTemplateId}
-                  onChange={(e) => handleApplyTemplate(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm cursor-pointer"
-                >
-                  <optgroup label="Hệ thống (Mặc định)">
-                    {(DEFAULT_TEMPLATES || []).map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </optgroup>
-                  {(userTemplates || []).length > 0 && (
-                    <optgroup label="Mẫu của tôi (Custom)">
-                      {(userTemplates || []).map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-                {userTemplates.some(t => t.id === selectedTemplateId) && (
-                  <button
-                    onClick={(e) => handleDeleteTemplate(selectedTemplateId, e)}
-                    className="text-[10px] text-rose-600 hover:underline font-bold mt-1.5 inline-block text-left cursor-pointer"
-                  >
-                    Xóa mẫu tự lưu này
-                  </button>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase flex items-center space-x-1">
-                  <Save className="h-3 w-3 text-emerald-500" />
-                  <span>Lưu cấu hình hiện tại thành mẫu mới:</span>
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Nhập tên mẫu để lưu dùng lần sau..."
-                    value={templateSaveName}
-                    onChange={(e) => setTemplateSaveName(e.target.value)}
-                    className="flex-grow bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm"
-                  />
-                  <button 
-                    disabled={!templateSaveName.trim()}
-                    onClick={handleSaveAsTemplate}
-                    className="bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-bold flex items-center space-x-1 border border-transparent transition-all cursor-pointer shadow-sm"
-                    title="Lưu thành mẫu mới"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    <span>Lưu mẫu</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* DANH SÁCH SẮP XẾP TRƯỜNG DỮ LIỆU DẠNG BẢNG - DI CHUYỂN TRƯỚC VÀ SAU */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Cấu hình thứ tự trường dữ liệu:</p>
-              
-              {(exportFields || []).length === 0 ? (
-                <div className="p-4 text-center rounded-lg border border-dashed border-slate-300 text-slate-400 text-xs">
-                  Chưa có trường bóc tách nào. Vui lòng thêm trường hoặc chọn Template mẫu ở trên.
-                </div>
-              ) : (
-                <div className="border border-slate-150 rounded-lg overflow-hidden bg-white shadow-inner">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase text-slate-500 font-bold">
-                        <th className="py-2 px-3 text-center w-12">Thứ tự</th>
-                        <th className="py-2 px-3">Tên cột Excel</th>
-                        <th className="py-2 px-2">Từ khóa định dạng (Key)</th>
-                        <th className="py-2 px-2 text-center w-24">Sắp xếp</th>
-                        <th className="py-2 px-2 text-center w-12">Xóa</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-xs">
-                      {(exportFields || []).map((field, index) => (
-                        <tr key={field?.id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="py-2 px-3 font-mono font-bold text-slate-400 text-center">
-                            {index + 1}
-                          </td>
-                          <td className="py-2 px-3 font-bold text-slate-700">
-                            {field?.name}
-                          </td>
-                          <td className="py-2 px-2">
-                            <code className="bg-slate-100 text-red-600 px-1.5 py-0.5 rounded font-mono text-[10px]">
-                              {field?.key}
-                            </code>
-                          </td>
-                          <td className="py-2 px-2">
-                            <div className="flex items-center justify-center space-x-1">
-                              <button
-                                onClick={() => moveFieldUp(index)}
-                                disabled={index === 0}
-                                className={`p-1 rounded cursor-pointer transition-colors ${
-                                  index === 0 
-                                    ? "text-slate-200 cursor-not-allowed" 
-                                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                                }`}
-                                title="Di chuyển lên trước"
-                              >
-                                <ChevronUp className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => moveFieldDown(index)}
-                                disabled={index === (exportFields || []).length - 1}
-                                className={`p-1 rounded cursor-pointer transition-colors ${
-                                  index === (exportFields || []).length - 1 
-                                    ? "text-slate-200 cursor-not-allowed" 
-                                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                                }`}
-                                title="Di chuyển xuống sau"
-                              >
-                                <ChevronDown className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            <button
-                              onClick={() => handleRemoveExportField(field.id)}
-                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all cursor-pointer"
-                              title="Xóa cột này"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Form thêm cột mới */}
-            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-150 space-y-3">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Thêm trường mới vào cấu hình</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Tên Cột (Hiển thị Excel)</label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Nguyên đơn, Bị cáo"
-                    value={newFieldName}
-                    onChange={(e) => setNewFieldName(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">Từ khóa nhận diện (Key)</label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: nguyên đơn, bị cáo"
-                    value={newFieldKey}
-                    onChange={(e) => setNewFieldKey(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end pt-1">
-                <button
-                  onClick={handleAddExportField}
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded text-[11.5px] font-bold flex items-center space-x-1 border border-transparent shadow-sm transition-all cursor-pointer"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Xác nhận thêm cột</span>
-                </button>
-              </div>
-            </div>
-
-          </div>
-          )}
-
         </div>
-
       </div>
 
+      {/* Upgrade modal */}
       {showUpgradeModal && (
-        <div id="upgrade-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-sm w-full overflow-hidden transform transition-all">
+        <div
+          id="upgrade-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-fadeIn"
+        >
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-sm w-full overflow-hidden">
             <div className="bg-slate-900 p-5 text-white relative">
-              <button 
+              <button
                 onClick={() => setShowUpgradeModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
               <div className="flex items-center space-x-2">
                 <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
-                <span className="text-[9px] uppercase font-bold tracking-widest text-slate-450 text-slate-400">Hội viên đặc quyền</span>
+                <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400">
+                  Hội viên đặc quyền
+                </span>
               </div>
-              <h3 className="text-sm font-bold text-slate-100 mt-1 leading-snug">
+              <h3 className="text-sm font-bold text-slate-100 mt-1">
                 Nâng cấp tài khoản PRO khối tư pháp
               </h3>
             </div>
-            
             <div className="p-5 space-y-4">
               <div className="flex items-start space-x-2.5 text-xs bg-amber-50 text-amber-900 p-3 rounded-lg border border-amber-200/55">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
                 <div>
-                  <p className="font-extrabold text-[11px]">Cần nâng cấp PRO để sử dụng:</p>
-                  <p className="mt-0.5 text-slate-700 text-[11px] leading-relaxed font-semibold">{upgradeFeature}</p>
+                  <p className="font-extrabold text-[11px]">
+                    Cần nâng cấp PRO để sử dụng:
+                  </p>
+                  <p className="mt-0.5 text-slate-700 text-[11px] leading-relaxed font-semibold">
+                    {upgradeFeature}
+                  </p>
                 </div>
               </div>
-
               <div className="space-y-2.5">
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Thiết kế chuyên biệt cho Kiểm sát viên. Giúp tự động hiệu chỉnh văn bản đạt chuẩn Nghị định 30 văn phòng hành chính và tùy chọn bóc tách trường thông tin kết xuất Excel.
+                  Thiết kế chuyên biệt cho Kiểm sát viên. Giúp tự động
+                  hiệu chỉnh văn bản đạt chuẩn Nghị định 30 và xuất Word.
                 </p>
-
                 <div className="border border-slate-150 rounded-lg p-3 bg-slate-50 space-y-1.5 text-[10.5px] text-slate-750">
                   <p className="font-bold text-slate-700 flex items-center">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mr-1.5" />
-                    <span>Mở khóa kết xuất Word (.DOCX) chuẩn tối tụng</span>
+                    Mở khóa xuất Word (.DOCX) chuẩn tố tụng
                   </p>
                   <p className="font-bold text-slate-700 flex items-center">
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mr-1.5" />
-                    <span>Tự xây dựng template & Xuất Excel (.XLSX)</span>
-                  </p>
-                  <p className="font-bold text-slate-700 flex items-center">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mr-1.5" />
-                    <span>Bóc tách không giới hạn trang nghiệp vụ</span>
+                    Xuất Excel (.XLSX) cho tài liệu có cấu trúc (PRO)
                   </p>
                 </div>
               </div>
-
               <div className="flex space-x-2 pt-1 text-xs">
                 <button
                   onClick={() => setShowUpgradeModal(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 py-1.5 rounded-lg text-slate-700 font-bold border border-slate-300 transition-all cursor-pointer"
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 py-1.5 rounded-lg text-slate-700 font-bold border border-slate-300"
                 >
                   Để sau
                 </button>
@@ -956,7 +560,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
                     setShowUpgradeModal(false);
                     setActiveTab("upgrade");
                   }}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-1.5 rounded-lg text-slate-950 font-black tracking-wide shadow-md transition-all cursor-pointer flex items-center justify-center space-x-1"
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-1.5 rounded-lg text-slate-950 font-black tracking-wide shadow-md flex items-center justify-center space-x-1"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   <span>Kích hoạt PRO</span>
@@ -966,7 +570,6 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
           </div>
         </div>
       )}
-
     </div>
   );
 }
