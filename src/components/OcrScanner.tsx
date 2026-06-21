@@ -330,11 +330,18 @@ const startOcrProcess = async () => {
                       }
 
                       const diagnosticFormData = new FormData();
-                      diagnosticFormData.append('apikey', 'helloworld'); // Explicitly bypass our restricted environment tokens
-                      diagnosticFormData.append('language', 'vie');
-                      diagnosticFormData.append('isOverlayRequired', 'false');
-                      diagnosticFormData.append('OcrEngine', '1'); // Fallback to stable engine 1 to prevent formatting constraints
-                      diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
+diagnosticFormData.append('apikey', 'helloworld'); // Explicitly bypass our restricted environment tokens
+diagnosticFormData.append('language', 'auto');
+diagnosticFormData.append('isOverlayRequired', 'false');
+diagnosticFormData.append('OcrEngine', '2');
+diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
+// Log request params before OCR.space fallback
+console.log("OCR REQUEST PARAMS", {
+  language: 'auto',
+  OCREngine: '2',
+  apiKeyPresent: true,
+  fileType: blob.type || 'image/jpeg'
+});
                       
                       fetch("https://api.ocr.space/parse/image", {
                         method: "POST",

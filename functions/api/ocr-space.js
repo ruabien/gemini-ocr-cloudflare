@@ -190,7 +190,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    let currentLanguage = 'vie';
+    let currentLanguage = 'auto';
 
     // Hàm gọi API OCR.space cho một Key cụ thể
     const runOcrWithKey = async (apiKeyObj, lang) => {
@@ -207,6 +207,13 @@ export async function onRequestPost(context) {
         ocrFormData.append('OCREngine', '2');
         ocrFormData.append('scale', 'true');
         ocrFormData.append('file', file);
+
+        console.log("OCR REQUEST PARAMS", {
+          language: l,
+          OCREngine: "2",
+          apiKeyPresent: !!apiKeyObj.key,
+          fileType: file.type || (file.name ? file.name.split('.').pop() : "")
+        });
 
         // Client timeout 45s
         const controller = new AbortController();

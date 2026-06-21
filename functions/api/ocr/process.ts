@@ -86,10 +86,17 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
           const formData = new FormData();
           const currentMimeType = mimeType || "image/png";
           formData.append("base64Image", `data:${currentMimeType};base64,${virtualBase64}`);
-          formData.append("language", "vie");
+          formData.append("language", "auto");
           formData.append("isOverlayRequired", "false");
           formData.append("OCREngine", "2");
           formData.append("scale", "true");
+
+          console.log("OCR REQUEST PARAMS", {
+            language: "auto",
+            OCREngine: "2",
+            apiKeyPresent: !!selectedOcrKey,
+            fileType: currentMimeType
+          });
 
           const ocrSpaceResponse = await fetch("https://api.ocr.space/parse/image", {
             method: "POST",
