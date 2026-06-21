@@ -994,6 +994,28 @@ while (true) {
               </div>
             </div>
 
+            {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
+            <div className="flex justify-center w-full">
+              <button
+                onClick={startOcrProcess}
+                disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
+                className="w-full sm:w-[320px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-4 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-102 flex items-center justify-center space-x-2.5 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
+              >
+                {isBatchProcessing || isSlicing ? (
+                  <Activity className="h-6 w-6 animate-spin" />
+                ) : (
+                  <ScanLine className="h-6 w-6" />
+                )}
+                <span>
+                  {isBatchProcessing 
+                    ? "Đang bóc tách hồ sơ..." 
+                    : isSlicing 
+                      ? "Đang phân tách PDF..." 
+                      : "Bắt đầu bóc tách hồ sơ"}
+                </span>
+              </button>
+            </div>
+
           </div>
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
@@ -1055,18 +1077,8 @@ while (true) {
                   </div>
                 </div>
 
-                {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
-                <button
-                  onClick={startOcrProcess}
-                  disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-4 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-102 flex items-center justify-center space-x-2.5 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
-                >
-                  <ScanLine className="h-6 w-6" />
-                  <span>Bắt đầu bóc tách hồ sơ</span>
-                </button>
-
                 {/* BASIC OPTIONS: Tối ưu ảnh trước OCR */}
-                <div className="mt-4 border-t border-slate-800 pt-4">
+                <div>
                   <label className="flex items-center space-x-2 text-slate-100 cursor-pointer select-none">
                     <input
                       type="checkbox"
