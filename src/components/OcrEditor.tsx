@@ -680,11 +680,13 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             </div>
           </div>
 
+------- REPLACE
           {/* PANEL KẾT XUẤT EXCEL TỰ ĐỊNH NGHĨA */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
-            
-            {/* Header / Export Button */}
-            <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {document?.outputMode === "structured" && (
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+              
+              {/* Header / Export Button */}
+              <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5">
                   <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
@@ -887,6 +889,7 @@ export default function OcrEditor({ document, onBack, membershipRole, setActiveT
             </div>
 
           </div>
+          )}
 
         </div>
 

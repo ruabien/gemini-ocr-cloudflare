@@ -43,4 +43,7 @@ export interface OcrDocument {
   }>;
   selectedFileUrl?: string;
   selectedFile?: File | File[];
+  outputMode?: "text" | "structured";
+  documentType?: string;
+  caseType?: string;
 }

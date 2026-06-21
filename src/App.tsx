@@ -3,6 +3,7 @@ import LandingPage from "./components/LandingPage";
 import Dashboard from "./components/Dashboard";
 import OcrScanner from "./components/OcrScanner";
 import OcrEditor from "./components/OcrEditor";
+import StructuredExtractionEditor from "./components/StructuredExtractionEditor";
 import Navbar from "./components/Navbar";
 import Upgrade from "./components/Upgrade";
 import Settings from "./components/Settings";
@@ -91,12 +92,21 @@ function AppContent() {
           />
         )}
         {activeTab === "editor" && (
-          <OcrEditor
-            document={document}
-            onBack={handleStart}
-            membershipRole={membershipRole}
-            setActiveTab={handleActiveTab}
-          />
+          document?.outputMode === "structured" ? (
+            <StructuredExtractionEditor
+              document={document}
+              onBack={handleStart}
+              membershipRole={membershipRole}
+              setActiveTab={handleActiveTab}
+            />
+          ) : (
+            <OcrEditor
+              document={document}
+              onBack={handleStart}
+              membershipRole={membershipRole}
+              setActiveTab={handleActiveTab}
+            />
+          )
         )}
         {activeTab === "upgrade" && (
           <Upgrade
