@@ -36,6 +36,99 @@ interface StructuredExtractionEditorProps {
   setActiveTab: (tab: string) => void;
 }
 
+function extractSectionText(text: string, startKeywords: string[], stopKeywords: string[]): string {
+  const cleanText = text || "";
+  let startIdx = -1;
+  let matchedKeyword = "";
+  for (const kw of startKeywords) {
+    const idx = cleanText.toLowerCase().indexOf(kw.toLowerCase());
+    if (idx !== -1 && (startIdx === -1 || idx < startIdx)) {
+      startIdx = idx;
+      matchedKeyword = kw;
+    }
+  }
+
+  if (startIdx === -1) return "";
+
+  let content = cleanText.substring(startIdx + matchedKeyword.length);
+  content = content.replace(/^[:\-\s]+/, "");
+
+  let endIdx = content.length;
+  for (const kw of stopKeywords) {
+    const idx = content.toLowerCase().indexOf(kw.toLowerCase());
+    if (idx !== -1 && idx < endIdx) {
+      endIdx = idx;
+    }
+  }
+
+  return content.substring(0, endIdx).trim();
+}
+
+function splitParties(sectionText: string): string[] {
+  if (!sectionText) return [];
+  
+  const text = sectionText.trim();
+  const markerRegex = /(;|\n|\r\n|\b\d+[\.\)\-]\s*|\b(?:Ông|Bà|Anh|Chị|Công\s+ty|Hộ\s+gia\s+đình)\b)/g;
+  const matches: { index: number; text: string; isPrefix: boolean }[] = [];
+  let match;
+  
+  while ((match = markerRegex.exec(text)) !== null) {
+    const matchedText = match[1];
+    const index = match.index;
+    const isPrefix = /^(Ông|Bà|Anh|Chị|Công\s+ty|Hộ\s+gia\s+đình)$/i.test(matchedText.trim());
+    
+    if (isPrefix) {
+      const before = text.substring(Math.max(0, index - 20), index).toLowerCase();
+      const ignorePatterns = [
+        /phường\s+$/, /xã\s+$/, /quận\s+$/, /huyện\s+$/, /tỉnh\s+$/,
+        /thành\s+phố\s+$/, /đường\s+$/, /phố\s+$/, /thị\s+trấn\s+$/,
+        /thị\s+xã\s+$/, /ấp\s+$/, /thôn\s+$/, /tổ\s+$/, /khu\s+$/,
+        /dân\s+phố\s+$/, /chi\s+nhánh\s+$/, /văn\s+phòng\s+$/,
+        /đại\s+diện\s+$/, /ban\s+$/, /vụ\s+$/
+      ];
+      
+      const shouldIgnore = ignorePatterns.some(p => p.test(before));
+      if (shouldIgnore) {
+        continue;
+      }
+    }
+    
+    matches.push({ index, text: matchedText, isPrefix });
+  }
+  
+  const parts: string[] = [];
+  let lastIndex = 0;
+  
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    const segment = text.substring(lastIndex, m.index).trim();
+    if (segment) {
+      parts.push(segment);
+    }
+    
+    if (m.isPrefix || /^\d+[\.\)\-]/.test(m.text.trim())) {
+      lastIndex = m.index;
+    } else {
+      lastIndex = m.index + m.text.length;
+    }
+  }
+  
+  const finalSegment = text.substring(lastIndex).trim();
+  if (finalSegment) {
+    parts.push(finalSegment);
+  }
+  
+  const cleanedParts: string[] = [];
+  for (let part of parts) {
+    part = part.replace(/^[,.;\-\s]+/, "").replace(/[,.;\-\s]+$/, "").trim();
+    if (part.length > 3) {
+      cleanedParts.push(part);
+    }
+  }
+  
+  return cleanedParts;
+}
+
 // Hàm heuristic để bóc tách thông tin từ văn bản OCR thô
 function runRuleBasedExtraction(
   text: string,
@@ -88,31 +181,82 @@ function runRuleBasedExtraction(
     // Tìm số thụ lý: "Số: ... /... /TB-TL"
     const soLine = findLineWithKeyword(["Số:", "Thụ lý số:"]);
     const soMatch = soLine ? soLine.match(/(Số\s*:\s*[^\s,\n]+|Thụ lý số\s*:\s*[^\s,\n]+)/i) : null;
-    const soThuLy = soMatch ? soMatch[0].replace(/Số\s*:\s*/i, "").trim() : "TB-TL/DS";
+    const soThuLy = soMatch ? soMatch[0].replace(/^(Số|Thụ lý số)\s*:\s*/i, "").trim() : "";
 
     const dateMatch = cleanText.match(dateRegex);
-    const ngayThuLy = dateMatch ? dateMatch[0] : "Chưa tìm thấy ngày";
+    const ngayThuLy = dateMatch ? dateMatch[0] : "";
 
-    const toaAnLine = findLineWithKeyword(["Tòa án nhân dân", "TAND"]);
-    const toaAn = toaAnLine ? toaAnLine.trim() : "Tòa án nhân dân";
+    const nguyenDonText = extractSectionText(cleanText, ["Nguyên đơn:", "Người khởi kiện:"], ["Bị đơn:", "Người bị kiện:", "Người có quyền", "Người liên quan:", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn"]);
+    const biDonText = extractSectionText(cleanText, ["Bị đơn:", "Người bị kiện:"], ["Nguyên đơn:", "Người khởi kiện:", "Người có quyền", "Người liên quan:", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn"]);
+    const nguoiLienQuanText = extractSectionText(cleanText, ["Người có quyền lợi, nghĩa vụ liên quan:", "Người có quyền lợi và nghĩa vụ liên quan:", "Người liên quan:"], ["Nguyên đơn:", "Người khởi kiện:", "Bị đơn:", "Người bị kiện:", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn"]);
+    const quanHe = extractSectionText(cleanText, ["Quan hệ pháp luật tranh chấp:", "Quan hệ pháp luật:", "Về việc:", "Tranh chấp về:"], ["Nguyên đơn:", "Người khởi kiện:", "Bị đơn:", "Người bị kiện:", "Người có quyền", "Người liên quan:", "Thẩm phán", "Thời hạn"]);
 
-    const nguyenDon = extractValueAfterKeyword(["Nguyên đơn:", "Người khởi kiện:"], ["Bị đơn", "Địa chỉ"]);
-    const biDon = extractValueAfterKeyword(["Bị đơn:", "Người bị kiện:"], ["Người có quyền", "Địa chỉ"]);
-    const nguoiLienQuan = extractValueAfterKeyword(["Người có quyền lợi", "Nghĩa vụ liên quan:"], ["Quan hệ", "Địa chỉ"]);
-    const quanHe = extractValueAfterKeyword(["Quan hệ pháp luật tranh chấp:", "Về việc:", "Tranh chấp về:"], ["Thẩm phán"]);
-    const thamPhan = extractValueAfterKeyword(["Thẩm phán được phân công:", "Thẩm phán giải quyết:"], ["Thư ký"]);
+    const nguyenDonList = splitParties(nguyenDonText);
+    const biDonList = splitParties(biDonText);
+    const nguoiLienQuanList = splitParties(nguoiLienQuanText);
 
-    return [
-      { id: "1", name: "Số thụ lý", value: soThuLy || "Số: .../TB-TL", confidence: "90%", note: "Bóc tách từ từ khóa 'Số:'" },
-      { id: "2", name: "Ngày thụ lý", value: ngayThuLy, confidence: "85%", note: "Bóc tách bằng biểu thức ngày tháng" },
-      { id: "3", name: "Tòa án thụ lý", value: toaAn || "Tòa án nhân dân...", confidence: "80%", note: "Tìm kiếm dòng có chứa 'Tòa án'" },
-      { id: "4", name: "Nguyên đơn", value: nguyenDon || "Nguyễn Văn A", confidence: "75%", note: "Bóc tách sau từ khóa 'Nguyên đơn'" },
-      { id: "5", name: "Bị đơn", value: biDon || "Trần Văn B", confidence: "75%", note: "Bóc tách sau từ khóa 'Bị đơn'" },
-      { id: "6", name: "Người có quyền lợi, nghĩa vụ liên quan", value: nguoiLienQuan || "Nguyễn Thị C", confidence: "60%", note: "Bóc tách sau từ khóa 'Người có quyền lợi'" },
-      { id: "7", name: "Quan hệ pháp luật", value: quanHe || "Tranh chấp hợp đồng dân sự", confidence: "70%", note: "Bóc tách sau 'Quan hệ pháp luật'" },
-      { id: "8", name: "Thẩm phán được phân công", value: thamPhan || "Lê Hoàng D", confidence: "80%", note: "Bóc tách sau 'Thẩm phán'" },
-      { id: "9", name: "Thời hạn nộp ý kiến/tài liệu", value: "15 ngày kể từ ngày nhận được thông báo", confidence: "90%", note: "Mặc định theo Bộ luật tố tụng dân sự" }
-    ];
+    const nguyenDons = nguyenDonList.length > 0 ? nguyenDonList : [""];
+    const biDons = biDonList.length > 0 ? biDonList : [""];
+    const nguoiLienQuans = nguoiLienQuanList.length > 0 ? nguoiLienQuanList : [""];
+
+    const extractedRows: ExtractionRow[] = [];
+    let idCounter = 1;
+
+    extractedRows.push({
+      id: String(idCounter++),
+      name: "Số thụ lý",
+      value: soThuLy || "Số: .../TB-TL",
+      confidence: "90%",
+      note: "Bóc tách từ từ khóa 'Số:'"
+    });
+
+    extractedRows.push({
+      id: String(idCounter++),
+      name: "Ngày thụ lý",
+      value: ngayThuLy,
+      confidence: "85%",
+      note: "Bóc tách bằng biểu thức ngày tháng"
+    });
+
+    extractedRows.push({
+      id: String(idCounter++),
+      name: "Quan hệ pháp luật",
+      value: quanHe || "Tranh chấp hợp đồng dân sự",
+      confidence: "70%",
+      note: "Bóc tách sau 'Quan hệ pháp luật'"
+    });
+
+    nguyenDons.forEach((val, idx) => {
+      extractedRows.push({
+        id: String(idCounter++),
+        name: `Nguyên đơn ${idx + 1}`,
+        value: val,
+        confidence: val ? "75%" : "---",
+        note: "Bóc tách từ phần 'Nguyên đơn'"
+      });
+    });
+
+    biDons.forEach((val, idx) => {
+      extractedRows.push({
+        id: String(idCounter++),
+        name: `Bị đơn ${idx + 1}`,
+        value: val,
+        confidence: val ? "75%" : "---",
+        note: "Bóc tách từ phần 'Bị đơn'"
+      });
+    });
+
+    nguoiLienQuans.forEach((val, idx) => {
+      extractedRows.push({
+        id: String(idCounter++),
+        name: `Người liên quan ${idx + 1}`,
+        value: val,
+        confidence: val ? "60%" : "---",
+        note: "Bóc tách từ phần 'Người có quyền lợi, nghĩa vụ liên quan'"
+      });
+    });
+
+    return extractedRows;
   }
 
   // 2. Template: Thông báo thụ lý - Hành chính
