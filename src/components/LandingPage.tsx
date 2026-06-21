@@ -18,7 +18,8 @@ import {
   Users,
   Calendar,
   FileSpreadsheet,
-  Check
+  Check,
+  ChevronDown
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -151,46 +152,45 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
 
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {/* Lợi ích 1 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col justify-between">
             <div className="absolute top-0 left-0 h-1 bg-red-600 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            <div className="h-10 w-10 bg-slate-100 rounded-lg flex items-center justify-center mb-5 border border-slate-200">
-              <Clock className="h-5 w-5 text-red-600" />
+            <div>
+              <div className="flex items-center space-x-2 mb-3">
+                <Clock className="h-5 w-5 text-red-600 flex-shrink-0" />
+                <h3 className="text-sm font-bold text-slate-850">Giảm thời gian nhập liệu</h3>
+              </div>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                Tự động chuyển đổi toàn bộ tài liệu hồ sơ vụ án, cáo trạng dạng giấy hoặc ảnh chụp sang văn bản số trong vài giây mà không cần gõ lại thủ công.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-850 mb-2 flex items-center">
-              <span className="text-emerald-600 mr-1.5">✓</span> Giảm thời gian nhập liệu
-            </h3>
-            <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-              Tự động chuyển đổi toàn bộ tài liệu hồ sơ vụ án, cáo trạng dạng giấy hoặc ảnh chụp sang văn bản số trong vài giây mà không cần gõ lại thủ công.
-            </p>
           </div>
 
           {/* Lợi ích 2 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col justify-between">
             <div className="absolute top-0 left-0 h-1 bg-yellow-500 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            <div className="h-10 w-10 bg-slate-100 rounded-lg flex items-center justify-center mb-5 border border-slate-200">
-              <Users className="h-5 w-5 text-yellow-600" />
+            <div>
+              <div className="flex items-center space-x-2 mb-3">
+                <Users className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                <h3 className="text-sm font-bold text-slate-850">Tự động lập bảng bị can, bị cáo</h3>
+              </div>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                Trích xuất tự động danh sách bị can, bị cáo, đồng phạm cùng các thông tin nhân thân, hành vi phạm tội cụ thể và điều khoản truy tố.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-850 mb-2 flex items-center">
-              <span className="text-emerald-600 mr-1.5">✓</span> Tự động lập bảng bị can, bị cáo
-            </h3>
-            <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-              Trích xuất tự động danh sách bị can, bị cáo, đồng phạm cùng các thông tin nhân thân, hành vi phạm tội cụ thể và điều khoản truy tố.
-            </p>
           </div>
 
-
           {/* Lợi ích 4 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col justify-between">
             <div className="absolute top-0 left-0 h-1 bg-emerald-600 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            <div className="h-10 w-10 bg-slate-100 rounded-lg flex items-center justify-center mb-5 border border-slate-200">
-              <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+            <div>
+              <div className="flex items-center space-x-2 mb-3">
+                <FileSpreadsheet className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                <h3 className="text-sm font-bold text-slate-850">Xuất DOCX phục vụ nghiên cứu hồ sơ</h3>
+              </div>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                Kết xuất toàn bộ văn bản và dữ liệu cấu trúc hóa ra file Word (.docx) chuẩn quy định hành chính, làm tài liệu nền tảng cho báo cáo án hình sự.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-850 mb-2 flex items-center">
-              <span className="text-emerald-600 mr-1.5">✓</span> Xuất DOCX phục vụ nghiên cứu hồ sơ
-            </h3>
-            <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-              Kết xuất toàn bộ văn bản và dữ liệu cấu trúc hóa ra file Word (.docx) chuẩn quy định hành chính, làm tài liệu nền tảng cho báo cáo án hình sự.
-            </p>
           </div>
         </div>
       </section>
@@ -361,88 +361,69 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         </h3>
 
         {/* SƠ ĐỒ 4 BƯỚC STATELESS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 mb-6">
           {/* Step 1 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
             <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
               1
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Client-Side mã hóa tệp</h4>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">1. Tải hồ sơ & mã hóa</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Tệp quét của phòng tư pháp được nạp lên trình duyệt, kích hoạt AES-256 mã hóa gói byte nhị phân.
               </p>
             </div>
           </div>
+          <div className="flex items-center justify-center text-slate-400 self-center">
+            <span className="hidden md:inline text-xl font-bold">→</span>
+            <span className="inline md:hidden text-xl font-bold">↓</span>
+          </div>
 
           {/* Step 2 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
             <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
               2
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Edge Node Processing</h4>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">2. OCR & bóc tách dữ liệu</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Cloudflare Worker tiếp nhận chuyển khoản, giải mã tạm thời trên RAM và gọi trực tiếp Google Cloud Vision API.
               </p>
             </div>
           </div>
+          <div className="flex items-center justify-center text-slate-400 self-center">
+            <span className="hidden md:inline text-xl font-bold">→</span>
+            <span className="inline md:hidden text-xl font-bold">↓</span>
+          </div>
 
           {/* Step 3 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
             <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
               3
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Mật danh hóa & Kết xuất</h4>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">3. Chuẩn hóa & ẩn danh</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Văn bản thô được chạy qua module nâng cao để ẩn danh tên đương sự, địa chỉ, số định danh theo đúng các quy định an ninh tố tụng.
               </p>
             </div>
           </div>
+          <div className="flex items-center justify-center text-slate-400 self-center">
+            <span className="hidden md:inline text-xl font-bold">→</span>
+            <span className="inline md:hidden text-xl font-bold">↓</span>
+          </div>
 
           {/* Step 4 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
             <div className="h-6 w-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
               4
             </div>
             <div>
-              <h4 className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Xuất DOCX/Excel sạch</h4>
+              <h4 className="text-xs font-bold text-emerald-600 uppercase tracking-wide">4. Xuất kết quả nghiên cứu</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Tải về tệp tin an toàn. Toàn bộ tài liệu nhạy cảm biến mất khỏi RAM Edge ngay sau khi phản hồi.
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* LOWER COMPLIANCE & COMMITMENT ROW */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left side: Định hướng tiêu chuẩn bảo mật */}
-          <div className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col justify-between space-y-4 shadow-sm">
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-800 uppercase flex items-center space-x-1.5 border-b border-slate-100 pb-2">
-                <Shield className="h-4.5 w-4.5 text-emerald-500" />
-                <span>Yêu cầu an toàn thông tin</span>
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Kiến trúc giải pháp được thiết kế hướng tới việc đáp ứng các yêu cầu về An toàn thông tin cấp độ 3 dành cho hệ thống hành chính công theo định hướng của Bộ Thông tin & Truyền thông.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 pt-2">
-              <span className="px-2.5 py-1 bg-slate-100 text-slate-650 border border-slate-200 rounded text-[9.5px] font-bold uppercase">STAT ELIGIBLE</span>
-              <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-150 rounded text-[9.5px] font-bold uppercase">STATELESS GUARANTEED</span>
-            </div>
-          </div>
-
-          {/* Right side: Cam kết an ninh tư pháp */}
-          <div className="bg-amber-50/40 border border-amber-200/60 p-5 rounded-xl space-y-3 shadow-sm">
-            <h4 className="text-xs font-bold text-amber-800 uppercase flex items-center space-x-1.5 border-b border-amber-200/40 pb-2">
-              <ShieldCheck className="h-4.5 w-4.5 text-amber-600" />
-              <span>Cam kết An ninh Tư pháp Việt Nam</span>
-            </h4>
-            <p className="text-xs text-slate-650 leading-relaxed">
-              Cam kết 100% không lưu trữ bất kỳ bản sao tài liệu, thông tin đương sự hay lịch sử bóc tách nào của quý cán bộ lên máy chủ trung gian. Toàn bộ hoạt động thực thi hoàn toàn giải phóng khỏi bộ nhớ lưu trữ (Stateless Architecture).
-            </p>
           </div>
         </div>
       </div>
