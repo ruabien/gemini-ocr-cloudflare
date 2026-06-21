@@ -10,7 +10,6 @@ import {
   FileText, 
   LayoutGrid, 
   Terminal, 
-  ChevronRight, 
   Activity, 
   ArrowRight, 
   CheckCircle2, 
@@ -106,7 +105,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
                 <h4 className="font-bold text-slate-800 text-sm flex items-center">
                   <span className="text-emerald-600 mr-1.5">✓</span> Kết luận điều tra
                 </h4>
-                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất tự động danh sách bị can, người làm chứng, hành vi phạm tội, và tội danh đề nghị truy tố theo Bộ luật Hình sự.</p>
+                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất danh sách bị can, người làm chứng, diễn biến hành vi phạm tội và tội danh đề nghị truy tố.</p>
               </div>
             </div>
 
@@ -119,7 +118,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
                 <h4 className="font-bold text-slate-800 text-sm flex items-center">
                   <span className="text-emerald-600 mr-1.5">✓</span> Bản án hình sự / dân sự
                 </h4>
-                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất thông tin bị cáo, thông tin đương sự, nội dung vụ án, phán quyết của Tòa án.</p>
+                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất toàn bộ thông tin bị cáo/thông tin đương sự, nội dung vụ án và phán quyết của Tòa án.</p>
               </div>
             </div>
 
@@ -132,7 +131,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
                 <h4 className="font-bold text-slate-800 text-sm flex items-center">
                   <span className="text-emerald-600 mr-1.5">✓</span> Quyết định thụ lý
                 </h4>
-                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Giúp nhập liệu nhanh thông tin thụ lý vụ án, danh sách nguyên đơn, bị đơn, người có quyền lợi và nghĩa vụ liên quan trong án dân sự.</p>
+                <p className="text-slate-500 text-xs mt-1 leading-relaxed">Trích xuất và giúp nhập liệu nhanh thông tin thụ lý vụ án, danh sách nguyên đơn, bị đơn, người có quyền lợi và nghĩa vụ liên quan trong án dân sự.</p>
               </div>
             </div>
           </div>
@@ -302,78 +301,18 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         </div>
       </section>
 
-      {/* PHẦN 6 - SOCIAL PROOF (Dành cho) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Thiết kế chuyên biệt dành riêng cho công tác tư pháp
-          </h2>
-          <p className="mt-3 text-slate-500 text-sm sm:text-base">
-            LexOCR đồng hành cùng cán bộ tư pháp tối ưu hóa quy trình nghiệp vụ nghiên cứu hồ sơ.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
-          {/* Đối tượng 1: Kiểm sát viên */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-full hover:border-red-300 transition-colors">
-            <div>
-              <div className="w-12 h-12 bg-red-50 text-red-600 rounded-lg flex items-center justify-center mb-5 border border-red-100">
-                <Shield className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-850 mb-3">Kiểm sát viên</h3>
-              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                Số hóa nhanh Cáo trạng, Quyết định truy tố phục vụ lập bảng hệ thống danh sách bị can, bị cáo, đồng phạm; tính toán nhanh các thời hạn tố tụng, thời gian tạm giam, tạm giữ chuẩn xác, tự động hóa khâu làm báo cáo kết quả án.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-red-600">
-              <span>Hỗ trợ thực hành quyền công tố</span>
-              <ChevronRight className="h-4 w-4" />
-            </div>
-          </div>
-
-          {/* Đối tượng 2: Thẩm phán */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-full hover:border-yellow-350 transition-colors">
-            <div>
-              <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-lg flex items-center justify-center mb-5 border border-yellow-100">
-                <FileText className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-850 mb-3">Thẩm phán</h3>
-              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                Tự động hóa số hóa văn bản tố tụng dân sự, hình sự phức tạp, bóc tách các lập luận chính, trích xuất danh sách đương sự và các quyết định, phán quyết trọng yếu của Tòa án phục vụ công tác chuẩn bị xét xử.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-yellow-605">
-              <span>Hỗ trợ nghiên cứu hồ sơ xét xử</span>
-              <ChevronRight className="h-4 w-4" />
-            </div>
-          </div>
-
-          {/* Đối tượng 3: Luật sư */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-full hover:border-slate-400 transition-colors">
-            <div>
-              <div className="w-12 h-12 bg-slate-100 text-slate-750 rounded-lg flex items-center justify-center mb-5 border border-slate-200">
-                <LayoutGrid className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-850 mb-3">Luật sư</h3>
-              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                Chuyển đổi tức thì tài liệu chụp hồ sơ tại Tòa án hoặc do khách hàng cung cấp sang dạng văn bản tìm kiếm được. Số hóa và trích lục thông tin nhanh chóng phục vụ xây dựng luận cứ bào chữa, bảo vệ đương sự tại Tòa.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-semibold text-slate-700">
-              <span>Hỗ trợ bào chữa & Bảo vệ đương sự</span>
-              <ChevronRight className="h-4 w-4" />
-            </div>
-          </div>
-
-        </div>
-      </section>
-
       {/* PHẦN 7 - SỐ LIỆU (Hiệu quả thực tế) */}
-      <section className="bg-gradient-to-r from-slate-900 to-slate-850 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Background decorative grids */}
+        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:3rem_3rem]" />
+        
+        {/* Ambient shadow glow red/gold */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-80 bg-red-600/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-5 right-5 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl" />
+
+        <div className="relative max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
               Hiệu quả thực tế của LexOCR
             </h2>
             <p className="mt-3 text-slate-300 text-xs sm:text-sm leading-relaxed">
@@ -381,11 +320,11 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center max-w-5xl mx-auto">
             
             {/* Metric 1 */}
-            <div className="bg-slate-800/40 p-6 rounded-xl border border-slate-700/50">
-              <div className="text-red-400 text-4xl font-extrabold mb-2">~20 giây</div>
+            <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-300">
+              <div className="text-red-500 text-4xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(239,68,68,0.15)]">~20 giây</div>
               <div className="text-sm font-bold text-slate-200 mb-1">10 trang Cáo trạng</div>
               <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
                 Bóc tách toàn bộ nội dung, lập bảng bị can, xác định rõ tội danh và các mốc thời gian tố tụng.
@@ -393,8 +332,8 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             </div>
 
             {/* Metric 2 */}
-            <div className="bg-slate-800/40 p-6 rounded-xl border border-slate-700/50">
-              <div className="text-yellow-400 text-4xl font-extrabold mb-2">~1 phút</div>
+            <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-300">
+              <div className="text-yellow-400 text-4xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(234,179,8,0.15)]">~1 phút</div>
               <div className="text-sm font-bold text-slate-200 mb-1">50 trang Bản án</div>
               <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
                 Số hóa và trích xuất các nhận định của Tòa án, quyết định hình phạt, xử lý án phí và các chi tiết thi hành án.
@@ -402,8 +341,8 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             </div>
 
             {/* Metric 3 */}
-            <div className="bg-slate-800/40 p-6 rounded-xl border border-slate-700/50">
-              <div className="text-emerald-400 text-4xl font-extrabold mb-2">98%</div>
+            <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-300">
+              <div className="text-emerald-400 text-4xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(16,185,129,0.15)]">98%</div>
               <div className="text-sm font-bold text-slate-200 mb-1">Độ chính xác nhận diện</div>
               <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
                 Áp dụng với các tài liệu scan đúng định dạng hành chính và văn bản in rõ nét của các cơ quan tố tụng.
