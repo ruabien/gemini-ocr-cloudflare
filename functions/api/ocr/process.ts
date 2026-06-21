@@ -249,10 +249,17 @@ if (env) {
       for (let i = 0; i < geminiKeys.length; i++) {
         const activeKey = geminiKeys[i];
         try {
-          const results = await Promise.all(
-            pagesToProcess.map(async (pageData, index) => {
-              const pageIndex = index + 1;
+          const results: any[] = [];
+          for (let index = 0; index < pagesToProcess.length; index++) {
+            const pageData = pagesToProcess[index];
+            const pageIndex = index + 1;
+            let retryCount = 0;
+            let success = false;
+            let pageResult: any = null;
+
+            while (retryCount <= 1 && !success) {
               try {
+                console.log("[OCR START]", `Page_${pageIndex}`, Date.now());
                 const filePart = {
                   inlineData: {
                     mimeType: base64File.startsWith("[") ? "image/jpeg" : mimeType || "image/png",
@@ -278,19 +285,28 @@ if (env) {
 
                 if (!apiResp.ok) {
                   const errText = await apiResp.text();
+                  if (apiResp.status === 429 && retryCount < 1) {
+                    console.warn(`[OCR WARN] 429 Too Many Requests at page ${pageIndex}. Retrying in 2.5s...`);
+                    retryCount++;
+                    await new Promise(res => setTimeout(res, 2500));
+                    continue;
+                  }
                   throw new Error(`Gemini HTTP ${apiResp.status}: ${errText}`);
                 }
 
                 const responseData = await apiResp.json() as any;
                 const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
 
+                console.log("[OCR END]", `Page_${pageIndex}`, Date.now());
                 if (generatedText) {
                   try {
                     const cleanText = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
                     const parsed = JSON.parse(cleanText);
-                    return { text: parsed.text || "", warnings: parsed.warnings || [], index: pageIndex };
+                    pageResult = { text: parsed.text || "", warnings: parsed.warnings || [], index: pageIndex };
+                    success = true;
                   } catch (e) {
-                    return { text: generatedText, warnings: [], index: pageIndex };
+                    pageResult = { text: generatedText, warnings: [], index: pageIndex };
+                    success = true;
                   }
                 } else {
                   throw new Error(
@@ -299,6 +315,13 @@ if (env) {
                 }
               } catch (err: any) {
                 const errMsg = err.message || String(err);
+                if (errMsg.includes("HTTP 429") && retryCount < 1) {
+                  console.warn(`[OCR WARN] 429 Too Many Requests at page ${pageIndex}. Retrying in 2.5s...`);
+                  retryCount++;
+                  await new Promise(res => setTimeout(res, 2500));
+                  continue;
+                }
+                
                 if (
                   errMsg.includes("HTTP 403") ||
                   errMsg.includes("HTTP 429") ||
@@ -311,14 +334,16 @@ if (env) {
                   throw err;
                 }
                 console.warn("Skipping corrupted page:", pageIndex);
-                return {
+                pageResult = {
                   text: `[TRANG SỐ ${pageIndex} BỊ LỖI ĐỌC DỮ LIỆU - ĐÃ TỰ ĐỘNG BỎ QUA]`,
                   warnings: [],
                   index: pageIndex
                 };
+                success = true;
               }
-            })
-          );
+            }
+            results.push(pageResult);
+          }
 
           let aggregatedWarnings: any[] = [];
           results.sort((a, b) => a.index - b.index);

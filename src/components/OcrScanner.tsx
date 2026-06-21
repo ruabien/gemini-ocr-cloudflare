@@ -286,8 +286,9 @@ if (pageProcessingLockRef.current[pageNum]) {
       });
 
       // Helper to perform a Gemini request with a specific key
-      const makeRequest = (activeKey: string): Promise<string> => {
+      const makeRequest = (activeKey: string, isRetry: boolean = false): Promise<string> => {
         return new Promise<string>((resolve, reject) => {
+          console.info(`[OCR START] Page_${pageNum} ${Date.now()}`);
           const xhr = new XMLHttpRequest();
           const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
           let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
@@ -304,6 +305,9 @@ if (pageProcessingLockRef.current[pageNum]) {
 
           const runOcrSpaceFallback = (): Promise<string> => {
             return new Promise<string>((resolveFallback, rejectFallback) => {
+              // Update progress text with the fallback status
+              setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+              
               // 1. Fetch backend keys from the lightweight secure token gateway
               fetch("/api/ocr")
                 .then(res => {
@@ -452,7 +456,19 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
           
           xhr.onload = () => {
             let shouldFallback = false;
-            if (xhr.status >= 200 && xhr.status < 300) {
+            
+            if (xhr.status === 429) {
+              if (!isRetry) {
+                console.warn(`[OCR WARN] 429 Too Many Requests at page ${pageNum}. Retrying in 2.5s...`);
+                setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+                setTimeout(() => {
+                  makeRequest(activeKey, true).then(resolve).catch(reject);
+                }, 2500);
+                return;
+              } else {
+                shouldFallback = true;
+              }
+            } else if (xhr.status >= 200 && xhr.status < 300) {
               try {
                 const rawText = xhr.responseText;
                 const cleanJson = JSON.parse(rawText);
@@ -474,6 +490,7 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
                 if (finishReason === "RECITATION" || !sanitizedText) {
                   shouldFallback = true;
                 } else {
+                  console.info(`[OCR END] Page_${pageNum} ${Date.now()}`);
                   setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
                   editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
                   resolve(sanitizedText);
