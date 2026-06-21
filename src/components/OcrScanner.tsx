@@ -8,6 +8,7 @@ import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLin
 import { OcrConfig } from "../types";
 // @ts-ignore
 import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
+import { optimizeImageForOcr } from "../utils/imageOptimizer";
 
 interface OcrScannerProps {
   onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[] }) => void;
@@ -31,6 +32,11 @@ interface QueuedFile {
     error?: string;
   }>;
   pageFilesArray?: File[];
+  optimizedInfo?: {
+    originalSize: number;
+    optimizedSize: number;
+    wasOptimized: boolean;
+  };
 }
 
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
@@ -627,10 +633,26 @@ while (true) {
       };
 
       // Helper to send a single image/file and handle errors per page
-      const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
+const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
         updatePageStatus(qFile.id, pageIdx, 'processing');
         try {
-          const extractedText = await sendFileToBackend(pageFile, pageIdx);
+          let fileToSend = pageFile;
+          if (!isPdf) {
+            const optResult = await optimizeImageForOcr(pageFile);
+            fileToSend = optResult.wasOptimized ? optResult.optimizedFile : pageFile;
+            // Save optimization info on the queued file
+            setQueuedFiles(prev => prev.map(f => 
+              f.id === qFile.id ? {
+                ...f,
+                optimizedInfo: {
+                  originalSize: optResult.originalSize,
+                  optimizedSize: optResult.optimizedSize,
+                  wasOptimized: optResult.wasOptimized
+                }
+              } : f
+            ));
+          }
+          const extractedText = await sendFileToBackend(fileToSend, pageIdx);
           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
         } catch (err: any) {
           const errorMsgObj = typeof err === 'object' && err?.message ? err.message : String(err);
@@ -1081,10 +1103,18 @@ while (true) {
                         </div>
 
                         {/* Footer Metadata Row */}
-                        <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500">
-                          <span>Nén:</span>
-                          <span className="font-semibold text-emerald-605 font-mono">{compressedSize}</span>
-                        </div>
+<div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500">
+  {q.optimizedInfo && q.optimizedInfo.wasOptimized ? (
+    <>
+      <span>Gốc: {(q.optimizedInfo.originalSize / 1024 / 1024).toFixed(1)} MB</span>
+      <span className="font-semibold text-emerald-650 font-mono">Nén: {Math.round(q.optimizedInfo.optimizedSize / 1024)} KB</span>
+    </>
+  ) : (
+    <>
+      <span>Gốc: {slicedPage?.size || "—"}</span>
+    </>
+  )}
+</div>
                       </div>
                     </div>
                   );
