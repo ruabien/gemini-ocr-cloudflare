@@ -92,7 +92,7 @@ export async function optimizeImageForOcr(file: File): Promise<OptimizeResult> {
           lastModified: Date.now()
         });
 
-        const isActuallySmaller = blob.size > 0 && blob.size <= originalSize * 0.95;
+        const isActuallySmaller = blob.size > 0 && blob.size < originalSize;
         if (isActuallySmaller) {
           resolve({
             optimizedBlob: blob,
