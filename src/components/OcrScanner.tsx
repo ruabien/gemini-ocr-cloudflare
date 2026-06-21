@@ -87,14 +87,38 @@ const handleSelectedFiles = async (files: File[]) => {
     return;
   }
 
-  const newQueued: QueuedFile[] = files.map(f => ({
-    id: Math.random().toString(36).substring(2, 11),
-    file: f,
-    status: 'waiting',
-    size: `${(f.size / 1024 / 1024).toFixed(2)} MB`,
-    slicedPages: [],
-    pagesBase64Array: []
-  }));
+  const newQueued: QueuedFile[] = files.map(f => {
+    const isPdf = f.name.toLowerCase().endsWith('.pdf');
+    const id = Math.random().toString(36).substring(2, 11);
+    if (!isPdf) {
+      const previewUrl = URL.createObjectURL(f);
+      revocationRefs.current.set(`${id}-1`, previewUrl);
+      return {
+        id,
+        file: f,
+        status: 'waiting',
+        size: `${(f.size / 1024 / 1024).toFixed(2)} MB`,
+        slicedPages: [{
+          index: 1,
+          dataUrl: previewUrl,
+          size: `${(f.size / 1024).toFixed(0)} KB`
+        }],
+        pagesBase64Array: [],
+        totalPages: 1,
+        pageStates: { 1: { status: 'idle' as const } },
+        pageFilesArray: [f]
+      };
+    } else {
+      return {
+        id,
+        file: f,
+        status: 'waiting',
+        size: `${(f.size / 1024 / 1024).toFixed(2)} MB`,
+        slicedPages: [],
+        pagesBase64Array: []
+      };
+    }
+  });
   
   setQueuedFiles(prev => [...prev, ...newQueued]);
 
@@ -649,11 +673,24 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
       } else {
         // Non‑PDF file: process normally with a single request
         try {
-          await sendFileToBackend(file, 1);
-          updateFileStatus(i, "completed");
+          await processSinglePage(file, 1, 1);
+          // Check if page state indicates error after processing
+          setQueuedFiles(prev => {
+            const currentFile = prev.find(f => f.id === qFile.id);
+            if (currentFile?.pageStates?.[1]?.status === 'error') {
+              updateFileStatus(i, "error");
+              setFileErrors(errs => ({
+                ...errs,
+                [i]: "[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này."
+              }));
+            } else {
+              updateFileStatus(i, "completed");
+            }
+            return prev;
+          });
         } catch (err: any) {
-          setFileErrors(prev => ({
-            ...prev,
+          setFileErrors(prevErrs => ({
+            ...prevErrs,
             [i]: "[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này."
           }));
           updateFileStatus(i, "error");
