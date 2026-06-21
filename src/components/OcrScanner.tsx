@@ -882,10 +882,10 @@ while (true) {
 
   return (
     <div id="ocr-scanner-tab" className="min-h-[calc(100vh-4rem)] bg-slate-50 pb-12 flex flex-col">
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-grow">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4 flex-grow">
       
         {/* HEADER SECTION */}
-        <div className="border-b border-slate-200 pb-5">
+        <div className="border-b border-slate-200 pb-3">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center space-x-2">
             <span>Số hóa & Trích xuất hồ sơ vụ án chuyên sâu</span>
           </h2>
@@ -894,7 +894,7 @@ while (true) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           
           {/* CẤU HÌNH OCR VÀ DROPZONE CHÍNH (Chiếm 2 cột trên màn hình Desktop) */}
           <div className="lg:col-span-2 space-y-6">
@@ -1107,7 +1107,7 @@ while (true) {
           });
 
           return (
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-4">
                 <h5 className="font-bold text-slate-850 text-sm sm:text-base flex flex-wrap items-center gap-2">
                   <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>                  
@@ -1115,33 +1115,28 @@ while (true) {
               </div>
 
               {/* OVERALL DOCUMENT STATISTICS SUMMARY */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 mb-5 text-xs font-semibold text-slate-700">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 mb-5 text-sm font-semibold text-slate-700">
                 <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                  <div className="flex items-center space-x-1.5">
-                    <span className="text-slate-400 font-normal">📄 Số trang:</span>
-                    <span className="font-bold text-slate-900">{totalPages} trang</span>
+                  <div className="flex items-center">
+                    <span className="text-slate-800">📄 {totalPages} trang</span>
                   </div>
                   <div className="h-4 w-px bg-slate-300 hidden sm:block" />
-                  <div className="flex items-center space-x-1.5">
-                    <span className="text-slate-400 font-normal">💾 Dung lượng gốc:</span>
-                    <span className="font-bold text-slate-900">{formatSize(totalOriginalBytes)}</span>
+                  <div className="flex items-center">
+                    <span className="text-slate-800">💾 {formatSize(totalOriginalBytes)}</span>
                   </div>
-                  {useImageOptimization && (
+                  {useImageOptimization && hasOptimizedPages && (
                     <>
                       <div className="h-4 w-px bg-slate-300 hidden sm:block" />
-                      <div className="flex items-center space-x-1.5">
-                        <span className="text-slate-400 font-normal">⚡ Dung lượng sau nén:</span>
-                        <span className="font-bold text-emerald-600">
-                          {hasOptimizedPages ? formatSize(totalOptimizedBytes) : formatSize(totalOriginalBytes)}
-                        </span>
+                      <div className="flex items-center text-emerald-600">
+                        <span>📉 Tiết kiệm: {Math.max(0, 100 - Math.round((totalOptimizedBytes / totalOriginalBytes) * 100))}%</span>
                       </div>
                     </>
                   )}
                 </div>
                 {isBatchProcessing && (
-                  <div className="flex items-center space-x-1.5 text-blue-600 font-bold bg-blue-50/50 px-2.5 py-1 rounded border border-blue-150">
+                  <div className="flex items-center space-x-1.5 text-blue-600 font-bold bg-blue-50/50 px-2.5 py-1 rounded border border-blue-150 text-xs">
                     <Activity className="h-3.5 w-3.5 animate-spin" />
-                    <span>Ước tính OCR: ~{Math.ceil((totalPages - allPageItems.filter(p => p.state.status === 'success' || p.state.status === 'error').length) * 3)} giây</span>
+                    <span>⚡ Ước tính OCR: ~{Math.ceil((totalPages - allPageItems.filter(p => p.state.status === 'success' || p.state.status === 'error').length) * 3)} giây</span>
                   </div>
                 )}
               </div>
@@ -1221,14 +1216,14 @@ while (true) {
                             {/* Colorful badges with status */}
                             <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                               status === 'idle' ? 'bg-slate-100 text-slate-650 border border-slate-200' :
-                              status === 'processing' ? 'bg-blue-105 bg-blue-100 text-blue-700 border border-blue-200 animate-pulse' :
+                              status === 'processing' ? 'bg-blue-100 text-blue-700 border border-blue-200 animate-pulse' :
                               status === 'success' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
                               'bg-rose-100 text-rose-700 border border-rose-200'
                             }`}>
-                              {status === 'idle' && 'ĐANG CHỜ'}
-                              {status === 'processing' && 'ĐANG OCR'}
-                              {status === 'success' && 'HOÀN THÀNH'}
-                              {status === 'error' && 'LỖI'}
+                              {status === 'idle' && '🟡 ĐANG CHỜ'}
+                              {status === 'processing' && '🔵 ĐANG OCR'}
+                              {status === 'success' && '🟢 HOÀN THÀNH'}
+                              {status === 'error' && '🔴 LỖI'}
                             </span>
 
                             {/* Action/Status Icon */}
@@ -1264,7 +1259,7 @@ while (true) {
                                 <span className="text-slate-400 font-sans">Gốc:</span>
                                 <span className="font-semibold text-slate-700">{formatSize(pageSizeInfo.originalSize)}</span>
                               </div>
-                              {pageSizeInfo.wasOptimized && (
+                              {pageSizeInfo.wasOptimized ? (
                                 <>
                                   <div className="flex justify-between">
                                     <span className="text-slate-400 font-sans">Sau nén:</span>
@@ -1273,10 +1268,15 @@ while (true) {
                                   <div className="flex justify-between text-emerald-700 font-bold">
                                     <span className="font-sans">Tiết kiệm:</span>
                                     <span>
-                                      -{Math.max(0, 100 - Math.round((pageSizeInfo.optimizedSize / pageSizeInfo.originalSize) * 100))}%
+                                      {Math.max(0, 100 - Math.round((pageSizeInfo.optimizedSize / pageSizeInfo.originalSize) * 100))}%
                                     </span>
                                   </div>
                                 </>
+                              ) : (
+                                <div className="flex justify-between">
+                                  <span className="text-slate-400 font-sans">Sau nén:</span>
+                                  <span className="font-semibold text-slate-500">Không nén</span>
+                                </div>
                               )}
                             </>
                           ) : (
