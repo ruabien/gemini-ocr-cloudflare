@@ -216,39 +216,39 @@ const startOcrProcess = async () => {
       setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
     };
 
-    // Retrieve Gemini API keys with round‑robin support
-    const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
-    let keysArray: string[] = [];
-    try {
-      const parsed = JSON.parse(rawKeys);
-      if (Array.isArray(parsed)) {
-        keysArray = parsed.map(k => String(k));
-      } else {
-        keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
-      }
-    } catch (e) {
-      keysArray = rawKeys.split(/[\n,]+/).map(k => k.replace(/[\r\n\s]/g, '')).filter(Boolean);
-    }
-    // Fallback to legacy single‑key storage
-    if (keysArray.length === 0) {
-      const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
-      if (fallback) {
-        keysArray = [fallback.replace(/[\r\n\s]/g, '')];
-      }
-    }
-    if (keysArray.length === 0) {
-      alert('Missing Gemini API Key. Please configure it in Settings.');
-      setIsBatchProcessing(false);
-      isProcessingRef.current = false;
-      return;
-    }
-    let activeKeyIndex = 0;
-    const getActiveKey = () => {
-      const activeKey = keysArray[activeKeyIndex];
-      if (!activeKey) return '';
-      const cleanKey = activeKey.replace(/[\r\n\s]/g, '');
-      return cleanKey;
-    };
+/* Build a deduplicated, trimmed pool of Gemini API keys */
+const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
+let parsedKeyStrings: string[] = [];
+try {
+  const parsed = JSON.parse(rawKeys);
+  if (Array.isArray(parsed)) {
+    parsedKeyStrings = parsed.map(k => String(k));
+  } else {
+    parsedKeyStrings = rawKeys.split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
+  }
+} catch {
+  parsedKeyStrings = rawKeys.split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
+}
+/* Legacy single‑key fallback */
+if (parsedKeyStrings.length === 0) {
+  const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
+  if (fallback) parsedKeyStrings = [fallback.trim()];
+}
+/* Final pool – remove empty, null, undefined and duplicates */
+const geminiKeyPool = Array.from(
+  new Set(
+    parsedKeyStrings
+      .map(k => k?.trim())
+      .filter(Boolean)
+  )
+);
+if (geminiKeyPool.length === 0) {
+  alert('Missing Gemini API Key. Please configure it in Settings.');
+  setIsBatchProcessing(false);
+  isProcessingRef.current = false;
+  return;
+}
+let activeKeyIndex = 0;
 
     const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
@@ -285,10 +285,162 @@ if (pageProcessingLockRef.current[pageNum]) {
         reader.readAsDataURL(file);
       });
 
+      const runOcrSpaceFallback = (): Promise<string> => {
+        return new Promise<string>((resolveFallback, rejectFallback) => {
+          // Update progress text with the fallback status
+          setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+          
+          // 1. Fetch backend keys from the lightweight secure token gateway
+          fetch("/api/ocr")
+            .then(res => {
+              if (!res.ok) {
+                throw new Error("Failed to retrieve OCR.space credentials from API gateway");
+              }
+              return res.json();
+            })
+            .then((data: any) => {
+              // Ensure it correctly logs and checks data.primary and data.backup
+              
+              const fetchedKeys = data || {};
+              const cleanKey = (key: any) => {
+                if (!key) return "";
+                const s = String(key).trim();
+                if (s === "undefined" || s === "null" || s === "") return "";
+                return s;
+              };
+
+              const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
+              const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
+              const ocrKeys: string[] = [];
+              if (primaryKey) ocrKeys.push(primaryKey);
+              if (secondaryKey) ocrKeys.push(secondaryKey);
+              
+              // Remove any premature blocking check that throws a string alert
+              if (ocrKeys.length === 0) {
+// Development info removed for production
+                ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
+              }
+              
+              // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
+              const img = new Image();
+              img.onload = () => {
+                URL.revokeObjectURL(img.src);
+                let width = img.width;
+                let height = img.height;
+                const maxDimension = 1200;
+                
+                if (width > maxDimension || height > maxDimension) {
+                  if (width > height) {
+                    height = Math.round((height * maxDimension) / width);
+                    width = maxDimension;
+                  } else {
+                    width = Math.round((width * maxDimension) / height);
+                    height = maxDimension;
+                  }
+                }
+                
+                const downscaledCanvas = document.createElement("canvas");
+                downscaledCanvas.width = width;
+                downscaledCanvas.height = height;
+                
+                const ctx = downscaledCanvas.getContext("2d");
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, width, height);
+                }
+                
+                // 3. Use standard canvas.toBlob to avoid corrupted manual Base64 manipulation
+                downscaledCanvas.toBlob((blob) => {
+                  if (!blob) {
+                    console.error("Canvas toBlob failed - asset is empty!");
+                    rejectFallback(new Error("Canvas toBlob failed - asset is empty!"));
+                    return;
+                  }
+
+                  const diagnosticFormData = new FormData();
+diagnosticFormData.append('apikey', 'helloworld'); // Explicitly bypass our restricted environment tokens
+diagnosticFormData.append('language', 'auto');
+diagnosticFormData.append('isOverlayRequired', 'false');
+diagnosticFormData.append('OcrEngine', '2');
+diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
+// Log request params before OCR.space fallback
+                  
+                  fetch("https://api.ocr.space/parse/image", {
+                    method: "POST",
+                    body: diagnosticFormData
+                  })
+                  .then(async res => {
+                    const txt = await res.text();
+                    if (!res.ok) {
+                      // Show raw error text in UI for debugging
+                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
+                      rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
+                      return;
+                    }
+                    // Parse JSON safely
+                    let data;
+                    try {
+                      data = JSON.parse(txt);
+                    } catch {
+                      // If not JSON, just return raw text
+                      const finalText = txt.trim();
+                      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+                      resolveFallback(finalText);
+                      return;
+                    }
+                    // Handle potential error fields
+                    if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
+                      const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
+                      const errorInfo = errMsgs || "OCR.space processing error";
+                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
+                      rejectFallback(new Error(errorInfo));
+                      return;
+                    }
+                    // Extract text
+                    let extractedText = "";
+                    if (data.ParsedResults?.[0]?.ParsedText) {
+                      extractedText = data.ParsedResults[0].ParsedText;
+                    } else if (data.text) {
+                      extractedText = data.text;
+                    } else {
+                      const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
+                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
+                      rejectFallback(new Error(msg));
+                      return;
+                    }
+                    const finalText = extractedText.trim();
+                    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
+                    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
+                    resolveFallback(finalText);
+                  })
+                  .catch(err => {
+                    // Network or unexpected error
+                    const errorMsg = err?.message || "Unknown fetch error";
+                    setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
+                    editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
+                    rejectFallback(err);
+                  });
+                }, 'image/jpeg', 0.85);
+              };
+              img.onerror = () => {
+                rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
+              };
+              img.src = URL.createObjectURL(file);
+            })
+            .catch(err => {
+              rejectFallback(err);
+            });
+        });
+      };
+
       // Helper to perform a Gemini request with a specific key
       const makeRequest = (activeKey: string, isRetry: boolean = false): Promise<string> => {
         return new Promise<string>((resolve, reject) => {
           console.info(`[OCR START] Page_${pageNum} ${Date.now()}`);
+          setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
           const xhr = new XMLHttpRequest();
           const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
           let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
@@ -302,165 +454,27 @@ if (pageProcessingLockRef.current[pageNum]) {
               setProgress(percentComplete);
             }
           };
-
-          const runOcrSpaceFallback = (): Promise<string> => {
-            return new Promise<string>((resolveFallback, rejectFallback) => {
-              // Update progress text with the fallback status
-              setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
-              
-              // 1. Fetch backend keys from the lightweight secure token gateway
-              fetch("/api/ocr")
-                .then(res => {
-                  if (!res.ok) {
-                    throw new Error("Failed to retrieve OCR.space credentials from API gateway");
-                  }
-                  return res.json();
-                })
-                .then((data: any) => {
-                  // Ensure it correctly logs and checks data.primary and data.backup
-                  
-                  const fetchedKeys = data || {};
-                  const cleanKey = (key: any) => {
-                    if (!key) return "";
-                    const s = String(key).trim();
-                    if (s === "undefined" || s === "null" || s === "") return "";
-                    return s;
-                  };
-
-                  const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
-                  const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
-                  const ocrKeys: string[] = [];
-                  if (primaryKey) ocrKeys.push(primaryKey);
-                  if (secondaryKey) ocrKeys.push(secondaryKey);
-                  
-                  // Remove any premature blocking check that throws a string alert
-                  if (ocrKeys.length === 0) {
-    // Development info removed for production
-                    ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
-                  }
-                  
-                  // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
-                  const img = new Image();
-                  img.onload = () => {
-                    URL.revokeObjectURL(img.src);
-                    let width = img.width;
-                    let height = img.height;
-                    const maxDimension = 1200;
-                    
-                    if (width > maxDimension || height > maxDimension) {
-                      if (width > height) {
-                        height = Math.round((height * maxDimension) / width);
-                        width = maxDimension;
-                      } else {
-                        width = Math.round((width * maxDimension) / height);
-                        height = maxDimension;
-                      }
-                    }
-                    
-                    const downscaledCanvas = document.createElement("canvas");
-                    downscaledCanvas.width = width;
-                    downscaledCanvas.height = height;
-                    
-                    const ctx = downscaledCanvas.getContext("2d");
-                    if (ctx) {
-                      ctx.drawImage(img, 0, 0, width, height);
-                    }
-                    
-                    // 3. Use standard canvas.toBlob to avoid corrupted manual Base64 manipulation
-                    downscaledCanvas.toBlob((blob) => {
-                      if (!blob) {
-                        console.error("Canvas toBlob failed - asset is empty!");
-                        rejectFallback(new Error("Canvas toBlob failed - asset is empty!"));
-                        return;
-                      }
-
-                      const diagnosticFormData = new FormData();
-diagnosticFormData.append('apikey', 'helloworld'); // Explicitly bypass our restricted environment tokens
-diagnosticFormData.append('language', 'auto');
-diagnosticFormData.append('isOverlayRequired', 'false');
-diagnosticFormData.append('OcrEngine', '2');
-diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
-// Log request params before OCR.space fallback
-                      
-                      fetch("https://api.ocr.space/parse/image", {
-                        method: "POST",
-                        body: diagnosticFormData
-                      })
-                      .then(async res => {
-                        const txt = await res.text();
-                        if (!res.ok) {
-                          // Show raw error text in UI for debugging
-                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
-                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
-                          rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
-                          return;
-                        }
-                        // Parse JSON safely
-                        let data;
-                        try {
-                          data = JSON.parse(txt);
-                        } catch {
-                          // If not JSON, just return raw text
-                          const finalText = txt.trim();
-                          setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-                          editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-                          resolveFallback(finalText);
-                          return;
-                        }
-                        // Handle potential error fields
-                        if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
-                          const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
-                          const errorInfo = errMsgs || "OCR.space processing error";
-                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
-                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
-                          rejectFallback(new Error(errorInfo));
-                          return;
-                        }
-                        // Extract text
-                        let extractedText = "";
-                        if (data.ParsedResults?.[0]?.ParsedText) {
-                          extractedText = data.ParsedResults[0].ParsedText;
-                        } else if (data.text) {
-                          extractedText = data.text;
-                        } else {
-                          const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
-                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
-                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
-                          rejectFallback(new Error(msg));
-                          return;
-                        }
-                        const finalText = extractedText.trim();
-                        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-                        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-                        resolveFallback(finalText);
-                      })
-                      .catch(err => {
-                        // Network or unexpected error
-                        const errorMsg = err?.message || "Unknown fetch error";
-                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
-                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
-                        rejectFallback(err);
-                      });
-                    }, 'image/jpeg', 0.85);
-                  };
-                  img.onerror = () => {
-                    rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
-                  };
-                  img.src = URL.createObjectURL(file);
-                })
-                .catch(err => {
-                  rejectFallback(err);
-                });
-            });
-          };
           
           xhr.onload = () => {
             let shouldFallback = false;
+            const isTransientError = xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
             
-            if (xhr.status === 429) {
+if (xhr.status === 429) {
+  // Gemini quota exceeded – move to next key
+  console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received 429, switching key`);
+  setBatchProgressText(`Gemini key ${activeKeyIndex + 1} quá tải, thử key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
+  reject({ status: 429 });
+  return;
+} else if (xhr.status === 401 || xhr.status === 403) {
+  // Auth error – skip this key
+  console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received ${xhr.status}, skipping`);
+  setBatchProgressText(`Gemini key ${activeKeyIndex + 1} không hợp lệ (${xhr.status}), thử key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
+  reject({ status: xhr.status });
+  return;
+} else if (isTransientError) {
               if (!isRetry) {
-                console.warn(`[OCR WARN] 429 Too Many Requests at page ${pageNum}. Retrying in 2.5s...`);
-                setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+                console.warn(`[OCR WARN] Transient error HTTP ${xhr.status} at page ${pageNum}. Retrying once in 2.5s...`);
+                setBatchProgressText(`Gemini gặp lỗi tạm thời (${xhr.status}), đang thử lại - Trang ${pageNum}...`);
                 setTimeout(() => {
                   makeRequest(activeKey, true).then(resolve).catch(reject);
                 }, 2500);
@@ -509,7 +523,15 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
           };
           
           xhr.onerror = () => {
-            runOcrSpaceFallback().then(resolve).catch(reject);
+            if (!isRetry) {
+              console.warn(`[OCR WARN] Network error at page ${pageNum}. Retrying once in 2.5s...`);
+              setBatchProgressText(`Lỗi kết nối mạng, đang thử lại - Trang ${pageNum}...`);
+              setTimeout(() => {
+                makeRequest(activeKey, true).then(resolve).catch(reject);
+              }, 2500);
+            } else {
+              runOcrSpaceFallback().then(resolve).catch(reject);
+            }
           };
           
           const payload = {
@@ -551,10 +573,30 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
         });
       };
 
-      // strictly once per manual action: direct single request, no retry loop or key rotation cycle
-      const currentKey = getActiveKey();
-      const result = await makeRequest(currentKey);
-      return result;
+/* Try each Gemini key in order – only fall back to OCR.space when all keys are exhausted */
+while (true) {
+  const currentKey = geminiKeyPool[activeKeyIndex];
+  if (!currentKey) {
+    // No more keys – use OCR.space fallback
+    console.info('All Gemini keys exhausted, falling back to OCR.space');
+    setBatchProgressText(`Tất cả Gemini key quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+    return await runOcrSpaceFallback();
+  }
+  try {
+    const text = await makeRequest(currentKey);
+    return text; // successful response
+  } catch (e: any) {
+    // If the request was rejected because of quota (429) or auth error (401/403),
+    // move to the next key and try again.
+    if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
+      activeKeyIndex++;
+      continue; // try next key
+    }
+    // Other errors (network, server) are handled inside makeRequest
+    // and will either retry once or fall back as appropriate.
+    throw e;
+  }
+}
       } finally {
         pageProcessingLockRef.current[pageNum] = false;
       }
