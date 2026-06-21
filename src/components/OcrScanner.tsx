@@ -37,7 +37,19 @@ interface QueuedFile {
     optimizedSize: number;
     wasOptimized: boolean;
   };
+  pageSizes?: Record<number, {
+    originalSize: number;
+    optimizedSize: number;
+    wasOptimized: boolean;
+  }>;
 }
+
+const formatSize = (bytes: number) => {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${Math.round(bytes / 1024)} KB`;
+};
 
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
   const [dragActive, setDragActive] = useState(false);
@@ -56,6 +68,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
 
   const [useImageOptimization, setUseImageOptimization] = useState(true);
   const [imageOptimizationLevel, setImageOptimizationLevel] = useState<"balanced" | "fast">("balanced");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [fileErrors, setFileErrors] = useState<Record<number, string>>({});
   const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
@@ -115,7 +128,14 @@ const handleSelectedFiles = async (files: File[]) => {
         pagesBase64Array: [],
         totalPages: 1,
         pageStates: { 1: { status: 'idle' as const } },
-        pageFilesArray: [f]
+        pageFilesArray: [f],
+        pageSizes: {
+          1: {
+            originalSize: f.size,
+            optimizedSize: f.size,
+            wasOptimized: false
+          }
+        }
       };
     } else {
       return {
@@ -136,9 +156,15 @@ const handleSelectedFiles = async (files: File[]) => {
       try {
         const pageFiles = await splitPdfToImages(qFile.file, () => {});
         const numPages = pageFiles.length;
+        const initialPageSizes: Record<number, any> = {};
         const sliced = pageFiles.map((pFile, idx) => {
           const url = URL.createObjectURL(pFile);
           revocationRefs.current.set(`${qFile.id}-${idx + 1}`, url);
+          initialPageSizes[idx + 1] = {
+            originalSize: pFile.size,
+            optimizedSize: pFile.size,
+            wasOptimized: false
+          };
           return {
             index: idx + 1,
             dataUrl: url,
@@ -156,7 +182,8 @@ const handleSelectedFiles = async (files: File[]) => {
           totalPages: numPages,
           pageStates: initialPageStates,
           slicedPages: sliced,
-          pageFilesArray: pageFiles
+          pageFilesArray: pageFiles,
+          pageSizes: initialPageSizes
         } : f));
       } catch (err) {
         console.error("Lỗi phân tách PDF khi tải tệp:", err);
@@ -636,7 +663,7 @@ while (true) {
       };
 
       // Helper to send a single image/file and handle errors per page
-const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
+      const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
         updatePageStatus(qFile.id, pageIdx, 'processing');
         try {
           let fileToSend = pageFile;
@@ -655,6 +682,14 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                     originalSize: optResult.originalSize,
                     optimizedSize: optResult.optimizedSize,
                     wasOptimized: optResult.wasOptimized
+                  },
+                  pageSizes: {
+                    ...(f.pageSizes || {}),
+                    [pageIdx]: {
+                      originalSize: optResult.originalSize,
+                      optimizedSize: optResult.optimizedSize,
+                      wasOptimized: optResult.wasOptimized
+                    }
                   }
                 } : f
               ));
@@ -667,6 +702,14 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                     originalSize: pageFile.size,
                     optimizedSize: pageFile.size,
                     wasOptimized: false
+                  },
+                  pageSizes: {
+                    ...(f.pageSizes || {}),
+                    [pageIdx]: {
+                      originalSize: pageFile.size,
+                      optimizedSize: pageFile.size,
+                      wasOptimized: false
+                    }
                   }
                 } : f
               ));
@@ -701,9 +744,15 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
         if (pageFiles.length === 0) {
           try {
             pageFiles = await splitPdfToImages(file, () => {});
+            const initialPageSizes: Record<number, any> = {};
             const sliced = pageFiles.map((pFile, idx) => {
               const url = URL.createObjectURL(pFile);
               revocationRefs.current.set(`${qFile.id}-${idx + 1}`, url);
+              initialPageSizes[idx + 1] = {
+                originalSize: pFile.size,
+                optimizedSize: pFile.size,
+                wasOptimized: false
+              };
               return {
                 index: idx + 1,
                 dataUrl: url,
@@ -719,7 +768,8 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
               pageStates: initialPageStates, 
               totalPages: pageFiles.length,
               slicedPages: sliced,
-              pageFilesArray: pageFiles
+              pageFilesArray: pageFiles,
+              pageSizes: initialPageSizes
             } : f));
           } catch (err: any) {
             setFileErrors(prev => ({ ...prev, [i]: "[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này." }));
@@ -856,7 +906,7 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
               onDragLeave={handleDrag}
               onDrop={handleDrop}
               onClick={onButtonClick}
-              className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px] transition-all duration-200 ${
+              className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[145px] transition-all duration-200 ${
                 dragActive 
                   ? "border-red-600 bg-red-50/40" 
                   : "border-slate-300 bg-white hover:border-red-500/50 hover:bg-slate-50/50"
@@ -870,17 +920,17 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                 accept=".pdf,.png,.jpg,.jpeg" 
                 onChange={handleFileInput}
               />
-              <div className="h-14 w-14 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-4 border border-red-100">
-                <UploadCloud className="h-7 w-7" />
+              <div className="h-10 w-10 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2 border border-red-100">
+                <UploadCloud className="h-5 w-5" />
               </div>
               <h3 className="font-bold text-slate-800 text-sm">
                 Kéo thả nhiều tài liệu vào đây hoặc click để duyệt từ máy tính
               </h3>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-sm">
+              <p className="text-[11px] text-slate-500 mt-1 max-w-xl">
                 Hỗ trợ chọn nhiều tệp tin cùng lúc. Bản quét sẽ được tự động phân lớp, đưa vào hàng đợi và bóc tách nội dung tuần tự.
               </p>
               
-              <div className="mt-4 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-1">
+              <div className="mt-2.5 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-0.5">
                 <Shield className="h-3.5 w-3.5 text-emerald-500" />
                 <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
               </div>
@@ -903,44 +953,13 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                 <button
                   onClick={startOcrProcess}
                   disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-4 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-102 flex items-center justify-center space-x-2.5 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
                 >
-                  <ScanLine className="h-5 w-5" />
-                  <span>Bắt đầu trích xuất OCR</span>
+                  <ScanLine className="h-6 w-6" />
+                  <span>Bắt đầu bóc tách hồ sơ</span>
                 </button>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-100 mb-1.5 uppercase tracking-wide">
-                    Phạm vi trích xuất (Page Range)
-                  </label>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-1/2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Từ trang"
-                        value={fromPage}
-                        onChange={(e) => setFromPage(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
-                        disabled={(queuedFiles || []).length > 1}
-                      />
-                    </div>
-                    <span className="text-slate-300 text-xs">—</span>
-                    <div className="w-1/2">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Đến trang"
-                        value={toPage}
-                        onChange={(e) => setToPage(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
-                        disabled={(queuedFiles || []).length > 1}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1.5">*Chỉ khả dụng khi chọn 1 tệp duy nhất.</p>
-                </div>
-
+                {/* BASIC OPTIONS: Tối ưu ảnh trước OCR */}
                 <div className="mt-4 border-t border-slate-800 pt-4">
                   <label className="flex items-center space-x-2 text-slate-100 cursor-pointer select-none">
                     <input
@@ -951,42 +970,92 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                     />
                     <span className="text-xs font-bold uppercase tracking-wide">Tối ưu ảnh trước OCR</span>
                   </label>
-                  <p className="text-[10px] text-slate-405 mt-1 leading-relaxed">
+                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
                     Giúp OCR nhanh hơn với ảnh chụp dung lượng lớn. Nếu ảnh bị mờ hoặc kết quả OCR kém, hãy tắt tùy chọn này.
                   </p>
-                  
-                  {useImageOptimization && (
-                    <div className="mt-3 flex items-center space-x-2">
-                      <label className="text-[10px] uppercase tracking-wide font-bold text-slate-300">Mức nén:</label>
-                      <select
-                        value={imageOptimizationLevel}
-                        onChange={(e) => setImageOptimizationLevel(e.target.value as "balanced" | "fast")}
-                        className="bg-slate-800 text-slate-100 border border-slate-700 rounded p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
-                      >
-                        <option value="balanced">Cân bằng</option>
-                        <option value="fast">Nhanh</option>
-                      </select>
+                </div>
+
+                {/* ACCORDION FOR ADVANCED OPTIONS */}
+                <div className="mt-4 border-t border-slate-800 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="w-full flex items-center justify-between text-xs font-bold uppercase tracking-wide text-slate-300 hover:text-slate-100 focus:outline-none transition-colors"
+                  >
+                    <span>{showAdvanced ? "▼ Tùy chọn nâng cao" : "▶ Tùy chọn nâng cao"}</span>
+                  </button>
+
+                  {showAdvanced && (
+                    <div className="mt-3 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-300 mb-1.5 uppercase tracking-wide">
+                          Phạm vi trích xuất (Page Range)
+                        </label>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-1/2">
+                            <input
+                              type="number"
+                              min="1"
+                              placeholder="Từ trang"
+                              value={fromPage}
+                              onChange={(e) => setFromPage(e.target.value)}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                              disabled={(queuedFiles || []).length > 1}
+                            />
+                          </div>
+                          <span className="text-slate-300 text-xs">—</span>
+                          <div className="w-1/2">
+                            <input
+                              type="number"
+                              min="1"
+                              placeholder="Đến trang"
+                              value={toPage}
+                              onChange={(e) => setToPage(e.target.value)}
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                              disabled={(queuedFiles || []).length > 1}
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-slate-400 mt-1.5">*Chỉ khả dụng khi chọn 1 tệp duy nhất.</p>
+                      </div>
+
+                      {useImageOptimization && (
+                        <div className="flex items-center space-x-2">
+                          <label className="text-[10px] uppercase tracking-wide font-bold text-slate-300">Mức nén:</label>
+                          <select
+                            value={imageOptimizationLevel}
+                            onChange={(e) => setImageOptimizationLevel(e.target.value as "balanced" | "fast")}
+                            className="bg-slate-800 text-slate-100 border border-slate-700 rounded p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                          >
+                            <option value="balanced">Cân bằng</option>
+                            <option value="fast">Nhanh</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-start space-x-3 bg-yellow-50 text-yellow-800 p-3.5 rounded-lg border border-yellow-200 mt-4">
-                  <AlertTriangle className="h-4 w-4 flex-shrink-0 text-yellow-600 mt-0.5" />
+                <div className="flex items-start space-x-2.5 bg-slate-800 text-slate-300 p-3 rounded-lg border border-slate-700 mt-4">
+                  <Shield className="h-4 w-4 flex-shrink-0 text-emerald-500 mt-0.5" />
                   <p className="text-[10px] leading-relaxed font-medium">
-                    <strong>Chú ý nghiệp vụ:</strong> Phục vụ công tác số hóa tài liệu mật tố tụng, toàn bộ hồ sơ bóc tách được xử lý hoàn toàn stateless trên RAM và tự động xóa sạch khi kết thúc phiên duyệt.
+                    Toàn bộ tài liệu được xử lý theo kiến trúc Stateless. Hệ thống không lưu hồ sơ sau khi kết thúc OCR.
                   </p>
                 </div>
+
+                {/* SECURITY BADGES */}
+                <div className="mt-4 border-t border-slate-850 pt-4 flex flex-wrap justify-center gap-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
+                    🛡️ Không lưu hồ sơ
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
+                    🛡️ Stateless
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
+                    🛡️ Xử lý an toàn
+                  </span>
+                </div>
               </div>
-            </div>
-            
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
-              <h5 className="text-xs font-bold text-slate-700 flex items-center justify-center space-x-1.5">
-                <Shield className="h-4 w-4 text-emerald-500" />
-                <span>🔒 TIÊU CHUẨN AN TOÀN DỮ LIỆU TỐ TỤNG</span>
-              </h5>
-              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                Hệ thống đáp ứng tiêu chuẩn Stateless thuần túy. Toàn bộ tiến trình bóc tách diễn ra cô lập trên bộ nhớ đệm RAM đầu cuối.
-              </p>
             </div>
           </div>
 
@@ -1015,9 +1084,31 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
 
           if (allPageItems.length === 0) return null;
 
+          // Calculate statistics for the summary bar
+          let totalOriginalBytes = 0;
+          let totalOptimizedBytes = 0;
+          let hasOptimizedPages = false;
+
+          allPageItems.forEach(({ q, pageNum }) => {
+            const sizeInfo = q.pageSizes?.[pageNum];
+            if (sizeInfo) {
+              totalOriginalBytes += sizeInfo.originalSize;
+              if (sizeInfo.wasOptimized) {
+                totalOptimizedBytes += sizeInfo.optimizedSize;
+                hasOptimizedPages = true;
+              } else {
+                totalOptimizedBytes += sizeInfo.originalSize;
+              }
+            } else {
+              // Fallback based on original files
+              totalOriginalBytes += q.file.size / (q.totalPages || 1);
+              totalOptimizedBytes += q.file.size / (q.totalPages || 1);
+            }
+          });
+
           return (
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-4">
                 <h5 className="font-bold text-slate-850 text-sm sm:text-base flex flex-wrap items-center gap-2">
                   <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>
                   <span className="flex items-center gap-1.5 ml-2">
@@ -1026,6 +1117,38 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                     <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">API</span>
                   </span>
                 </h5>
+              </div>
+
+              {/* OVERALL DOCUMENT STATISTICS SUMMARY */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 mb-5 text-xs font-semibold text-slate-700">
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-slate-400 font-normal">📄 Số trang:</span>
+                    <span className="font-bold text-slate-900">{totalPages} trang</span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-300 hidden sm:block" />
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-slate-400 font-normal">💾 Dung lượng gốc:</span>
+                    <span className="font-bold text-slate-900">{formatSize(totalOriginalBytes)}</span>
+                  </div>
+                  {useImageOptimization && (
+                    <>
+                      <div className="h-4 w-px bg-slate-300 hidden sm:block" />
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-slate-400 font-normal">⚡ Dung lượng sau nén:</span>
+                        <span className="font-bold text-emerald-600">
+                          {hasOptimizedPages ? formatSize(totalOptimizedBytes) : formatSize(totalOriginalBytes)}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {isBatchProcessing && (
+                  <div className="flex items-center space-x-1.5 text-blue-600 font-bold bg-blue-50/50 px-2.5 py-1 rounded border border-blue-150">
+                    <Activity className="h-3.5 w-3.5 animate-spin" />
+                    <span>Ước tính OCR: ~{Math.ceil((totalPages - allPageItems.filter(p => p.state.status === 'success' || p.state.status === 'error').length) * 3)} giây</span>
+                  </div>
+                )}
               </div>
 
               <div 
@@ -1044,21 +1167,7 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                                   status === 'error' ? 'bg-rose-50/30 border-rose-200' : 'bg-slate-50/50 border-slate-200';
 
                   const pageImgUrl = slicedPage?.dataUrl;
-
-                  // Calculate compressed size
-                  const originalSizeStr = slicedPage?.size; // e.g. "250 KB"
-                  let compressedSize = "155 KB";
-                  if (originalSizeStr) {
-                    const originalBytes = parseInt(originalSizeStr, 10);
-                    if (!isNaN(originalBytes)) {
-                      // Simulate dynamic optimized size: 40% to 55% of original
-                      const ratio = 0.4 + ((pageNum * 7) % 15) / 100;
-                      compressedSize = `${Math.round(originalBytes * ratio)} KB`;
-                    }
-                  } else {
-                    const simulatedKb = 120 + ((pageNum * 37) % 140);
-                    compressedSize = `${simulatedKb} KB`;
-                  }
+                  const pageSizeInfo = q.pageSizes?.[pageNum];
 
                   return (
                     <div 
@@ -1114,16 +1223,17 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                           </div>
                           
                           <div className="flex items-center justify-between mt-1.5">
-                            <span className={`text-[9px] font-bold uppercase tracking-wide ${
-                              status === 'idle' ? 'text-slate-400' :
-                              status === 'processing' ? 'text-blue-600' :
-                              status === 'success' ? 'text-emerald-600' :
-                              'text-rose-600'
+                            {/* Colorful badges with status */}
+                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                              status === 'idle' ? 'bg-slate-100 text-slate-650 border border-slate-200' :
+                              status === 'processing' ? 'bg-blue-105 bg-blue-100 text-blue-700 border border-blue-200 animate-pulse' :
+                              status === 'success' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                              'bg-rose-100 text-rose-700 border border-rose-200'
                             }`}>
-                              {status === 'idle' && 'Đang chờ'}
-                              {status === 'processing' && `Đang xử lý`}
-                              {status === 'success' && 'Hoàn thành'}
-                              {status === 'error' && 'Lỗi'}
+                              {status === 'idle' && 'ĐANG CHỜ'}
+                              {status === 'processing' && 'ĐANG OCR'}
+                              {status === 'success' && 'HOÀN THÀNH'}
+                              {status === 'error' && 'LỖI'}
                             </span>
 
                             {/* Action/Status Icon */}
@@ -1151,19 +1261,36 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                           </div>
                         </div>
 
-                        {/* Footer Metadata Row */}
-<div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500">
-  {q.optimizedInfo && q.optimizedInfo.wasOptimized ? (
-    <>
-      <span>Gốc: {q.optimizedInfo.originalSize > 1024 * 1024 ? (q.optimizedInfo.originalSize / 1024 / 1024).toFixed(1) + ' MB' : Math.round(q.optimizedInfo.originalSize / 1024) + ' KB'}</span>
-      <span className="font-semibold text-emerald-650 font-mono">Nén: {Math.round(q.optimizedInfo.optimizedSize / 1024)} KB</span>
-    </>
-  ) : (
-    <>
-      <span>Gốc: {q.optimizedInfo ? (q.optimizedInfo.originalSize > 1024 * 1024 ? (q.optimizedInfo.originalSize / 1024 / 1024).toFixed(1) + ' MB' : Math.round(q.optimizedInfo.originalSize / 1024) + ' KB') : (slicedPage?.size || "—")}</span>
-    </>
-  )}
-</div>
+                        {/* Footer Metadata Row with Compression Ratio */}
+                        <div className="flex flex-col space-y-0.5 border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500 font-mono">
+                          {pageSizeInfo ? (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-slate-400 font-sans">Gốc:</span>
+                                <span className="font-semibold text-slate-700">{formatSize(pageSizeInfo.originalSize)}</span>
+                              </div>
+                              {pageSizeInfo.wasOptimized && (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-400 font-sans">Sau nén:</span>
+                                    <span className="font-semibold text-emerald-650">{formatSize(pageSizeInfo.optimizedSize)}</span>
+                                  </div>
+                                  <div className="flex justify-between text-emerald-700 font-bold">
+                                    <span className="font-sans">Tiết kiệm:</span>
+                                    <span>
+                                      -{Math.max(0, 100 - Math.round((pageSizeInfo.optimizedSize / pageSizeInfo.originalSize) * 100))}%
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex justify-between">
+                              <span className="text-slate-400 font-sans">Gốc:</span>
+                              <span className="font-semibold text-slate-700">{slicedPage?.size || "—"}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
