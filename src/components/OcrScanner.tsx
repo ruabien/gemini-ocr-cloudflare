@@ -785,161 +785,6 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
               </div>
             </div>
 
-            {/* PAGE GRID VIEW - Converted to elegant grid-based Page Cards matching VKS OCR screenshot */}
-            {queuedFiles.some(f => f.pageStates) && (() => {
-              const totalPages = queuedFiles.filter(f => f.pageStates).reduce((acc, curr) => acc + (curr.totalPages || 0), 0);
-              return (
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-5">
-                    <h5 className="font-bold text-slate-850 text-sm sm:text-base flex flex-wrap items-center gap-2">
-                      <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>
-                      <span className="flex items-center gap-1.5 ml-2">
-                        <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">DUNG LƯỢNG</span>
-                        <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">AN TOÀN</span>
-                        <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">API</span>
-                      </span>
-                    </h5>
-                  </div>
-                  {queuedFiles.map(q => {
-                    if (!q.pageStates) return null;
-                    const pageEntries = Object.entries(q.pageStates).map(([pageNumStr, state]) => ({
-                      pageNum: Number(pageNumStr),
-                      state: state as any,
-                    }));
-
-                    if (pageEntries.length === 0) return null;
-
-                    return (
-                      <div key={q.id} className="mt-2 space-y-4">
-                        {queuedFiles.length > 1 && (
-                          <div className="text-xs font-bold text-slate-500 mt-2">Tệp: {q.file.name}</div>
-                        )}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                          {pageEntries.map(({ pageNum, state }) => {
-                            const { status, text, error } = state;
-                            const bgClass = status === 'idle' ? 'bg-slate-50/50 border-slate-200' :
-                                            status === 'processing' ? 'bg-blue-50/40 border-blue-200 animate-pulse' :
-                                            status === 'success' ? 'bg-emerald-50/30 border-emerald-200' :
-                                            status === 'error' ? 'bg-rose-50/30 border-rose-200' : 'bg-slate-50/50 border-slate-200';
-
-                            const slicedPage = q.slicedPages?.find(sp => sp.index === pageNum);
-                            const pageImgUrl = slicedPage?.dataUrl;
-
-                            // Calculate compressed size
-                            const originalSizeStr = slicedPage?.size; // e.g. "250 KB"
-                            let compressedSize = "155 KB";
-                            if (originalSizeStr) {
-                              const originalBytes = parseInt(originalSizeStr, 10);
-                              if (!isNaN(originalBytes)) {
-                                // Simulate dynamic optimized size: 40% to 55% of original
-                                const ratio = 0.4 + ((pageNum * 7) % 15) / 100;
-                                compressedSize = `${Math.round(originalBytes * ratio)} KB`;
-                              }
-                            } else {
-                              const simulatedKb = 120 + ((pageNum * 37) % 140);
-                              compressedSize = `${simulatedKb} KB`;
-                            }
-
-                            return (
-                              <div 
-                                key={`${q.id}-page-${pageNum}`} 
-                                className={`relative bg-white border rounded-lg overflow-hidden flex flex-col group hover:shadow-md transition-all duration-200 ${bgClass}`}
-                              >
-                                {/* Header Label: top-left black ribbon badge */}
-                                <div className="absolute top-0 left-0 z-10 bg-slate-950 text-white text-[10px] font-bold px-2 py-0.5 rounded-br shadow-sm">
-                                  Trang {pageNum}
-                                </div>
-
-                                {/* Live Visual Image Canvas */}
-                                <div className="relative aspect-[3/4] bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-150">
-                                  {pageImgUrl ? (
-                                    <img 
-                                      src={pageImgUrl} 
-                                      alt={`Trang ${pageNum}`} 
-                                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                    />
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center text-slate-400 space-y-1.5 p-4">
-                                      <Layers className="h-6 w-6 stroke-1 animate-pulse" />
-                                      <span className="text-[9px] text-center text-slate-500">Đang chuẩn bị trang...</span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Progress & Info Container */}
-                                <div className="p-2.5 flex-grow flex flex-col justify-between">
-                                  {/* Progress Timeline & Status */}
-                                  <div className="w-full mb-2">
-                                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/60">
-                                      <div 
-                                        className={`h-full transition-all duration-300 ${
-                                          status === 'idle' ? 'bg-slate-300 w-0' :
-                                          status === 'processing' ? 'bg-blue-500' :
-                                          status === 'success' ? 'bg-emerald-500 w-full' :
-                                          'bg-rose-500 w-0'
-                                        }`} 
-                                        style={{ 
-                                          width: status === 'success' ? '100%' :
-                                                 status === 'processing' ? `${progress}%` :
-                                                 '0%' 
-                                        }} 
-                                      />
-                                    </div>
-                                    
-                                    <div className="flex items-center justify-between mt-1.5">
-                                      <span className={`text-[9px] font-bold uppercase tracking-wide ${
-                                        status === 'idle' ? 'text-slate-400' :
-                                        status === 'processing' ? 'text-blue-600' :
-                                        status === 'success' ? 'text-emerald-600' :
-                                        'text-rose-600'
-                                      }`}>
-                                        {status === 'idle' && 'Đang chờ'}
-                                        {status === 'processing' && `Đang xử lý`}
-                                        {status === 'success' && 'Hoàn thành'}
-                                        {status === 'error' && 'Lỗi'}
-                                      </span>
-
-                                      {/* Action/Status Icon */}
-                                      <div className="flex items-center">
-                                        {status === 'success' && (
-                                          <span className="text-emerald-600 font-extrabold text-[11px]" title="Thành công">✓</span>
-                                        )}
-                                        {status === 'error' && (
-                                          <button
-                                            onClick={() => setPageErrorDetail({ pageNum, error: error || "Lỗi không xác định" })}
-                                            className="text-rose-600 hover:text-rose-800 font-extrabold text-[11px] focus:outline-none p-0.5 cursor-pointer transition-colors"
-                                            title="Xem chi tiết lỗi"
-                                          >
-                                            X
-                                          </button>
-                                        )}
-                                        {status === 'processing' && (
-                                          <Activity className="h-3 w-3 text-blue-500 animate-spin" />
-                                        )}
-                                        {status === 'idle' && (
-                                          <span className="h-1.5 w-1.5 bg-slate-350 rounded-full" title="Chờ trích xuất"></span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Footer Metadata Row */}
-                                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500">
-                                    <span>Nén:</span>
-                                    <span className="font-semibold text-emerald-605 font-mono">{compressedSize}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
           </div>
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
@@ -1016,6 +861,180 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
           </div>
 
         </div>
+
+        {/* PAGE GRID VIEW - Full Width Responsive Grid for Page Cards */}
+        {queuedFiles.some(f => f.pageStates) && (() => {
+          const totalPages = queuedFiles.filter(f => f.pageStates).reduce((acc, curr) => acc + (curr.totalPages || 0), 0);
+
+          // Flat list of all page entries across all queued files
+          const allPageItems = queuedFiles.flatMap(q => {
+            if (!q.pageStates) return [];
+            return Object.entries(q.pageStates).map(([pageNumStr, state]) => {
+              const pageNum = Number(pageNumStr);
+              return {
+                fileId: q.id,
+                fileName: q.file.name,
+                totalPages: q.totalPages || 1,
+                pageNum,
+                state: state as any,
+                slicedPage: q.slicedPages?.find(sp => sp.index === pageNum),
+                q,
+              };
+            });
+          });
+
+          if (allPageItems.length === 0) return null;
+
+          return (
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-5">
+                <h5 className="font-bold text-slate-850 text-sm sm:text-base flex flex-wrap items-center gap-2">
+                  <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>
+                  <span className="flex items-center gap-1.5 ml-2">
+                    <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">DUNG LƯỢNG</span>
+                    <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">AN TOÀN</span>
+                    <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-805 rounded-full border border-emerald-250">API</span>
+                  </span>
+                </h5>
+              </div>
+
+              <div 
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                  gap: "16px",
+                  alignItems: "start"
+                }}
+              >
+                {allPageItems.map(({ fileId, fileName, totalPages, pageNum, state, slicedPage, q }) => {
+                  const { status, text, error } = state;
+                  const bgClass = status === 'idle' ? 'bg-slate-50/50 border-slate-200' :
+                                  status === 'processing' ? 'bg-blue-50/40 border-blue-200 animate-pulse' :
+                                  status === 'success' ? 'bg-emerald-50/30 border-emerald-200' :
+                                  status === 'error' ? 'bg-rose-50/30 border-rose-200' : 'bg-slate-50/50 border-slate-200';
+
+                  const pageImgUrl = slicedPage?.dataUrl;
+
+                  // Calculate compressed size
+                  const originalSizeStr = slicedPage?.size; // e.g. "250 KB"
+                  let compressedSize = "155 KB";
+                  if (originalSizeStr) {
+                    const originalBytes = parseInt(originalSizeStr, 10);
+                    if (!isNaN(originalBytes)) {
+                      // Simulate dynamic optimized size: 40% to 55% of original
+                      const ratio = 0.4 + ((pageNum * 7) % 15) / 100;
+                      compressedSize = `${Math.round(originalBytes * ratio)} KB`;
+                    }
+                  } else {
+                    const simulatedKb = 120 + ((pageNum * 37) % 140);
+                    compressedSize = `${simulatedKb} KB`;
+                  }
+
+                  return (
+                    <div 
+                      key={`${fileId}-page-${pageNum}`} 
+                      className={`relative bg-white border rounded-lg overflow-hidden flex flex-col group hover:shadow-md transition-all duration-200 ${bgClass}`}
+                    >
+                      {/* Header Label: top-left black ribbon badge showing page numbers context */}
+                      <div className="absolute top-0 left-0 z-10 bg-slate-950 text-white text-[10px] font-bold px-2 py-0.5 rounded-br shadow-sm">
+                        Trang {pageNum}/{totalPages}
+                      </div>
+
+                      {/* Live Visual Image Canvas */}
+                      <div className="relative aspect-[3/4] bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-150">
+                        {pageImgUrl ? (
+                          <img 
+                            src={pageImgUrl} 
+                            alt={`Trang ${pageNum}`} 
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-slate-400 space-y-1.5 p-4">
+                            <Layers className="h-6 w-6 stroke-1 animate-pulse" />
+                            <span className="text-[9px] text-center text-slate-500">Đang chuẩn bị trang...</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Progress & Info Container */}
+                      <div className="p-2.5 flex-grow flex flex-col justify-between">
+                        {/* File Name inside the Card */}
+                        <div className="mb-2">
+                          <p className="text-[11px] font-bold text-slate-700 truncate" title={fileName}>
+                            {fileName}
+                          </p>
+                        </div>
+
+                        {/* Progress Timeline & Status */}
+                        <div className="w-full mb-2">
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/60">
+                            <div 
+                              className={`h-full transition-all duration-300 ${
+                                status === 'idle' ? 'bg-slate-300 w-0' :
+                                status === 'processing' ? 'bg-blue-500' :
+                                status === 'success' ? 'bg-emerald-500 w-full' :
+                                'bg-rose-500 w-0'
+                              }`} 
+                              style={{ 
+                                width: status === 'success' ? '100%' :
+                                       status === 'processing' ? `${progress}%` :
+                                       '0%' 
+                              }} 
+                            />
+                          </div>
+                          
+                          <div className="flex items-center justify-between mt-1.5">
+                            <span className={`text-[9px] font-bold uppercase tracking-wide ${
+                              status === 'idle' ? 'text-slate-400' :
+                              status === 'processing' ? 'text-blue-600' :
+                              status === 'success' ? 'text-emerald-600' :
+                              'text-rose-600'
+                            }`}>
+                              {status === 'idle' && 'Đang chờ'}
+                              {status === 'processing' && `Đang xử lý`}
+                              {status === 'success' && 'Hoàn thành'}
+                              {status === 'error' && 'Lỗi'}
+                            </span>
+
+                            {/* Action/Status Icon */}
+                            <div className="flex items-center">
+                              {status === 'success' && (
+                                <span className="text-emerald-600 font-extrabold text-[11px]" title="Thành công">✓</span>
+                              )}
+                              {status === 'error' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPageErrorDetail({ pageNum, error: error || "Lỗi không xác định" })}
+                                  className="text-rose-600 hover:text-rose-800 font-extrabold text-[11px] focus:outline-none p-0.5 cursor-pointer transition-colors"
+                                  title="Xem chi tiết lỗi"
+                                >
+                                  X
+                                </button>
+                              )}
+                              {status === 'processing' && (
+                                <Activity className="h-3 w-3 text-blue-500 animate-spin" />
+                              )}
+                              {status === 'idle' && (
+                                <span className="h-1.5 w-1.5 bg-slate-350 rounded-full" title="Chờ trích xuất"></span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer Metadata Row */}
+                        <div className="flex items-center justify-between border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500">
+                          <span>Nén:</span>
+                          <span className="font-semibold text-emerald-605 font-mono">{compressedSize}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
       </div>
 
       {/* ERROR MODAL */}
