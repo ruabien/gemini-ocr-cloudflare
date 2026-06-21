@@ -357,69 +357,69 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-16 border-t border-slate-200 mt-4">
         <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
           <Shield className="h-5 w-5 text-red-600 mr-2" />
-          <span>KIẾN TRÚC BẢO MẬT & ĐỊNH HƯỚNG TIÊU CHUẨN AN TOÀN TƯ PHÁP</span>
+          <span>KIẾN TRÚC BẢO MẬT & TIÊU CHUẨN AN TOÀN TƯ PHÁP</span>
         </h3>
 
         {/* SƠ ĐỒ 4 BƯỚC STATELESS */}
-        <div className="flex flex-col md:flex-row items-stretch justify-center gap-4 mb-6">
+        <div className="flex flex-col md:flex-row items-stretch justify-center gap-2 mb-6">
           {/* Step 1 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
-            <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#2563eb" }}>
+            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#2563eb" }}>
               1
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">1. Tải hồ sơ & mã hóa</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#2563eb" }}>1. Tải hồ sơ & mã hóa</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Tệp quét của phòng tư pháp được nạp lên trình duyệt, kích hoạt AES-256 mã hóa gói byte nhị phân.
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-center text-slate-400 self-center">
-            <span className="hidden md:inline text-xl font-bold">→</span>
-            <span className="inline md:hidden text-xl font-bold">↓</span>
+          <div className="flex items-center justify-center text-blue-600 self-center py-2 md:py-0">
+            <span className="hidden md:inline text-2xl font-black px-1 opacity-90">→</span>
+            <span className="inline md:hidden text-2xl font-black py-1 opacity-90">↓</span>
           </div>
 
           {/* Step 2 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
-            <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#7c3aed" }}>
+            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#7c3aed" }}>
               2
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">2. OCR & bóc tách dữ liệu</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#7c3aed" }}>2. OCR & bóc tách dữ liệu</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Cloudflare Worker tiếp nhận chuyển khoản, giải mã tạm thời trên RAM và gọi trực tiếp Google Cloud Vision API.
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-center text-slate-400 self-center">
-            <span className="hidden md:inline text-xl font-bold">→</span>
-            <span className="inline md:hidden text-xl font-bold">↓</span>
+          <div className="flex items-center justify-center text-purple-600 self-center py-2 md:py-0">
+            <span className="hidden md:inline text-2xl font-black px-1 opacity-90">→</span>
+            <span className="inline md:hidden text-2xl font-black py-1 opacity-90">↓</span>
           </div>
 
           {/* Step 3 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
-            <div className="h-6 w-6 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#f59e0b" }}>
+            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#f59e0b" }}>
               3
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">3. Chuẩn hóa & ẩn danh</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#f59e0b" }}>3. Chuẩn hóa & ẩn danh</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Văn bản thô được chạy qua module nâng cao để ẩn danh tên đương sự, địa chỉ, số định danh theo đúng các quy định an ninh tố tụng.
               </p>
             </div>
           </div>
-          <div className="flex items-center justify-center text-slate-400 self-center">
-            <span className="hidden md:inline text-xl font-bold">→</span>
-            <span className="inline md:hidden text-xl font-bold">↓</span>
+          <div className="flex items-center justify-center text-amber-600 self-center py-2 md:py-0">
+            <span className="hidden md:inline text-2xl font-black px-1 opacity-90">→</span>
+            <span className="inline md:hidden text-2xl font-black py-1 opacity-90">↓</span>
           </div>
 
           {/* Step 4 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1">
-            <div className="h-6 w-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#10b981" }}>
+            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#10b981" }}>
               4
             </div>
             <div>
-              <h4 className="text-xs font-bold text-emerald-600 uppercase tracking-wide">4. Xuất kết quả nghiên cứu</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#10b981" }}>4. Xuất kết quả nghiên cứu</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
                 Tải về tệp tin an toàn. Toàn bộ tài liệu nhạy cảm biến mất khỏi RAM Edge ngay sau khi phản hồi.
               </p>
@@ -429,14 +429,9 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </div>
 
       {/* Footer hành chính */}
-      <footer className="bg-slate-900 text-slate-400 py-8 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between text-xs gap-4">
-          <p>© 2026 LexOCR. Trợ lý số hóa hồ sơ tố tụng và nghiên cứu hồ sơ chuyên sâu dành cho Kiểm sát viên, Thẩm phán và Luật sư.</p>
-          <p className="flex items-center space-x-4">
-            <span className="hover:text-white cursor-pointer">Hướng dẫn lập mẫu excel danh mục đối tượng</span>
-            <span>•</span>
-            <span className="hover:text-white cursor-pointer">Chính sách bảo vệ thông tin tố tụng</span>
-          </p>
+      <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
+          <p>© 2026 LexOCR · Trợ lý số hóa hồ sơ tố tụng</p>
         </div>
       </footer>
     </div>
