@@ -54,6 +54,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [editorContent, setEditorContent] = useState("");
   const editorContentRef = useRef("");
 
+  const [useImageOptimization, setUseImageOptimization] = useState(true);
+  const [imageOptimizationLevel, setImageOptimizationLevel] = useState<"balanced" | "fast">("balanced");
+
   const [fileErrors, setFileErrors] = useState<Record<number, string>>({});
   const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
   const [pageErrorDetail, setPageErrorDetail] = useState<{ pageNum: number; error: string } | null>(null);
@@ -638,19 +641,36 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
         try {
           let fileToSend = pageFile;
           if (!isPdf) {
-            const optResult = await optimizeImageForOcr(pageFile);
-            fileToSend = optResult.wasOptimized ? optResult.optimizedFile : pageFile;
-            // Save optimization info on the queued file
-            setQueuedFiles(prev => prev.map(f => 
-              f.id === qFile.id ? {
-                ...f,
-                optimizedInfo: {
-                  originalSize: optResult.originalSize,
-                  optimizedSize: optResult.optimizedSize,
-                  wasOptimized: optResult.wasOptimized
-                }
-              } : f
-            ));
+            if (useImageOptimization) {
+              const optResult = await optimizeImageForOcr(pageFile, {
+                maxDimension: imageOptimizationLevel === "fast" ? 1600 : 2200,
+                jpegQuality: imageOptimizationLevel === "fast" ? 0.8 : 0.85,
+              });
+              fileToSend = optResult.wasOptimized ? optResult.optimizedFile : pageFile;
+              // Save optimization info on the queued file
+              setQueuedFiles(prev => prev.map(f => 
+                f.id === qFile.id ? {
+                  ...f,
+                  optimizedInfo: {
+                    originalSize: optResult.originalSize,
+                    optimizedSize: optResult.optimizedSize,
+                    wasOptimized: optResult.wasOptimized
+                  }
+                } : f
+              ));
+            } else {
+              fileToSend = pageFile;
+              setQueuedFiles(prev => prev.map(f => 
+                f.id === qFile.id ? {
+                  ...f,
+                  optimizedInfo: {
+                    originalSize: pageFile.size,
+                    optimizedSize: pageFile.size,
+                    wasOptimized: false
+                  }
+                } : f
+              ));
+            }
           }
           const extractedText = await sendFileToBackend(fileToSend, pageIdx);
           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
@@ -919,6 +939,35 @@ const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: nu
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1.5">*Chỉ khả dụng khi chọn 1 tệp duy nhất.</p>
+                </div>
+
+                <div className="mt-4 border-t border-slate-800 pt-4">
+                  <label className="flex items-center space-x-2 text-slate-100 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={useImageOptimization}
+                      onChange={(e) => setUseImageOptimization(e.target.checked)}
+                      className="form-checkbox h-4 w-4 text-emerald-600 rounded"
+                    />
+                    <span className="text-xs font-bold uppercase tracking-wide">Tối ưu ảnh trước OCR</span>
+                  </label>
+                  <p className="text-[10px] text-slate-405 mt-1 leading-relaxed">
+                    Giúp OCR nhanh hơn với ảnh chụp dung lượng lớn. Nếu ảnh bị mờ hoặc kết quả OCR kém, hãy tắt tùy chọn này.
+                  </p>
+                  
+                  {useImageOptimization && (
+                    <div className="mt-3 flex items-center space-x-2">
+                      <label className="text-[10px] uppercase tracking-wide font-bold text-slate-300">Mức nén:</label>
+                      <select
+                        value={imageOptimizationLevel}
+                        onChange={(e) => setImageOptimizationLevel(e.target.value as "balanced" | "fast")}
+                        className="bg-slate-800 text-slate-100 border border-slate-700 rounded p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-red-500"
+                      >
+                        <option value="balanced">Cân bằng</option>
+                        <option value="fast">Nhanh</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-start space-x-3 bg-yellow-50 text-yellow-800 p-3.5 rounded-lg border border-yellow-200 mt-4">

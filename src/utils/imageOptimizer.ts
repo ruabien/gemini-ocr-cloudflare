@@ -12,7 +12,13 @@ export interface OptimizeResult {
   wasOptimized: boolean;
 }
 
-export async function optimizeImageForOcr(file: File): Promise<OptimizeResult> {
+export async function optimizeImageForOcr(
+  file: File,
+  options?: { maxDimension?: number; jpegQuality?: number }
+): Promise<OptimizeResult> {
+  const currentMaxDimension = options?.maxDimension ?? MAX_OCR_IMAGE_DIMENSION;
+  const currentJpegQuality = options?.jpegQuality ?? JPEG_QUALITY;
+
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) {
       resolve({
@@ -38,7 +44,7 @@ export async function optimizeImageForOcr(file: File): Promise<OptimizeResult> {
       const originalSize = file.size;
 
       const maxDimension = Math.max(width, height);
-      const isSmallAndLowResolution = originalSize <= OPTIMIZE_THRESHOLD_BYTES && maxDimension <= MAX_OCR_IMAGE_DIMENSION;
+      const isSmallAndLowResolution = originalSize <= OPTIMIZE_THRESHOLD_BYTES && maxDimension <= currentMaxDimension;
 
       if (isSmallAndLowResolution) {
         resolve({
@@ -56,13 +62,13 @@ export async function optimizeImageForOcr(file: File): Promise<OptimizeResult> {
       let newWidth = width;
       let newHeight = height;
 
-      if (width > MAX_OCR_IMAGE_DIMENSION || height > MAX_OCR_IMAGE_DIMENSION) {
+      if (width > currentMaxDimension || height > currentMaxDimension) {
         if (width > height) {
-          newHeight = Math.round((height * MAX_OCR_IMAGE_DIMENSION) / width);
-          newWidth = MAX_OCR_IMAGE_DIMENSION;
+          newHeight = Math.round((height * currentMaxDimension) / width);
+          newWidth = currentMaxDimension;
         } else {
-          newWidth = Math.round((width * MAX_OCR_IMAGE_DIMENSION) / height);
-          newHeight = MAX_OCR_IMAGE_DIMENSION;
+          newWidth = Math.round((width * currentMaxDimension) / height);
+          newHeight = currentMaxDimension;
         }
       }
 
@@ -114,7 +120,7 @@ export async function optimizeImageForOcr(file: File): Promise<OptimizeResult> {
             wasOptimized: false,
           });
         }
-      }, 'image/jpeg', JPEG_QUALITY);
+      }, 'image/jpeg', currentJpegQuality);
     };
 
     img.onerror = () => {
