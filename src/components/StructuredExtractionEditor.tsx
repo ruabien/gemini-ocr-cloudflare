@@ -136,8 +136,9 @@ function extractRoleBlock(text: string, startLabels: string[], stopLabels: strin
   let matchedStartLen = 0;
 
   for (const label of startLabels) {
-    const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(escapedLabel, "i");
+    const isRegexStr = label.startsWith("\\b") || label.startsWith("\\n");
+    const regexStr = isRegexStr ? label : label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(regexStr, "i");
     const match = text.match(regex);
     if (match && match.index !== undefined) {
       if (startIdx === -1 || match.index < startIdx) {
@@ -153,8 +154,9 @@ function extractRoleBlock(text: string, startLabels: string[], stopLabels: strin
   let stopIdx = remainingText.length;
 
   for (const label of stopLabels) {
-    const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(escapedLabel, "i");
+    const isRegexStr = label.startsWith("\\b") || label.startsWith("\\n");
+    const regexStr = isRegexStr ? label : label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(regexStr, "i");
     const match = remainingText.match(regex);
     if (match && match.index !== undefined) {
       if (match.index < stopIdx) {
@@ -198,11 +200,40 @@ function removeRepresentativeSegments(block: string): string {
   return cleanedBlock.trim();
 }
 
+function trimAfterAddressBlock(personText: string): string {
+  const addrRegex = /(?:địa\s+chỉ|nơi\s+cư\s+trú|trụ\s+sở|hktt|đkhktt|địa\s+chỉ\s+tại)\s*[:\-]?/i;
+  const match = personText.match(addrRegex);
+  if (!match) return personText;
+
+  const beforeAddress = personText.substring(0, match.index);
+  const addressPart = personText.substring(match.index!);
+
+  let stopIdx = addressPart.length;
+  const stopLabels = [
+    "Ngày", "Tòa án", "Theo đơn", "Những vấn đề", "yêu cầu",
+    "Nội dung", "Căn cứ", "Kèm theo", "Người đại diện",
+    "Đại diện theo ủy quyền", "đã thụ lý vụ án",
+    "Người khởi kiện", "Người bị kiện", "Tòa án thông báo"
+  ];
+
+  for (const label of stopLabels) {
+    const regexStr = label === "Ngày" ? "\\nNgày\\b" : label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(regexStr, "i");
+    const stopMatch = addressPart.match(regex);
+    if (stopMatch && stopMatch.index !== undefined && stopMatch.index < stopIdx) {
+      stopIdx = stopMatch.index;
+    }
+  }
+
+  return beforeAddress + addressPart.substring(0, stopIdx).trim();
+}
+
 function cleanPersonSegment(segment: string): string {
   let cleaned = segment.replace(/^[\s,;:\-\*\u2022\d\.\)\(]+/g, "").trim();
+  cleaned = trimAfterAddressBlock(cleaned);
   if (!cleaned) return "";
 
-  const addrRegex = /(?:địa\s+chỉ|nơi\s+cư\s+trú|trụ\s+sở|đkhktt|địa\s+chỉ\s+tại)\s*[:\-]?\s*/i;
+  const addrRegex = /(?:địa\s+chỉ|nơi\s+cư\s+trú|trụ\s+sở|hktt|đkhktt|địa\s+chỉ\s+tại)\s*[:\-]?\s*/i;
   const addrMatch = cleaned.match(addrRegex);
 
   let infoPart = "";
@@ -335,10 +366,32 @@ function runRuleBasedExtraction(
     const dateMatch = cleanText.match(dateRegex);
     const ngayThuLy = dateMatch ? dateMatch[0] : "";
 
-    const nguyenDonRaw = extractRoleBlock(cleanText, ["Nguyên đơn", "Người khởi kiện"], ["Bị đơn", "Người bị kiện", "Người có quyền", "Người liên quan", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn"]);
-    const biDonRaw = extractRoleBlock(cleanText, ["Bị đơn", "Người bị kiện"], ["Người có quyền", "Người liên quan", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn", "Nội dung", "Theo đơn", "Căn cứ"]);
-    const nguoiLienQuanRaw = extractRoleBlock(cleanText, ["Người có quyền lợi, nghĩa vụ liên quan", "Người liên quan"], ["Nội dung", "Theo đơn", "Căn cứ", "Yêu cầu", "Tòa án thông báo", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn"]);
-    const quanHe = extractSectionText(cleanText, ["Quan hệ pháp luật tranh chấp:", "Quan hệ pháp luật:", "Về việc:", "Tranh chấp về:"], ["Nguyên đơn:", "Người khởi kiện:", "Bị đơn:", "Người bị kiện:", "Người có quyền", "Người liên quan:", "Thẩm phán", "Thời hạn"]);
+    const stopLabelsCommon = [
+      "Người có quyền", "Người liên quan", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn",
+      "Nội dung", "Theo đơn", "Căn cứ", "\\nNgày\\b", "Tòa án nhân dân", "đã thụ lý vụ án",
+      "Những vấn đề", "yêu cầu", "Tòa án thông báo", "Kèm theo", "Người khởi kiện", "Người bị kiện"
+    ];
+
+    const nguyenDonRaw = extractRoleBlock(cleanText, ["Nguyên đơn", "Người khởi kiện"], ["Bị đơn", "Người bị kiện", ...stopLabelsCommon]);
+    const biDonRaw = extractRoleBlock(cleanText, ["Bị đơn", "Người bị kiện"], stopLabelsCommon);
+    const nguoiLienQuanRaw = extractRoleBlock(cleanText, ["Người có quyền lợi, nghĩa vụ liên quan", "Người liên quan"], stopLabelsCommon);
+    
+    let quanHe = "";
+    const quanHeMatch1 = cleanText.match(/về việc\s*["“”]([^"“”]+)["“”]/i);
+    if (quanHeMatch1 && quanHeMatch1[1]) {
+      quanHe = quanHeMatch1[1].trim();
+    } else {
+      const quanHeMatch2 = cleanText.match(/về việc\s+(.+?)(?:\.|\n|$)/i);
+      if (quanHeMatch2 && quanHeMatch2[1]) {
+        quanHe = quanHeMatch2[1].trim();
+      } else {
+        quanHe = extractSectionText(cleanText, ["Quan hệ pháp luật tranh chấp:", "Quan hệ pháp luật:", "Về việc:", "Tranh chấp về:"], ["Nguyên đơn:", "Người khởi kiện:", "Bị đơn:", "Người bị kiện:", "Người có quyền", "Người liên quan:", "Thẩm phán", "Thời hạn"]);
+      }
+    }
+    
+    if (quanHe) {
+      quanHe = quanHe.replace(/\*\*/g, "").replace(/^["“”]+|["“”]+$/g, "").trim();
+    }
 
     const nguyenDonList = extractPersonsFromRoleBlock(removeRepresentativeSegments(nguyenDonRaw));
     const biDonList = extractPersonsFromRoleBlock(removeRepresentativeSegments(biDonRaw));
@@ -346,7 +399,7 @@ function runRuleBasedExtraction(
 
     const nguyenDons = nguyenDonList.length > 0 ? nguyenDonList : [""];
     const biDons = biDonList.length > 0 ? biDonList : [""];
-    const nguoiLienQuans = nguoiLienQuanList.length > 0 ? nguoiLienQuanList : [""];
+    const nguoiLienQuans = nguoiLienQuanList;
 
     const extractedRows: ExtractionRow[] = [];
     let idCounter = 1;
