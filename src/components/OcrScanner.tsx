@@ -260,7 +260,7 @@ if (pageProcessingLockRef.current[pageNum]) {
 }
       pageProcessingLockRef.current[pageNum] = true;
 
-      console.info(`--- EXECUTING SINGLE OCR RUN FOR PAGE ${pageNum} ---`);
+console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}` } ---`);
       try {
         let fileType = file.type || '';
       if (!fileType) {
@@ -439,7 +439,7 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
       // Helper to perform a Gemini request with a specific key
       const makeRequest = (activeKey: string, isRetry: boolean = false): Promise<string> => {
         return new Promise<string>((resolve, reject) => {
-          console.info(`[OCR START] Page_${pageNum} ${Date.now()}`);
+console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
           setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
           const xhr = new XMLHttpRequest();
           const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
@@ -504,7 +504,7 @@ if (xhr.status === 429) {
                 if (finishReason === "RECITATION" || !sanitizedText) {
                   shouldFallback = true;
                 } else {
-                  console.info(`[OCR END] Page_${pageNum} ${Date.now()}`);
+console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
                   setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
                   editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
                   resolve(sanitizedText);
