@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { 
   Shield, 
   Lock, 
@@ -28,7 +28,6 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onStart, setActiveTab }: LandingPageProps) {
-  const [activeDemoTab, setActiveDemoTab] = useState<"caotrang" | "banan" | "thuly">("caotrang");
 
   return (
     <div id="landing-container" className="min-h-[calc(100vh-4rem)] bg-slate-50 text-slate-800">
@@ -151,7 +150,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {/* Lợi ích 1 */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
             <div className="absolute top-0 left-0 h-1 bg-red-600 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
@@ -180,19 +179,6 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             </p>
           </div>
 
-          {/* Lợi ích 3 */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 left-0 h-1 bg-slate-800 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            <div className="h-10 w-10 bg-slate-100 rounded-lg flex items-center justify-center mb-5 border border-slate-200">
-              <Calendar className="h-5 w-5 text-slate-800" />
-            </div>
-            <h3 className="text-base font-bold text-slate-850 mb-2 flex items-center">
-              <span className="text-emerald-600 mr-1.5">✓</span> Hỗ trợ thống kê thời hạn tố tụng
-            </h3>
-            <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-              Tự động tính toán các mốc thời hạn tạm giữ, tạm giam, thời hạn điều tra, truy tố, phát hiện nhanh các nguy cơ quá hạn luật định.
-            </p>
-          </div>
 
           {/* Lợi ích 4 */}
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
@@ -215,270 +201,100 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              Ví dụ bóc tách hồ sơ thực tế
+              Ví dụ bóc tách Thông báo thụ lý
             </h2>
             <p className="mt-3 text-slate-500 text-sm">
               Minh họa luồng số hóa và trích xuất thông tin tự động từ hồ sơ tố tụng thực tế đã được ẩn danh bảo mật.
             </p>
-
-            {/* Switch tabs */}
-            <div className="mt-6 inline-flex p-1 bg-slate-200 rounded-lg border border-slate-300">
-              <button
-                onClick={() => setActiveDemoTab("caotrang")}
-                className={`px-4 py-2 text-xs font-bold rounded-md transition-colors cursor-pointer ${
-                  activeDemoTab === "caotrang" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Cáo trạng hình sự
-              </button>
-              <button
-                onClick={() => setActiveDemoTab("banan")}
-                className={`px-4 py-2 text-xs font-bold rounded-md transition-colors cursor-pointer ${
-                  activeDemoTab === "banan" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Bản án sơ thẩm
-              </button>
-              <button
-                onClick={() => setActiveDemoTab("thuly")}
-                className={`px-4 py-2 text-xs font-bold rounded-md transition-colors cursor-pointer ${
-                  activeDemoTab === "thuly" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Thông báo thụ lý
-              </button>
-            </div>
           </div>
 
-          {/* Tab content */}
+          {/* Demo content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Cột 1: Ảnh hồ sơ gốc (mô phỏng) */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
               <div className="bg-slate-900 text-white px-4 py-3 text-xs font-bold flex items-center justify-between border-b border-slate-800">
-                <span>1. Văn bản hồ sơ gốc (Ảnh chụp/PDF)</span>
+                <span>1. Hồ sơ gốc</span>
                 <span className="px-2 py-0.5 bg-red-600/80 rounded text-[10px]">Tài liệu gốc</span>
               </div>
-              <div className="p-4 flex-1 overflow-y-auto font-mono text-[10px] text-slate-650 leading-relaxed select-none bg-slate-50/50">
-                {activeDemoTab === "caotrang" && (
-                  <div className="space-y-2 border border-slate-200 p-3 bg-white shadow-inner relative">
-                    <div className="text-center font-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>Độc lập - Tự do - Hạnh phúc</div>
-                    <div className="h-px bg-slate-200 my-2" />
-                    <div>VIỆN KIỂM SÁT NHÂN DÂN TỈNH HÀ NAM</div>
-                    <div>Số: 45/CT-VKS-P1</div>
-                    <div className="text-center font-bold text-xs py-2">CÁO TRẠNG</div>
-                    <p>... Quyết định truy tố ra trước Tòa án nhân dân tỉnh Hà Nam để xét xử đối với bị can:</p>
-                    <p className="bg-yellow-100 font-semibold p-1">1. Họ và tên: NGUYỄN VĂN A</p>
-                    <p>Sinh ngày: 15 tháng 8 năm 1992 tại tỉnh Hà Nam.</p>
-                    <p>Nơi ĐKTT: Thôn 3, xã Liêm Cần, huyện Thanh Liêm, tỉnh Hà Nam.</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Tội danh: "Trộm cắp tài sản" theo quy định tại Khoản 2 Điều 173 BLHS.</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Biện pháp ngăn chặn: Tạm giam từ ngày 20/02/2026.</p>
-                    <p>... Vụ án có tính chất đồng phạm phức tạp...</p>
-                  </div>
-                )}
-                {activeDemoTab === "banan" && (
-                  <div className="space-y-2 border border-slate-200 p-3 bg-white shadow-inner relative">
-                    <div className="text-center font-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>Độc lập - Tự do - Hạnh phúc</div>
-                    <div className="h-px bg-slate-200 my-2" />
-                    <div>TÒA ÁN NHÂN DÂN THÀNH PHỐ HÀ NỘI</div>
-                    <div>Số: 104/2026/HS-ST</div>
-                    <div className="text-center font-bold text-xs py-2">BẢN ÁN HÌNH SỰ SƠ THẨM</div>
-                    <p>... Hội đồng xét xử sơ thẩm quyết định:</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Tuyên bố bị cáo: TRẦN THỊ B</p>
-                    <p>Sinh ngày: 04/03/1988 tại TP. Hà Nội.</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Phạm tội: "Lừa đảo chiếm đoạt tài sản" quy định tại Điểm a Khoản 3 Điều 174 BLHS.</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Xử phạt: Trần Thị B 07 (Bảy) năm tù. Thời hạn chấp hành hình phạt tù tính từ ngày bắt tạm giam 10/11/2025.</p>
-                    <p>Về án phí: Bị cáo phải chịu 200.000 đồng án phí hình sự sơ thẩm...</p>
-                  </div>
-                )}
-                {activeDemoTab === "thuly" && (
-                  <div className="space-y-2 border border-slate-200 p-3 bg-white shadow-inner relative">
-                    <div className="text-center font-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>Độc lập - Tự do - Hạnh phúc</div>
-                    <div className="h-px bg-slate-200 my-2" />
-                    <div>TÒA ÁN NHÂN DÂN QUẬN HOÀN KIẾM</div>
-                    <div>Số: 12/2026/TLST-DS</div>
-                    <div className="text-center font-bold text-xs py-2">THÔNG BÁO THỤ LÝ VỤ ÁN</div>
-                    <p>Kính gửi: Các đương sự trong vụ án.</p>
-                    <p>Tòa án nhân dân quận Hoàn Kiếm thông báo thụ lý vụ án dân sự:</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Ngày thụ lý: 12 tháng 03 năm 2026.</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Quan hệ pháp luật tranh chấp: "Tranh chấp hợp đồng đặt cọc mua bán nhà".</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Nguyên đơn: Ông LÊ VĂN C</p>
-                    <p className="bg-yellow-100 font-semibold p-1">Bị đơn: Bà PHẠM THỊ D</p>
-                    <p>... Yêu cầu các đương sự nộp văn bản ý kiến cho Tòa án...</p>
-                  </div>
-                )}
+              <div className="p-4 flex-1 overflow-hidden font-mono text-[10px] text-slate-650 leading-relaxed select-none bg-slate-50/50 relative">
+                <div className="space-y-2 border border-slate-200 p-3 bg-white shadow-inner relative h-full overflow-hidden">
+                  <div className="text-center font-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>Độc lập - Tự do - Hạnh phúc</div>
+                  <div className="h-px bg-slate-200 my-2" />
+                  <div>TÒA ÁN NHÂN DÂN QUẬN HOÀN KIẾM</div>
+                  <div>Số: 12/2026/TLST-DS</div>
+                  <div className="text-center font-bold text-xs py-2">THÔNG BÁO THỤ LÝ VỤ ÁN</div>
+                  <p>Kính gửi: Các đương sự trong vụ án.</p>
+                  <p>Tòa án nhân dân quận Hoàn Kiếm thông báo thụ lý vụ án dân sự:</p>
+                  <p className="bg-yellow-100 font-semibold p-1">Ngày thụ lý: 12 tháng 03 năm 2026.</p>
+                  <p className="bg-yellow-100 font-semibold p-1">Quan hệ pháp luật: "Tranh chấp hợp đồng đặt cọc mua bán nhà".</p>
+                  <p className="bg-yellow-100 font-semibold p-1">Nguyên đơn: Ông LÊ VĂN C</p>
+                  <p className="bg-yellow-100 font-semibold p-1">Bị đơn: Bà PHẠM THỊ D</p>
+                  
+                  {/* Fade effect */}
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                </div>
               </div>
             </div>
 
             {/* Cột 2: Kết quả số hóa văn bản (OCR) */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
               <div className="bg-slate-900 text-white px-4 py-3 text-xs font-bold flex items-center justify-between border-b border-slate-800">
-                <span>2. Kết quả số hóa văn bản (OCR sạch)</span>
+                <span>2. Văn bản OCR</span>
                 <span className="px-2 py-0.5 bg-emerald-600 rounded text-[10px]">Độ chính xác 98%</span>
               </div>
-              <div className="p-4 flex-1 overflow-y-auto font-mono text-[10.5px] text-slate-700 leading-relaxed bg-white">
-                {activeDemoTab === "caotrang" && (
-                  <div className="space-y-1">
-                    <p className="text-slate-400">// Trích xuất văn bản có định cấu trúc</p>
-                    <p className="font-bold text-slate-900">VIỆN KIỂM SÁT NHÂN DÂN TỈNH HÀ NAM</p>
-                    <p>Số: 45/CT-VKS-P1</p>
-                    <p className="text-center font-bold py-1 text-slate-900">CÁO TRẠNG</p>
-                    <p>Truy tố bị can:</p>
-                    <p><span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">NGUYỄN VĂN A</span> (Sinh ngày 15/08/1992)</p>
-                    <p>Nơi ĐKTT: Thôn 3, xã Liêm Cần, huyện Thanh Liêm, tỉnh Hà Nam.</p>
-                    <p>Tội danh: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Trộm cắp tài sản</span> (quy định tại <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Khoản 2 Điều 173 Bộ luật Hình sự</span>).</p>
-                    <p>Biện pháp ngăn chặn: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Tạm giam từ ngày 20/02/2026</span>.</p>
-                  </div>
-                )}
-                {activeDemoTab === "banan" && (
-                  <div className="space-y-1">
-                    <p className="text-slate-400">// Trích xuất văn bản có định cấu trúc</p>
-                    <p className="font-bold text-slate-900">TÒA ÁN NHÂN DÂN THÀNH PHỐ HÀ NỘI</p>
-                    <p>Số: 104/2026/HS-ST</p>
-                    <p className="text-center font-bold py-1 text-slate-900">BẢN ÁN HÌNH SỰ SƠ THẨM</p>
-                    <p>Quyết định hình phạt đối với bị cáo:</p>
-                    <p><span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">TRẦN THỊ B</span> (Sinh ngày 04/03/1988)</p>
-                    <p>Phạm tội: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Lừa đảo chiếm đoạt tài sản</span> (quy định tại <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Điểm a Khoản 3 Điều 174 BLHS</span>).</p>
-                    <p>Hình phạt: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">07 năm tù</span>, bắt đầu tính từ ngày <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">10/11/2025</span>.</p>
-                    <p>Nghĩa vụ án phí: Bị cáo phải nộp <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">200.000 đồng</span> án phí hình sự sơ thẩm.</p>
-                  </div>
-                )}
-                {activeDemoTab === "thuly" && (
-                  <div className="space-y-1">
-                    <p className="text-slate-400">// Trích xuất văn bản có định cấu trúc</p>
-                    <p className="font-bold text-slate-900">TÒA ÁN NHÂN DÂN QUẬN HOÀN KIẾM</p>
-                    <p>Số: 12/2026/TLST-DS</p>
-                    <p className="text-center font-bold py-1 text-slate-900">THÔNG BÁO THỤ LÝ VỤ ÁN</p>
-                    <p>Ngày thụ lý: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">12/03/2026</span></p>
-                    <p>Quan hệ pháp luật: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Tranh chấp hợp đồng đặt cọc mua bán nhà</span></p>
-                    <p>Nguyên đơn: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">LÊ VĂN C</span></p>
-                    <p>Bị đơn: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">PHẠM THỊ D</span></p>
-                  </div>
-                )}
+              <div className="p-4 flex-1 overflow-hidden font-mono text-[10px] text-slate-650 leading-relaxed select-none bg-slate-50/50">
+                <div className="space-y-1">
+                  <p className="text-slate-400">// Trích xuất văn bản có định cấu trúc</p>
+                  <p className="font-bold text-slate-900">TÒA ÁN NHÂN DÂN QUẬN HOÀN KIẾM</p>
+                  <p>Số: 12/2026/TLST-DS</p>
+                  <p className="text-center font-bold py-1 text-slate-900">THÔNG BÁO THỤ LÝ VỤ ÁN</p>
+                  <p>Ngày thụ lý: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">12/03/2026</span></p>
+                  <p>Quan hệ pháp luật: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Tranh chấp hợp đồng đặt cọc mua bán nhà</span></p>
+                  <p>Nguyên đơn: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">LÊ VĂN C</span></p>
+                  <p>Bị đơn: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">PHẠM THỈ D</span></p>
+                </div>
               </div>
             </div>
 
             {/* Cột 3: Bảng dữ liệu trích xuất cấu trúc */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
               <div className="bg-slate-900 text-white px-4 py-3 text-xs font-bold flex items-center justify-between border-b border-slate-800">
-                <span>3. Bảng dữ liệu trích xuất cấu trúc</span>
+                <span>3. Dữ liệu trích xuất</span>
                 <span className="px-2 py-0.5 bg-yellow-600 rounded text-[10px]">Xuất Excel/Word</span>
               </div>
-              <div className="p-4 flex-1 overflow-y-auto text-xs bg-slate-50/50">
-                <p className="text-[10px] text-slate-450 mb-3">// Dữ liệu đã chuẩn hóa phục vụ phân tích hồ sơ vụ án</p>
-                {activeDemoTab === "caotrang" && (
-                  <div className="space-y-3">
-                    <table className="w-full text-left border-collapse border border-slate-200 bg-white rounded-lg overflow-hidden shadow-sm">
-                      <thead>
-                        <tr className="bg-slate-100 text-[10px] uppercase font-bold text-slate-700">
-                          <th className="border border-slate-200 p-2">Thông tin</th>
-                          <th className="border border-slate-200 p-2">Kết quả bóc tách</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-650">Bị can</td>
-                          <td className="border border-slate-200 p-2 text-slate-800 font-bold">NGUYỄN VĂN A</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Ngày sinh</td>
-                          <td className="border border-slate-200 p-2 text-slate-800">15/08/1992</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Tội danh</td>
-                          <td className="border border-slate-200 p-2 text-red-700 font-medium">Trộm cắp tài sản (Khoản 2 Điều 173)</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Biện pháp</td>
-                          <td className="border border-slate-200 p-2 text-amber-700 font-semibold">Tạm giam (Từ 20/02/2026)</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Thời gian tạm giam</td>
-                          <td className="border border-slate-200 p-2 text-slate-800 font-bold">81 ngày (đến ngày lập báo cáo)</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div className="flex justify-end pt-2">
-                      <span className="text-[10px] text-emerald-600 font-bold flex items-center bg-emerald-50 border border-emerald-250 px-2 py-1 rounded">
-                        <Check className="h-3 w-3 mr-1" /> Sẵn sàng kết xuất báo cáo án
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {activeDemoTab === "banan" && (
-                  <div className="space-y-3">
-                    <table className="w-full text-left border-collapse border border-slate-200 bg-white rounded-lg overflow-hidden shadow-sm">
-                      <thead>
-                        <tr className="bg-slate-100 text-[10px] uppercase font-bold text-slate-700">
-                          <th className="border border-slate-200 p-2">Thông tin</th>
-                          <th className="border border-slate-200 p-2">Kết quả bóc tách</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Bị cáo</td>
-                          <td className="border border-slate-200 p-2 text-slate-800 font-bold">TRẦN THỊ B</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Tội danh</td>
-                          <td className="border border-slate-200 p-2 text-red-700 font-medium">Lừa đảo chiếm đoạt tài sản (Điều 174)</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Hình phạt tù</td>
-                          <td className="border border-slate-200 p-2 text-slate-800 font-bold">07 năm tù giam</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Ngày tạm giam</td>
-                          <td className="border border-slate-200 p-2 text-slate-800">10/11/2025</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Án phí HSST</td>
-                          <td className="border border-slate-200 p-2 text-slate-800">200.000 đồng</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div className="flex justify-end pt-2">
-                      <span className="text-[10px] text-emerald-600 font-bold flex items-center bg-emerald-50 border border-emerald-250 px-2 py-1 rounded">
-                        <Check className="h-3 w-3 mr-1" /> Sẵn sàng xuất bảng Excel thụ lý
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {activeDemoTab === "thuly" && (
-                  <div className="space-y-3">
-                    <table className="w-full text-left border-collapse border border-slate-200 bg-white rounded-lg overflow-hidden shadow-sm">
-                      <thead>
-                        <tr className="bg-slate-100 text-[10px] uppercase font-bold text-slate-700">
-                          <th className="border border-slate-200 p-2">Thông tin</th>
-                          <th className="border border-slate-200 p-2">Kết quả bóc tách</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Ngày thụ lý</td>
-                          <td className="border border-slate-200 p-2 text-slate-800 font-bold">12/03/2026</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Quan hệ pháp luật</td>
-                          <td className="border border-slate-200 p-2 text-slate-800">Tranh chấp hợp đồng đặt cọc</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Nguyên đơn</td>
-                          <td className="border border-slate-200 p-2 text-slate-800 font-semibold">LÊ VĂN C</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-slate-200 p-2 font-semibold text-slate-655">Bị đơn</td>
-                          <td className="border border-slate-200 p-2 text-slate-800 font-semibold">PHẠM THỊ D</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div className="flex justify-end pt-2">
-                      <span className="text-[10px] text-emerald-600 font-bold flex items-center bg-emerald-50 border border-emerald-250 px-2 py-1 rounded">
-                        <Check className="h-3 w-3 mr-1" /> Đã bóc tách thông tin đương sự
-                      </span>
-                    </div>
-                  </div>
-                )}
+              <div className="p-4 flex-1 overflow-hidden text-xs bg-slate-50/50">
+                <table className="w-full text-left border-collapse border border-slate-200 bg-white rounded-lg overflow-hidden shadow-sm">
+                  <thead>
+                    <tr className="bg-slate-100 text-[10px] uppercase font-bold text-slate-700">
+                      <th className="border border-slate-200 p-2">Thông tin</th>
+                      <th className="border border-slate-200 p-2">Kết quả bóc tách</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Ngày thụ lý</td>
+                      <td className="border border-slate-200 p-2 text-slate-800 font-bold">12/03/2026</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Quan hệ pháp luật</td>
+                      <td className="border border-slate-200 p-2 text-slate-800">Tranh chấp hợp đồng đặt cọc</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Nguyên đơn</td>
+                      <td className="border border-slate-200 p-2 text-slate-800 font-semibold">LÊ VĂN C</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Bị đơn</td>
+                      <td className="border border-slate-200 p-2 text-slate-800 font-semibold">PHẠM THỊ D</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="flex justify-end pt-2">
+                  <span className="text-[10px] text-emerald-600 font-bold flex items-center bg-emerald-50 border border-emerald-250 px-2 py-1 rounded">
+                    <Check className="h-3 w-3 mr-1" /> Đã bóc tách thông tin đương sự
+                  </span>
+                </div>
               </div>
             </div>
 
