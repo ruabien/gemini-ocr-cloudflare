@@ -44,7 +44,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         <div className="relative max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-1.5 rounded-full text-xs font-medium mb-6 max-w-full text-center">
             <Shield className="h-4 w-4 text-rose-400 flex-shrink-0" />
-            <span>Một công cụ miễn phí hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng dành cho Kiểm sát viên, Thẩm phán, Thư ký và người làm công tác tư pháp</span>
+            <span>Một công cụ miễn phí hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng dành cho Kiểm sát viên</span>
           </div>
           
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight max-w-4xl mx-auto">
@@ -322,56 +322,13 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
 
             {/* Metric 3 */}
             <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-300">
-              <div className="text-emerald-400 text-4xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(16,185,129,0.15)]">98%</div>
-              <div className="text-sm font-bold text-slate-200 mb-1">Độ chính xác nhận diện</div>
+              <div className="text-emerald-400 text-3xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(16,185,129,0.15)]">Tối ưu</div>
+              <div className="text-sm font-bold text-slate-200 mb-1">Hỗ trợ nhận diện tiếng Việt pháp lý</div>
               <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
-                Áp dụng với các tài liệu scan đúng định dạng hành chính và văn bản in rõ nét của các cơ quan tố tụng.
+                Phù hợp tài liệu scan rõ nét của các cơ quan tố tụng.
               </p>
             </div>
 
-          </div>
-        </div>
-      </section>
-
-      {/* Section Niềm Tin */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 border-t border-slate-200 mt-4">
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Được thiết kế cho công việc nghiên cứu hồ sơ
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {/* Cột 1 */}
-          <div className="flex flex-col items-center text-center p-4">
-            <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-3">
-              <Clock className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-800 text-sm mb-2">Giảm nhập liệu thủ công</h4>
-            <p className="text-slate-500 text-xs leading-relaxed max-w-xs">
-              Hạn chế tối đa việc gõ lại thủ công các tài liệu giấy, tờ trình hay bản án, nâng cao hiệu suất làm việc hàng ngày.
-            </p>
-          </div>
-
-          {/* Cột 2 */}
-          <div className="flex flex-col items-center text-center p-4">
-            <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mb-3">
-              <Users className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-800 text-sm mb-2">Hỗ trợ tổng hợp thông tin bị can, bị cáo</h4>
-            <p className="text-slate-500 text-xs leading-relaxed max-w-xs">
-              Tự động hóa việc phân loại và sắp xếp dữ liệu nhân thân, tội danh, giúp hệ thống hóa thông tin vụ án trực quan.
-            </p>
-          </div>
-
-          {/* Cột 3 */}
-          <div className="flex flex-col items-center text-center p-4">
-            <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 mb-3">
-              <FileSpreadsheet className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-800 text-sm mb-2">Chuẩn hóa dữ liệu phục vụ báo cáo và nghiên cứu</h4>
-            <p className="text-slate-500 text-xs leading-relaxed max-w-xs">
-              Chuyển đổi dữ liệu thô sang dạng cấu trúc, làm cơ sở xây dựng các báo cáo chuyên sâu và lưu giữ hồ sơ khoa học.
-            </p>
           </div>
         </div>
       </section>
@@ -393,7 +350,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#2563eb" }}>1. Tải hồ sơ & mã hóa</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Tệp quét của phòng tư pháp được nạp lên trình duyệt, kích hoạt AES-256 mã hóa gói byte nhị phân.
+                Hồ sơ được nạp trực tiếp từ thiết bị người dùng và xử lý trong môi trường an toàn.
               </p>
             </div>
           </div>
@@ -410,7 +367,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#7c3aed" }}>2. OCR & bóc tách dữ liệu</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Cloudflare Worker tiếp nhận chuyển khoản, giải mã tạm thời trên RAM và gọi trực tiếp Google Cloud Vision API.
+                Hệ thống tự động nhận diện và bóc tách nội dung từ PDF hoặc ảnh chụp hồ sơ.
               </p>
             </div>
           </div>
@@ -427,7 +384,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#f59e0b" }}>3. Chuẩn hóa & ẩn danh</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Văn bản thô được chạy qua module nâng cao để ẩn danh tên đương sự, địa chỉ, số định danh theo đúng các quy định an ninh tố tụng.
+                Dữ liệu được chuẩn hóa để phục vụ nghiên cứu hồ sơ, báo cáo và lưu trữ.
               </p>
             </div>
           </div>
@@ -444,18 +401,18 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#10b981" }}>4. Xuất kết quả nghiên cứu</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Tải về tệp tin an toàn. Toàn bộ tài liệu nhạy cảm biến mất khỏi RAM Edge ngay sau khi phản hồi.
+                Kết xuất dữ liệu dưới dạng văn bản hoặc bảng biểu phục vụ công việc chuyên môn.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Gentle PRO introduction */}
+      {/* Gentle PRO introduction / Miễn phí */}
       <section className="bg-slate-100 border-t border-slate-200 py-8">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <p className="text-slate-500 text-[11px] sm:text-xs leading-relaxed font-medium">
-            LexOCR miễn phí cho nhu cầu số hóa cơ bản. Một số tính năng chuyên sâu như ẩn danh đương sự, xuất DOCX chuẩn Nghị định 30 và xuất Excel dữ liệu cấu trúc có thể được kích hoạt khi cần.
+            LexOCR miễn phí cho nhu cầu số hóa hồ sơ cơ bản bằng API Gemini của chính người dùng.
           </p>
         </div>
       </section>
@@ -463,7 +420,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       {/* Footer hành chính */}
       <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
-          <p>© 2026 LexOCR · Trợ lý số hóa hồ sơ tố tụng</p>
+          <p>© 2026 LexOCR</p>
         </div>
       </footer>
     </div>
