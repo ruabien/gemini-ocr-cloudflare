@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import {
   ArrowLeft,
   FileText,
@@ -164,11 +164,18 @@ export default function OcrEditor({
 
   // Sync editor text on OCR load
   useEffect(() => {
-    if (ocrText && !editorText) {
-      setEditorText(ocrText);
-      setOriginalBackup(ocrText);
+    const nextText = ocrText || "";
+    setEditorText(nextText);
+    setOriginalBackup(nextText);
+    setIsAnonymized(false);
+  }, [document?.name, document?.content]);
+
+  useLayoutEffect(() => {
+    console.info("OCR editor text length:", editorText?.length || 0);
+    if (editorRef.current && editorRef.current.innerText !== editorText) {
+      editorRef.current.innerText = editorText || "";
     }
-  }, [ocrText]);
+  }, [editorText]);
 
   // Text styling commands
   const applyStyle = (command: string) => {
@@ -470,6 +477,11 @@ export default function OcrEditor({
 
             {/* Editable area */}
             <div className="p-8 min-h-[440px] max-h-[500px] overflow-y-auto bg-white focus:outline-none">
+              {!editorText ? (
+                <div className="text-slate-400 italic">
+                  Chưa có nội dung OCR để hiển thị.
+                </div>
+              ) : null}
               <div
                 ref={editorRef}
                 contentEditable
