@@ -484,7 +484,7 @@ function runRuleBasedExtraction(
       { id: "1", name: "Số thụ lý", value: soThuLy || "Số: .../TB-TL", confidence: "90%", note: "Bóc tách từ từ khóa 'Số:'" },
       { id: "2", name: "Ngày thụ lý", value: ngayThuLy, confidence: "85%", note: "Bóc tách bằng biểu thức ngày tháng" },
       { id: "3", name: "Tòa án thụ lý", value: toaAn || "Tòa án nhân dân...", confidence: "80%", note: "Tìm kiếm dòng có chứa 'Tòa án'" },
-      { id: "4", name: "Người khởi kiện", value: nguoiKhoiKien || "Nguyễn Văn A", confidence: "75%", note: "Bóc tách sau từ khóa 'Người khởi kiện'" },
+      { id: "4", name: "Người khởi kiện", value: nguoiKhoiKien || "", confidence: "75%", note: "Bóc tách sau từ khóa 'Người khởi kiện'" },
       { id: "5", name: "Người bị kiện", value: nguoiBiKien || "Chủ tịch Ủy ban nhân dân...", confidence: "75%", note: "Bóc tách sau từ khóa 'Người bị kiện'" },
       { id: "6", name: "Người có quyền lợi, nghĩa vụ liên quan", value: nguoiLienQuan || "Không có", confidence: "60%", note: "Bóc tách sau từ khóa 'Người có quyền lợi'" },
       { id: "7", name: "Đối tượng khiếu kiện", value: doiTuongKhieuKien || "Quyết định giải quyết tranh chấp đất đai", confidence: "70%", note: "Bóc tách sau 'Đối tượng khởi kiện'" },
@@ -552,8 +552,8 @@ function runRuleBasedExtraction(
 
   // Fallback mặc định
   return [
-    { id: "1", name: "Họ và tên đối tượng", value: "Nguyễn Văn A", confidence: "50%", note: "Không khớp biểu mẫu chính" },
-    { id: "2", name: "Số định danh / CCCD", value: "079090001234", confidence: "50%", note: "Không khớp biểu mẫu chính" }
+    { id: "1", name: "Họ và tên đối tượng", value: "", confidence: "50%", note: "Không khớp biểu mẫu chính" },
+    { id: "2", name: "Số định danh / CCCD", value: "", confidence: "50%", note: "Không khớp biểu mẫu chính" }
   ];
 }
 

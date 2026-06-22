@@ -9,21 +9,20 @@ import {
   Clock, AlertTriangle, Layers, FileSpreadsheet, FileText, 
   ShieldAlert, RefreshCw, HelpCircle, ArrowLeft, Trophy, CheckCircle2, UserCheck, X
 } from "lucide-react";
-import { UserSession } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 interface UpgradeProps {
-  session: UserSession;
   membershipRole: "Free" | "Pro";
   setMembershipRole: (role: "Free" | "Pro") => void;
   setActiveTab: (tab: string) => void;
 }
 
 export default function UpgradeComponent({
-  session,
   membershipRole,
   setMembershipRole,
   setActiveTab
 }: UpgradeProps) {
+  const { user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "verifying" | "success">("pending");
@@ -32,6 +31,8 @@ export default function UpgradeComponent({
     "Khởi tạo hóa đơn nghiệp vụ...",
     "Liên kết cổng thanh toán liên ngân hàng Napas 247..."
   ]);
+
+  const name = user ? (user.displayName || user.email?.split("@")[0] || "User") : "Khách";
 
   // Price Calculation
   const prices = {
@@ -54,7 +55,8 @@ export default function UpgradeComponent({
 
   // Real VietQR Image generation using public vietqr api
   const formattedAccountName = encodeURIComponent("DU AN LEXOCR CHUYEN NGHIEP");
-  const formattedInfo = encodeURIComponent(`LEXOCR PRO ${session.name.toUpperCase().replace(/[^A-Z ]/g, "")} ${billingCycle === "yearly" ? "1Y" : "1M"}`);
+  const cleanNameForQr = name.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9 ]/g, "");
+  const formattedInfo = encodeURIComponent(`LEXOCR PRO ${cleanNameForQr} ${billingCycle === "yearly" ? "1Y" : "1M"}`);
   
   const vietQrUrl = `https://api.vietqr.io/image/970422-190820268888-qF68VpM.jpg?accountName=${formattedAccountName}&amount=${activePlan.amount}&addInfo=${formattedInfo}`;
 
@@ -115,6 +117,10 @@ export default function UpgradeComponent({
   }, [showQRModal]);
 
   const handleOpenPayment = () => {
+    if (!user) {
+      window.alert("Vui lòng đăng nhập Google để thực hiện nâng cấp tài khoản PRO.");
+      return;
+    }
     setPaymentStatus("pending");
     setTimerSeconds(300);
     setLogs([
@@ -149,7 +155,7 @@ export default function UpgradeComponent({
         </div>
         
         <button
-          onClick={() => setActiveTab("ocr")}
+          onClick={() => setActiveTab("scanner")}
           className="flex items-center space-x-1 text-xs text-slate-500 hover:text-slate-800 font-bold border border-slate-200 hover:border-slate-300 bg-white rounded-lg px-3 py-2 transition-all cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -166,13 +172,13 @@ export default function UpgradeComponent({
             <div>
               <h3 className="font-bold text-base text-amber-905">Độc quyền Tài khoản LexOCR PRO Đang hoạt động</h3>
               <p className="text-xs text-slate-600 mt-1">
-                Kính gửi Kiểm sát viên <strong className="font-bold">{session.name}</strong>, đơn vị <strong className="font-bold">{session.department}</strong>. Toàn bộ tính năng cao cấp không giới hạn đã được mở khóa toàn diện.
+                Kính gửi <strong className="font-bold">{name}</strong>. Toàn bộ tính năng cao cấp không giới hạn đã được mở khóa toàn diện.
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-3 w-full md:w-auto">
             <button
-              onClick={() => setActiveTab("ocr")}
+              onClick={() => setActiveTab("scanner")}
               className="w-full md:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer text-center"
             >
               Phân tích tệp ngay
@@ -188,7 +194,7 @@ export default function UpgradeComponent({
         <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 bg-slate-50/70">
             <h3 className="font-sans font-bold text-sm sm:text-base text-slate-800 flex items-center space-x-2">
-              <Layers className="h-5 w-5 text-red-650 text-red-650 text-red-600" />
+              <Layers className="h-5 w-5 text-red-600" />
               <span>Bảng so sánh chi tiết tính năng nghiệp vụ</span>
             </h3>
           </div>
@@ -231,7 +237,7 @@ export default function UpgradeComponent({
                 Hỗ trợ
               </div>
               <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4 text-emerald-500" />
                 <span>Hỗ trợ</span>
               </div>
             </div>
@@ -287,7 +293,7 @@ export default function UpgradeComponent({
                 Băng thông chia sẻ
               </div>
               <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4 text-emerald-500" />
                 <span>Ưu tiên Edge Node cao nhất</span>
               </div>
             </div>
@@ -301,7 +307,7 @@ export default function UpgradeComponent({
                 Hỗ trợ
               </div>
               <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4 text-emerald-500" />
                 <span>Bảo chứng tuyệt đối</span>
               </div>
             </div>
@@ -380,7 +386,7 @@ export default function UpgradeComponent({
                   "Quét tệp PDF dày tới hàng trăm trang riêng biệt",
                   "Quyền truy cập API tốc độ cao ưu tiên"
                 ].map((item, index) => (
-                  <li key={index} className="flex items-start space-x-2 text-xs text-slate-650 text-slate-700">
+                  <li key={index} className="flex items-start space-x-2 text-xs text-slate-700">
                     <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 flex-shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </li>
@@ -391,7 +397,7 @@ export default function UpgradeComponent({
             <div className="pt-6 space-y-3">
               <button
                 onClick={handleOpenPayment}
-                className="w-full bg-gradient-to-r from-red-650 to-red-600 bg-red-600 hover:bg-red-700 text-white font-black py-3 px-4 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-yellow-500/20"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3 px-4 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-yellow-500/20"
               >
                 <CreditCard className="h-4.5 w-4.5 text-yellow-400" />
                 <span>NÂNG CẤP LÊN BẢN PRO NGAY</span>
@@ -415,7 +421,7 @@ export default function UpgradeComponent({
             <button 
               onClick={() => {
                 if (paymentStatus === "success") {
-                  setActiveTab("ocr");
+                  setActiveTab("scanner");
                 }
                 setShowQRModal(false);
               }}
@@ -458,7 +464,7 @@ export default function UpgradeComponent({
                     <div className="space-y-0.5">
                       <p className="text-slate-500 text-[10px] uppercase">Nội dung bắt buộc</p>
                       <p className="text-red-700 font-mono font-bold bg-white p-1.5 rounded border border-red-200 break-words select-all text-[11px]">
-                        LEXOCR PRO {session.name.toUpperCase().replace(/[^A-Z ]/g, "")} {billingCycle === "yearly" ? "1Y" : "1M"}
+                        LEXOCR PRO {name.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9 ]/g, "")} {billingCycle === "yearly" ? "1Y" : "1M"}
                       </p>
                     </div>
                   </div>
@@ -498,14 +504,14 @@ export default function UpgradeComponent({
                       <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider flex items-center justify-between">
                         <span>Trạng thái kết nối Napas</span>
                         <span className="flex items-center space-x-1">
-                          <RefreshCw className="h-2.5 w-2.5 animate-spin text-amber-600" />
+                           <RefreshCw className="h-2.5 w-2.5 animate-spin text-amber-600" />
                           <span className="text-amber-600">Đang trực tuyến...</span>
                         </span>
                       </p>
                       <div className="max-h-[75px] overflow-y-auto space-y-1 font-mono text-[9px] text-slate-600">
                         {logs.slice(-3).map((log, idx) => (
                           <p key={idx} className="flex items-start space-x-1.5">
-                            <span className="text-slate-400 font-bold">&gt;</span>
+                            <span className="text-slate-400 font-bold">></span>
                             <span>{log}</span>
                           </p>
                         ))}
@@ -530,7 +536,7 @@ export default function UpgradeComponent({
                       <div className="space-y-1 font-mono text-[9px] text-slate-600">
                         {logs.slice(-3).map((log, idx) => (
                           <p key={idx} className="flex items-start space-x-1.5">
-                            <span className="text-slate-400 font-bold">&gt;</span>
+                            <span className="text-slate-400 font-bold">></span>
                             <span>{log}</span>
                           </p>
                         ))}
@@ -547,14 +553,14 @@ export default function UpgradeComponent({
                     <div className="space-y-2">
                       <h4 className="font-black text-slate-900 text-base">Nâng cấp LexOCR PRO thành công!</h4>
                       <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
-                        Tài khoản Kiểm sát viên <strong className="font-bold">{session.name}</strong> đã tự động nâng cấp thành công lên quyền PRO vô hạn. Mở khóa xuất tệp Word lề tố tụng và Excel danh bị can ngay tức thì.
+                        Tài khoản <strong className="font-bold">{name}</strong> đã tự động nâng cấp thành công lên quyền PRO vô hạn. Mở khóa xuất tệp Word lề tố tụng và Excel danh bị can ngay tức thì.
                       </p>
                     </div>
 
                     <button
                       onClick={() => {
                         setShowQRModal(false);
-                        setActiveTab("ocr");
+                        setActiveTab("scanner");
                       }}
                       className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all uppercase tracking-wide border border-transparent flex items-center justify-center space-x-1.5"
                     >

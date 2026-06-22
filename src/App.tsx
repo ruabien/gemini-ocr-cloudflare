@@ -11,7 +11,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { getUserStorageItem } from "./utils/userStorage";
 
 function AppContent() {
-  // State to hold OCR configuration, document data, session and membership
+  // State to hold OCR configuration, document data
   const [config, setConfig] = useState<any>(() => {
     const saved = localStorage.getItem('ocr_config');
     if (saved) {
@@ -27,18 +27,15 @@ function AppContent() {
     };
   });
   const [document, setDocument] = useState<any>(null);
-  const [session, setSession] = useState<any>({
-    name: "Khách",
-    role: "Guest",
-    department: "Chưa xác thực",
-    isAuthenticated: false
-  });
   const [activeTab, setActiveTab] = useState("landing");
-  const [membershipRole, setMembershipRole] = useState<"Free" | "Pro">("Free");
   const [userGeminiKey, setUserGeminiKey] = useState<string>("");
 
-  // Authentication guard
-  const { user } = useAuth();
+  const { user, updateUserPlan } = useAuth();
+
+  const membershipRole = user?.plan === "pro" ? "Pro" : "Free";
+  const setMembershipRole = (role: "Free" | "Pro") => {
+    updateUserPlan(role === "Pro" ? "pro" : "free");
+  };
 
   useEffect(() => {
     if (user) {
@@ -55,14 +52,6 @@ function AppContent() {
       setUserGeminiKey("");
     }
   }, [user]);
-
-  useEffect(() => {
-    const protectedTabs = ["scanner", "upgrade", "settings", "editor", "structured"];
-    if (!user && protectedTabs.includes(activeTab)) {
-      window.alert("Vui lòng đăng nhập Google để sử dụng LexOCR.");
-      setActiveTab("landing");
-    }
-  }, [user, activeTab]);
 
 
   // Handlers for navigation and tab changes
@@ -112,7 +101,6 @@ function AppContent() {
         )}
         {activeTab === "upgrade" && (
           <Upgrade
-            session={session}
             membershipRole={membershipRole}
             setMembershipRole={setMembershipRole}
             setActiveTab={handleActiveTab}

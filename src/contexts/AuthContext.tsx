@@ -20,7 +20,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth state listener
   useEffect(() => {
     if (!isFirebaseConfigured) {
-      // No Firebase config – remain unauthenticated and clear any mock session
       setUser(null);
       localStorage.removeItem("lexocr_user");
       return;
@@ -28,12 +27,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
+        let storedPlan: "free" | "pro" = "free";
+        try {
+          const savedStr = localStorage.getItem("lexocr_user");
+          if (savedStr) {
+            const saved = JSON.parse(savedStr);
+            if (saved && saved.uid === firebaseUser.uid && (saved.plan === "free" || saved.plan === "pro")) {
+              storedPlan = saved.plan;
+            }
+          }
+        } catch (e) {}
+
         const profile: UserProfile = {
           uid: firebaseUser.uid,
           email: firebaseUser.email ?? "",
           displayName: firebaseUser.displayName ?? "",
           photoURL: firebaseUser.photoURL ?? undefined,
-          plan: "free",
+          plan: storedPlan,
         };
         setUser(profile);
         localStorage.setItem("lexocr_user", JSON.stringify(profile));
@@ -48,19 +58,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async () => {
     if (!isFirebaseConfigured) {
-      console.error("Chưa cấu hình Firebase Google Login.");
+      window.alert("Cấu hình Firebase chưa hoàn thiện. Vui lòng kiểm tra file .env hoặc src/lib/firebase.ts!");
       return;
     }
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const firebaseUser = result.user;
+      
+      let storedPlan: "free" | "pro" = "free";
+      try {
+        const savedStr = localStorage.getItem("lexocr_user");
+        if (savedStr) {
+          const saved = JSON.parse(savedStr);
+          if (saved && saved.uid === firebaseUser.uid && (saved.plan === "free" || saved.plan === "pro")) {
+            storedPlan = saved.plan;
+          }
+        }
+      } catch (e) {}
+
       const profile: UserProfile = {
         uid: firebaseUser.uid,
         email: firebaseUser.email ?? "",
         displayName: firebaseUser.displayName ?? "",
         photoURL: firebaseUser.photoURL ?? undefined,
-        plan: "free",
+        plan: storedPlan,
       };
       setUser(profile);
       localStorage.setItem("lexocr_user", JSON.stringify(profile));
