@@ -5,6 +5,14 @@ export interface UserSession {
   isAuthenticated: boolean;
 }
 
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  plan: "free" | "pro";
+}
+
 export interface RecentActivity {
   id: string;
   fileName: string;

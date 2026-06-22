@@ -7,6 +7,7 @@ import StructuredExtractionEditor from "./components/StructuredExtractionEditor"
 import Navbar from "./components/Navbar";
 import Upgrade from "./components/Upgrade";
 import Settings from "./components/Settings";
+import { AuthProvider } from "./contexts/AuthContext";
 
 function AppContent() {
   // State to hold OCR configuration, document data, session and membership
@@ -54,26 +55,9 @@ function AppContent() {
     setActiveTab(tab);
   };
 
-  const login = async () => {
-    // Dummy login implementation; replace with real auth flow as needed
-    setSession({
-      name: "Người dùng",
-      role: "User",
-      department: "Department",
-      isAuthenticated: true
-    });
-  };
-
   return (
     <>
-      <Navbar
-        session={session}
-        setSession={setSession}
-        activeTab={activeTab}
-        setActiveTab={handleActiveTab}
-        onLogin={login}
-        membershipRole={membershipRole}
-      />
+      <Navbar activeTab={activeTab} setActiveTab={handleActiveTab} membershipRole={membershipRole} />
       <div className="pt-16 min-h-[calc(100vh-4rem)] bg-slate-50 text-slate-900">
         {activeTab === "landing" && (
           <LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />
@@ -131,5 +115,9 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
