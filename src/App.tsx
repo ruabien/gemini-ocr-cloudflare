@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LandingPage from "./components/LandingPage";
 import Dashboard from "./components/Dashboard";
 import OcrScanner from "./components/OcrScanner";
@@ -7,7 +7,8 @@ import StructuredExtractionEditor from "./components/StructuredExtractionEditor"
 import Navbar from "./components/Navbar";
 import Upgrade from "./components/Upgrade";
 import Settings from "./components/Settings";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { getUserStorageItem } from "./utils/userStorage";
 
 function AppContent() {
   // State to hold OCR configuration, document data, session and membership
@@ -34,18 +35,35 @@ function AppContent() {
   });
   const [activeTab, setActiveTab] = useState("landing");
   const [membershipRole, setMembershipRole] = useState<"Free" | "Pro">("Free");
-  const [userGeminiKey, setUserGeminiKey] = useState<string>(() => {
-    try {
-      const saved = localStorage.getItem('vks_gemini_api_keys');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed[0];
+  const [userGeminiKey, setUserGeminiKey] = useState<string>("");
+
+  // Authentication guard
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      try {
+        const saved = getUserStorageItem(user.uid, 'gemini_keys');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setUserGeminiKey(parsed[0]);
+          }
         }
-      }
-    } catch (e) {}
-    return "";
-  });
+      } catch (e) {}
+    } else {
+      setUserGeminiKey("");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const protectedTabs = ["scanner", "upgrade", "settings", "editor", "structured"];
+    if (!user && protectedTabs.includes(activeTab)) {
+      window.alert("Vui lòng đăng nhập Google để sử dụng LexOCR.");
+      setActiveTab("landing");
+    }
+  }, [user, activeTab]);
+
 
   // Handlers for navigation and tab changes
   const handleStart = () => {

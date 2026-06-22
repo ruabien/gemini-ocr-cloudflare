@@ -8,6 +8,8 @@ import {
   Settings, Key, ShieldCheck, Eye, EyeOff, Check, CreditCard, 
   Sparkles, Award, Zap, AlertCircle, RefreshCw, X, Shield, Cloud, Trash2
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
 
 interface SettingsProps {
   userGeminiKey: string;
@@ -24,9 +26,11 @@ export default function SettingsComponent({
   setMembershipRole,
   setActiveTab
 }: SettingsProps) {
+  const { user } = useAuth();
+  
   const [keysList, setKeysList] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem('vks_gemini_api_keys');
+      const stored = getUserStorageItem(user?.uid, 'gemini_keys');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -41,13 +45,14 @@ export default function SettingsComponent({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [upgradeAnim, setUpgradeAnim] = useState(false);
   const [geminiModel, setGeminiModel] = useState<string>(() => {
-    return localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
+    const stored = getUserStorageItem(user?.uid, 'ocr_model');
+    return stored || "gemini-2.5-flash";
   });
 
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const model = e.target.value;
     setGeminiModel(model);
-    localStorage.setItem("gemini_model_alias", model);
+    setUserStorageItem(user?.uid, 'ocr_model', model);
   };
 
   // Lưu khoá API
@@ -61,7 +66,7 @@ export default function SettingsComponent({
 
     const updatedKeys = [...keysList, ...newKeys];
     setKeysList(updatedKeys);
-    localStorage.setItem('vks_gemini_api_keys', JSON.stringify(updatedKeys));
+    setUserStorageItem(user?.uid, 'gemini_keys', JSON.stringify(updatedKeys));
     setUserGeminiKey(updatedKeys[0] || '');
     setApiKeyInput("");
     setSaveSuccess(true);
@@ -71,7 +76,7 @@ export default function SettingsComponent({
   const handleDeleteKey = (index: number) => {
     const updatedKeys = keysList.filter((_, i) => i !== index);
     setKeysList(updatedKeys);
-    localStorage.setItem('vks_gemini_api_keys', JSON.stringify(updatedKeys));
+    setUserStorageItem(user?.uid, 'gemini_keys', JSON.stringify(updatedKeys));
     setUserGeminiKey(updatedKeys[0] || '');
   };
 

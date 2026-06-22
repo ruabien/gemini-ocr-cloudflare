@@ -6,6 +6,8 @@
 import React, { useState, useRef } from "react";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { OcrConfig } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
 // @ts-ignore
 import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
 import { optimizeImageForOcr } from "../utils/imageOptimizer";
@@ -52,6 +54,7 @@ const formatSize = (bytes: number) => {
 };
 
 export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
+  const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [autoMerge, setAutoMerge] = useState(false);
@@ -310,7 +313,7 @@ const startOcrProcess = async () => {
     };
 
 /* Build a deduplicated, trimmed pool of Gemini API keys */
-const rawKeys = localStorage.getItem('vks_gemini_api_keys') || '';
+const rawKeys = getUserStorageItem(user?.uid, 'gemini_keys') || '';
 let parsedKeyStrings: string[] = [];
 try {
   const parsed = JSON.parse(rawKeys);
@@ -535,7 +538,7 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
 console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
           setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
           const xhr = new XMLHttpRequest();
-          const selectedModel = localStorage.getItem("gemini_model_alias") || "gemini-2.5-flash";
+const selectedModel = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
           let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
           const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
           xhr.open("POST", googleUrl, true);

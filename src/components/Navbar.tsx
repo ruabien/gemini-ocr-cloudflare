@@ -95,17 +95,23 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
             <span>Nâng cấp PRO</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
-              activeTab === "settings"
-                ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
-                : "text-slate-300 hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <Settings className="h-4 w-4" />
-            <span>Cài đặt</span>
-          </button>
+<button
+  onClick={() => {
+    if (user) {
+      setActiveTab("settings");
+    } else {
+      window.alert("Vui lòng đăng nhập Google để sử dụng LexOCR.");
+    }
+  }}
+  className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
+    activeTab === "settings"
+      ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
+      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+  }`}
+>
+  <Settings className="h-4 w-4" />
+  <span>Cài đặt</span>
+</button>
         </nav>
 
         {/* Section tài khoản OAuth */}
