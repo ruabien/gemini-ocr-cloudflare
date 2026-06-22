@@ -511,7 +511,7 @@ export default function UpgradeComponent({
                       <div className="max-h-[75px] overflow-y-auto space-y-1 font-mono text-[9px] text-slate-600">
                         {logs.slice(-3).map((log, idx) => (
                           <p key={idx} className="flex items-start space-x-1.5">
-                            <span className="text-slate-400 font-bold">></span>
+                            <span className="text-slate-400 font-bold">&gt;</span>
                             <span>{log}</span>
                           </p>
                         ))}
@@ -536,7 +536,7 @@ export default function UpgradeComponent({
                       <div className="space-y-1 font-mono text-[9px] text-slate-600">
                         {logs.slice(-3).map((log, idx) => (
                           <p key={idx} className="flex items-start space-x-1.5">
-                            <span className="text-slate-400 font-bold">></span>
+                            <span className="text-slate-400 font-bold">&gt;</span>
                             <span>{log}</span>
                           </p>
                         ))}
