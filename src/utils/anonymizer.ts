@@ -57,7 +57,9 @@ function isOrganization(name: string): boolean {
 }
 
 export function anonymizeLegalText(input: string): AnonymizeResult {
-  let text = input || "";
+  const original = typeof input === "string" ? input : "";
+  let text = original;
+
   const stats = {
     names: 0,
     provinces: 0,
@@ -65,7 +67,7 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
     phones: 0
   };
 
-  if (!input) {
+  if (!text.trim()) {
     return { text, stats };
   }
 

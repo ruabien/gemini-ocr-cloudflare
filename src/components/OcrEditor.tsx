@@ -208,7 +208,12 @@ export default function OcrEditor({
       console.info("[ANONYMIZE] input length:", currentText.length);
       const result = anonymizeLegalText(currentText);
       
+      console.info("[ANONYMIZE] result type:", typeof result);
+      console.info("[ANONYMIZE] has text:", typeof result?.text === "string");
+      console.info("[ANONYMIZE] stats:", result?.stats);
+
       if (!result || typeof result.text !== "string") {
+        console.error("[ANONYMIZE] invalid result:", result);
         throw new Error("Anonymizer returned invalid result");
       }
 
