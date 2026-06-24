@@ -38,19 +38,17 @@ function AppContent() {
   };
 
   useEffect(() => {
-    if (user) {
-      try {
-        const saved = getUserStorageItem(user.uid, 'gemini_keys');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setUserGeminiKey(parsed[0]);
-          }
+    try {
+      const saved = getUserStorageItem(user?.uid, 'gemini_keys');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setUserGeminiKey(parsed[0]);
+          return;
         }
-      } catch (e) {}
-    } else {
-      setUserGeminiKey("");
-    }
+      }
+    } catch (e) {}
+    setUserGeminiKey("");
   }, [user]);
 
 

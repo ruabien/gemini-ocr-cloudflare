@@ -21,6 +21,8 @@ import {
   Sparkles
 } from "lucide-react";
 import { OcrDocument } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import LoginPromptModal from "./LoginPromptModal";
 import * as pdfjs from "pdfjs-dist";
 
 const sanitizeText = (raw: string) => {
@@ -68,9 +70,12 @@ export default function OcrEditor({
     );
   }
 
-  // Upgrade modal state
+  // Upgrade/Login modal states
+  const { user } = useAuth();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loginFeatureName, setLoginFeatureName] = useState("");
 
   // Parse OCR data
   const parsedData = (() => {
@@ -188,6 +193,16 @@ export default function OcrEditor({
       setEditorText(originalBackup);
       setIsAnonymized(false);
     } else {
+      if (!user) {
+        setLoginFeatureName("Ẩn danh đương sự (Mật danh hoá)");
+        setShowLoginPrompt(true);
+        return;
+      }
+      if (membershipRole !== "Pro") {
+        setUpgradeFeature("Ẩn danh đương sự tự động (Mật danh hoá)");
+        setShowUpgradeModal(true);
+        return;
+      }
       setIsRedacting(true);
       try {
         const response = await fetch("/api/ocr/anonymize", {
@@ -220,6 +235,11 @@ export default function OcrEditor({
 
   // Export DOCX (Pro only)
   const handleExportDocx = async () => {
+    if (!user) {
+      setLoginFeatureName("Xuất tệp Word (.DOCX) chuẩn Nghị định 30");
+      setShowLoginPrompt(true);
+      return;
+    }
     if (membershipRole !== "Pro") {
       setUpgradeFeature(
         "Xuất tệp Word (.DOCX) chuẩn Nghị định 30/2020/NĐ-CP"
@@ -507,6 +527,14 @@ export default function OcrEditor({
           </div>
         </div>
       </div>
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <LoginPromptModal
+          onClose={() => setShowLoginPrompt(false)}
+          featureName={loginFeatureName}
+        />
+      )}
 
       {/* Upgrade modal */}
       {showUpgradeModal && (

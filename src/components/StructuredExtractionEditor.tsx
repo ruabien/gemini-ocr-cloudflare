@@ -17,6 +17,8 @@ import {
   FileText
 } from "lucide-react";
 import { OcrDocument } from "../types";
+import { useAuth } from "../contexts/AuthContext";
+import LoginPromptModal from "./LoginPromptModal";
 
 export type StructuredDocumentType = "thong_bao_thu_ly" | "quyet_dinh_khoi_to_bi_can";
 export type CaseType = "hinh_su" | "dan_su" | "hanh_chinh";
@@ -635,7 +637,10 @@ export default function StructuredExtractionEditor({
   const [newFieldNote, setNewFieldNote] = useState("");
 
   // Trạng thái nâng cấp PRO
+  const { user } = useAuth();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loginFeatureName, setLoginFeatureName] = useState("");
 
   // Chạy bóc tách dữ liệu khi thay đổi cấu hình hoặc tài liệu gốc
   const handleExtract = () => {
@@ -684,6 +689,11 @@ export default function StructuredExtractionEditor({
 
   // Xuất CSV UTF-8 với BOM để mở trực tiếp trên Excel không bị lỗi font tiếng Việt
   const handleExportExcel = () => {
+    if (!user) {
+      setLoginFeatureName("Xuất Excel bảng trường dữ liệu");
+      setShowLoginPrompt(true);
+      return;
+    }
     if (membershipRole !== "Pro") {
       setShowUpgradeModal(true);
       return;
@@ -955,6 +965,14 @@ export default function StructuredExtractionEditor({
           </div>
         </div>
       </div>
+
+      {/* Login Prompt Modal */}
+      {showLoginPrompt && (
+        <LoginPromptModal
+          onClose={() => setShowLoginPrompt(false)}
+          featureName={loginFeatureName}
+        />
+      )}
 
       {/* Upgrade Modal cho Free User */}
       {showUpgradeModal && (
