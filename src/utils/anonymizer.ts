@@ -57,6 +57,13 @@ function isOrganization(name: string): boolean {
 }
 
 export function anonymizeLegalText(input: string): AnonymizeResult {
+  if (!input) {
+    return {
+      text: "",
+      stats: { names: 0, provinces: 0, idNumbers: 0, phones: 0 }
+    };
+  }
+
   const original = typeof input === "string" ? input : "";
   let text = original;
 
@@ -68,7 +75,10 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   };
 
   if (!text.trim()) {
-    return { text, stats };
+    return {
+      text,
+      stats
+    };
   }
 
   const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
@@ -141,5 +151,8 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
     return `${before}${label}${sep}${masked}`;
   });
 
-  return { text, stats };
+  return {
+    text,
+    stats
+  };
 }

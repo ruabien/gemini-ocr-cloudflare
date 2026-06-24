@@ -213,8 +213,23 @@ export function anonymizeLegalTextDetailed(text) {
 /**
  * Hàm ẩn danh trả về chuỗi văn bản sạch
  * @param {string} text - Văn bản gốc
- * @returns {string} Văn bản đã ẩn danh
+ * @returns {object} Văn bản đã ẩn danh và thống kê
  */
 export function anonymizeLegalText(text) {
-  return anonymizeLegalTextDetailed(text).text;
+  if (!text) {
+    return {
+      text: "",
+      stats: { names: 0, provinces: 0, idNumbers: 0, phones: 0 }
+    };
+  }
+  const result = anonymizeLegalTextDetailed(text);
+  return {
+    text: result.text,
+    stats: {
+      names: result.stats.names,
+      provinces: result.stats.locations,
+      idNumbers: result.stats.cccd,
+      phones: result.stats.contacts
+    }
+  };
 }
