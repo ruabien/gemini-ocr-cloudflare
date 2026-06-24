@@ -23,25 +23,34 @@ const organizationBlacklist = [
   "Điều tra viên",
 ];
 
+function normalizeVietnamese(str: string): string {
+  return str
+    .toLowerCase()
+    .replace(/đ/g, 'd')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
 const provinceMap: Record<string, string> = {
-  "hồ chí minh": "HCM",
-  "hà nội": "HN",
-  "đà nẵng": "ĐN",
-  "cần thơ": "CT",
-  "hải phòng": "HP",
-  "đắk lắk": "ĐL",
-  "nghệ an": "NA",
-  "thái bình": "TB",
-  "kiên giang": "KG",
-  "đồng nai": "ĐNai",
-  "bình dương": "BD",
+  "ho chi minh": "HCM",
+  "ha noi": "HN",
+  "da nang": "ĐN",
+  "can tho": "CT",
+  "hai phong": "HP",
+  "dak lak": "ĐL",
+  "nghe an": "NA",
+  "thai binh": "TB",
+  "kien giang": "KG",
+  "dong nai": "ĐNai",
+  "binh duong": "BD",
   "long an": "LA",
   "an giang": "AG",
-  "tây ninh": "TN",
-  "quảng nam": "QN",
-  "quảng ngãi": "QNg",
-  "khánh hòa": "KH",
-  "lâm đồng": "LĐ"
+  "tay ninh": "TN",
+  "quang nam": "QN",
+  "quang ngai": "QNg",
+  "khanh hoa": "KH",
+  "lam dong": "LĐ"
 };
 
 const titles = [
@@ -57,13 +66,17 @@ function isOrganization(name: string): boolean {
 }
 
 export function anonymizeLegalText(input: string): AnonymizeResult {
-  let text = input;
+  let text = input || "";
   const stats = {
     names: 0,
     provinces: 0,
     idNumbers: 0,
     phones: 0
   };
+
+  if (!input) {
+    return { text, stats };
+  }
 
   const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
   const bAfter = '(?=$|[^\\p{L}\\p{N}])';
@@ -95,7 +108,7 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   });
 
   // 2. Provinces/Cities Anonymization
-  const provPrefixPattern = '(tỉnh|thành\\s+phố|Thành\\s+phố|TP\\.|TP|Tp\\.|tp\\.|tp|Tp)';
+  const provPrefixPattern = '(tỉnh|thành\\s+phố|tp\\.?|tp)';
   const provKeys = Object.keys(provinceMap).sort((a, b) => b.length - a.length);
   const provPattern = provKeys.map(k => k.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
   const provinceRegex = new RegExp(
@@ -104,7 +117,7 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   );
 
   text = text.replace(provinceRegex, (match, before, prefix, provName) => {
-    const key = provName.toLowerCase().replace(/\s+/g, ' ');
+    const key = normalizeVietnamese(provName);
     const abbr = provinceMap[key];
     if (abbr) {
       stats.provinces++;

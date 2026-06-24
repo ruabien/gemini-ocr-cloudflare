@@ -207,15 +207,28 @@ export default function OcrEditor({
     try {
       console.info("[ANONYMIZE] input length:", currentText.length);
       const result = anonymizeLegalText(currentText);
+      
+      if (!result || typeof result.text !== "string") {
+        throw new Error("Anonymizer returned invalid result");
+      }
+
       console.info("[ANONYMIZE] output length:", result.text.length);
-      console.info("[ANONYMIZE] stats:", result.stats);
+
+      const nextText = result?.text || currentText;
+      const nextStats = result?.stats || {
+        names: 0,
+        provinces: 0,
+        idNumbers: 0,
+        phones: 0
+      };
 
       setOriginalBackup(currentText);
-      setEditorText(result.text);
+      setEditorText(nextText);
+      setAnonymizeStats(nextStats);
       setIsAnonymized(true);
-      setAnonymizeStats(result.stats);
     } catch (err) {
       console.error("Anonymization error:", err);
+      alert("Không thể ẩn danh văn bản. Vui lòng kiểm tra lại nội dung OCR.");
     } finally {
       setIsRedacting(false);
     }
