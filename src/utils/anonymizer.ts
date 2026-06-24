@@ -32,26 +32,17 @@ function normalizeVietnamese(str: string): string {
     .trim();
 }
 
-const provinceMap: Record<string, string> = {
-  "ho chi minh": "HCM",
-  "ha noi": "HN",
-  "da nang": "ĐN",
-  "can tho": "CT",
-  "hai phong": "HP",
-  "dak lak": "ĐL",
-  "nghe an": "NA",
-  "thai binh": "TB",
-  "kien giang": "KG",
-  "dong nai": "ĐNai",
-  "binh duong": "BD",
-  "long an": "LA",
-  "an giang": "AG",
-  "tay ninh": "TN",
-  "quang nam": "QN",
-  "quang ngai": "QNg",
-  "khanh hoa": "KH",
-  "lam dong": "LĐ"
-};
+const provinceReplacements = [
+  { names: ["Đắk Lắk", "Dak Lak"], code: "ĐL" },
+  { names: ["Nghệ An", "Nghe An"], code: "NA" },
+  { names: ["Thái Bình", "Thai Binh"], code: "TB" },
+  { names: ["Hồ Chí Minh", "Ho Chi Minh"], code: "HCM" },
+  { names: ["Cần Thơ", "Can Tho"], code: "CT" }
+];
+
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 const titles = [
   "Ông/bà", "Ông/Bà", "ông/bà",
@@ -108,23 +99,23 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   });
 
   // 2. Provinces/Cities Anonymization
-  const provPrefixPattern = '(tỉnh|thành\\s+phố|tp\\.?|tp)';
-  const provKeys = Object.keys(provinceMap).sort((a, b) => b.length - a.length);
-  const provPattern = provKeys.map(k => k.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
-  const provinceRegex = new RegExp(
-    `(${bBefore})(${provPrefixPattern})\\s+(${provPattern})${bAfter}`,
-    'giu'
-  );
+  const prefixes = ["tỉnh", "Tỉnh", "thành phố", "Thành phố", "TP.", "TP", "Tp."];
+  const sortedPrefixes = [...prefixes].sort((a, b) => b.length - a.length);
+  const prefixPattern = sortedPrefixes.map(p => escapeRegExp(p)).join('|');
 
-  text = text.replace(provinceRegex, (match, before, prefix, provName) => {
-    const key = normalizeVietnamese(provName);
-    const abbr = provinceMap[key];
-    if (abbr) {
-      stats.provinces++;
-      return `${before}${prefix} ${abbr}`;
+  for (const replacement of provinceReplacements) {
+    for (const name of replacement.names) {
+      const escapedName = escapeRegExp(name);
+      const provinceRegex = new RegExp(
+        `(${bBefore})(${prefixPattern})\\s+(${escapedName})${bAfter}`,
+        'gu'
+      );
+      text = text.replace(provinceRegex, (match, before, prefix) => {
+        stats.provinces++;
+        return `${before}${prefix} ${replacement.code}`;
+      });
     }
-    return match;
-  });
+  }
 
   // 3. CCCD / CMND / SĐT Anonymization
   const idLabels = [
