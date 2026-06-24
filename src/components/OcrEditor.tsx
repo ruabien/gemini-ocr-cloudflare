@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { anonymizeLegalText } from "../utils/anonymizer";
 import {
   ArrowLeft,
@@ -12,10 +12,6 @@ import {
   Shield,
   Eye,
   EyeOff,
-  Bold,
-  Italic,
-  Underline,
-  AlignJustify,
   AlertTriangle,
   CheckCircle2,
   X,
@@ -117,8 +113,6 @@ export default function OcrEditor({
     phones: number;
   } | null>(null);
 
-  const editorRef = useRef<HTMLDivElement>(null);
-
   // PDF / image preview
   useEffect(() => {
     const selectedFile = document?.selectedFile;
@@ -180,27 +174,13 @@ export default function OcrEditor({
     setEditorText(nextText);
     setOriginalBackup(nextText);
     setIsAnonymized(false);
+    setAnonymizeStats(null);
   }, [document?.name, document?.content]);
 
-  useLayoutEffect(() => {
-    console.info("OCR editor text length:", editorText?.length || 0);
-    if (editorRef.current && editorRef.current.innerText !== editorText) {
-      editorRef.current.innerText = editorText || "";
-    }
-  }, [editorText]);
-
-  // Text styling commands
-  const applyStyle = (command: string) => {
-    window.document.execCommand(command, false, undefined);
-  };
-
   // Anonymization toggle
-  const handleToggleAnonymize = async () => {
+  const handleToggleAnonymize = () => {
     if (isAnonymized) {
       setEditorText(originalBackup);
-      if (editorRef.current) {
-        editorRef.current.innerText = originalBackup;
-      }
       setIsAnonymized(false);
       setAnonymizeStats(null);
       return;
@@ -217,7 +197,7 @@ export default function OcrEditor({
       return;
     }
 
-    const currentText = editorRef.current?.innerText || editorText || "";
+    const currentText = editorText || "";
     if (!currentText.trim()) {
       alert("Không có nội dung để ẩn danh.");
       return;
@@ -232,9 +212,6 @@ export default function OcrEditor({
 
       setOriginalBackup(currentText);
       setEditorText(result.text);
-      if (editorRef.current) {
-        editorRef.current.innerText = result.text;
-      }
       setIsAnonymized(true);
       setAnonymizeStats(result.stats);
     } catch (err) {
@@ -296,12 +273,6 @@ export default function OcrEditor({
       link.click();
     } catch (err) {
       console.error("Export TXT error:", err);
-    }
-  };
-
-  const handleEditorInput = () => {
-    if (editorRef.current) {
-      setEditorText(editorRef.current.innerText);
     }
   };
 
@@ -497,31 +468,6 @@ export default function OcrEditor({
             {/* Toolbar */}
             <div className="bg-slate-50 p-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  onClick={() => applyStyle("bold")}
-                  className="p-1 px-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
-                >
-                  <Bold className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => applyStyle("italic")}
-                  className="p-1 px-2 text-xs italic text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
-                >
-                  <Italic className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => applyStyle("underline")}
-                  className="p-1 px-2 text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
-                >
-                  <Underline className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => applyStyle("justify")}
-                  className="p-1 px-2 text-xs text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded shadow-sm"
-                >
-                  <AlignJustify className="h-3.5 w-3.5" />
-                </button>
-                <span className="h-4 w-px bg-slate-300 mx-1" />
                 <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded font-mono border border-slate-300">
                   Times New Roman • 14pt (Nghị định 30)
                 </span>
@@ -532,20 +478,21 @@ export default function OcrEditor({
             </div>
 
             {/* Editable area */}
-            <div className="p-8 min-h-[440px] max-h-[500px] overflow-y-auto bg-white focus:outline-none">
+            <div className="p-8 bg-white focus:outline-none">
               {!editorText ? (
-                <div className="text-slate-400 italic">
+                <div className="text-slate-400 italic mb-2">
                   Chưa có nội dung OCR để hiển thị.
                 </div>
               ) : null}
-              <div
-                ref={editorRef}
-                contentEditable
-                onInput={handleEditorInput}
-                className="legal-editor leading-[1.5] text-justify text-[14pt] text-black"
+              <textarea
+                value={editorText}
+                onChange={(e) => setEditorText(e.target.value)}
+                className="legal-editor w-full min-h-[440px] max-h-[500px] overflow-y-auto resize-none bg-white focus:outline-none leading-[1.5] text-justify text-[14pt] text-black"
                 style={{
                   fontFamily: '"Times New Roman", Times, serif',
-                  lineHeight: "1.5"
+                  fontSize: '14pt',
+                  lineHeight: '1.5',
+                  color: '#000000'
                 }}
               />
             </div>
