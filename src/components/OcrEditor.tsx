@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { anonymizeLegalText } from "../utils/anonymizer";
 import {
   ArrowLeft,
   FileText,
@@ -109,6 +110,12 @@ export default function OcrEditor({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isRedacting, setIsRedacting] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
+  const [anonymizeStats, setAnonymizeStats] = useState<{
+    names: number;
+    provinces: number;
+    idNumbers: number;
+    phones: number;
+  } | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -191,45 +198,49 @@ export default function OcrEditor({
   const handleToggleAnonymize = async () => {
     if (isAnonymized) {
       setEditorText(originalBackup);
+      if (editorRef.current) {
+        editorRef.current.innerText = originalBackup;
+      }
       setIsAnonymized(false);
-    } else {
-      if (!user) {
-        setLoginFeatureName("Ẩn danh đương sự (Mật danh hoá)");
-        setShowLoginPrompt(true);
-        return;
+      setAnonymizeStats(null);
+      return;
+    }
+
+    if (!user) {
+      setLoginFeatureName("Ẩn danh đương sự (Mật danh hoá)");
+      setShowLoginPrompt(true);
+      return;
+    }
+    if (membershipRole !== "Pro") {
+      setUpgradeFeature("Ẩn danh đương sự tự động (Mật danh hoá)");
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    const currentText = editorRef.current?.innerText || editorText || "";
+    if (!currentText.trim()) {
+      alert("Không có nội dung để ẩn danh.");
+      return;
+    }
+
+    setIsRedacting(true);
+    try {
+      console.info("[ANONYMIZE] input length:", currentText.length);
+      const result = anonymizeLegalText(currentText);
+      console.info("[ANONYMIZE] output length:", result.text.length);
+      console.info("[ANONYMIZE] stats:", result.stats);
+
+      setOriginalBackup(currentText);
+      setEditorText(result.text);
+      if (editorRef.current) {
+        editorRef.current.innerText = result.text;
       }
-      if (membershipRole !== "Pro") {
-        setUpgradeFeature("Ẩn danh đương sự tự động (Mật danh hoá)");
-        setShowUpgradeModal(true);
-        return;
-      }
-      setIsRedacting(true);
-      try {
-        const response = await fetch("/api/ocr/anonymize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: editorText })
-        });
-        const data = await response.json();
-        if (data.success) {
-          setOriginalBackup(editorText);
-          setEditorText(data.anonymizedText);
-          setIsAnonymized(true);
-        }
-      } catch (err) {
-        console.error("Anonymization error:", err);
-        // Simple fallback
-        const fallback = editorText
-          .replace(/Nguyễn Văn A/g, "Nguyễn Văn ***")
-          .replace(/Trần Văn B/g, "Trần Văn ***")
-          .replace(/Nguyễn Thị C/g, "Nguyễn Thị ***")
-          .replace(/\d{12}/g, "079*********");
-        setOriginalBackup(editorText);
-        setEditorText(fallback);
-        setIsAnonymized(true);
-      } finally {
-        setIsRedacting(false);
-      }
+      setIsAnonymized(true);
+      setAnonymizeStats(result.stats);
+    } catch (err) {
+      console.error("Anonymization error:", err);
+    } finally {
+      setIsRedacting(false);
     }
   };
 
@@ -299,6 +310,31 @@ export default function OcrEditor({
       id="ocr-editor-view"
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
     >
+      {isAnonymized && anonymizeStats && (
+        <div className="bg-emerald-50 border border-emerald-250 p-4 rounded-xl flex items-center justify-between shadow-sm animate-fadeIn">
+          <div className="flex items-center space-x-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-emerald-800">
+                Đã ẩn danh đương sự thông minh thành công (Chạy hoàn toàn local trong trình duyệt)
+              </p>
+              <div className="text-[11px] text-emerald-700 mt-1 flex flex-wrap gap-x-4 gap-y-1 font-medium">
+                <span>• {anonymizeStats.names} họ tên</span>
+                <span>• {anonymizeStats.provinces} tỉnh/thành</span>
+                <span>• {anonymizeStats.idNumbers} CCCD/CMND</span>
+                <span>• {anonymizeStats.phones} số điện thoại</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleToggleAnonymize}
+            className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 underline ml-4 flex-shrink-0"
+          >
+            Hiện thông tin đương sự
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center space-x-3">

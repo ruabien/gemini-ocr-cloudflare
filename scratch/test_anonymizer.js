@@ -1,4 +1,4 @@
-const { anonymizeLegalText } = require('./anonymizer_impl.js');
+import { anonymizeLegalText } from './anonymizer_impl.js';
 
 const tests = [
   {
