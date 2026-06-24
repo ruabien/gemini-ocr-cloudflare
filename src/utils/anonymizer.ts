@@ -115,19 +115,31 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   const sortedPrefixes = [...prefixes].sort((a, b) => b.length - a.length);
   const prefixPattern = sortedPrefixes.map(p => escapeRegExp(p)).join('|');
 
-  for (const replacement of provinceReplacements) {
-    for (const name of replacement.names) {
-      const escapedName = escapeRegExp(name);
-      const provinceRegex = new RegExp(
-        `(${bBefore})(${prefixPattern})\\s+(${escapedName})${bAfter}`,
-        'gu'
-      );
-      text = text.replace(provinceRegex, (match, before, prefix) => {
-        stats.provinces++;
-        return `${before}${prefix} ${replacement.code}`;
-      });
+  const provinceMap = new Map<string, string>();
+  provinceReplacements.forEach(rep => {
+    rep.names.forEach(name => {
+      provinceMap.set(name.toLowerCase(), rep.code);
+    });
+  });
+
+  const nameAlternation = Array.from(provinceMap.keys())
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp)
+    .join("|");
+
+  const provinceRegex = new RegExp(
+    `(${bBefore})(${prefixPattern})\\s+(${nameAlternation})${bAfter}`,
+    'giu'
+  );
+
+  text = text.replace(provinceRegex, (match, before, prefix, foundName) => {
+    const code = provinceMap.get(foundName.toLowerCase());
+    if (code) {
+      stats.provinces++;
+      return `${before}${prefix} ${code}`;
     }
-  }
+    return match;
+  });
 
   // 3. CCCD / CMND / SĐT Anonymization
   const idLabels = [
