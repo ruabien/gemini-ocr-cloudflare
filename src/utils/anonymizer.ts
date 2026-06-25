@@ -34,27 +34,50 @@ function normalizeVietnamese(str: string): string {
 
 const provinceReplacements = [
   { names: ["Hồ Chí Minh", "Ho Chi Minh"], code: "HCM" },
-  { names: ["Hà Nội", "Ha Noi"], code: "HN" },
-  { names: ["Đà Nẵng", "Da Nang"], code: "ĐN" },
   { names: ["Cần Thơ", "Can Tho"], code: "CT" },
-  { names: ["Hải Phòng", "Hai Phong"], code: "HP" },
   { names: ["Đắk Lắk", "Dak Lak"], code: "ĐL" },
   { names: ["Nghệ An", "Nghe An"], code: "NA" },
   { names: ["Thái Bình", "Thai Binh"], code: "TB" },
-  { names: ["Kiên Giang", "Kien Giang"], code: "KG" },
-  { names: ["Đồng Nai", "Dong Nai"], code: "ĐNai" },
-  { names: ["Bình Dương", "Binh Duong"], code: "BD" },
-  { names: ["Long An", "Long An"], code: "LA" },
-  { names: ["An Giang", "An Giang"], code: "AG" },
-  { names: ["Tây Ninh", "Tay Ninh"], code: "TN" },
-  { names: ["Quảng Nam", "Quang Nam"], code: "QN" },
-  { names: ["Quảng Ngãi", "Quang Ngai"], code: "QNg" },
-  { names: ["Khánh Hòa", "Khanh Hoa"], code: "KH" },
-  { names: ["Lâm Đồng", "Lam Dong"], code: "LĐ" }
+  { names: ["Kiên Giang", "Kien Giang"], code: "KG" }
 ];
 
-function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function replaceProvinceNames(input: string, stats: AnonymizeResult["stats"]): string {
+  let output = input;
+
+  for (const item of provinceReplacements) {
+    for (const name of item.names) {
+      const escaped = escapeRegExp(name);
+
+      // Updated patterns: allow optional punctuation or end of string after the name
+      const patterns = [
+        new RegExp(`\\b(tỉnh|Tỉnh)\\s+${escaped}(?=\\b|\\.|,|$)`, "giu"),
+        new RegExp(`\\b(thành\\s+phố|Thành\\s+phố)\\s+${escaped}(?=\\b|\\.|,|$)`, "giu"),
+        new RegExp(`\\bTP\\.?\\s*${escaped}(?=\\b|\\.|,|$)`, "giu")
+      ];
+
+      for (const pattern of patterns) {
+        output = output.replace(pattern, (match) => {
+          stats.provinces++;
+
+          // Determine which prefix was used and replace only the location name with its code
+          if (/^tỉnh/i.test(match)) {
+            return match.replace(new RegExp(escaped, "iu"), item.code);
+          }
+          if (/^thành\s+phố/i.test(match)) {
+            return match.replace(new RegExp(escaped, "iu"), item.code);
+          }
+          // TP., TP or Tp. variations are covered by the same regex; replace the name
+          return match.replace(new RegExp(escaped, "iu"), item.code);
+        });
+      }
+    }
+  }
+
+  return output;
 }
 
 const titles = [
@@ -123,39 +146,8 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
     return `${before}${title} ${anonymizedName}`;
   });
 
-  // 2. Provinces/Cities Anonymization
-  const prefixes = ["tỉnh", "thành phố", "tp.", "tp"];
-  const prefixPattern = prefixes
-    .sort((a, b) => b.length - a.length)
-    .map(p => p.split(/\s+/).map(escapeRegExp).join('\\s+'))
-    .join('|');
-
-  const provinceMap = new Map<string, string>();
-  provinceReplacements.forEach(rep => {
-    rep.names.forEach(name => {
-      provinceMap.set(name.toLowerCase().replace(/\s+/g, ' '), rep.code);
-    });
-  });
-
-  const nameAlternation = Array.from(provinceMap.keys())
-    .sort((a, b) => b.length - a.length)
-    .map(name => name.split(/\s+/).map(escapeRegExp).join('\\s+'))
-    .join("|");
-
-  const provinceRegex = new RegExp(
-    `(${bBefore})(${prefixPattern})\\s+(${nameAlternation})${bAfter}`,
-    'giu'
-  );
-
-  text = text.replace(provinceRegex, (match, before, prefix, foundName) => {
-    const key = foundName.toLowerCase().replace(/\s+/g, ' ');
-    const code = provinceMap.get(key);
-    if (code) {
-      stats.provinces++;
-      return `${before}${prefix} ${code}`;
-    }
-    return match;
-  });
+  // 2. Provinces/Cities Anonymization via whitelist
+  text = replaceProvinceNames(text, stats);
 
   // 3. CCCD / CMND / SĐT Anonymization
   const idLabels = [
