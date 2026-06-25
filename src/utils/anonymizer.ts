@@ -21,20 +21,7 @@ function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function anonymizeLegalText(input: string): AnonymizeResult {
-  const stats = {
-    names: 0,
-    provinces: 0,
-    idNumbers: 0,
-    phones: 0
-  };
-
-  if (!input) {
-    return { text: "", stats };
-  }
-
-  let text = input;
-
+export function maskPersonalNames(text: string, stats: any): string {
   const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
 
   // 1. Họ tên cá nhân (dựa trên danh xưng)
@@ -99,6 +86,10 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
     return `${before}${surname} ${anonymizedRest}`;
   });
 
+  return text;
+}
+
+export function replaceProvinceNames(text: string, stats: any): string {
   // 2. Địa chỉ: Tỉnh / Thành phố theo mapping
   for (const mapping of provinceMappings) {
     for (const name of mapping.names) {
@@ -112,17 +103,50 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
       });
     }
   }
+  return text;
+}
 
-  // 3. CCCD / CMND / SĐT (Tìm các chuỗi 9-12 chữ số liên tiếp)
+export function maskIdNumbers(text: string, stats: any): string {
+  // 3. CCCD / CMND (Tìm các chuỗi 9-12 chữ số liên tiếp nhưng không phải SĐT bắt đầu bằng 0 và dài 10 số)
   const numberRegex = /\b(\d{9,12})\b/g;
-  text = text.replace(numberRegex, (match, digits) => {
+  return text.replace(numberRegex, (match, digits) => {
     if (digits.length === 10 && digits.startsWith("0")) {
-      stats.phones++;
-    } else {
-      stats.idNumbers++;
+      return match; // Skip, handled by phone numbers
     }
+    stats.idNumbers++;
     return digits.slice(0, -3) + "***";
   });
+}
+
+export function maskPhoneNumbers(text: string, stats: any): string {
+  // 4. SĐT (Tìm các chuỗi 10 chữ số liên tiếp bắt đầu bằng 0)
+  const numberRegex = /\b(\d{9,12})\b/g;
+  return text.replace(numberRegex, (match, digits) => {
+    if (digits.length === 10 && digits.startsWith("0")) {
+      stats.phones++;
+      return digits.slice(0, -3) + "***";
+    }
+    return match; // Skip, handled by ID numbers
+  });
+}
+
+export function anonymizeLegalText(input: string): AnonymizeResult {
+  const stats = {
+    names: 0,
+    provinces: 0,
+    idNumbers: 0,
+    phones: 0
+  };
+
+  if (!input) {
+    return { text: "", stats };
+  }
+
+  let text = input;
+  text = maskPersonalNames(text, stats);
+  text = replaceProvinceNames(text, stats);
+  text = maskIdNumbers(text, stats);
+  text = maskPhoneNumbers(text, stats);
 
   return {
     text,

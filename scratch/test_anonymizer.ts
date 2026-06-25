@@ -6,12 +6,16 @@ const tests = [
     expected: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"
   },
   {
-    input: "Địa chỉ: phường Hưng Lợi, quận Ninh Kiều, thành phố Cần Thơ.",
-    expected: "Địa chỉ: phường Hưng Lợi, quận Ninh Kiều, thành phố CT."
+    input: "Địa chỉ: 746 đường 30/4, phường Hưng Lợi, quận Ninh Kiều, thành phố Cần Thơ.",
+    expected: "Địa chỉ: 746 đường 30/4, phường Hưng Lợi, quận Ninh Kiều, thành phố CT."
   },
   {
-    input: "xã X, huyện Y, tỉnh Z",
-    expected: "xã X, huyện Y, tỉnh Z"
+    input: "Địa chỉ: xã X, huyện Y, tỉnh Z.",
+    expected: "Địa chỉ: xã X, huyện Y, tỉnh Z."
+  },
+  {
+    input: "Viện kiểm sát nhân dân quận Ninh Kiều, thành phố Cần Thơ.",
+    expected: "Viện kiểm sát nhân dân quận Ninh Kiều, thành phố CT."
   },
   {
     input: "Ông Nguyễn Văn Bình, CCCD số 034176012469",
