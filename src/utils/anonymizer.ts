@@ -3,6 +3,7 @@ export interface AnonymizeResult {
   stats: {
     names: number;
     provinces: number;
+    communes: number;
     idNumbers: number;
     phones: number;
   };
@@ -14,119 +15,263 @@ const provinceMappings = [
   { names: ["Đắk Lắk", "Dak Lak"], code: "ĐL" },
   { names: ["Nghệ An", "Nghe An"], code: "NA" },
   { names: ["Thái Bình", "Thai Binh"], code: "TB" },
-  { names: ["Kiên Giang", "Kien Giang"], code: "KG" }
+  { names: ["Kiên Giang", "Kien Giang"], code: "KG" },
+  { names: ["Phú Yên", "Phu Yen"], code: "PY" }
+];
+
+const nameExclusions = [
+  "cộng hòa",
+  "xã hội",
+  "chủ nghĩa",
+  "việt nam",
+  "ủy ban",
+  "tòa án",
+  "viện kiểm sát",
+  "hội đồng xét xử",
+  "công an",
+  "ubnd",
+  "công ty"
+];
+
+const titles = [
+  "Ông/bà", "Ông/Bà", "ông/bà",
+  "Nguyên đơn", "Bị đơn", "Bị can", "Bị cáo",
+  "nguyên đơn", "bị đơn", "bị can", "bị cáo",
+  "Ông", "Bà", "Anh", "Chị", "ông", "bà", "anh", "chị",
+  "Thẩm phán", "Kiểm sát viên", "Thư ký", "Điều tra viên",
+  "Người làm chứng", "người làm chứng", "Người bị hại", "người bị hại",
+  "Người có quyền lợi, nghĩa vụ liên quan", "Người có quyền lợi nghĩa vụ liên quan",
+  "Người đại diện", "người đại diện", "Đại diện", "đại diện"
 ];
 
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function maskPersonalNames(text: string, stats: any): string {
+function preserveCase(original: string, replacement: string): string {
+  if (original === original.toUpperCase()) {
+    return replacement.toUpperCase();
+  }
+  if (original === original.toLowerCase()) {
+    return replacement.toLowerCase();
+  }
+  return replacement;
+}
+
+function isValidName(name: string): boolean {
+  name = name.trim();
+  if (!name) return false;
+
+  const words = name.split(/\s+/);
+  if (words.length === 0) return false;
+
+  const lastWord = words[words.length - 1];
+  if (lastWord.length <= 1) return false;
+
+  const lowerName = name.toLowerCase();
+  for (const exclusion of nameExclusions) {
+    if (lowerName.includes(exclusion)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function anonymizeNameString(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length <= 1) {
+    return name.length > 0 ? name[0] : "";
+  }
+  const lastWord = words[words.length - 1];
+  const abbrev = lastWord.charAt(0);
+  return words.slice(0, -1).join(" ") + " " + abbrev;
+}
+
+function buildPersonNameMap(text: string): {
+  multiWordNames: Map<string, string>;
+  singleWordNames: Map<string, string>;
+} {
+  const multiWordNames = new Map<string, string>();
+  const singleWordNames = new Map<string, string>();
+
+  const candidates = new Set<string>();
   const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
 
-  // 1. Họ tên cá nhân (dựa trên danh xưng)
-  const titles = [
-    "Ông/bà", "Ông/Bà", "ông/bà",
-    "Nguyên đơn", "Bị đơn", "Bị can", "Bị cáo",
-    "nguyên đơn", "bị đơn", "bị can", "bị cáo",
-    "Ông", "Bà", "Anh", "Chị", "ông", "bà", "anh", "chị"
-  ];
-  
-  // Sắp xếp titles dài trước ngắn sau để ưu tiên match
-  titles.sort((a, b) => b.length - a.length);
-
-  const titlesPattern = titles.map(t => t.replace(/\//g, "\\/")).join("|");
-  
-  // Match Tên sau danh xưng: các từ viết hoa chữ cái đầu (hoặc viết hoa toàn bộ)
-  const nameRegex = new RegExp(
-    `(${bBefore})(${titlesPattern})\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)*))`,
+  const sortedTitles = [...titles].sort((a, b) => b.length - a.length);
+  const titlesPattern = sortedTitles.map(t => escapeRegExp(t)).join("|");
+  const titleNameRegex = new RegExp(
+    `${bBefore}(${titlesPattern})\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)*))`,
     'gu'
   );
 
-  text = text.replace(nameRegex, (match, before, title, namePart) => {
-    const trimmedName = namePart.trim();
-    const words = trimmedName.split(/\s+/);
-    if (words.length === 0) return match;
-
-    let anonymizedName = "";
-    if (words.length === 1) {
-      anonymizedName = words[0].charAt(0);
-    } else {
-      const lastWord = words[words.length - 1];
-      const abbrev = lastWord.charAt(0);
-      anonymizedName = words.slice(0, -1).join(" ") + " " + abbrev;
+  let match;
+  while ((match = titleNameRegex.exec(text)) !== null) {
+    const namePart = match[2].trim();
+    if (isValidName(namePart)) {
+      candidates.add(namePart);
     }
-    stats.names++;
-    return `${before}${title} ${anonymizedName}`;
-  });
+  }
 
-  // Họ tên cá nhân (đứng độc lập, không có danh xưng, dựa vào họ phổ biến)
   const commonSurnames = [
     "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ",
     "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"
   ];
-  const surnamesPattern = commonSurnames.join("|");
-  // Chỉ match các từ Title Case để tránh match chữ IN HOA toàn bộ (như CỘNG HÒA)
+  const surnamesPattern = commonSurnames.flatMap(s => [s, s.toUpperCase()]).join("|");
   const standaloneNameRegex = new RegExp(
-    `(${bBefore})(${surnamesPattern})\\s+((?:\\p{Lu}\\p{Ll}*\\s+)*\\p{Lu}\\p{Ll}*)(?=[^\\p{L}]|$)`,
+    `${bBefore}(${surnamesPattern})\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)+))`,
     'gu'
   );
 
-  text = text.replace(standaloneNameRegex, (match, before, surname, restPart) => {
-    const trimmedRest = restPart.trim();
-    const words = trimmedRest.split(/\s+/);
-    if (words.length === 0) return match;
+  standaloneNameRegex.lastIndex = 0;
+  while ((match = standaloneNameRegex.exec(text)) !== null) {
+    const surname = match[1];
+    const rest = match[2];
+    const fullName = `${surname} ${rest}`.trim();
+    if (isValidName(fullName)) {
+      candidates.add(fullName);
+    }
+  }
+
+  for (const name of candidates) {
+    const words = name.split(/\s+/);
+    if (words.length > 1) {
+      const anonymized = anonymizeNameString(name);
+      multiWordNames.set(name, anonymized);
+      
+      const lastWord = words[words.length - 1];
+      const anonymizedLast = lastWord.charAt(0);
+      singleWordNames.set(lastWord, anonymizedLast);
+    } else if (words.length === 1) {
+      const anonymized = name.charAt(0);
+      singleWordNames.set(name, anonymized);
+    }
+  }
+
+  return { multiWordNames, singleWordNames };
+}
+
+function replaceNamesByMap(
+  text: string,
+  nameMap: { multiWordNames: Map<string, string>; singleWordNames: Map<string, string> },
+  stats: any
+): string {
+  const sortedMultiWordNames = Array.from(nameMap.multiWordNames.keys()).sort(
+    (a, b) => b.length - a.length
+  );
+
+  const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
+
+  for (const name of sortedMultiWordNames) {
+    const anonymized = nameMap.multiWordNames.get(name)!;
+    const escapedName = escapeRegExp(name);
+    const regex = new RegExp(`${bBefore}${escapedName}(?=[^\\p{L}\\p{N}]|$)`, 'giu');
     
-    const lastWord = words[words.length - 1];
-    if (lastWord.length === 1) return match; // Đã được viết tắt hoặc chỉ có 1 ký tự
+    text = text.replace(regex, (matched) => {
+      stats.names++;
+      return preserveCase(matched, anonymized);
+    });
+  }
+
+  if (nameMap.singleWordNames.size > 0) {
+    const sortedTitles = [...titles].sort((a, b) => b.length - a.length);
+    const titlesPattern = sortedTitles.map(t => escapeRegExp(t)).join("|");
     
-    const abbrev = lastWord.charAt(0);
-    const anonymizedRest = words.slice(0, -1).join(" ") + (words.length > 1 ? " " : "") + abbrev;
-    stats.names++;
-    return `${before}${surname} ${anonymizedRest}`;
-  });
+    const sortedSingleWords = Array.from(nameMap.singleWordNames.keys()).sort(
+      (a, b) => b.length - a.length
+    );
+    const singleWordsPattern = sortedSingleWords.map(w => escapeRegExp(w)).join("|");
+
+    const regex = new RegExp(
+      `${bBefore}(${titlesPattern})\\s+(${singleWordsPattern})(?=[^\\p{L}\\p{N}]|$)`,
+      'giu'
+    );
+
+    text = text.replace(regex, (matched, titlePart, namePart) => {
+      const key = sortedSingleWords.find(w => w.toLowerCase() === namePart.toLowerCase());
+      const anonymized = key ? nameMap.singleWordNames.get(key) : null;
+      if (anonymized) {
+        stats.names++;
+        return `${titlePart} ${preserveCase(namePart, anonymized)}`;
+      }
+      return matched;
+    });
+  }
 
   return text;
 }
 
-export function replaceProvinceNames(text: string, stats: any): string {
-  // 2. Địa chỉ: Tỉnh / Thành phố theo mapping
+function replaceProvinceNames(text: string, stats: any): string {
   for (const mapping of provinceMappings) {
     for (const name of mapping.names) {
       const escapedName = escapeRegExp(name);
-      // Match "tỉnh X", "thành phố X", "TP. X"
       const regex = new RegExp(`\\b(tỉnh|thành phố|tp\\.?)\\s+${escapedName}(?=[^\\p{L}\\p{N}]|$)`, 'giu');
       text = text.replace(regex, (match, prefix) => {
         stats.provinces++;
-        // Chỉ thay thế phần tên địa phương bằng code
-        return match.replace(new RegExp(`${escapedName}$`, 'iu'), mapping.code);
+        const matchedName = match.substring(match.toLowerCase().indexOf(name.toLowerCase()));
+        const preservedCode = preserveCase(matchedName, mapping.code);
+        return match.replace(new RegExp(`${escapedName}$`, 'iu'), preservedCode);
       });
     }
   }
   return text;
 }
 
-export function maskIdNumbers(text: string, stats: any): string {
-  // 3. CCCD / CMND (Tìm các chuỗi 9-12 chữ số liên tiếp nhưng không phải SĐT bắt đầu bằng 0 và dài 10 số)
-  const numberRegex = /\b(\d{9,12})\b/g;
-  return text.replace(numberRegex, (match, digits) => {
-    if (digits.length === 10 && digits.startsWith("0")) {
-      return match; // Skip, handled by phone numbers
+function replaceCommuneNames(text: string, stats: any): string {
+  const mottos: string[] = [];
+  const mottoRegex = /CỘNG HÒA\s+XÃ HỘI\s+CHỦ NGHĨA\s+VIỆT NAM/gi;
+  text = text.replace(mottoRegex, (match) => {
+    mottos.push(match);
+    return `__MOTTO_${mottos.length - 1}__`;
+  });
+
+  const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
+  const communeRegex = new RegExp(
+    `${bBefore}(xã|phường|thị\\s+trấn)\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)+))`,
+    'giu'
+  );
+
+  text = text.replace(communeRegex, (match, prefix, namePart) => {
+    const words = namePart.trim().split(/\s+/);
+    if (words.length < 2) {
+      return match;
     }
+    
+    const isPlaceholder = words.some((w: string) => /^[XYZ]$/i.test(w));
+    if (isPlaceholder) {
+      return match;
+    }
+
+    const abbreviation = words.map((w: string) => w.charAt(0)).join("");
+    stats.communes++;
+    
+    const preservedAbbrev = preserveCase(namePart, abbreviation);
+    return `${prefix} ${preservedAbbrev}`;
+  });
+
+  text = text.replace(/__MOTTO_(\d+)__/g, (match, indexStr) => {
+    const index = parseInt(indexStr, 10);
+    return mottos[index];
+  });
+
+  return text;
+}
+
+function maskIdNumbers(text: string, stats: any): string {
+  const regex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
+  return text.replace(regex, (match, prefix, digits) => {
     stats.idNumbers++;
-    return digits.slice(0, -3) + "***";
+    const maskedDigits = digits.slice(0, -3) + "***";
+    return match.replace(digits, maskedDigits);
   });
 }
 
-export function maskPhoneNumbers(text: string, stats: any): string {
-  // 4. SĐT (Tìm các chuỗi 10 chữ số liên tiếp bắt đầu bằng 0)
-  const numberRegex = /\b(\d{9,12})\b/g;
-  return text.replace(numberRegex, (match, digits) => {
-    if (digits.length === 10 && digits.startsWith("0")) {
-      stats.phones++;
-      return digits.slice(0, -3) + "***";
-    }
-    return match; // Skip, handled by ID numbers
+function maskPhoneNumbers(text: string, stats: any): string {
+  const regex = /(số\s+điện\s+thoại|điện\s+thoại|sđt)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
+  return text.replace(regex, (match, prefix, digits) => {
+    stats.phones++;
+    const maskedDigits = digits.slice(0, -3) + "***";
+    return match.replace(digits, maskedDigits);
   });
 }
 
@@ -134,6 +279,7 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   const stats = {
     names: 0,
     provinces: 0,
+    communes: 0,
     idNumbers: 0,
     phones: 0
   };
@@ -143,8 +289,10 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   }
 
   let text = input;
-  text = maskPersonalNames(text, stats);
+  const nameMap = buildPersonNameMap(text);
+  text = replaceNamesByMap(text, nameMap, stats);
   text = replaceProvinceNames(text, stats);
+  text = replaceCommuneNames(text, stats);
   text = maskIdNumbers(text, stats);
   text = maskPhoneNumbers(text, stats);
 
