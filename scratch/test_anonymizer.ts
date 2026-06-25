@@ -1,13 +1,30 @@
 import { anonymizeLegalText } from "../src/utils/anonymizer";
 
 const tests = [
+  // 1. Mandatory Test 1: Header absolutely protected
   {
-    input: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
-    expected: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"
+    input: `UỶ BAN NHÂN DÂN\nXÃ HÒA PHONG\nCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc`,
+    expected: `UỶ BAN NHÂN DÂN\nXÃ HÒA PHONG\nCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc`
   },
+  // 2. Mandatory Test 2: Address in content anonymized
+  {
+    input: "Địa chỉ: Thôn Mỹ Thạnh Trung 1, xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên.",
+    expected: "Địa chỉ: Thôn Mỹ Thạnh Trung 1, xã HP, huyện Tây Hòa, tỉnh PY."
+  },
+  // 3. Mandatory Test 3a: Authority alone in header (evaluated as header) -> Preserved
+  {
+    input: "UBND xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên.",
+    expected: "UBND xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên."
+  },
+  // 4. Mandatory Test 3b: Authority in content -> Anonymized
+  {
+    input: "Theo đơn khởi kiện của UBND xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên.",
+    expected: "Theo đơn khởi kiện của UBND xã HP, huyện Tây Hòa, tỉnh PY."
+  },
+  // 5. Old Test 2 Updated (ward should be abbreviated)
   {
     input: "Địa chỉ: 746 đường 30/4, phường Hưng Lợi, quận Ninh Kiều, thành phố Cần Thơ.",
-    expected: "Địa chỉ: 746 đường 30/4, phường Hưng Lợi, quận Ninh Kiều, thành phố CT."
+    expected: "Địa chỉ: 746 đường 30/4, phường HL, quận Ninh Kiều, thành phố CT."
   },
   {
     input: "Địa chỉ: xã X, huyện Y, tỉnh Z.",
@@ -15,7 +32,8 @@ const tests = [
   },
   {
     input: "Viện kiểm sát nhân dân quận Ninh Kiều, thành phố Cần Thơ.",
-    expected: "Viện kiểm sát nhân dân quận Ninh Kiều, thành phố CT."
+    // Viện kiểm sát nhân dân starts with authority name and no content markers -> treated as header
+    expected: "Viện kiểm sát nhân dân quận Ninh Kiều, thành phố Cần Thơ."
   },
   {
     input: "Ông Nguyễn Văn Bình, CCCD số 034176012469",
@@ -36,9 +54,9 @@ let failed = false;
 tests.forEach((t, i) => {
   const result = anonymizeLegalText(t.input);
   console.log(`Test ${i + 1}:`);
-  console.log("Input:   ", t.input);
-  console.log("Output:  ", result.text);
-  console.log("Expected:", t.expected);
+  console.log("Input:   ", t.input.replace(/\n/g, '\\n'));
+  console.log("Output:  ", result.text.replace(/\n/g, '\\n'));
+  console.log("Expected:", t.expected.replace(/\n/g, '\\n'));
   console.log("Stats:   ", result.stats);
   const match = result.text === t.expected;
   console.log("Match:   ", match ? "PASSED" : "FAILED");
