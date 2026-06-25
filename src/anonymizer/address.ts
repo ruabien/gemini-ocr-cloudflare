@@ -4,7 +4,7 @@ import { preserveCase } from "./replacer";
 
 /**
  * Replace administrative units in legal text.
- * - Encode provinces/cities using their short codes.
+ * - Encode provinces/cities using short codes.
  * - Count commune occurrences and abbreviate them.
  * - Preserve specific absolute phrases.
  */
@@ -53,25 +53,41 @@ export function replaceAdministrativeUnits(
   }
 
   // -------------------------------------------------------------------------
-  // 3. Replace commune/ward names with abbreviations and count them
-  //    The regex only matches spaces/tabs (no newlines) to avoid spanning lines.
-  // -------------------------------------------------------------------------
+  // 3. Replace commune/ward names using the communeMap built from full address contexts.
+  //    Only replace when the name is followed by a non‑letter (space, punctuation, end of string) to avoid dính chữ.
+  //    This also preserves any trailing punctuation or whitespace via a lookahead.
   const bBefore = "(?<=^|[^\\p{L}\\p{N}])";
+
+  // Helper to normalize Vietnamese text for robust key comparison
+  const normalizeKey = (str: string) => {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase();
+  };
+
+  const normalizedCommuneMap = new Map<string, string>();
+  for (const [key, value] of dictionary.communeMap.entries()) {
+    normalizedCommuneMap.set(normalizeKey(key), value);
+  }
+
+  // Find all occurrences of administrative units and check if their normalized name exists in our map
   const communeRegex = new RegExp(
-    `${bBefore}(xã|phường|thị[ \\t]+trấn)[ \\t]+((?:\\p{Lu}\\p{L}*(?:[ \\t]+\\p{Lu}\\p{L}*)+))`,
+    `${bBefore}(xã|phường|thị[ \\t]+trấn)[ \\t]+((?:\\p{Lu}\\p{L}*(?:[ \\t]+\\p{Lu}\\p{L}*)*))(?=[^\\p{L}]|$)`,
     "giu"
   );
 
-  text = text.replace(communeRegex, (match, prefix, namePart) => {
-    const words = namePart.trim().split(/[ \t]+/);
-    // Skip placeholders like “X”, “Y”, “Z”
-    const isPlaceholder = words.some((w: string) => /^[XYZ]$/i.test(w));
-    if (isPlaceholder) {
-      return match;
+  text = text.replace(communeRegex, (matched, prefix, namePart) => {
+    const normName = normalizeKey(namePart.trim());
+    if (normalizedCommuneMap.has(normName)) {
+      const abbreviation = normalizedCommuneMap.get(normName)!;
+      stats.communes++;
+      // Preserve original case/accents of the matched name when inserting abbreviation
+      return `${prefix} ${preserveCase(namePart, abbreviation)}`;
     }
-    const abbreviation = words.map((w: string) => w.charAt(0)).join("");
-    stats.communes++;
-    return `${prefix} ${abbreviation}`;
+    return matched;
   });
 
   // -------------------------------------------------------------------------

@@ -80,10 +80,10 @@ export function buildDictionary(text: string, detectedNames: Set<string>): Anony
   }
 
   // 3. Build CommuneMap
-  // Scan text for xã/phường/thị trấn followed by capitalized words
+  // Scan text for xã/phường/thị trấn followed by capitalized words in a full address context
   const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
   const communeRegex = new RegExp(
-    `${bBefore}(xã|phường|thị\\s+trấn)\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)+))`,
+    `${bBefore}(xã|phường|thị\\s+trấn)\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)+))(?=\\s*,\\s*(?:huyện|quận|thị\\s+xã|thành\\s+phố|tỉnh|tp|\\p{Lu}))`,
     'giu'
   );
 
@@ -98,6 +98,10 @@ export function buildDictionary(text: string, detectedNames: Set<string>): Anony
     // Check if it is a placeholder like X, Y, Z
     const isPlaceholder = words.some((w: string) => /^[XYZ]$/i.test(w));
     if (isPlaceholder) continue;
+
+    // Prevent 'dính chữ' by rejecting abnormally long non-Vietnamese words
+    const hasLongWord = words.some((w: string) => w.length > 7);
+    if (hasLongWord) continue;
 
     const abbreviation = words.map((w: string) => w.charAt(0)).join("");
     communeMap.set(namePart, abbreviation);

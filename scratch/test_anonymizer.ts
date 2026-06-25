@@ -67,6 +67,18 @@ const tests = [
   {
     input: "Bà Hà Thị Kim Cúc, sinh năm 1964.",
     expected: "Bà Hà Thị Kim C, sinh năm 1964."
+  },
+  {
+    input: `Nguyên đơn trình bày: Năm 1990, vợ chồng tôi có mua đất của ông Đặng Văn T và ông Nguyễn Văn Đ, địa chỉ: Thôn Mỹ Thạnh Trung 1, xã Hòa Phong,\nhuyện Tây Hòa, tỉnh Phú Yên.\n\nĐến năm 2006, hộ gia đình ông T gồm 06 nhân khẩu là: Bùi Nguyên T –sinh năm\n1968, Hà Thị Kim Cúc– sinh năm 1964, Bùi Hà Quyên Quyên – sinh năm 1986, Bùi\nQuang Thơ – sinh năm 1989, Bùi Hà Bạch Quế – sinh năm 1991, Bùi Thị Hà Cẩm –\nsinh năm 1993 tại thửa số 549(1), tờ bản đồ số 9-D, diện tích 200m² tại thôn Mỹ\nThạnh Trung 1, xã Hòa Phong, Tây Hòa, Phú Yên.\n\nLúc mua thì gia đình bà Cúc có nhu cầu xây dựng lại hàng rào.\nBị đơn ông Đặng Trung Oanh trình bày.`,
+    expected: `Nguyên đơn trình bày: Năm 1990, vợ chồng tôi có mua đất của ông Đặng Văn T và ông Nguyễn Văn Đ, địa chỉ: Thôn Mỹ Thạnh Trung 1, xã HP,\nhuyện Tây Hòa, tỉnh PY.\n\nĐến năm 2006, hộ gia đình ông T gồm 06 nhân khẩu là: Bùi Nguyên T –sinh năm\n1968, Hà Thị Kim C– sinh năm 1964, Bùi Hà Quyên Q – sinh năm 1986, Bùi\nQuang T – sinh năm 1989, Bùi Hà Bạch Q – sinh năm 1991, Bùi Thị Hà C –\nsinh năm 1993 tại thửa số 549(1), tờ bản đồ số 9-D, diện tích 200m² tại thôn Mỹ\nThạnh Trung 1, xã HP, Tây Hòa, Phú Yên.\n\nLúc mua thì gia đình bà C có nhu cầu xây dựng lại hàng rào.\nBị đơn ông Đặng Trung O trình bày.`
+  },
+  {
+    input: `UBND xã Hòa Phonghgtphđchôbbt`,
+    expected: `UBND xã Hòa Phonghgtphđchôbbt`
+  },
+  {
+    input: `UBND xã Hòa Phong, huyện Tây Hòa`,
+    expected: `UBND xã HP, huyện Tây Hòa`
   }
 ];
 

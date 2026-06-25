@@ -132,6 +132,19 @@ export function detectNames(text: string): Set<string> {
         candidates.add(namePart);
       }
     }
+
+    // Detect names followed by "sinh năm" (2 to 5 words)
+    const sinhNamRegex = new RegExp(
+      `${bBefore}((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*){1,4}))(?:\\s*[\\-–—,]\\s*|\\s+)sinh\\s+năm`,
+      "giu"
+    );
+    let snMatch: RegExpExecArray | null;
+    while ((snMatch = sinhNamRegex.exec(line)) !== null) {
+      const namePart = snMatch[1].trim();
+      if (isValidName(namePart)) {
+        candidates.add(namePart);
+      }
+    }
   }
   return candidates;
 }
