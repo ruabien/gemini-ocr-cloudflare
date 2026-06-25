@@ -41,11 +41,32 @@ const tests = [
   },
   {
     input: "Nguyễn Văn Bình, số điện thoại: 0912345678",
-    expected: "Nguyễn Văn B, số điện thoại: 0912345***"
+    // Theo yêu cầu mới, không có danh xưng nên không detect Nguyễn Văn Bình
+    expected: "Nguyễn Văn Bình, số điện thoại: 0912345***"
   },
   {
     input: "Ông Nguyễn Văn Bình, ông Bình và bà Nguyễn Thị Hoa đi cùng ông B",
     expected: "Ông Nguyễn Văn B, ông B và bà Nguyễn Thị H đi cùng ông B"
+  },
+  {
+    input: "NHỮNG NỘI DUNG ĐÃ ĐƯỢC CÁC ĐƯƠNG SỰ THỐNG NHẤT, KHÔNG THỐNG NHẤT",
+    expected: "NHỮNG NỘI DUNG ĐÃ ĐƯỢC CÁC ĐƯƠNG SỰ THỐNG NHẤT, KHÔNG THỐNG NHẤT"
+  },
+  {
+    input: "NHỮNG SỬA ĐỔI, BỔ SUNG THEO YÊU CẦU CỦA NHỮNG NGƯỜI THAM GIA PHIÊN HÒA GIẢI",
+    expected: "NHỮNG SỬA ĐỔI, BỔ SUNG THEO YÊU CẦU CỦA NHỮNG NGƯỜI THAM GIA PHIÊN HÒA GIẢI"
+  },
+  {
+    input: "Các bên đương sự không thỏa thuận được với nhau về việc giải quyết vụ án.",
+    expected: "Các bên đương sự không thỏa thuận được với nhau về việc giải quyết vụ án."
+  },
+  {
+    input: "Nguyên đơn do bà Hà Thị Kim Cúc trình bày.",
+    expected: "Nguyên đơn do bà Hà Thị Kim C trình bày."
+  },
+  {
+    input: "Bà Hà Thị Kim Cúc, sinh năm 1964.",
+    expected: "Bà Hà Thị Kim C, sinh năm 1964."
   }
 ];
 
@@ -65,8 +86,10 @@ tests.forEach((t, i) => {
 });
 
 if (failed) {
+  // @ts-ignore
   process.exit(1);
 } else {
   console.log("ALL TESTS PASSED SUCCESSFULLY!");
+  // @ts-ignore
   process.exit(0);
 }

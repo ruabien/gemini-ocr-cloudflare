@@ -92,53 +92,46 @@ export function isValidName(name: string): boolean {
 export function detectNames(text: string): Set<string> {
   const candidates = new Set<string>();
   const bBefore = '(?<=^|[^\\p{L}\\p{N}])';
-
-  // 1. Detect names preceded by legal-context titles
-  const sortedTitles = [...titles].sort((a, b) => b.length - a.length);
-  const titlesPattern = sortedTitles.map(t => escapeRegExp(t)).join('|');
-  const titleNameRegex = new RegExp(
-    `${bBefore}(${titlesPattern})\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)*))`,
-    'gu'
-  );
-
-  let match: RegExpExecArray | null;
-  while ((match = titleNameRegex.exec(text)) !== null) {
-    const namePart = match[2].trim();
-    if (isValidName(namePart)) {
-      candidates.add(namePart);
+  const headingList = [
+    "NHỮNG NỘI DUNG",
+    "NHỮNG SỬA ĐỔI",
+    "Ý KIẾN CỦA",
+    "PHẦN THỦ TỤC",
+    "CỘNG HÒA XÃ HỘI",
+    "ĐỘC LẬP",
+    "THÔNG BÁO",
+    "BIÊN BẢN",
+    "TÒA ÁN",
+    "VIỆN KIỂM SÁT",
+    "ỦY BAN NHÂN DÂN",
+    "UBND"
+  ];
+  // Split text into lines and process each line unless it is a heading or mostly uppercase
+  const lines = text.split(/\\r?\\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const upperRatio = (trimmed.replace(/[^A-ZÀ-Ỷ]/g, "").length) / trimmed.length;
+    const isHeading = headingList.some(h => trimmed.toUpperCase().startsWith(h));
+    if (upperRatio > 0.7 || isHeading) {
+      continue; // skip headings / all‑caps lines
     }
-  }
 
-  // 2. Generic detection of capitalized word sequences (2 to 4 words)
-  const genericRegex = new RegExp(
-    `${bBefore}(\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*){1,3})(?=[^\\p{L}\\p{N}]|$)`,
-    'gu'
-  );
+    // Detect names preceded by legal-context titles
+    const sortedTitles = [...titles].sort((a, b) => b.length - a.length);
+    const titlesPattern = sortedTitles.map(t => escapeRegExp(t)).join("|");
+    const titleNameRegex = new RegExp(
+      `${bBefore}(${titlesPattern})\\s+((?:\\p{Lu}\\p{L}*(?:\\s+\\p{Lu}\\p{L}*)*))`,
+      "gu"
+    );
 
-  genericRegex.lastIndex = 0;
-  while ((match = genericRegex.exec(text)) !== null) {
-    const namePart = match[1].trim();
-    
-    // Check preceding words to avoid matching address parts (e.g. "phường Hưng Lợi")
-    const precedingText = text.substring(0, match.index).trimEnd();
-    const precedingWords = precedingText.split(/\s+/);
-    let hasAddressPrefix = false;
-    
-    if (precedingWords.length > 0) {
-      const lastPrecedingWord = precedingWords[precedingWords.length - 1].toLowerCase();
-      const lastTwoPrecedingWords = precedingWords.length >= 2 
-        ? `${precedingWords[precedingWords.length - 2].toLowerCase()} ${lastPrecedingWord}` 
-        : "";
-        
-      if (addressPrefixes.includes(lastPrecedingWord) || addressPrefixes.includes(lastTwoPrecedingWords)) {
-        hasAddressPrefix = true;
+    let match: RegExpExecArray | null;
+    while ((match = titleNameRegex.exec(line)) !== null) {
+      const namePart = match[2].trim();
+      if (isValidName(namePart)) {
+        candidates.add(namePart);
       }
     }
-
-    if (!hasAddressPrefix && isValidName(namePart)) {
-      candidates.add(namePart);
-    }
   }
-
   return candidates;
 }
