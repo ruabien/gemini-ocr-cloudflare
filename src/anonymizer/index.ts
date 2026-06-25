@@ -1,4 +1,5 @@
 import { detectNames } from "./detector";
+import { validateAnonymized } from "./validator";
 import { buildDictionary, AnonymizerDictionary } from "./dictionary";
 import { replaceNames } from "./replacer";
 import { replaceAdministrativeUnits } from "./address";
@@ -80,10 +81,10 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
   // 3. Separate the protected header zone and content zone
   const headerLength = getHeaderLength(input);
   const header = input.substring(0, headerLength);
-  let content = input.substring(headerLength);
+   let content = input.substring(headerLength);
 
   // 4. Run replacement steps on the content zone only
-  if (content) {
+   if (content) {
     // Replace names
     content = replaceNames(content, dictionary, stats);
 
@@ -97,5 +98,7 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
     content = maskPhoneNumbers(content, stats);
   }
 
-  return { text: header + content, stats };
+   // Validation step
+   const validated = validateAnonymized(input, header + content);
+   return { text: validated, stats };
 }
