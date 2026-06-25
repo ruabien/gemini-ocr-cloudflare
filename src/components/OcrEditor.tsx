@@ -100,7 +100,9 @@ export default function OcrEditor({
   const warnings = parsedData.warnings ?? document?.warnings ?? [];
 
   const [editorText, setEditorText] = useState(ocrText);
-  const [isAnonymized, setIsAnonymized] = useState(false);
+const [isAnonymized, setIsAnonymized] = useState(false);
+const [showAnonymizeModal, setShowAnonymizeModal] = useState(false);
+const [proposedText, setProposedText] = useState("");
   const [originalBackup, setOriginalBackup] = useState(ocrText);
   const [isEncryptActive, setIsEncryptActive] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -177,9 +179,10 @@ export default function OcrEditor({
     setAnonymizeStats(null);
   }, [document?.name, document?.content]);
 
-  // Anonymization toggle
+  // Anonymization toggle (opens modal for manual confirmation)
   const handleToggleAnonymize = () => {
     if (isAnonymized) {
+      // Restore original
       setEditorText(originalBackup);
       setIsAnonymized(false);
       setAnonymizeStats(null);
@@ -199,44 +202,21 @@ export default function OcrEditor({
 
     const currentText = editorText || "";
     if (!currentText.trim()) {
-      alert("Không có nội dung để ẩn danh.");
+      alert("Không có nội dung để Ẩn danh.");
       return;
     }
 
-    setIsRedacting(true);
-    try {
-      console.info("[ANONYMIZE] input length:", currentText.length);
-      const result = anonymizeLegalText(currentText);
-      
-      console.info("[ANONYMIZE] result type:", typeof result);
-      console.info("[ANONYMIZE] has text:", typeof result?.text === "string");
-      console.info("[ANONYMIZE] stats:", result?.stats);
-
-      if (!result || typeof result.text !== "string") {
-        console.error("[ANONYMIZE] invalid result:", result);
-        throw new Error("Anonymizer returned invalid result");
-      }
-
-      console.info("[ANONYMIZE] output length:", result.text.length);
-
-      const nextText = result?.text || currentText;
-      const nextStats = result?.stats || {
-        names: 0,
-        provinces: 0,
-        idNumbers: 0,
-        phones: 0
-      };
-
-      setOriginalBackup(currentText);
-      setEditorText(nextText);
-      setAnonymizeStats(nextStats);
-      setIsAnonymized(true);
-    } catch (err) {
-      console.error("Anonymization error:", err);
+    // Run anonymizer to get suggestions without applying
+    const result = anonymizeLegalText(currentText);
+    if (!result || typeof result.text !== "string") {
       alert("Không thể ẩn danh văn bản. Vui lòng kiểm tra lại nội dung OCR.");
-    } finally {
-      setIsRedacting(false);
+      return;
     }
+
+    setOriginalBackup(currentText);
+    setProposedText(result.text);
+    setAnonymizeStats(result.stats);
+    setShowAnonymizeModal(true);
   };
 
   // Export DOCX (Pro only)
@@ -607,6 +587,50 @@ export default function OcrEditor({
                   <span>Kích hoạt PRO</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAnonymizeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full p-6 space-y-4">
+            <h2 className="text-lg font-bold text-slate-800">Xác nhận ẩn danh</h2>
+            <div className="flex space-x-4">
+              <div className="flex-1 flex flex-col">
+                <label className="text-sm font-medium text-slate-700 mb-1">Văn bản gốc</label>
+                <textarea
+                  readOnly
+                  value={originalBackup}
+                  className="flex-1 p-2 border border-gray-300 rounded-md text-sm h-48 resize-none bg-gray-50"
+                />
+              </div>
+              <div className="flex-1 flex flex-col">
+                <label className="text-sm font-medium text-slate-700 mb-1">Văn bản đề xuất</label>
+                <textarea
+                  value={proposedText}
+                  onChange={e => setProposedText(e.target.value)}
+                  className="flex-1 p-2 border border-gray-300 rounded-md text-sm h-48 resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowAnonymizeModal(false)}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => {
+                  setEditorText(proposedText);
+                  setIsAnonymized(true);
+                  setShowAnonymizeModal(false);
+                }}
+                className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
+              >
+                Áp dụng ẩn danh
+              </button>
             </div>
           </div>
         </div>
