@@ -1,8 +1,3 @@
-import { detectNames } from "./detector";
-import { validateAnonymized } from "./validator";
-import { buildDictionary, AnonymizerDictionary } from "./dictionary";
-import { replaceNames } from "./replacer";
-import { replaceAdministrativeUnits } from "./address";
 import { maskIdNumbers } from "./idMask";
 import { maskPhoneNumbers } from "./phoneMask";
 
@@ -18,46 +13,7 @@ export interface AnonymizeResult {
 }
 
 /**
- * Helper to determine the end index of the protected header zone.
- * Everything before the returned index is treated as header (protected).
- */
-function getHeaderLength(text: string): number {
-  const contentMarkers = [
-    "Kính gửi",
-    "Căn cứ",
-    "Thực hiện",
-    "Hồi",
-    "Ngày",
-    "Theo đơn",
-    "I\\.",
-    "II\\.",
-    "1\\.",
-    "Nguyên đơn",
-    "Bị đơn"
-  ];
-  const markerRegex = new RegExp(`(^|\\n)\\s*(?:${contentMarkers.join('|')})\\b`, 'mi');
-  const match = markerRegex.exec(text);
-  if (match) {
-    return match.index;
-  }
-
-  // Fallback: Check if the text is structured as a header snippet without content.
-  const hasMotto = /CỘNG HÒA\s+XÃ HỘI\s+CHỦ NGHĨA\s+VIỆT\s+NAM/i.test(text) ||
-                   /Độc lập\s*-\s*Tự do\s*-\s*Hạnh phúc/i.test(text);
-  
-  const startsWithAuthority = /^\s*(?:UỶ BAN NHÂN DÂN|ỦY BAN NHÂN DÂN|UBND|TÒA ÁN NHÂN DÂN|VIỆN KIỂM SÁT NHÂN DÂN)/i.test(text);
-  
-  const hasContentIndicator = /\b(?:Địa chỉ|Nơi cư trú|Trú tại|Thường trú|Tạm trú|tọa lạc)\b/i.test(text);
-
-  if ((hasMotto || startsWithAuthority) && !hasContentIndicator) {
-    return text.length;
-  }
-
-  return 0;
-}
-
-/**
- * Main anonymization pipeline for legal text.
+ * Main anonymization pipeline for legal text - Minimal version for safety and speed.
  */
 export function anonymizeLegalText(input: string): AnonymizeResult {
   const stats = {
@@ -72,33 +28,29 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
     return { text: "", stats };
   }
 
-  // 1. Detect names (legal‑context based) on the full input to populate the dictionary
-  const detectedNames = detectNames(input);
+  let text = input;
 
-  // 2. Build dictionaries (person, short name, province, commune)
-  const dictionary: AnonymizerDictionary = buildDictionary(input, detectedNames);
+  // 1. Mask ID numbers (CCCD, CMND, etc.)
+  text = maskIdNumbers(text, stats);
 
-  // 3. Separate the protected header zone and content zone
-  const headerLength = getHeaderLength(input);
-  const header = input.substring(0, headerLength);
-   let content = input.substring(headerLength);
+  // 2. Mask phone numbers
+  text = maskPhoneNumbers(text, stats);
 
-  // 4. Run replacement steps on the content zone only
-   if (content) {
-    // Replace names
-    content = replaceNames(content, dictionary, stats);
+  // 3. Simple name replacement based on title (Ông/Bà/Anh/Chị) + 2-5 capitalized words
+  // Regex matches title followed by 2 to 5 words where each word starts with a capital letter
+  const nameRegex = /(Ông|Bà|Anh|Chị|ông|bà|anh|chị)\s+(\p{Lu}\p{Ll}*(?:\s+\p{Lu}\p{Ll}*){1,4})(?=[^\p{L}\p{N}]|$)/gu;
 
-    // Replace administrative units (province/city and commune/ward)
-    content = replaceAdministrativeUnits(content, dictionary, stats);
+  text = text.replace(nameRegex, (match, title, nameStr) => {
+    stats.names++;
+    const words = nameStr.trim().split(/\s+/);
+    if (words.length <= 1) {
+      return match;
+    }
+    const lastWord = words[words.length - 1];
+    const replaceLast = lastWord.charAt(0).toUpperCase();
+    const replaceFull = words.slice(0, -1).join(" ") + " " + replaceLast;
+    return `${title} ${replaceFull}`;
+  });
 
-    // Mask ID numbers (CCCD, CMND, etc.)
-    content = maskIdNumbers(content, stats);
-
-    // Mask phone numbers
-    content = maskPhoneNumbers(content, stats);
-  }
-
-   // Validation step
-   const validated = validateAnonymized(input, header + content);
-   return { text: validated, stats };
+  return { text, stats };
 }

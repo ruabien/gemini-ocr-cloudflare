@@ -15,9 +15,9 @@ export function validateAnonymized(
   if (!processed) return processed;
 
   // Detect possible concatenated words: a lowercase letter followed immediately by an uppercase letter without space.
-  const concatPattern = /([a-zà-ỹ])([A-ZÀ-Ỷ])/g;
+  const concatPattern = /(\p{Ll})(\p{Lu})/gu;
   // Detect lines that seem merged: two sentences ending with a period followed immediately by another capital letter.
-  const mergedLinePattern = /(\.\s*)([A-ZÀ-Ỷ])/g;
+  const mergedLinePattern = /(\.\s*)(\p{Lu})/gu;
 
   let corrected = processed;
 
@@ -26,11 +26,6 @@ export function validateAnonymized(
 
   // Split merged lines into separate lines (insert newline)
   corrected = corrected.replace(mergedLinePattern, "$1\n$2");
-
-  // Ensure we didn't remove any characters inadvertently: if length difference > 2, fallback to original.
-  if (Math.abs(original.length - corrected.length) > 2) {
-    return original;
-  }
 
   return corrected;
 }

@@ -276,41 +276,50 @@ useEffect(() => {
     }
 
     const currentText = editorText || "";
+    // Length safety check (avoid processing overly large texts)
+    if (currentText.length > 50000) {
+      alert("Văn bản quá dài (trên 50.000 ký tự). Vui lòng chia nhỏ để ẩn danh.");
+      return;
+    }
     if (!currentText.trim()) {
       alert("Không có nội dung để ẩn danh");
       return;
     }
 
     try {
+      console.time("[ANONYMIZE] total");
+      console.time("[ANONYMIZE] run");
       const result = anonymizeLegalText(currentText);
-      if (window.confirm("Áp dụng bản ẩn danh được đề xuất?")) {
-        setOriginalBackup(currentText);
-        setEditorText(result.text);
-        setIsAnonymized(true);
+      console.timeEnd("[ANONYMIZE] run");
 
-        // Generate counts for stats display
-        const nameSet = detectNames(currentText);
-        const dict = buildDictionary(currentText, nameSet);
-        const idRegex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
-        const idMatches = new Set<string>();
-        let idMatch;
-        while ((idMatch = idRegex.exec(currentText)) !== null) {
-          idMatches.add(idMatch[2]);
-        }
-        const phoneRegex = /((?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,3}\)[\s-]?|\d{2,4}[\s-])?\d{3,4}[\s-]?\d{3,4})/g;
-        const phoneMatches = new Set<string>();
-        let phoneMatch;
-        while ((phoneMatch = phoneRegex.exec(currentText)) !== null) {
-          phoneMatches.add(phoneMatch[0]);
-        }
+      // Apply result automatically (no modal confirmation)
+      setOriginalBackup(currentText);
+      setEditorText(result.text);
+      setIsAnonymized(true);
 
-        setAnonymizeStats({
-          names: nameSet.size,
-          provinces: dict.provinceMap.size + dict.communeMap.size,
-          idNumbers: idMatches.size,
-          phones: phoneMatches.size
-        });
+      // Generate counts for stats display
+      const nameSet = detectNames(currentText);
+      const dict = buildDictionary(currentText, nameSet);
+      const idRegex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
+      const idMatches = new Set<string>();
+      let idMatch;
+      while ((idMatch = idRegex.exec(currentText)) !== null) {
+        idMatches.add(idMatch[2]);
       }
+      const phoneRegex = /((?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,3}\)[\s-]?|\d{2,4}[\s-])?\d{3,4}[\s-]?\d{3,4})/g;
+      const phoneMatches = new Set<string>();
+      let phoneMatch;
+      while ((phoneMatch = phoneRegex.exec(currentText)) !== null) {
+        phoneMatches.add(phoneMatch[0]);
+      }
+
+      setAnonymizeStats({
+        names: nameSet.size,
+        provinces: dict.provinceMap.size + dict.communeMap.size,
+        idNumbers: idMatches.size,
+        phones: phoneMatches.size
+      });
+      console.timeEnd("[ANONYMIZE] total");
     } catch (err) {
       console.error("Anonymize error:", err);
       alert("Không thể tạo bản ẩn danh.");
