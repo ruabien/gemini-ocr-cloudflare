@@ -33,6 +33,41 @@ const sanitizeText = (raw: string) => {
     .trim();
 };
 
+function getHeaderLength(text: string): number {
+  const contentMarkers = [
+    "Kính gửi",
+    "Căn cứ",
+    "Thực hiện",
+    "Hồi",
+    "Ngày",
+    "Theo đơn",
+    "I\\.",
+    "II\\.",
+    "1\\.",
+    "Nguyên đơn",
+    "Bị đơn"
+  ];
+  const markerRegex = new RegExp(`(^|\\n)\\s*(?:${contentMarkers.join('|')})\\b`, 'mi');
+  const match = markerRegex.exec(text);
+  if (match) {
+    return match.index;
+  }
+
+  // Fallback: Check if the text is structured as a header snippet without content.
+  const hasMotto = /CỘNG HÒA\s+XÃ HỘI\s+CHỦ NGHĨA\s+VIỆT\s+NAM/i.test(text) ||
+                   /Độc lập\s*-\s*Tự do\s*-\s*Hạnh phúc/i.test(text);
+  
+  const startsWithAuthority = /^\s*(?:UỶ BAN NHÂN DÂN|ỦY BAN NHÂN DÂN|UBND|TÒA ÁN NHÂN DÂN|VIỆN KIỂM SÁT NHÂN DÂN)/i.test(text);
+  
+  const hasContentIndicator = /\b(?:Địa chỉ|Nơi cư trú|Trú tại|Thường trú|Tạm trú|tọa lạc)\b/i.test(text);
+
+  if ((hasMotto || startsWithAuthority) && !hasContentIndicator) {
+    return text.length;
+  }
+
+  return 0;
+}
+
 interface OcrEditorProps {
   document: OcrDocument | null;
   onBack: () => void;
@@ -109,11 +144,11 @@ export default function OcrEditor({
   const warnings = parsedData.warnings ?? document?.warnings ?? [];
 
   const [editorText, setEditorText] = useState(ocrText);
-const [isAnonymized, setIsAnonymized] = useState(false);
-const [showAnonymizeModal, setShowAnonymizeModal] = useState(false);
-const [originalBackup, setOriginalBackup] = useState(ocrText);
-const [replacementRules, setReplacementRules] = useState<ReplacementRule[]>([]);
-const [previewText, setPreviewText] = useState("");
+  const [isAnonymized, setIsAnonymized] = useState(false);
+  const [isAnonymizeModalOpen, setIsAnonymizeModalOpen] = useState(false);
+  const [originalBackup, setOriginalBackup] = useState(ocrText);
+  const [replacementRules, setReplacementRules] = useState<ReplacementRule[]>([]);
+  const [anonymizePreviewText, setAnonymizePreviewText] = useState("");
   const [isEncryptActive, setIsEncryptActive] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isRedacting, setIsRedacting] = useState(false);
@@ -191,19 +226,26 @@ useEffect(() => {
 
 // Update preview text based on replacement rules
 useEffect(() => {
-  let text = originalBackup;
+  if (!isAnonymizeModalOpen) return;
+  const headerLength = getHeaderLength(originalBackup);
+  const header = originalBackup.substring(0, headerLength);
+  let content = originalBackup.substring(headerLength);
+
   replacementRules.forEach(rule => {
     if (rule.enabled && rule.original) {
       const escaped = rule.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'g');
-      text = text.replace(regex, rule.replaceWith);
+      content = content.replace(regex, rule.replaceWith);
     }
   });
-  setPreviewText(text);
-}, [originalBackup, replacementRules]);
+  setAnonymizePreviewText(header + content);
+}, [originalBackup, replacementRules, isAnonymizeModalOpen]);
 
   // Anonymization toggle (opens modal for manual confirmation)
   const handleToggleAnonymize = () => {
+    console.info("[ANONYMIZE CLICK]");
+    console.info("[ANONYMIZE] editor length:", editorText?.length || 0);
+
     if (isAnonymized) {
       // Restore original
       setEditorText(originalBackup);
@@ -225,67 +267,72 @@ useEffect(() => {
 
     const currentText = editorText || "";
     if (!currentText.trim()) {
-      alert("Không có nội dung để Ẩn danh.");
+      alert("Không có nội dung để ẩn danh");
       return;
     }
 
+    console.info("[ANONYMIZE] modal open:", true);
+
+    const anonymized = anonymizeLegalText(currentText);
     setOriginalBackup(currentText);
-    setShowAnonymizeModal(true);
+    setAnonymizePreviewText(anonymized.text);
+    setIsAnonymizeModalOpen(true);
+
     // Generate replacement rules
     const nameSet = detectNames(currentText);
-        const nameRules: ReplacementRule[] = Array.from(nameSet).map(name => ({
-          id: Date.now().toString() + Math.random().toString(),
-          original: name,
-          replaceWith: anonymizeNameString(name),
-          type: "Tên người",
-          enabled: true
-        }));
-        // ID numbers
-        const idRegex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
-        const idMatches = new Set<string>();
-        let idMatch;
-        while ((idMatch = idRegex.exec(currentText)) !== null) {
-          idMatches.add(idMatch[2]);
-        }
-        const idRules: ReplacementRule[] = Array.from(idMatches).map(num => ({
-          id: Date.now().toString() + Math.random().toString(),
-          original: num,
-          replaceWith: num.slice(0, -3) + "***",
-          type: "CCCD",
-          enabled: true
-        }));
-        // Phone numbers (simple pattern)
-        const phoneRegex = /((?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,3}\)[\s-]?|\d{2,4}[\s-])?\d{3,4}[\s-]?\d{3,4})/g;
-        const phoneMatches = new Set<string>();
-        let phoneMatch;
-        while ((phoneMatch = phoneRegex.exec(currentText)) !== null) {
-          phoneMatches.add(phoneMatch[0]);
-        }
-        const phoneRules: ReplacementRule[] = Array.from(phoneMatches).map(p => ({
-          id: Date.now().toString() + Math.random().toString(),
-          original: p,
-          replaceWith: p.replace(/(\d{3})\d{2,4}(\d{2})/, "$1***$2"),
-          type: "SĐT",
-          enabled: true
-        }));
-        // Province & commune rules using dictionary
-        const dict = buildDictionary(currentText, nameSet);
-        const provinceRules: ReplacementRule[] = Array.from(dict.provinceMap.entries()).map(([orig, code]) => ({
-          id: Date.now().toString() + Math.random().toString(),
-          original: orig,
-          replaceWith: code,
-          type: "Địa danh",
-          enabled: true
-        }));
-        const communeRules: ReplacementRule[] = Array.from(dict.communeMap.entries()).map(([orig, abbrev]) => ({
-          id: Date.now().toString() + Math.random().toString(),
-          original: orig,
-          replaceWith: abbrev,
-          type: "Địa danh",
-          enabled: true
-        }));
-        const allRules: ReplacementRule[] = [...nameRules, ...idRules, ...phoneRules, ...provinceRules, ...communeRules];
-        setReplacementRules(allRules);
+    const nameRules: ReplacementRule[] = Array.from(nameSet).map(name => ({
+      id: Date.now().toString() + Math.random().toString(),
+      original: name,
+      replaceWith: anonymizeNameString(name),
+      type: "Tên người",
+      enabled: true
+    }));
+    // ID numbers
+    const idRegex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
+    const idMatches = new Set<string>();
+    let idMatch;
+    while ((idMatch = idRegex.exec(currentText)) !== null) {
+      idMatches.add(idMatch[2]);
+    }
+    const idRules: ReplacementRule[] = Array.from(idMatches).map(num => ({
+      id: Date.now().toString() + Math.random().toString(),
+      original: num,
+      replaceWith: num.slice(0, -3) + "***",
+      type: "CCCD",
+      enabled: true
+    }));
+    // Phone numbers (simple pattern)
+    const phoneRegex = /((?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,3}\)[\s-]?|\d{2,4}[\s-])?\d{3,4}[\s-]?\d{3,4})/g;
+    const phoneMatches = new Set<string>();
+    let phoneMatch;
+    while ((phoneMatch = phoneRegex.exec(currentText)) !== null) {
+      phoneMatches.add(phoneMatch[0]);
+    }
+    const phoneRules: ReplacementRule[] = Array.from(phoneMatches).map(p => ({
+      id: Date.now().toString() + Math.random().toString(),
+      original: p,
+      replaceWith: p.replace(/(\d{3})\d{2,4}(\d{2})/, "$1***$2"),
+      type: "SĐT",
+      enabled: true
+    }));
+    // Province & commune rules using dictionary
+    const dict = buildDictionary(currentText, nameSet);
+    const provinceRules: ReplacementRule[] = Array.from(dict.provinceMap.entries()).map(([orig, code]) => ({
+      id: Date.now().toString() + Math.random().toString(),
+      original: orig,
+      replaceWith: code,
+      type: "Địa danh",
+      enabled: true
+    }));
+    const communeRules: ReplacementRule[] = Array.from(dict.communeMap.entries()).map(([orig, abbrev]) => ({
+      id: Date.now().toString() + Math.random().toString(),
+      original: orig,
+      replaceWith: abbrev,
+      type: "Địa danh",
+      enabled: true
+    }));
+    const allRules: ReplacementRule[] = [...nameRules, ...idRules, ...phoneRules, ...provinceRules, ...communeRules];
+    setReplacementRules(allRules);
   };
 
   // Export DOCX (Pro only)
@@ -429,7 +476,7 @@ useEffect(() => {
                 ? "Đang mã hoá..."
                 : isAnonymized
                 ? "Hiện thông tin đương sự"
-                : "Mật danh hoá đương sự"}
+                : "Ẩn danh đương sự"}
             </span>
           </button>
 
@@ -661,7 +708,7 @@ useEffect(() => {
         </div>
       )}
 
-{showAnonymizeModal && (
+{isAnonymizeModalOpen && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
     <div className="bg-white rounded-xl shadow-lg max-w-5xl w-full p-6 space-y-4">
       <h2 className="text-lg font-bold text-slate-800">Xác nhận ẩn danh</h2>
@@ -793,8 +840,8 @@ useEffect(() => {
       <div className="mt-4">
         <label className="text-sm font-medium text-slate-700 mb-1">Văn bản đề xuất</label>
         <textarea
-          value={previewText}
-          onChange={e => setPreviewText(e.target.value)}
+          value={anonymizePreviewText}
+          onChange={e => setAnonymizePreviewText(e.target.value)}
           className="w-full p-2 border border-gray-300 rounded-md text-sm h-48 resize-none font-mono"
           style={{
             fontFamily: '"Times New Roman", Times, serif',
@@ -805,16 +852,16 @@ useEffect(() => {
       </div>
       <div className="flex justify-end space-x-2 mt-2">
         <button
-          onClick={() => setShowAnonymizeModal(false)}
+          onClick={() => setIsAnonymizeModalOpen(false)}
           className="px-4 py-2 rounded bg-gray-250 hover:bg-gray-300 text-slate-700 text-sm font-semibold transition-colors"
         >
           Hủy
         </button>
         <button
           onClick={() => {
-            setEditorText(previewText);
+            setEditorText(anonymizePreviewText);
             setIsAnonymized(true);
-            setShowAnonymizeModal(false);
+            setIsAnonymizeModalOpen(false);
             
             // Calculate accurate stats based on enabled rules applied
             const stats = {
