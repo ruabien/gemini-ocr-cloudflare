@@ -281,68 +281,40 @@ useEffect(() => {
       return;
     }
 
-    console.info("[ANONYMIZE] modal open:", true);
+    try {
+      const result = anonymizeLegalText(currentText);
+      if (window.confirm("Áp dụng bản ẩn danh được đề xuất?")) {
+        setOriginalBackup(currentText);
+        setEditorText(result.text);
+        setIsAnonymized(true);
 
-    const anonymized = anonymizeLegalText(currentText);
-    setOriginalBackup(currentText);
-    setAnonymizePreviewText(anonymized.text);
-    setIsAnonymizeModalOpen(true);
+        // Generate counts for stats display
+        const nameSet = detectNames(currentText);
+        const dict = buildDictionary(currentText, nameSet);
+        const idRegex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
+        const idMatches = new Set<string>();
+        let idMatch;
+        while ((idMatch = idRegex.exec(currentText)) !== null) {
+          idMatches.add(idMatch[2]);
+        }
+        const phoneRegex = /((?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,3}\)[\s-]?|\d{2,4}[\s-])?\d{3,4}[\s-]?\d{3,4})/g;
+        const phoneMatches = new Set<string>();
+        let phoneMatch;
+        while ((phoneMatch = phoneRegex.exec(currentText)) !== null) {
+          phoneMatches.add(phoneMatch[0]);
+        }
 
-    // Generate replacement rules
-    const nameSet = detectNames(currentText);
-    const nameRules: ReplacementRule[] = Array.from(nameSet).map(name => ({
-      id: Date.now().toString() + Math.random().toString(),
-      original: name,
-      replaceWith: anonymizeNameString(name),
-      type: "Tên người",
-      enabled: true
-    }));
-    // ID numbers
-    const idRegex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
-    const idMatches = new Set<string>();
-    let idMatch;
-    while ((idMatch = idRegex.exec(currentText)) !== null) {
-      idMatches.add(idMatch[2]);
+        setAnonymizeStats({
+          names: nameSet.size,
+          provinces: dict.provinceMap.size + dict.communeMap.size,
+          idNumbers: idMatches.size,
+          phones: phoneMatches.size
+        });
+      }
+    } catch (err) {
+      console.error("Anonymize error:", err);
+      alert("Không thể tạo bản ẩn danh.");
     }
-    const idRules: ReplacementRule[] = Array.from(idMatches).map(num => ({
-      id: Date.now().toString() + Math.random().toString(),
-      original: num,
-      replaceWith: num.slice(0, -3) + "***",
-      type: "CCCD",
-      enabled: true
-    }));
-    // Phone numbers (simple pattern)
-    const phoneRegex = /((?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,3}\)[\s-]?|\d{2,4}[\s-])?\d{3,4}[\s-]?\d{3,4})/g;
-    const phoneMatches = new Set<string>();
-    let phoneMatch;
-    while ((phoneMatch = phoneRegex.exec(currentText)) !== null) {
-      phoneMatches.add(phoneMatch[0]);
-    }
-    const phoneRules: ReplacementRule[] = Array.from(phoneMatches).map(p => ({
-      id: Date.now().toString() + Math.random().toString(),
-      original: p,
-      replaceWith: p.replace(/(\d{3})\d{2,4}(\d{2})/, "$1***$2"),
-      type: "SĐT",
-      enabled: true
-    }));
-    // Province & commune rules using dictionary
-    const dict = buildDictionary(currentText, nameSet);
-    const provinceRules: ReplacementRule[] = Array.from(dict.provinceMap.entries()).map(([orig, code]) => ({
-      id: Date.now().toString() + Math.random().toString(),
-      original: orig,
-      replaceWith: code,
-      type: "Địa danh",
-      enabled: true
-    }));
-    const communeRules: ReplacementRule[] = Array.from(dict.communeMap.entries()).map(([orig, abbrev]) => ({
-      id: Date.now().toString() + Math.random().toString(),
-      original: orig,
-      replaceWith: abbrev,
-      type: "Địa danh",
-      enabled: true
-    }));
-    const allRules: ReplacementRule[] = [...nameRules, ...idRules, ...phoneRules, ...provinceRules, ...communeRules];
-    setReplacementRules(allRules);
   };
 
   // Export DOCX (Pro only)
@@ -718,209 +690,6 @@ useEffect(() => {
         </div>
       )}
 
-{isAnonymizeModalOpen && (
-  <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center p-4">
-    <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-      {/* Modal Header */}
-      <div className="flex justify-between items-center p-4 border-b border-slate-200">
-        <h2 className="text-lg font-bold text-slate-800">Xác nhận ẩn danh đương sự</h2>
-        <button
-          onClick={() => setIsAnonymizeModalOpen(false)}
-          className="text-slate-400 hover:text-slate-600 transition-colors p-1"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Modal Body */}
-      <div className="p-6 overflow-y-auto flex-1 space-y-4">
-        {!anonymizePreviewText ? (
-          <div className="py-8 text-center space-y-4">
-            <p className="text-slate-600 font-medium">Không tạo được bản xem trước ẩn danh.</p>
-            <button
-              onClick={() => setIsAnonymizeModalOpen(false)}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-colors"
-            >
-              Đóng
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Original text preview */}
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-slate-700 mb-1">Văn bản gốc</label>
-                <textarea
-                  readOnly
-                  value={originalBackup}
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm h-52 resize-none bg-gray-50 focus:outline-none"
-                />
-              </div>
-              {/* Replacement list */}
-              <div className="flex flex-col">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-slate-700">Danh sách thay thế</span>
-                  <button
-                    onClick={() => {
-                      const newRule: ReplacementRule = {
-                        id: Date.now().toString() + Math.random().toString(),
-                        original: "",
-                        replaceWith: "",
-                        type: "Tên người",
-                        enabled: true
-                      };
-                      setReplacementRules([...replacementRules, newRule]);
-                    }}
-                    className="px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded transition-colors"
-                  >
-                    + Thêm dòng thủ công
-                  </button>
-                </div>
-                <div className="overflow-y-auto max-h-52 border border-gray-250 rounded-md">
-                  <table className="w-full table-auto border-collapse text-left">
-                    <thead className="sticky top-0 bg-slate-100 z-10">
-                      <tr className="border-b">
-                        <th className="p-2 text-xs font-bold text-slate-600 w-12 text-center">Áp dụng</th>
-                        <th className="p-2 text-xs font-bold text-slate-600">Giá trị gốc</th>
-                        <th className="p-2 text-xs font-bold text-slate-650">Thay bằng</th>
-                        <th className="p-2 text-xs font-bold text-slate-600 w-28">Loại</th>
-                        <th className="p-2 text-xs font-bold text-slate-600 w-12 text-center">Xóa</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {replacementRules.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="p-4 text-center text-xs text-slate-400 italic">
-                            Chưa có gợi ý thay thế nào. Bấm "Thêm dòng thủ công" để tự định nghĩa.
-                          </td>
-                        </tr>
-                      ) : (
-                        replacementRules.map((rule, idx) => (
-                          <tr key={rule.id} className="hover:bg-slate-50">
-                            <td className="p-1.5 text-center">
-                              <input
-                                type="checkbox"
-                                checked={rule.enabled}
-                                onChange={e => {
-                                  const newRules = [...replacementRules];
-                                  newRules[idx].enabled = e.target.checked;
-                                  setReplacementRules(newRules);
-                                }}
-                                className="h-4 w-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-                              />
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                type="text"
-                                value={rule.original}
-                                onChange={e => {
-                                  const newRules = [...replacementRules];
-                                  newRules[idx].original = e.target.value;
-                                  setReplacementRules(newRules);
-                                }}
-                                className="w-full text-xs p-1 border rounded focus:outline-none focus:border-emerald-500"
-                                placeholder="Giá trị gốc..."
-                              />
-                            </td>
-                            <td className="p-1.5">
-                              <input
-                                type="text"
-                                value={rule.replaceWith}
-                                onChange={e => {
-                                  const newRules = [...replacementRules];
-                                  newRules[idx].replaceWith = e.target.value;
-                                  setReplacementRules(newRules);
-                                }}
-                                className="w-full text-xs p-1 border rounded focus:outline-none focus:border-emerald-500"
-                                placeholder="Thay bằng..."
-                              />
-                            </td>
-                            <td className="p-1.5">
-                              <select
-                                value={rule.type}
-                                onChange={e => {
-                                  const newRules = [...replacementRules];
-                                  newRules[idx].type = e.target.value as any;
-                                  setReplacementRules(newRules);
-                                }}
-                                className="w-full text-xs p-1 border rounded bg-white focus:outline-none focus:border-emerald-500"
-                              >
-                                <option value="Tên người">Tên người</option>
-                                <option value="Địa danh">Địa danh</option>
-                                <option value="CCCD">CCCD</option>
-                                <option value="SĐT">SĐT</option>
-                              </select>
-                            </td>
-                            <td className="p-1.5 text-center">
-                              <button
-                                onClick={() => {
-                                  const newRules = replacementRules.filter(r => r.id !== rule.id);
-                                  setReplacementRules(newRules);
-                                }}
-                                className="text-red-500 hover:text-red-700 font-bold text-sm px-2 py-0.5 rounded hover:bg-red-50"
-                              >
-                                ×
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            {/* Live preview area */}
-            <div className="mt-4 flex flex-col">
-              <label className="text-sm font-medium text-slate-700 mb-1">Văn bản đề xuất</label>
-              <textarea
-                value={anonymizePreviewText}
-                onChange={e => setAnonymizePreviewText(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm h-48 resize-none font-mono"
-                style={{
-                  fontFamily: '"Times New Roman", Times, serif',
-                  fontSize: '11pt',
-                  lineHeight: '1.4'
-                }}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Modal Footer */}
-      {anonymizePreviewText && (
-        <div className="flex justify-end space-x-2 p-4 border-t border-slate-200 bg-slate-50">
-          <button
-            onClick={() => setIsAnonymizeModalOpen(false)}
-            className="px-4 py-2 rounded bg-gray-250 hover:bg-gray-300 text-slate-700 text-sm font-semibold transition-colors"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={() => {
-              setEditorText(anonymizePreviewText);
-              setIsAnonymized(true);
-              setIsAnonymizeModalOpen(false);
-              
-              // Calculate accurate stats based on enabled rules applied
-              const stats = {
-                names: replacementRules.filter(r => r.enabled && r.type === "Tên người").length,
-                provinces: replacementRules.filter(r => r.enabled && r.type === "Địa danh").length,
-                idNumbers: replacementRules.filter(r => r.enabled && r.type === "CCCD").length,
-                phones: replacementRules.filter(r => r.enabled && r.type === "SĐT").length,
-              };
-              setAnonymizeStats(stats);
-            }}
-            className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
-          >
-            Áp dụng ẩn danh
-          </button>
-        </div>
-      )}
-    </div>
-  </div>
-)}
     </div>
   );
 }
