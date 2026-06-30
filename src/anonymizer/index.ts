@@ -78,6 +78,26 @@ export function anonymizeLegalText(input: string): AnonymizeResult {
     return bioMatch.slice(0, lastWordIndex) + replaceLast + bioMatch.slice(lastWordIndex + lastWord.length);
   });
 
+  // 3c. Detect full names without titles but starting with common Vietnamese surnames
+  const SURNAMES = "Nguyễn|Trần|Lê|Phạm|Hoàng|Huỳnh|Phan|Vũ|Võ|Đặng|Bùi|Đỗ|Hồ|Ngô|Dương|Lý|Vương|Trịnh|Lâm|Phùng|Mai|Tô|Hà|Tạ|Đinh|Cao|Đào|Lương|Trang|Hứa|Cổ|Diệp|Đới|Tống|Tiêu|Quách";
+  const nameWithoutTitleRegex = new RegExp(`(?<!(?:đường|Đường|phố|Phố|phường|Phường|quận|Quận|huyện|Huyện|tỉnh|Tỉnh|thành\\s+phố|Thành\\s+phố|Thành\\s+Phố|xã|Xã|thôn|Thôn|ấp|Ấp|bản|Bản|tổ|Tổ|ngõ|Ngõ|ngách|Ngách|hẻm|Hẻm|số|Số|tòa|Tòa|viện|Viện|vụ|Vụ|cục|Cục|trường|Trường|lớp|Lớp|nhà|Nhà)\\s+)\\b(${SURNAMES})\\s+(\\p{Lu}\\p{Ll}*(?:\\s+\\p{Lu}\\p{Ll}*){1,3})(?=[^\\p{L}\\p{N}]|$)`, 'gu');
+  text = text.replace(nameWithoutTitleRegex, (match, surname, rest) => {
+    stats.names++;
+    const fullNameStr = match.trim();
+    const words = fullNameStr.split(/\s+/);
+    if (words.length <= 1) {
+      return match;
+    }
+    const lastWord = words[words.length - 1];
+    const replaceLast = lastWord.charAt(0).toUpperCase();
+    
+    shortNameMap.set(lastWord, replaceLast);
+    fullNames.add(fullNameStr);
+
+    const lastWordIndex = match.lastIndexOf(lastWord);
+    return match.slice(0, lastWordIndex) + replaceLast;
+  });
+
   // 4. Replace full names that appear without titles (like in signatures)
   if (fullNames.size > 0) {
     const sortedFullNames = Array.from(fullNames).sort((a, b) => b.length - a.length);

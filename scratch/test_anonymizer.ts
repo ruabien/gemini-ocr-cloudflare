@@ -40,8 +40,7 @@ const tests = [
   },
   {
     input: "Nguyễn Văn Bình, số điện thoại: 0912345678",
-    // Theo yêu cầu mới, không có danh xưng nên không detect Nguyễn Văn Bình
-    expected: "Nguyễn Văn Bình, số điện thoại: 0912345***"
+    expected: "Nguyễn Văn B, số điện thoại: 0912345***"
   },
   {
     input: "Ông Nguyễn Văn Bình, ông Bình và bà Nguyễn Thị Hoa đi cùng ông B",
