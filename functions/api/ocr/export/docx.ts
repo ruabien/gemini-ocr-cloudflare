@@ -5,36 +5,68 @@ export async function onRequestPost({ request }: { request: any }) {
     const { text, fileName } = await request.json();
     const contentText = text || "";
 
-    // Split text into lines/paragraphs
-    const lines = contentText.split("\n");
+    // Split text into lines/paragraphs, keeping all lines exactly as in the OCR result
+    const lines = contentText.split(/\r?\n/);
 
     const paragraphs = lines.map((line: string) => {
       return new Paragraph({
+        alignment: AlignmentType.JUSTIFIED,
+        indent: {
+          firstLine: 720, // 1.27 cm (twips/dxa: 1.27 * 567 = ~720)
+        },
+        spacing: {
+          before: 120, // 6pt = 120 twentieths of a point (dxa)
+          after: 120,  // 6pt = 120 twentieths of a point (dxa)
+          line: 240,   // Single line spacing (12pt * 20)
+        },
         children: [
           new TextRun({
             text: line,
             font: "Times New Roman",
             size: 28, // 14pt = 28 half-points
+            color: "000000", // Black color
           }),
         ],
-        spacing: {
-          after: 120, // 6pt = 120 twentieths of a point (dxa)
-          line: 348,  // 1.45 line spacing (12pt * 20 * 1.45 = ~348 dxa)
-        },
-        alignment: AlignmentType.JUSTIFIED,
       });
     });
 
     const doc = new Document({
+      defaultTabStop: 720, // Default tab stop: 1.27 cm (720 dxa)
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: "Times New Roman",
+              size: 28, // 14pt
+              color: "000000",
+            },
+            paragraph: {
+              alignment: AlignmentType.JUSTIFIED,
+              spacing: {
+                before: 120,
+                after: 120,
+                line: 240,
+              },
+              indent: {
+                firstLine: 720,
+              },
+            },
+          },
+        },
+      },
       sections: [
         {
           properties: {
             page: {
+              size: {
+                width: 11906,  // A4 Page width (210mm in twips)
+                height: 16838, // A4 Page height (297mm in twips)
+              },
               margin: {
-                top: 1134,    // 20mm (1mm = 56.7 dxa)
-                bottom: 1134, // 20mm
-                left: 1701,   // 30mm
-                right: 850,   // 15mm
+                top: 1134,    // 2 cm (20mm in twips)
+                bottom: 1134, // 2 cm (20mm in twips)
+                left: 1701,   // 3 cm (30mm in twips)
+                right: 1134,  // 2 cm (20mm in twips)
               },
             },
           },
