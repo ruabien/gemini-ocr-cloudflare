@@ -591,9 +591,9 @@ app.post("/api/ocr/export/docx", async (req, res) => {
     const { text, fileName, mergeBrokenLines } = req.body;
     const contentText = text || MOCK_LEGAL_DOC_TEXT;
 
-    // Mặc định gộp dòng trừ khi mergeBrokenLines = false
+    // Mặc định KHÔNG gộp dòng, trừ khi mergeBrokenLines = true
     const options = {
-      mergeBrokenLines: mergeBrokenLines !== false,
+      mergeBrokenLines: !!mergeBrokenLines,
       preserveLegalStructure: true
     };
     const normalizedText = normalizeTextForDocx(contentText, options);

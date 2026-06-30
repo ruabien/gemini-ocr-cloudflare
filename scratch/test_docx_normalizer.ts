@@ -33,7 +33,7 @@ quận Ninh Kiều, thành phố Cần Thơ.`,
 let failed = false;
 
 for (const tc of testCases) {
-  const result = normalizeTextForDocx(tc.input);
+  const result = normalizeTextForDocx(tc.input, { mergeBrokenLines: true });
   if (result.trim() === tc.expected.trim()) {
     console.log(`✅ ${tc.name} PASSED`);
   } else {

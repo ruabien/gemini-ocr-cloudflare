@@ -19,11 +19,11 @@ export interface DocxNormalizeOptions {
 
 /**
  * Default options:
- *   mergeBrokenLines = true
+ *   mergeBrokenLines = false
  *   preserveLegalStructure = true
  */
 export const defaultOptions: DocxNormalizeOptions = {
-  mergeBrokenLines: true,
+  mergeBrokenLines: false,
   preserveLegalStructure: true,
 };
 
@@ -155,13 +155,14 @@ export function normalizeTextForDocx(
     ...options,
   };
 
-  // If we are not allowed to merge lines, just return the input (preserve line breaks)
+  // 1. Chuẩn hóa line ending \r\n -> \n và loại bỏ khoảng trắng thừa đầu/cuối mỗi dòng
+  const rawLines = input.split(/\r?\n/).map((line) => line.trim());
+
+  // 2. Nếu KHÔNG được phép gộp dòng, chỉ trả về văn bản đã chuẩn hóa khoảng trắng/xuống dòng
   if (!opts.mergeBrokenLines) {
-    return input;
+    return rawLines.join("\n");
   }
 
-  // Split input into lines (preserve empty lines)
-  const rawLines = input.split(/\r?\n/);
   const resultLines: string[] = [];
 
   let i = 0;

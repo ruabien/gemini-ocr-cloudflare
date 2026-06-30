@@ -14,9 +14,9 @@ export async function onRequestPost({ request }: { request: any }) {
     const { text, fileName, mergeBrokenLines } = await request.json();
     const contentText = text || "";
 
-    // Mặc định gộp dòng trừ khi mergeBrokenLines = false
+    // Mặc định KHÔNG gộp dòng, trừ khi mergeBrokenLines = true
     const options = {
-      mergeBrokenLines: mergeBrokenLines !== false,
+      mergeBrokenLines: !!mergeBrokenLines,
       preserveLegalStructure: true
     };
     const normalizedText = normalizeTextForDocx(contentText, options);

@@ -159,7 +159,7 @@ export default function OcrEditor({
     idNumbers: number;
     phones: number;
   } | null>(null);
-  const [mergeBrokenLines, setMergeBrokenLines] = useState(true);
+  const [mergeBrokenLines, setMergeBrokenLines] = useState(false);
 
   // PDF / image preview
   useEffect(() => {
