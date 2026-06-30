@@ -6,25 +6,25 @@ const tests = [
     input: `UỶ BAN NHÂN DÂN\nXÃ HÒA PHONG\nCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc`,
     expected: `UỶ BAN NHÂN DÂN\nXÃ HÒA PHONG\nCỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc`
   },
-  // 2. Mandatory Test 2: Address in content anonymized
+  // 2. Mandatory Test 2: Address in content (should NOT be anonymized)
   {
     input: "Địa chỉ: Thôn Mỹ Thạnh Trung 1, xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên.",
-    expected: "Địa chỉ: Thôn Mỹ Thạnh Trung 1, xã HP, huyện Tây Hòa, tỉnh PY."
+    expected: "Địa chỉ: Thôn Mỹ Thạnh Trung 1, xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên."
   },
   // 3. Mandatory Test 3a: Authority alone in header (evaluated as header) -> Preserved
   {
     input: "UBND xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên.",
     expected: "UBND xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên."
   },
-  // 4. Mandatory Test 3b: Authority in content -> Anonymized
+  // 4. Mandatory Test 3b: Authority in content -> Preserved (No address/province/commune changes)
   {
     input: "Theo đơn khởi kiện của UBND xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên.",
-    expected: "Theo đơn khởi kiện của UBND xã HP, huyện Tây Hòa, tỉnh PY."
+    expected: "Theo đơn khởi kiện của UBND xã Hòa Phong, huyện Tây Hòa, tỉnh Phú Yên."
   },
-  // 5. Old Test 2 Updated (ward should be abbreviated)
+  // 5. Old Test 2 Updated (ward/province/commune/address should NOT be anonymized)
   {
     input: "Địa chỉ: 746 đường 30/4, phường Hưng Lợi, quận Ninh Kiều, thành phố Cần Thơ.",
-    expected: "Địa chỉ: 746 đường 30/4, phường HL, quận Ninh Kiều, thành phố CT."
+    expected: "Địa chỉ: 746 đường 30/4, phường Hưng Lợi, quận Ninh Kiều, thành phố Cần Thơ."
   },
   {
     input: "Địa chỉ: xã X, huyện Y, tỉnh Z.",
@@ -32,7 +32,6 @@ const tests = [
   },
   {
     input: "Viện kiểm sát nhân dân quận Ninh Kiều, thành phố Cần Thơ.",
-    // Viện kiểm sát nhân dân starts with authority name and no content markers -> treated as header
     expected: "Viện kiểm sát nhân dân quận Ninh Kiều, thành phố Cần Thơ."
   },
   {
@@ -69,8 +68,12 @@ const tests = [
     expected: "Bà Hà Thị Kim C, sinh năm 1964."
   },
   {
-    input: `Nguyên đơn trình bày: Năm 1990, vợ chồng tôi có mua đất của ông Đặng Văn T và ông Nguyễn Văn Đ, địa chỉ: Thôn Mỹ Thạnh Trung 1, xã Hòa Phong,\nhuyện Tây Hòa, tỉnh Phú Yên.\n\nĐến năm 2006, hộ gia đình ông T gồm 06 nhân khẩu là: Bùi Nguyên T –sinh năm\n1968, Hà Thị Kim Cúc– sinh năm 1964, Bùi Hà Quyên Quyên – sinh năm 1986, Bùi\nQuang Thơ – sinh năm 1989, Bùi Hà Bạch Quế – sinh năm 1991, Bùi Thị Hà Cẩm –\nsinh năm 1993 tại thửa số 549(1), tờ bản đồ số 9-D, diện tích 200m² tại thôn Mỹ\nThạnh Trung 1, xã Hòa Phong, Tây Hòa, Phú Yên.\n\nLúc mua thì gia đình bà Cúc có nhu cầu xây dựng lại hàng rào.\nBị đơn ông Đặng Trung Oanh trình bày.`,
-    expected: `Nguyên đơn trình bày: Năm 1990, vợ chồng tôi có mua đất của ông Đặng Văn T và ông Nguyễn Văn Đ, địa chỉ: Thôn Mỹ Thạnh Trung 1, xã HP,\nhuyện Tây Hòa, tỉnh PY.\n\nĐến năm 2006, hộ gia đình ông T gồm 06 nhân khẩu là: Bùi Nguyên T –sinh năm\n1968, Hà Thị Kim C– sinh năm 1964, Bùi Hà Quyên Q – sinh năm 1986, Bùi\nQuang T – sinh năm 1989, Bùi Hà Bạch Q – sinh năm 1991, Bùi Thị Hà C –\nsinh năm 1993 tại thửa số 549(1), tờ bản đồ số 9-D, diện tích 200m² tại thôn Mỹ\nThạnh Trung 1, xã HP, Tây Hòa, Phú Yên.\n\nLúc mua thì gia đình bà C có nhu cầu xây dựng lại hàng rào.\nBị đơn ông Đặng Trung O trình bày.`
+    input: `Bà Hà Thị Kim Cúc, sinh năm 1964. Bà Cúc có mặt. Cuối văn bản ký: Hà Thị Kim Cúc.`,
+    expected: `Bà Hà Thị Kim C, sinh năm 1964. Bà C có mặt. Cuối văn bản ký: Hà Thị Kim C.`
+  },
+  {
+    input: `Nguyên đơn trình bày: Năm 1990, vợ chồng tôi có mua đất của ông Đặng Văn Tòng và ông Nguyễn Văn Đ, địa chỉ: Thôn Mỹ Thạnh Trung 1, xã Hòa Phong,\nhuyện Tây Hòa, tỉnh Phú Yên.\n\nĐến năm 2006, hộ gia đình ông Tòng gồm 06 nhân khẩu là: Bùi Nguyễn Tòng –sinh năm\n1968, Hà Thị Kim Cúc– sinh năm 1964, Bùi Hà Quyên Quyên – sinh năm 1986, Bùi\nQuang Thơ – sinh năm 1989, Bùi Hà Bạch Quế – sinh năm 1991, Bùi Thị Hà Cẩm –\nsinh năm 1993 tại thửa số 549(1), tờ bản đồ số 9-D, diện tích 200m² tại thôn Mỹ\nThạnh Trung 1, xã Hòa Phong, Tây Hòa, Phú Yên.\n\nLúc mua thì gia đình bà Cúc có nhu cầu xây dựng lại hàng rào.\nBị đơn ông Đặng Trung Oanh trình bày.`,
+    expected: `Nguyên đơn trình bày: Năm 1990, vợ chồng tôi có mua đất của ông Đặng Văn T và ông Nguyễn Văn Đ, địa chỉ: Thôn Mỹ Thạnh Trung 1, xã Hòa Phong,\nhuyện Tây Hòa, tỉnh Phú Yên.\n\nĐến năm 2006, hộ gia đình ông T gồm 06 nhân khẩu là: Bùi Nguyễn T –sinh năm\n1968, Hà Thị Kim C– sinh năm 1964, Bùi Hà Quyên Q – sinh năm 1986, Bùi\nQuang T – sinh năm 1989, Bùi Hà Bạch Q – sinh năm 1991, Bùi Thị Hà C –\nsinh năm 1993 tại thửa số 549(1), tờ bản đồ số 9-D, diện tích 200m² tại thôn Mỹ\nThạnh Trung 1, xã Hòa Phong, Tây Hòa, Phú Yên.\n\nLúc mua thì gia đình bà C có nhu cầu xây dựng lại hàng rào.\nBị đơn ông Đặng Trung O trình bày.`
   },
   {
     input: `UBND xã Hòa Phonghgtphđchôbbt`,
@@ -78,7 +81,7 @@ const tests = [
   },
   {
     input: `UBND xã Hòa Phong, huyện Tây Hòa`,
-    expected: `UBND xã HP, huyện Tây Hòa`
+    expected: `UBND xã Hòa Phong, huyện Tây Hòa`
   }
 ];
 
