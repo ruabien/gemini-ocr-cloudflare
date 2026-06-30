@@ -1,19 +1,58 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from "docx";
+import {
+  normalizeTextForDocx,
+  isQuocHieuTieuNgu,
+  isCoQuanBanHanh,
+  isTieuDeVanBan,
+  isSoHieu,
+  isMucTieuMuc,
+  isKyTen
+} from "../../../../src/utils/docxTextNormalizer";
 
 export async function onRequestPost({ request }: { request: any }) {
   try {
-    const { text, fileName } = await request.json();
+    const { text, fileName, mergeBrokenLines } = await request.json();
     const contentText = text || "";
 
-    // Split text into lines/paragraphs, keeping all lines exactly as in the OCR result
-    const lines = contentText.split(/\r?\n/);
+    // Mặc định gộp dòng trừ khi mergeBrokenLines = false
+    const options = {
+      mergeBrokenLines: mergeBrokenLines !== false,
+      preserveLegalStructure: true
+    };
+    const normalizedText = normalizeTextForDocx(contentText, options);
+
+    // Split text into lines/paragraphs
+    const lines = normalizedText.split(/\r?\n/);
 
     const paragraphs = lines.map((line: string) => {
+      const trimmed = line.trim();
+      const isQuocHieu = isQuocHieuTieuNgu(line);
+      const isCoQuan = isCoQuanBanHanh(line);
+      const isTieuDe = isTieuDeVanBan(line);
+      const isSo = isSoHieu(line);
+      const isDanhSach = isMucTieuMuc(line);
+      const isKy = isKyTen(line);
+
+      // Alignment: center for headings, otherwise justified
+      const alignment = (isQuocHieu || isCoQuan || isTieuDe || isSo)
+        ? AlignmentType.CENTER
+        : AlignmentType.JUSTIFIED;
+
+      // First‑line indent is omitted for headings, list items, signatures, and empty lines
+      const needsIndent = !(
+        isQuocHieu ||
+        isCoQuan ||
+        isTieuDe ||
+        isSo ||
+        isDanhSach ||
+        isKy ||
+        trimmed.length === 0
+      );
+      const indent = needsIndent ? { firstLine: 720 } : undefined;
+
       return new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        indent: {
-          firstLine: 720, // 1.27 cm (twips/dxa: 1.27 * 567 = ~720)
-        },
+        alignment,
+        ...(indent ? { indent } : {}),
         spacing: {
           before: 120, // 6pt = 120 twentieths of a point (dxa)
           after: 120,  // 6pt = 120 twentieths of a point (dxa)

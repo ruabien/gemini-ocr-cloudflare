@@ -9,6 +9,16 @@ import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { Document, Packer, Paragraph, TextRun, AlignmentType } from "docx";
+import {
+  normalizeTextForDocx,
+  isQuocHieuTieuNgu,
+  isCoQuanBanHanh,
+  isTieuDeVanBan,
+  isSoHieu,
+  isMucTieuMuc,
+  isKyTen
+} from "./src/utils/docxTextNormalizer.js";
 
 // Nạp các biến môi trường từ .env
 dotenv.config();
@@ -576,63 +586,121 @@ app.post("/api/ocr/export/excel", (req, res) => {
 });
 
 // 6. API tải tệp Word (.DOCX) định dạng chuẩn Nghị định 30/2020/NĐ-CP
-app.post("/api/ocr/export/docx", (req, res) => {
-  const { text, fileName } = req.body;
-  const contentText = text || MOCK_LEGAL_DOC_TEXT;
+app.post("/api/ocr/export/docx", async (req, res) => {
+  try {
+    const { text, fileName, mergeBrokenLines } = req.body;
+    const contentText = text || MOCK_LEGAL_DOC_TEXT;
 
-  // Tạo tài liệu định dạng Word HTML tương thích tối đa để đảm bảo lề và font chữ Times New Roman đúng Nghị định 30/2020/NĐ-CP
-  // Lề: lề trái 30mm, lề phải 15mm, lề trên 20mm, lề dưới 20mm
-  const wordHtml = `
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head>
-      <title>Quyết định lưu trữ</title>
-      <!--[if gte mso 9]>
-      <xml>
-        <w:WordDocument>
-          <w:View>Print</w:View>
-          <w:Zoom>100</w:Zoom>
-          <w:DoNotOptimizeForBrowser/>
-        </w:WordDocument>
-      </xml>
-      <![endif]-->
-      <style>
-        @page {
-          size: 210mm 297mm; /* Khổ giấy A4 chuẩn Nghị định 30 */
-          margin: 20mm 15mm 20mm 30mm; /* Lề chuẩn: Trên-Dưới 20, Trái 30, Phải 15 */
-        }
-        body {
-          font-family: 'Times New Roman', serif;
-          font-size: 14pt; /* Cỡ chữ nội dung chuẩn: 13-14pt */
-          line-height: 1.45; /* Giãn dòng chuẩn 1.0 - 1.5 */
-          color: #000000;
-        }
-        p {
-          margin: 0 0 6pt 0;
-          text-align: justify; /* Căn lề hai bên */
-        }
-        .text-center {
-          text-align: center;
-        }
-        .text-right {
-          text-align: right;
-        }
-        .font-bold {
-          font-weight: bold;
-        }
-        .font-italic {
-          font-style: italic;
-        }
-      </style>
-    </head>
-    <body>
-      ${contentText.replace(/\n/g, "<br/>")}
-    </body>
-    </html>
-  `;
+    // Mặc định gộp dòng trừ khi mergeBrokenLines = false
+    const options = {
+      mergeBrokenLines: mergeBrokenLines !== false,
+      preserveLegalStructure: true
+    };
+    const normalizedText = normalizeTextForDocx(contentText, options);
 
-  res.setHeader("Content-Type", "application/msword");
-  res.setHeader("Content-Disposition", `attachment; filename="${fileName ? fileName.replace(/\.[^/.]+$/, "") : "Van_Ban_OCR"}_ND30.doc"`);
-  res.send(Buffer.from(wordHtml, "utf-8"));
+    // Split text into lines/paragraphs
+    const lines = normalizedText.split(/\r?\n/);
+
+    const paragraphs = lines.map((line: string) => {
+      const trimmed = line.trim();
+      const isQuocHieu = isQuocHieuTieuNgu(line);
+      const isCoQuan = isCoQuanBanHanh(line);
+      const isTieuDe = isTieuDeVanBan(line);
+      const isSo = isSoHieu(line);
+      const isDanhSach = isMucTieuMuc(line);
+      const isKy = isKyTen(line);
+
+      // Alignment: center for headings, otherwise justified
+      const alignment = (isQuocHieu || isCoQuan || isTieuDe || isSo)
+        ? AlignmentType.CENTER
+        : AlignmentType.JUSTIFIED;
+
+      // First‑line indent is omitted for headings, list items, signatures, and empty lines
+      const needsIndent = !(
+        isQuocHieu ||
+        isCoQuan ||
+        isTieuDe ||
+        isSo ||
+        isDanhSach ||
+        isKy ||
+        trimmed.length === 0
+      );
+      const indent = needsIndent ? { firstLine: 720 } : undefined;
+
+      return new Paragraph({
+        alignment,
+        ...(indent ? { indent } : {}),
+        spacing: {
+          before: 120, // 6pt = 120 twentieths of a point (dxa)
+          after: 120,  // 6pt = 120 twentieths of a point (dxa)
+          line: 240,   // Single line spacing (12pt * 20)
+        },
+        children: [
+          new TextRun({
+            text: line,
+            font: "Times New Roman",
+            size: 28, // 14pt = 28 half-points
+            color: "000000", // Black color
+          }),
+        ],
+      });
+    });
+
+    const doc = new Document({
+      defaultTabStop: 720, // Default tab stop: 1.27 cm (720 dxa)
+      styles: {
+        default: {
+          document: {
+            run: {
+              font: "Times New Roman",
+              size: 28, // 14pt
+              color: "000000",
+            },
+            paragraph: {
+              alignment: AlignmentType.JUSTIFIED,
+              spacing: {
+                before: 120,
+                after: 120,
+                line: 240,
+              },
+              indent: {
+                firstLine: 720,
+              },
+            },
+          },
+        },
+      },
+      sections: [
+        {
+          properties: {
+            page: {
+              size: {
+                width: 11906,  // A4 Page width (210mm in twips)
+                height: 16838, // A4 Page height (297mm in twips)
+              },
+              margin: {
+                top: 1134,    // 2 cm (20mm in twips)
+                bottom: 1134, // 2 cm (20mm in twips)
+                left: 1701,   // 3 cm (30mm in twips)
+                right: 1134,  // 2 cm (20mm in twips)
+              },
+            },
+          },
+          children: paragraphs,
+        },
+      ],
+    });
+
+    const arrayBuffer = await Packer.toArrayBuffer(doc);
+    const docBuffer = Buffer.from(arrayBuffer);
+    const safeFileName = fileName ? fileName.replace(/\.[^/.]+$/, "") : "Van_Ban_OCR";
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}_ND30.docx"`);
+    res.send(docBuffer);
+  } catch (error: any) {
+    res.status(500).json({ error: `Lỗi xử lý export docx: ${error.message}` });
+  }
 });
 
 

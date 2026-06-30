@@ -159,6 +159,7 @@ export default function OcrEditor({
     idNumbers: number;
     phones: number;
   } | null>(null);
+  const [mergeBrokenLines, setMergeBrokenLines] = useState(true);
 
   // PDF / image preview
   useEffect(() => {
@@ -347,7 +348,8 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: sanitizeText(editorText),
-          fileName: document.name
+          fileName: document.name,
+          mergeBrokenLines
         })
       });
       const blob = await response.blob();
@@ -479,6 +481,24 @@ useEffect(() => {
             <Download className="h-4 w-4 text-slate-350" />
             <span>Xuất bản thô (.TXT)</span>
           </button>
+
+          <div className="flex items-center space-x-2 mr-2">
+            <input
+              type="checkbox"
+              id="mergeBrokenLines"
+              checked={mergeBrokenLines}
+              onChange={(e) => setMergeBrokenLines(e.target.checked)}
+              className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded cursor-pointer"
+              title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
+            />
+            <label
+              htmlFor="mergeBrokenLines"
+              className="text-[11px] font-bold text-slate-600 cursor-pointer"
+              title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
+            >
+              Gộp dòng OCR bị ngắt giữa câu
+            </label>
+          </div>
 
           <button
             onClick={handleExportDocx}
