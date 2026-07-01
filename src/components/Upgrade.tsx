@@ -369,16 +369,16 @@ export default function UpgradeComponent({
             {/* GÓI NĂM */}
             <div className="flex flex-col h-[105%] relative">
               {/* Banner "Khuyến nghị" */}
-              <div className="bg-blue-600 text-white font-bold text-xs py-1.5 rounded-t-2xl text-center uppercase tracking-wider shadow-sm flex items-center justify-center space-x-1">
+              <div className="bg-[#F59E0B] text-white font-bold text-xs py-1.5 rounded-t-2xl text-center uppercase tracking-wider shadow-sm flex items-center justify-center space-x-1">
                 <span>⭐ Khuyến nghị</span>
               </div>
               
               {/* Card nội dung */}
-              <div className="bg-white rounded-b-2xl border-2 border-blue-600 border-t-0 shadow-md p-6 flex flex-col justify-between flex-1 relative">
+              <div className="bg-white rounded-b-2xl border-2 border-[#FBBF24] border-t-0 shadow-[0_4px_12px_rgba(245,158,11,0.18)] p-6 flex flex-col justify-between flex-1 relative">
                 <div className="space-y-4">
                   <h3 className="font-sans font-black text-slate-900 text-lg flex items-center space-x-1">
                     <span>PRO NĂM</span>
-                    <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded ml-2">PREMIUM</span>
+                    <span className="text-[10px] bg-[#F59E0B] text-white font-bold px-2 py-0.5 rounded ml-2">Khuyến nghị</span>
                   </h3>
                   
                   <div className="py-2.5 border-t border-b border-slate-100 space-y-1">
@@ -405,7 +405,7 @@ export default function UpgradeComponent({
                       "Quyền truy cập API tốc độ cao ưu tiên"
                     ].map((item, index) => (
                       <li key={index} className="flex items-start space-x-2 text-xs text-slate-700">
-                        <CheckCircle2 className="h-4.5 w-4.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-4.5 w-4.5 text-[#F59E0B] flex-shrink-0 mt-0.5" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -415,9 +415,9 @@ export default function UpgradeComponent({
                 <div className="pt-6 space-y-3">
                   <button
                     onClick={() => handleOpenPayment("yearly")}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-4 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-blue-400/20"
+                    className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-3 px-4 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
                   >
-                    <CreditCard className="h-4.5 w-4.5 text-blue-200" />
+                    <CreditCard className="h-4.5 w-4.5 text-amber-100" />
                     <span>NÂNG CẤP PRO NĂM</span>
                   </button>
 
