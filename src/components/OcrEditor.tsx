@@ -17,7 +17,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   X,
-  Sparkles
+  Sparkles,
+  Copy,
+  Check
 } from "lucide-react";
 import { OcrDocument } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -160,6 +162,7 @@ export default function OcrEditor({
     phones: number;
   } | null>(null);
   const [exportMode, setExportMode] = useState<"nd30" | "manual_edit">("nd30");
+  const [isCopied, setIsCopied] = useState(false);
 
   // PDF / image preview
   useEffect(() => {
@@ -327,6 +330,51 @@ useEffect(() => {
     }
   };
 
+  // Copy All (Pro only)
+  const handleCopyAll = async () => {
+    if (!user) {
+      setLoginFeatureName("Sao chép tất cả nội dung (Copy All)");
+      setShowLoginPrompt(true);
+      return;
+    }
+    if (membershipRole !== "Pro") {
+      setUpgradeFeature("Sao chép tất cả nội dung (Copy All)");
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    const text = editorText || "";
+    if (!text.trim()) {
+      alert("Không có nội dung để sao chép.");
+      return;
+    }
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textArea = window.document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "absolute";
+        textArea.style.left = "-999999px";
+        window.document.body.prepend(textArea);
+        textArea.select();
+        try {
+          window.document.execCommand("copy");
+        } catch (error) {
+          console.error("execCommand fallback failed", error);
+        } finally {
+          textArea.remove();
+        }
+      }
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 1500);
+    } catch (err) {
+      console.error("Copy failed:", err);
+      alert("Có lỗi xảy ra khi sao chép.");
+    }
+  };
+
   // Export DOCX (Pro only)
   const handleExportDocx = async () => {
     if (!user) {
@@ -387,7 +435,7 @@ useEffect(() => {
   return (
     <div
       id="ocr-editor-view"
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
+      className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 w-full overflow-x-hidden"
     >
       {isAnonymized && anonymizeStats && (
         <div className="bg-emerald-50 border border-emerald-250 p-4 rounded-xl flex items-center justify-between shadow-sm animate-fadeIn">
@@ -415,21 +463,21 @@ useEffect(() => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center space-x-3">
           <button
             onClick={onBack}
-            className="p-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-slate-600 transition-colors cursor-pointer"
+            className="p-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-slate-600 transition-colors cursor-pointer flex-shrink-0"
             title="Quay lại scanner"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-slate-800 flex items-center">
-              <FileText className="h-4.5 w-4.5 text-red-600 mr-2" />
-              <span>Workspace: {document.name}</span>
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 flex items-center truncate">
+              <FileText className="h-4.5 w-4.5 text-red-600 mr-2 flex-shrink-0" />
+              <span className="truncate">Workspace: {document.name}</span>
             </h2>
-            <p className="text-[10px] text-slate-500 font-medium">
+            <p className="text-[10px] text-slate-500 font-medium truncate">
               Định dạng: <span className="text-slate-700 font-bold">{fileType}</span>{" "}
               • {resolution} • Người tải: {uploader}
             </p>
@@ -437,57 +485,92 @@ useEffect(() => {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full lg:w-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 mt-2 lg:mt-0">
           {/* AES toggle (visual only) */}
           <div
             onClick={() => setIsEncryptActive(!isEncryptActive)}
-            className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold font-mono flex items-center space-x-1.5 cursor-pointer transition-all ${
+            className={`col-span-2 sm:col-span-1 px-3 py-2 sm:py-1.5 rounded-lg border text-[10px] font-bold font-mono flex items-center justify-center sm:justify-start space-x-1.5 cursor-pointer transition-all min-h-[40px] sm:min-h-0 ${
               isEncryptActive
                 ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                 : "bg-slate-100 border-slate-200 text-slate-500"
             }`}
           >
             <Shield
-              className={`h-3.5 w-3.5 ${
+              className={`h-3.5 w-3.5 flex-shrink-0 ${
                 isEncryptActive ? "text-emerald-600 animate-pulse" : "text-slate-400"
               }`}
             />
-            <span>AES-256: {isEncryptActive ? "đang bảo mật" : "tắt"}</span>
+            <span className="truncate">AES-256: {isEncryptActive ? "Bật" : "Tắt"}</span>
           </div>
 
           <button
             onClick={handleToggleAnonymize}
             disabled={isRedacting}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center space-x-1.5 transition-all ${
+            className={`px-3 py-2 sm:py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all min-h-[40px] sm:min-h-0 ${
               isAnonymized
                 ? "bg-yellow-500 text-white border-yellow-600"
                 : "bg-white hover:bg-slate-50 text-slate-700 border-slate-300"
             }`}
           >
-            {isAnonymized ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-slate-500" />}
-            <span>
+            {isAnonymized ? <Eye className="h-4 w-4 flex-shrink-0" /> : <EyeOff className="h-4 w-4 text-slate-500 flex-shrink-0" />}
+            <span className="truncate">
               {isRedacting
-                ? "Đang mã hoá..."
+                ? "Mã hoá..."
                 : isAnonymized
-                ? "Hiện thông tin đương sự"
-                : "Ẩn danh đương sự"}
+                ? "Hiện tên"
+                : "Ẩn danh"}
             </span>
           </button>
 
           <button
-            onClick={handleExportTxt}
-            className="bg-slate-900 hover:bg-slate-800 border border-transparent text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-sm"
-            title="Xuất văn bản thô (.TXT)"
+            onClick={handleCopyAll}
+            className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0 transition-all ${
+              membershipRole === "Pro"
+                ? "bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent"
+                : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+            }`}
           >
-            <Download className="h-4 w-4 text-slate-350" />
-            <span>Xuất bản thô (.TXT)</span>
+            {isCopied ? <Check className="h-4 w-4 flex-shrink-0" /> : <Copy className="h-4 w-4 flex-shrink-0" />}
+            <span className="truncate">{isCopied ? "Đã copy" : membershipRole === "Pro" ? "Copy All" : "Copy PRO"}</span>
           </button>
 
-          <div className="flex items-center space-x-2 mr-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+          <button
+            onClick={handleExportTxt}
+            className="bg-slate-900 hover:bg-slate-800 border border-transparent text-white px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0"
+            title="Xuất văn bản thô (.TXT)"
+          >
+            <Download className="h-4 w-4 text-slate-350 flex-shrink-0" />
+            <span>TXT</span>
+          </button>
+
+          <button
+            onClick={handleExportDocx}
+            disabled={isExportingDocx}
+            className={`font-bold px-3 py-2 sm:py-1.5 rounded-lg text-xs flex items-center justify-center space-x-1.5 shadow-md transition-all min-h-[40px] sm:min-h-0 ${
+              membershipRole === "Pro"
+                ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-rose-500/10"
+                : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45"
+            }`}
+          >
+            {membershipRole === "Pro" ? (
+              <FileText className="h-4 w-4 flex-shrink-0" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse flex-shrink-0" />
+            )}
+            <span className="truncate">
+              {isExportingDocx
+                ? "Đang xuất..."
+                : membershipRole === "Pro"
+                ? "DOCX"
+                : "DOCX PRO"}
+            </span>
+          </button>
+
+          <div className="col-span-2 flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 sm:py-1 shadow-sm min-h-[40px] sm:min-h-0 w-full sm:w-auto">
             <select
               value={exportMode}
               onChange={(e) => setExportMode(e.target.value as "nd30" | "manual_edit")}
-              className="text-[11px] font-bold text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none m-0 p-0 pr-4"
+              className="text-[11px] font-bold text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none m-0 p-0 w-full truncate"
               title={
                 exportMode === "manual_edit"
                   ? "Xóa toàn bộ ngắt dòng, gộp thành 1 paragraph căn đều. Người dùng tự nhấn Enter."
@@ -498,33 +581,10 @@ useEffect(() => {
               <option value="manual_edit">Chế độ chỉnh sửa thủ công</option>
             </select>
           </div>
-
-          <button
-            onClick={handleExportDocx}
-            disabled={isExportingDocx}
-            className={`font-bold px-4 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition-all ${
-              membershipRole === "Pro"
-                ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-rose-500/10"
-                : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45"
-            }`}
-          >
-            {membershipRole === "Pro" ? (
-              <FileText className="h-4 w-4" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
-            )}
-            <span>
-              {isExportingDocx
-                ? "Đang xuất..."
-                : membershipRole === "Pro"
-                ? "Xuất Word (.DOCX)"
-                : "Xuất Word PRO (.DOCX)"}
-            </span>
-          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-start">
         {/* Left column: preview */}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
@@ -602,7 +662,7 @@ useEffect(() => {
             </div>
 
             {/* Editable area */}
-            <div className="p-8 bg-white focus:outline-none">
+            <div className="p-4 sm:p-8 bg-white focus:outline-none">
               {!editorText ? (
                 <div className="text-slate-400 italic mb-2">
                   Chưa có nội dung OCR để hiển thị.
@@ -611,10 +671,9 @@ useEffect(() => {
               <textarea
                 value={editorText}
                 onChange={(e) => setEditorText(e.target.value)}
-                className="legal-editor w-full min-h-[440px] max-h-[500px] overflow-y-auto resize-none bg-white focus:outline-none leading-[1.5] text-justify text-[14pt] text-black"
+                className="legal-editor w-full min-h-[440px] max-h-[500px] overflow-y-auto resize-none bg-white focus:outline-none leading-[1.5] text-justify text-[13pt] sm:text-[14pt] text-black"
                 style={{
                   fontFamily: '"Times New Roman", Times, serif',
-                  fontSize: '14pt',
                   lineHeight: '1.5',
                   color: '#000000'
                 }}
