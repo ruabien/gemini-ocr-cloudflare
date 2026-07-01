@@ -1,4 +1,6 @@
-import { Document, Packer, Paragraph, TextRun, AlignmentType } from "docx";
+import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
+import { clean as docClean } from "../../../../src/docFormatter";
+import { isHeading } from "../../../../src/docFormatter/heading";
 import {
   normalizeTextForDocx,
   isQuocHieuTieuNgu,
@@ -40,11 +42,7 @@ export async function onRequestPost({ request }: { request: any }) {
         }),
       ];
     } else {
-      const options = {
-        mergeBrokenLines: true,
-        preserveLegalStructure: true
-      };
-      const normalizedText = normalizeTextForDocx(cleanedContent, options);
+      const normalizedText = docClean(cleanedContent);
 
       // Split text into lines/paragraphs
       const lines = normalizedText.split(/\r?\n/);
@@ -57,8 +55,9 @@ export async function onRequestPost({ request }: { request: any }) {
         const isSo = isSoHieu(line);
         const isDanhSach = isMucTieuMuc(line);
         const isKy = isKyTen(line);
+        const isDocxHeading = isHeading(line);
 
-        // Alignment: center for headings, otherwise justified
+        // Alignment: center for titles, otherwise justified
         const alignment = (isQuocHieu || isCoQuan || isTieuDe || isSo)
           ? AlignmentType.CENTER
           : AlignmentType.JUSTIFIED;
@@ -71,12 +70,14 @@ export async function onRequestPost({ request }: { request: any }) {
           isSo ||
           isDanhSach ||
           isKy ||
+          isDocxHeading ||
           trimmed.length === 0
         );
         const indent = needsIndent ? { firstLine: 720 } : undefined;
 
         return new Paragraph({
           alignment,
+          heading: isDocxHeading ? HeadingLevel.HEADING_3 : undefined,
           ...(indent ? { indent } : {}),
           spacing: {
             before: 120, // 6pt = 120 twentieths of a point (dxa)
