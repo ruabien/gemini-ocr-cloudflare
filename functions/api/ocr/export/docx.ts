@@ -13,17 +13,17 @@ import {
 
 export async function onRequestPost({ request }: { request: any }) {
   try {
-    const { text, fileName, mergeBrokenLines, mode } = await request.json();
-const contentText = text || "";
-const cleanedContent = removePageBreakMarkers(contentText);
+    const { text, fileName, mode } = await request.json();
+    const contentText = text || "";
+    const cleanedContent = removePageBreakMarkers(contentText);
 
     let paragraphs: Paragraph[];
 
-if (mode === "flatten_center") {
-const flattened = flattenTextForManualLineBreak(cleanedContent);
+    if (mode === "manual_edit" || mode === "flatten_center") {
+      const flattened = flattenTextForManualLineBreak(cleanedContent);
       paragraphs = [
         new Paragraph({
-alignment: AlignmentType.JUSTIFIED,
+          alignment: AlignmentType.JUSTIFIED,
           spacing: {
             before: 120, // 6pt = 120 twentieths of a point (dxa)
             after: 120,  // 6pt = 120 twentieths of a point (dxa)
@@ -40,12 +40,11 @@ alignment: AlignmentType.JUSTIFIED,
         }),
       ];
     } else {
-      // Mặc định KHÔNG gộp dòng, trừ khi mergeBrokenLines = true
       const options = {
-        mergeBrokenLines: !!mergeBrokenLines,
+        mergeBrokenLines: true,
         preserveLegalStructure: true
       };
-const normalizedText = normalizeTextForDocx(cleanedContent, options);
+      const normalizedText = normalizeTextForDocx(cleanedContent, options);
 
       // Split text into lines/paragraphs
       const lines = normalizedText.split(/\r?\n/);
@@ -107,13 +106,13 @@ const normalizedText = normalizeTextForDocx(cleanedContent, options);
               color: "000000",
             },
             paragraph: {
-              alignment: mode === "flatten_center" ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+              alignment: AlignmentType.JUSTIFIED,
               spacing: {
                 before: 120,
                 after: 120,
                 line: 240,
               },
-              ...(mode === "flatten_center"
+              ...((mode === "manual_edit" || mode === "flatten_center")
                 ? {}
                 : {
                     indent: {
@@ -148,7 +147,7 @@ const normalizedText = normalizeTextForDocx(cleanedContent, options);
     const arrayBuffer = await Packer.toArrayBuffer(doc);
     const docBuffer = new Uint8Array(arrayBuffer);
     const safeFileName = fileName ? fileName.replace(/\.[^/.]+$/, "") : "Van_Ban_OCR";
-    const suffix = mode === "flatten_center" ? "LienTuc" : "ND30";
+    const suffix = (mode === "manual_edit" || mode === "flatten_center") ? "ThuCong" : "ND30";
 
     return new Response(docBuffer, {
       status: 200,

@@ -159,8 +159,7 @@ export default function OcrEditor({
     idNumbers: number;
     phones: number;
   } | null>(null);
-  const [mergeBrokenLines, setMergeBrokenLines] = useState(false);
-  const [exportMode, setExportMode] = useState<"nd30" | "flatten_center">("nd30");
+  const [exportMode, setExportMode] = useState<"nd30" | "manual_edit">("nd30");
 
   // PDF / image preview
   useEffect(() => {
@@ -350,7 +349,6 @@ useEffect(() => {
         body: JSON.stringify({
           text: sanitizeText(editorText),
           fileName: document.name,
-          mergeBrokenLines,
           mode: exportMode
         })
       });
@@ -358,7 +356,7 @@ useEffect(() => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = window.document.createElement("a");
       link.href = downloadUrl;
-      const suffix = exportMode === "flatten_center" ? "LienTuc" : "ND30";
+      const suffix = exportMode === "manual_edit" ? "ThuCong" : "ND30";
       link.download = `${document.name.replace(/\.[^/.]+$/, "")}_${suffix}.docx`;
       window.document.body.appendChild(link);
       link.click();
@@ -488,38 +486,18 @@ useEffect(() => {
           <div className="flex items-center space-x-2 mr-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
             <select
               value={exportMode}
-              onChange={(e) => setExportMode(e.target.value as "nd30" | "flatten_center")}
+              onChange={(e) => setExportMode(e.target.value as "nd30" | "manual_edit")}
               className="text-[11px] font-bold text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none m-0 p-0 pr-4"
               title={
-                exportMode === "flatten_center"
-                  ? "Gộp toàn bộ nội dung OCR thành một đoạn duy nhất. Phù hợp khi bản OCR bị ngắt dòng sai; người dùng có thể tự nhấn Enter tại vị trí mong muốn."
-                  : "Xuất văn bản theo chuẩn thể thức Nghị định 30/2020/NĐ-CP"
+                exportMode === "manual_edit"
+                  ? "Xóa toàn bộ ngắt dòng, gộp thành 1 paragraph căn đều. Người dùng tự nhấn Enter."
+                  : "Xuất văn bản theo chuẩn thể thức Nghị định 30/2020/NĐ-CP (Xóa ngắt dòng giữa câu, giữ cấu trúc)"
               }
             >
-              <option value="nd30">Chuẩn Nghị định 30</option>
-              <option value="flatten_center">Xuất một dòng liên tục để tự xuống dòng thủ công</option>
+              <option value="nd30">Chuẩn Nghị định 30 (Khuyến nghị)</option>
+              <option value="manual_edit">Chế độ chỉnh sửa thủ công</option>
             </select>
           </div>
-
-          {exportMode === "nd30" && (
-            <div className="flex items-center space-x-2 mr-2">
-              <input
-                type="checkbox"
-                id="mergeBrokenLines"
-                checked={mergeBrokenLines}
-                onChange={(e) => setMergeBrokenLines(e.target.checked)}
-                className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded cursor-pointer"
-                title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
-              />
-              <label
-                htmlFor="mergeBrokenLines"
-                className="text-[11px] font-bold text-slate-600 cursor-pointer"
-                title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
-              >
-                Gộp dòng bị ngắt
-              </label>
-            </div>
-          )}
 
           <button
             onClick={handleExportDocx}

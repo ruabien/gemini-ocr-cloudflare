@@ -23,7 +23,7 @@ export interface DocxNormalizeOptions {
  *   preserveLegalStructure = true
  */
 export const defaultOptions: DocxNormalizeOptions = {
-  mergeBrokenLines: false,
+  mergeBrokenLines: true,
   preserveLegalStructure: true,
 };
 
@@ -155,8 +155,10 @@ export function normalizeTextForDocx(
     ...options,
   };
 
-  // 1. Chuẩn hóa line ending \r\n -> \n và loại bỏ khoảng trắng thừa đầu/cuối mỗi dòng
-  const rawLines = input.split(/\r?\n/).map((line) => line.trim());
+  const cleanedInput = removePageBreakMarkers(input);
+
+  // 1. Chuẩn hóa line ending \r\n -> \n, xóa marker, chuẩn hóa khoảng trắng giữa các từ, và loại bỏ khoảng trắng thừa đầu/cuối
+  const rawLines = cleanedInput.split(/\r?\n/).map((line) => line.replace(/[ \t]+/g, " ").trim());
 
   // 2. Nếu KHÔNG được phép gộp dòng, chỉ trả về văn bản đã chuẩn hóa khoảng trắng/xuống dòng
   if (!opts.mergeBrokenLines) {
@@ -267,7 +269,7 @@ export function isSoHieu(line: string): boolean {
 
 export function removePageBreakMarkers(text: string): string {
   if (!text) return "";
-  let cleaned = text.replace(/^\s*---\s*\[TRANG KẾ TIẾP\]\s*---\s*$/gm, '');
+  let cleaned = text.replace(/^\s*---\s*\[TRANG KẾ TIẾP\]\s*---\s*$/gmi, '');
   cleaned = cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n');
   return cleaned;
 }
