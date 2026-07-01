@@ -37,16 +37,16 @@ export default function UpgradeComponent({
   // Price Calculation
   const prices = {
     monthly: {
-      amount: 450000,
-      display: "450.000 đ",
-      sub: "/ tháng",
+      amount: 50000,
+      display: "50.000 VNĐ",
+      sub: "/tháng",
       code: "LEXOCR_MON_PRO"
     },
     yearly: {
-      amount: 3200000,
-      display: "3.200.000 đ",
-      sub: "/ năm",
-      details: "Tiết kiệm 40% so với gói tháng",
+      amount: 500000,
+      display: "500.000 VNĐ",
+      sub: "/năm",
+      details: "Tiết kiệm 17% so với gói tháng",
       code: "LEXOCR_YEA_PRO"
     }
   };
@@ -116,11 +116,12 @@ export default function UpgradeComponent({
     };
   }, [showQRModal]);
 
-  const handleOpenPayment = () => {
+  const handleOpenPayment = (cycle: "monthly" | "yearly") => {
     if (!user) {
       window.alert("Vui lòng đăng nhập Google để thực hiện nâng cấp tài khoản PRO.");
       return;
     }
+    setBillingCycle(cycle);
     setPaymentStatus("pending");
     setTimerSeconds(300);
     setLogs([
@@ -191,7 +192,7 @@ export default function UpgradeComponent({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* BAN BIỂU SO SÁNH CÁC TÍNH NĂNG CHUYÊN BIỆT */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 bg-slate-50/70">
             <h3 className="font-sans font-bold text-sm sm:text-base text-slate-800 flex items-center space-x-2">
               <Layers className="h-5 w-5 text-red-600" />
@@ -320,93 +321,113 @@ export default function UpgradeComponent({
         </div>
 
         {/* BẢNG GIÁ & NÚT NÂNG CẤP CHỌN GÓI */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-2xl border-2 border-slate-800 shadow-md p-6 relative flex flex-col justify-between">
-            {/* Tag Nhất cử lưỡng tiện */}
-            <div className="absolute top-0 right-6 transform -translate-y-1/2 bg-slate-900 border border-yellow-500/40 text-yellow-400 font-mono text-[9px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase shadow">
-              ƯU TIÊN CÔNG VỤ
-            </div>
+        <div className="lg:col-span-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end h-full">
+            
+            {/* GÓI THÁNG */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col h-full relative">
+              <div className="flex flex-col justify-between flex-1">
+                <div className="space-y-4">
+                  <h3 className="font-sans font-black text-slate-900 text-lg flex items-center space-x-1">
+                    <span>PRO THÁNG</span>
+                  </h3>
+                  
+                  <div className="py-2.5 border-t border-b border-slate-100 space-y-1">
+                    <div className="flex flex-col">
+                      <span className="text-3xl font-black text-slate-900">{prices.monthly.display}</span>
+                      <span className="text-slate-500 text-xs font-semibold">{prices.monthly.sub}</span>
+                    </div>
+                  </div>
 
-            <div className="space-y-4">
-              <h3 className="font-sans font-black text-slate-900 text-lg sm:text-xl flex items-center space-x-1">
-                <span>LEXOCR PRO</span>
-                <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded ml-2">PREMIUM</span>
-              </h3>
-              
-              <p className="text-slate-500 text-xs">
-                Lựa chu kỳ thanh toán linh hoạt cho cá nhân hoặc hỗ trợ ngân sách tố tụng của cơ quan, đoàn thể.
-              </p>
-
-              {/* Táp lựa chọn billing */}
-              <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                <button
-                  onClick={() => setBillingCycle("monthly")}
-                  className={`py-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                    billingCycle === "monthly"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Gói Tháng
-                </button>
-                <button
-                  onClick={() => setBillingCycle("yearly")}
-                  className={`py-2 text-[11px] font-bold rounded-lg transition-all cursor-pointer relative ${
-                    billingCycle === "yearly"
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Gói Năm
-                  <span className="absolute -top-2.5 -right-1 bg-amber-500 text-slate-950 font-black text-[7px] px-1.5 py-0.5 rounded-full uppercase border border-slate-800 animate-pulse">
-                    -30%
-                  </span>
-                </button>
-              </div>
-
-              {/* Kế toán giá */}
-              <div className="py-2.5 border-t border-b border-slate-100 space-y-1">
-                <div className="flex items-baseline space-x-1.5">
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900">{activePlan.display}</span>
-                  <span className="text-slate-400 text-xs font-semibold">{activePlan.sub}</span>
+                  <ul className="space-y-2.5 pt-1.5">
+                    {[
+                      "Không giới hạn số lượt quét bản án",
+                      "Mở khóa toàn bộ định dạng xuất DOCX & Excel",
+                      "Giải thuật OCR tự động khôi phục đại tự tố tụng",
+                      "Quét tệp PDF dày tới hàng trăm trang riêng biệt",
+                      "Quyền truy cập API tốc độ cao ưu tiên"
+                    ].map((item, index) => (
+                      <li key={index} className="flex items-start space-x-2 text-xs text-slate-700">
+                        <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                {billingCycle === "yearly" && (
-                  <p className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 inline-block rounded">
-                    Tiết kiệm hơn 2.000.000đ so với gói tháng
-                  </p>
-                )}
+
+                <div className="pt-6">
+                  <button
+                    onClick={() => handleOpenPayment("monthly")}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 px-4 rounded-xl text-xs shadow-sm transition-all text-center cursor-pointer border border-slate-300"
+                  >
+                    Đăng ký Pro Tháng
+                  </button>
+                </div>
               </div>
-
-              {/* Danh sách nhanh */}
-              <ul className="space-y-2.5 pt-1.5">
-                {[
-                  "Không giới hạn số lượt quét bản án",
-                  "Mở khóa toàn bộ định dạng xuất DOCX & Excel",
-                  "Giải thuật OCR tự động khôi phục đại tự tố tụng",
-                  "Quét tệp PDF dày tới hàng trăm trang riêng biệt",
-                  "Quyền truy cập API tốc độ cao ưu tiên"
-                ].map((item, index) => (
-                  <li key={index} className="flex items-start space-x-2 text-xs text-slate-700">
-                    <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
 
-            <div className="pt-6 space-y-3">
-              <button
-                onClick={handleOpenPayment}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3 px-4 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-yellow-500/20"
-              >
-                <CreditCard className="h-4.5 w-4.5 text-yellow-400" />
-                <span>NÂNG CẤP LÊN BẢN PRO NGAY</span>
-              </button>
+            {/* GÓI NĂM */}
+            <div className="flex flex-col h-[105%] relative">
+              {/* Banner "Khuyến nghị" */}
+              <div className="bg-blue-600 text-white font-bold text-xs py-1.5 rounded-t-2xl text-center uppercase tracking-wider shadow-sm flex items-center justify-center space-x-1">
+                <span>⭐ Khuyến nghị</span>
+              </div>
+              
+              {/* Card nội dung */}
+              <div className="bg-white rounded-b-2xl border-2 border-blue-600 border-t-0 shadow-md p-6 flex flex-col justify-between flex-1 relative">
+                <div className="space-y-4">
+                  <h3 className="font-sans font-black text-slate-900 text-lg flex items-center space-x-1">
+                    <span>PRO NĂM</span>
+                    <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded ml-2">PREMIUM</span>
+                  </h3>
+                  
+                  <div className="py-2.5 border-t border-b border-slate-100 space-y-1">
+                    <div className="flex flex-col">
+                      <span className="text-3xl font-black text-slate-900">{prices.yearly.display}</span>
+                      <span className="text-slate-500 text-xs font-semibold">{prices.yearly.sub}</span>
+                    </div>
+                    <div className="mt-1">
+                      <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 inline-block rounded border border-emerald-200">
+                        Tiết kiệm 17%
+                      </span>
+                      <p className="text-[9.5px] text-slate-400 mt-1 italic font-medium">
+                        (so với thanh toán từng tháng)
+                      </p>
+                    </div>
+                  </div>
 
-              <p className="text-[10px] text-center text-slate-400 italic">
-                * Kích hoạt tự động sau khi hoàn tất giao dịch. Có xuất hóa đơn đỏ (VAT 8%) cho Viện kiểm sát nhân dân cấp tỉnh/huyện nếu được yêu cầu.
-              </p>
+                  <ul className="space-y-2.5 pt-1.5">
+                    {[
+                      "Không giới hạn số lượt quét bản án",
+                      "Mở khóa toàn bộ định dạng xuất DOCX & Excel",
+                      "Giải thuật OCR tự động khôi phục đại tự tố tụng",
+                      "Quét tệp PDF dày tới hàng trăm trang riêng biệt",
+                      "Quyền truy cập API tốc độ cao ưu tiên"
+                    ].map((item, index) => (
+                      <li key={index} className="flex items-start space-x-2 text-xs text-slate-700">
+                        <CheckCircle2 className="h-4.5 w-4.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="pt-6 space-y-3">
+                  <button
+                    onClick={() => handleOpenPayment("yearly")}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-4 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-blue-400/20"
+                  >
+                    <CreditCard className="h-4.5 w-4.5 text-blue-200" />
+                    <span>NÂNG CẤP PRO NĂM</span>
+                  </button>
+
+                  <p className="text-[9px] text-center text-slate-400 italic leading-tight">
+                    * Kích hoạt tự động sau khi hoàn tất giao dịch. Có xuất hóa đơn đỏ (VAT 8%) nếu được yêu cầu.
+                  </p>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
 

@@ -63,7 +63,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
               onClick={onStart}
               className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-sm tracking-wide rounded-lg flex items-center justify-center space-x-2 shadow-lg border border-yellow-500/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
             >
-              <span>Dùng thử miễn phí</span>
+              <span>Bắt đầu sử dụng ngay</span>
               <ArrowRight className="h-4 w-4" />
             </button>
             
