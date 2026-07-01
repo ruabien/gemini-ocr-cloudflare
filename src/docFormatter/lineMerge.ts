@@ -75,11 +75,26 @@ import { isLegalStructure } from "./legalStructure";
 function isProtectedLine(line: string): boolean {
   const trimmed = line.trim();
 
-  if (isLegalStructure(trimmed)) {
+  // Protect legal structures and list items (existing behavior)
+  if (isLegalStructure(trimmed) || isListItem(trimmed)) {
     return true;
   }
 
-  if (isListItem(trimmed)) {
+  // Protect lines that are all uppercase (common headers like "TÒA ÁN NHÂN DÂN ...")
+  const isAllUpper = /^[^\p{Ll}]*$/u.test(trimmed);
+  if (isAllUpper) {
+    return true;
+  }
+
+  // Protect explicit label lines that should never be merged
+  const labelRegex = /^(Kính gửi|Nguyên đơn|Bị đơn|Người đại diện|Địa chỉ|Nơi cư trú)\s*:/i;
+  if (labelRegex.test(trimmed)) {
+    return true;
+  }
+
+  // Protect specific header lines that may contain mixed case (e.g., "Độc lập - Tự do - Hạnh phúc")
+  const mixedHeaderRegex = /^(Độc lập|CỘNG HÒA)/i;
+  if (mixedHeaderRegex.test(trimmed)) {
     return true;
   }
 
@@ -133,9 +148,10 @@ function shouldMerge(current: string, next: string): boolean {
   }
 
   // 1. Current ends with “:” and next starts with a digit
-  if (cur.endsWith(":") && /^\d/.test(nxt)) {
-    return true;
-  }
+// 1. Current ends with “:” – merge with next line (typically label content)
+if (cur.endsWith(":")) {
+  return true;
+}
 
   // 2. Current ends with a generic connector word
   if (endsWithConnector(cur)) {
@@ -208,12 +224,12 @@ export function mergeLines(rawText: string): string {
       if (isProtectedLine(next)) break;
 
       // Merge according to the decision function
-      if (shouldMerge(line, next)) {
-        line = line.replace(/\s+$/g, "") + " " + nextTrim;
-        i = nextIndex; // advance pointer to the merged line
-      } else {
-        break;
-      }
+if (shouldMerge(line, next)) {
+  line = line.replace(/\s+$/g, "") + " " + nextTrim;
+  i = nextIndex; // advance pointer to the merged line
+} else {
+  break;
+}
     }
 
     result.push(line);

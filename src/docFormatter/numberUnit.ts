@@ -92,24 +92,33 @@ export function mergeNumbersAndUnits(text: string): string {
         }
       }
 
-      if (shouldMerge) {
-        let mergedWord = trimmedNext;
-        // Step 5: Convert m2/m3 or variants to superscript m²/m³
-        if (/^m2\b/i.test(mergedWord)) {
-          mergedWord = mergedWord.replace(/^m2/i, "m²");
-        } else if (/^m3\b/i.test(mergedWord)) {
-          mergedWord = mergedWord.replace(/^m3/i, "m³");
-        }
+if (shouldMerge) {
+  let mergedWord = trimmedNext;
 
-        current = current.trimEnd() + " " + mergedWord;
-        i++;
-      } else {
-        break;
-      }
+  // Convert variants of area units to standardized superscript m² / m³
+  if (/^m2\b/i.test(mergedWord)) {
+    mergedWord = mergedWord.replace(/^m2/i, "m²");
+  } else if (/^m3\b/i.test(mergedWord)) {
+    mergedWord = mergedWord.replace(/^m3/i, "m³");
+  }
+
+  // Handle legacy notations m? or m' (common OCR mis‑reads for m²)
+  if (/^m[?']$/i.test(mergedWord)) {
+    mergedWord = "m²";
+  }
+
+  current = current.trimEnd() + " " + mergedWord;
+  i++;
+} else {
+  break;
+}
     }
 
-    // Clean up any remaining m2/m3 conversions in the current line text itself
-    current = current.replace(/\bm2\b/g, "m²").replace(/\bm3\b/g, "m³");
+ // Clean up any remaining m2/m3 conversions and legacy notations in the current line text itself
+ current = current
+   .replace(/\bm2\b/g, "m²")
+   .replace(/\bm3\b/g, "m³")
+   .replace(/\bm[?']\b/gi, "m²");
 
     result.push(current);
     i++;

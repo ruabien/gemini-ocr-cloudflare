@@ -18,11 +18,25 @@ export function validateProcessedText(processedText: string, originalText: strin
   }
 
   // Check digit count
-  const origDigits = originalText.replace(/\D/g, "");
-  const procDigits = processedText.replace(/\D/g, "");
-  
+  // We ignore changes where 'm2'/'m3' are normalized to 'm²'/'m³', or where 'm?'/'m\'' are converted to 'm²'.
+  // To align the comparison, we normalize both original and processed to a common form without '2', '3', '?', '\'', '²', '³' in the context of 'm' units, or simply ignore the superscript characters and corresponding original digits.
+  // Actually, a simpler and robust way: replace any 'm²' / 'm³' / 'm2' / 'm3' / 'm?' / 'm\'' in BOTH original and processed texts with a placeholder 'm' (or 'mU') before extracting digits.
+  const cleanForDigitCheck = (str: string) => {
+    return str
+      .replace(/\bm2\b/gi, "m")
+      .replace(/\bm3\b/gi, "m")
+      .replace(/\bm²\b/gi, "m")
+      .replace(/\bm³\b/gi, "m")
+      .replace(/\bm\?\b/gi, "m")
+      .replace(/\bm'\b/gi, "m")
+      .replace(/\D/g, "");
+  };
+
+  const origDigits = cleanForDigitCheck(originalText);
+  const procDigits = cleanForDigitCheck(processedText);
+
   if (origDigits !== procDigits) {
-    // If the sequence of digits is modified, something structural (like money, dates, numbers) was broken.
+    // If the sequence of digits is modified (apart from superscript handling), something structural (like money, dates, numbers) was broken.
     console.warn(`[Validator] Digit sequence mismatch! Orig digits: ${origDigits.length}, Proc digits: ${procDigits.length}. Rolling back.`);
     return false;
   }
