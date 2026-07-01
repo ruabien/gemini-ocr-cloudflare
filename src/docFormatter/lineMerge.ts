@@ -64,6 +64,9 @@ const CONNECTOR_WORDS = [
 const SPECIFIC_CONNECTORS_FOR_PERSON = ["và", "của", "với", "cho"];
 const PERSON_TITLES = ["bà", "ông", "anh", "chị"];
 
+import { isListItem } from "./listItem";
+import { isLegalStructure } from "./legalStructure";
+
 /**
  * Determine whether a line should be protected from merging.
  * Protected lines are numeric headings such as “1.”, “3.2.”,
@@ -72,30 +75,11 @@ const PERSON_TITLES = ["bà", "ông", "anh", "chị"];
 function isProtectedLine(line: string): boolean {
   const trimmed = line.trim();
 
-  // Numeric headings like 1., 2., 3.2., 3.2.1., 9.2.1.
-  if (/^\d+(?:\.\d+)*\.(?:\s|$)/.test(trimmed)) {
+  if (isLegalStructure(trimmed)) {
     return true;
   }
 
-  // Roman numerals (I., II., III., …)
-  if (/^[IVXLCDM]+\./i.test(trimmed)) {
-    return true;
-  }
-
-  // Common legal section prefixes
-  const prefixes = [
-    "Điều",
-    "Mục",
-    "Phần",
-    "Chương",
-    "Điều luật",
-    "Quyết định",
-    "Án phí",
-    "Nhận định",
-    "Quyết định",
-    "Thứ",
-  ];
-  if (prefixes.some((p) => trimmed.startsWith(p + " "))) {
+  if (isListItem(trimmed)) {
     return true;
   }
 

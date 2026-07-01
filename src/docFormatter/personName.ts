@@ -1,24 +1,36 @@
 /**
- * Person name and Location (địa danh) merging module.
+ * Person name, Location, and Legal Phrase merging module.
  *
  * Implements:
- * - Step 3: Nối tên người (e.g. Nguyễn \n Thị -> Nguyễn Thị, Phạm Xuân \n Trường -> Phạm Xuân Trường)
- * - Step 4: Nối địa danh (e.g. Krông Ana, \n tỉnh Đắk Lắk -> Krông Ana, tỉnh Đắk Lắk)
- * - Step 6: Nối câu có tên người (e.g. bà Nguyễn \n Thị Thảo -> bà Nguyễn Thị Thảo)
+ * - Rule: Smart Name Join (Vietnamese names like Nguyễn \n Thị Thảo, Hồ Thị Yến \n Ni)
+ * - Rule: Smart Location Join (Krông Ana, \n tỉnh Đắk Lắk, thành phố \n Hồ Chí Minh)
+ * - Rule: Smart Legal Phrase Join (tài / sản -> tài sản, quyền / sử dụng -> quyền sử dụng, etc.)
  */
+
 import { isHeading } from "./heading";
+import { isListItem } from "./listItem";
+import { isLegalStructure } from "./legalStructure";
 
-// Vietnamese upper case character range including all accented uppercase letters
-const VN_UPPER_CHAR = "A-ZĐÁÀẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÉÈẺẼẸÊẾỀỂỄỆÍÌỈĨỊÓÒỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÚÙỦŨỤƯỨỪỬỮỰÝỲỶỸỴ";
-const VN_LOWER_CHAR = "a-zđáàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ";
+// Extensible list of legal phrase fragments (split parts)
+export const LEGAL_PHRASE_PARTS = [
+  ["tài", "sản"],
+  ["quyền sở hữu nhà ở và tài", "sản"],
+  ["quyền", "sử dụng"],
+  ["thi hành", "án"],
+  ["pháp", "luật"],
+  ["lãi", "suất"],
+  ["chứng", "nhận"],
+  ["khởi", "kiện"],
+  ["tố", "tụng"],
+  ["nghĩa", "vụ"],
+  ["yêu", "cầu"],
+  ["cơ", "quan"],
+  ["nhà", "nước"],
+  ["thẩm", "quyền"],
+];
 
-// Regex patterns matching capitalized Vietnamese words
-const capWordPat = `[${VN_UPPER_CHAR}][${VN_LOWER_CHAR}]*`;
-
-// Common title prefixes for persons (e.g. "bà", "ông", "anh", "chị")
 const PERSON_TITLES = ["ông", "bà", "anh", "chị", "ông/bà", "bà/ông", "chị/anh", "anh/chị"];
 
-// Common location prefixes
 const LOCATION_PREFIXES = [
   "tỉnh",
   "thành phố",
@@ -39,13 +51,70 @@ const LOCATION_PREFIXES = [
   "quốc gia",
 ];
 
+// Helper to check if a word is capitalized (handles Vietnamese accented chars using Unicode property escapes)
+function isCapitalizedWord(word: string): boolean {
+  return /^\p{Lu}\p{Ll}*$/u.test(word);
+}
+
+function getCapitalizedSuffix(words: string[]): string[] {
+  const suffix: string[] = [];
+  for (let i = words.length - 1; i >= 0; i--) {
+    if (isCapitalizedWord(words[i])) {
+      suffix.unshift(words[i]);
+    } else {
+      break;
+    }
+  }
+  return suffix;
+}
+
+function getCapitalizedPrefix(words: string[]): string[] {
+  const prefix: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    if (isCapitalizedWord(words[i])) {
+      prefix.push(words[i]);
+    } else {
+      break;
+    }
+  }
+  return prefix;
+}
+
+function isAllUpperCase(line: string): boolean {
+  const letters = line.replace(/[^\p{L}]/gu, "");
+  if (!letters) return false;
+  return letters === letters.toUpperCase();
+}
+
 /**
- * Normalizes person names and locations that are split across line breaks.
- *
- * This function processes the text line-by-line and merges them if they meet name/location join criteria.
+ * Perform same-line cleanup of phrases containing slashes: "tài / sản" -> "tài sản"
+ */
+export function cleanSameLinePhrases(text: string): string {
+  let cleaned = text;
+  for (const [a, b] of LEGAL_PHRSE_REPLACEMENTS()) {
+    cleaned = cleaned.replace(new RegExp(`${escapeRegex(a)}\\s*\\/\\s*${escapeRegex(b)}`, "gi"), `${a} ${b}`);
+  }
+  return cleaned;
+}
+
+// Generate replacement pairs dynamically to ensure "quyền sở hữu nhà ở và tài" + "sản" is checked
+function LEGAL_PHRSE_REPLACEMENTS(): [string, string][] {
+  // We want to sort longer parts first to avoid partial matches
+  return [...LEGAL_PHRASE_PARTS].sort((x, y) => y[0].length - x[0].length) as [string, string][];
+}
+
+function escapeRegex(string: string): string {
+  return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, "\\$&");
+}
+
+/**
+ * Normalizes person names, locations, and legal phrases split across line breaks.
  */
 export function mergeNamesAndLocations(text: string): string {
-  const lines = text.split(/\r?\n/);
+  // First, clean same-line patterns like "tài / sản"
+  const preCleanedText = cleanSameLinePhrases(text);
+  
+  const lines = preCleanedText.split(/\r?\n/);
   const result: string[] = [];
 
   let i = 0;
@@ -53,7 +122,7 @@ export function mergeNamesAndLocations(text: string): string {
     let current = lines[i];
     const trimmedCurrent = current.trim();
 
-    if (trimmedCurrent === "" || isHeading(current)) {
+    if (trimmedCurrent === "" || isHeading(current) || isListItem(current) || isLegalStructure(current) || isAllUpperCase(trimmedCurrent)) {
       result.push(current);
       i++;
       continue;
@@ -64,66 +133,97 @@ export function mergeNamesAndLocations(text: string): string {
       const next = lines[i + 1];
       const trimmedNext = next.trim();
 
-      if (trimmedNext === "" || isHeading(next)) {
+      // Safe conditions: do not merge if next line is empty, heading, list item, legal structure, or starts with a list/section number
+      if (
+        trimmedNext === "" ||
+        isHeading(next) ||
+        isListItem(next) ||
+        isLegalStructure(next) ||
+        /^\d+(\.\d+)*\./.test(trimmedNext)
+      ) {
         break;
       }
 
       let shouldMerge = false;
+      let mergedText = "";
 
-      // Rule 3: Person Name - Line ending with capitalized word/name and next starting with capitalized word/name
-      // e.g. "Nguyễn" + "Thị Thảo" or "Phạm Xuân" + "Trường"
-      const currentLastWordMatch = trimmedCurrent.match(new RegExp(`(${capWordPat})$`));
-      const nextFirstWordMatch = trimmedNext.match(new RegExp(`^(${capWordPat})`));
+      // Rule: Smart Legal Phrase Join (Cross-line)
+      for (const [a, b] of LEGAL_PHRSE_REPLACEMENTS()) {
+        const cleanA = a.replace(/\s+/g, "\\s+");
+        const cleanB = b.replace(/\s+/g, "\\s+");
+        // Matches A followed by optional slash and spaces at the end of line
+        const aRegex = new RegExp(`\\b${cleanA}\\s*\\/?\\s*$`, "i");
+        // Matches B preceded by optional slash and spaces at the start of line
+        const bRegex = new RegExp(`^\\s*\\/?\\s*${cleanB}\\b`, "i");
 
-      if (currentLastWordMatch && nextFirstWordMatch) {
-        shouldMerge = true;
+        if (aRegex.test(trimmedCurrent) && bRegex.test(trimmedNext)) {
+          const firstPart = current.trimEnd().replace(aRegex, "");
+          const secondPart = trimmedNext.replace(bRegex, "");
+          mergedText = `${firstPart} ${a} ${b} ${secondPart}`.replace(/\s+/g, " ").trim();
+          shouldMerge = true;
+          break;
+        }
       }
 
-      // Rule 6: Prefix + Person Name
-      // e.g., "bà Nguyễn" + "Thị Thảo"
+      // Rule 3: Smart Name Join (Vietnamese names)
       if (!shouldMerge) {
-        // Rule 6: Prefix + Person Name (e.g., "bà Nguyễn" + "Thị Thảo")
-        const titleRegex = new RegExp(`\\b(${PERSON_TITLES.join("|")})\\s+(${capWordPat})$`, "i");
-        const titleOnlyRegex = new RegExp(`^(${PERSON_TITLES.join("|")})$`, "i");
-        if (titleRegex.test(trimmedCurrent) && nextFirstWordMatch) {
-          shouldMerge = true;
-        } else if (titleOnlyRegex.test(trimmedCurrent) && nextFirstWordMatch) {
-          // Current line is just a title prefix; merge with following name line
+        const currentWords = trimmedCurrent.split(/\s+/);
+        const nextWords = trimmedNext.split(/\s+/);
+
+        const suffix = getCapitalizedSuffix(currentWords);
+        const prefix = getCapitalizedPrefix(nextWords);
+
+        if (suffix.length > 0 && prefix.length > 0) {
+          const potentialName = [...suffix, ...prefix];
+          const nameLength = potentialName.join(" ").length;
+          // A Vietnamese name normally consists of 2 to 5 words, max 6 words. Length should not exceed 40 characters.
+          if (potentialName.length >= 2 && potentialName.length <= 6 && nameLength <= 40) {
+            shouldMerge = true;
+          }
+        }
+      }
+
+      // Rule 6: Prefix (Title) + Person Name
+      if (!shouldMerge) {
+        const titleRegex = new RegExp(`\\b(${PERSON_TITLES.join("|")})\\s*$`, "i");
+        const nextFirstWordMatch = trimmedNext.match(/^\p{L}+/u);
+        if (titleRegex.test(trimmedCurrent) && nextFirstWordMatch && isCapitalizedWord(nextFirstWordMatch[0])) {
           shouldMerge = true;
         }
       }
 
       // Rule 4: Location (Địa danh) - Ending with comma and next starting with location prefix or capitalized word
-      // e.g., "Krông Ana," + "tỉnh Đắk Lắk"
       if (!shouldMerge && trimmedCurrent.endsWith(",")) {
         const wordBeforeComma = trimmedCurrent.slice(0, -1).trim();
-        const lastWordOfCurrentMatch = wordBeforeComma.match(new RegExp(`(${capWordPat})$`));
-
-        if (lastWordOfCurrentMatch) {
-            // Rule 4: Location (Địa danh) – after a comma, merge if next line starts with a location prefix or a capitalized word
-            const firstWordOfNextMatchUnicode = trimmedNext.match(new RegExp(`^([${VN_UPPER_CHAR}${VN_LOWER_CHAR}]+)`));
-            if (firstWordOfNextMatchUnicode) {
-              const nextFirstWord = firstWordOfNextMatchUnicode[1].toLowerCase();
-              const isNextLocPrefix = LOCATION_PREFIXES.includes(nextFirstWord);
-              const isNextCapitalized = new RegExp(`^${capWordPat}`).test(trimmedNext);
-              if (isNextLocPrefix || isNextCapitalized) {
-                shouldMerge = true;
-              }
+        const lastWordMatch = wordBeforeComma.match(/\p{L}+$/u);
+        if (lastWordMatch && isCapitalizedWord(lastWordMatch[0])) {
+          const nextFirstWordMatch = trimmedNext.match(/^\p{L}+/u);
+          if (nextFirstWordMatch) {
+            const nextFirstWord = nextFirstWordMatch[0].toLowerCase();
+            const isNextLocPrefix = LOCATION_PREFIXES.includes(nextFirstWord);
+            const isNextCapitalized = isCapitalizedWord(nextFirstWordMatch[0]);
+            if (isNextLocPrefix || isNextCapitalized) {
+              shouldMerge = true;
             }
+          }
         }
       }
 
-      // Rule 4: Location Prefix + Location Name
-      // e.g., "thành phố" + "Hồ Chí Minh"
+      // Rule 5: Location Prefix + Location Name
       if (!shouldMerge) {
         const locPrefixRegex = new RegExp(`\\b(${LOCATION_PREFIXES.join("|")})$`, "i");
-        if (locPrefixRegex.test(trimmedCurrent) && nextFirstWordMatch) {
+        const nextFirstWordMatch = trimmedNext.match(/^\p{L}+/u);
+        if (locPrefixRegex.test(trimmedCurrent) && nextFirstWordMatch && isCapitalizedWord(nextFirstWordMatch[0])) {
           shouldMerge = true;
         }
       }
 
       if (shouldMerge) {
-        current = current.trimEnd() + " " + trimmedNext;
+        if (mergedText) {
+          current = mergedText;
+        } else {
+          current = current.trimEnd() + " " + trimmedNext;
+        }
         i++;
       } else {
         break;

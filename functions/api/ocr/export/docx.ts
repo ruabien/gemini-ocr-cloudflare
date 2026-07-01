@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
 import { clean as docClean } from "../../../../src/docFormatter";
 import { isHeading } from "../../../../src/docFormatter/heading";
+import { getParagraphConfig } from "../../../../src/docFormatter/docxStyles";
 import {
   normalizeTextForDocx,
   isQuocHieuTieuNgu,
@@ -43,55 +44,16 @@ export async function onRequestPost({ request }: { request: any }) {
       ];
     } else {
       const normalizedText = docClean(cleanedContent);
-
-      // Split text into lines/paragraphs
       const lines = normalizedText.split(/\r?\n/);
-
       paragraphs = lines.map((line: string) => {
-        const trimmed = line.trim();
-        const isQuocHieu = isQuocHieuTieuNgu(line);
-        const isCoQuan = isCoQuanBanHanh(line);
-        const isTieuDe = isTieuDeVanBan(line);
-        const isSo = isSoHieu(line);
-        const isDanhSach = isMucTieuMuc(line);
-        const isKy = isKyTen(line);
-        const isDocxHeading = isHeading(line);
-
-        // Alignment: center for titles, otherwise justified
-        const alignment = (isQuocHieu || isCoQuan || isTieuDe || isSo)
-          ? AlignmentType.CENTER
-          : AlignmentType.JUSTIFIED;
-
-        // First‑line indent is omitted for headings, list items, signatures, and empty lines
-        const needsIndent = !(
-          isQuocHieu ||
-          isCoQuan ||
-          isTieuDe ||
-          isSo ||
-          isDanhSach ||
-          isKy ||
-          isDocxHeading ||
-          trimmed.length === 0
-        );
-        const indent = needsIndent ? { firstLine: 720 } : undefined;
-
+        const config = getParagraphConfig(line, mode);
         return new Paragraph({
-          alignment,
-          heading: isDocxHeading ? HeadingLevel.HEADING_3 : undefined,
-          ...(indent ? { indent } : {}),
-          spacing: {
-            before: 120, // 6pt = 120 twentieths of a point (dxa)
-            after: 120,  // 6pt = 120 twentieths of a point (dxa)
-            line: 240,   // Single line spacing (12pt * 20)
-          },
-          children: [
-            new TextRun({
-              text: line,
-              font: "Times New Roman",
-              size: 28, // 14pt = 28 half-points
-              color: "000000", // Black color
-            }),
-          ],
+          alignment: config.alignment === 1 ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+          indent: config.indent,
+          spacing: config.spacing,
+          heading: config.heading === 3 ? HeadingLevel.HEADING_3 : undefined,
+          keepNext: (config as any).keepNext,
+          children: config.children.map((c) => new TextRun(c)),
         });
       });
     }

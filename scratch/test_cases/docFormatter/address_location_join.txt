@@ -1,0 +1,16 @@
+=== INPUT ===
+Địa chỉ tại huyện
+Krông Ana,
+tỉnh Đắk Lắk.
+
+Cơ quan có trụ sở tại thành phố
+Hồ Chí Minh.
+
+Ủy ban nhân dân huyện
+Krông Ana đã ban hành quyết định.
+=== EXPECTED ===
+Địa chỉ tại huyện Krông Ana, tỉnh Đắk Lắk.
+
+Cơ quan có trụ sở tại thành phố Hồ Chí Minh.
+
+Ủy ban nhân dân huyện Krông Ana đã ban hành quyết định.

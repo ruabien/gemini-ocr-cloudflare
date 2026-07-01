@@ -1,0 +1,12 @@
+=== INPUT ===
+Đây là tài / sản của ông A.
+Quyền / sử dụng đất và quyền sở hữu nhà ở và tài / sản khác gắn liền với đất.
+Cơ quan thi hành / án dân sự có thẩm / quyền.
+Cần thực hiện đúng theo quy định của pháp / luật về lãi / suất và nghĩa / vụ khởi / kiện.
+Theo yêu / cầu của cơ / quan nhà / nước.
+=== EXPECTED ===
+Đây là tài sản của ông A.
+Quyền sử dụng đất và quyền sở hữu nhà ở và tài sản khác gắn liền với đất.
+Cơ quan thi hành án dân sự có thẩm quyền.
+Cần thực hiện đúng theo quy định của pháp luật về lãi suất và nghĩa vụ khởi kiện.
+Theo yêu cầu của cơ quan nhà nước.
