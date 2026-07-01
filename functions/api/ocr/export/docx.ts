@@ -6,68 +6,93 @@ import {
   isTieuDeVanBan,
   isSoHieu,
   isMucTieuMuc,
-  isKyTen
+  isKyTen,
+  flattenTextForManualLineBreak
 } from "../../../../src/utils/docxTextNormalizer";
 
 export async function onRequestPost({ request }: { request: any }) {
   try {
-    const { text, fileName, mergeBrokenLines } = await request.json();
+    const { text, fileName, mergeBrokenLines, mode } = await request.json();
     const contentText = text || "";
 
-    // Mặc định KHÔNG gộp dòng, trừ khi mergeBrokenLines = true
-    const options = {
-      mergeBrokenLines: !!mergeBrokenLines,
-      preserveLegalStructure: true
-    };
-    const normalizedText = normalizeTextForDocx(contentText, options);
+    let paragraphs: Paragraph[];
 
-    // Split text into lines/paragraphs
-    const lines = normalizedText.split(/\r?\n/);
+    if (mode === "flatten_center") {
+      const flattened = flattenTextForManualLineBreak(contentText);
+      paragraphs = [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            before: 120, // 6pt = 120 twentieths of a point (dxa)
+            after: 120,  // 6pt = 120 twentieths of a point (dxa)
+            line: 240,   // Single line spacing (12pt * 20)
+          },
+          children: [
+            new TextRun({
+              text: flattened,
+              font: "Times New Roman",
+              size: 28, // 14pt = 28 half-points
+              color: "000000",
+            }),
+          ],
+        }),
+      ];
+    } else {
+      // Mặc định KHÔNG gộp dòng, trừ khi mergeBrokenLines = true
+      const options = {
+        mergeBrokenLines: !!mergeBrokenLines,
+        preserveLegalStructure: true
+      };
+      const normalizedText = normalizeTextForDocx(contentText, options);
 
-    const paragraphs = lines.map((line: string) => {
-      const trimmed = line.trim();
-      const isQuocHieu = isQuocHieuTieuNgu(line);
-      const isCoQuan = isCoQuanBanHanh(line);
-      const isTieuDe = isTieuDeVanBan(line);
-      const isSo = isSoHieu(line);
-      const isDanhSach = isMucTieuMuc(line);
-      const isKy = isKyTen(line);
+      // Split text into lines/paragraphs
+      const lines = normalizedText.split(/\r?\n/);
 
-      // Alignment: center for headings, otherwise justified
-      const alignment = (isQuocHieu || isCoQuan || isTieuDe || isSo)
-        ? AlignmentType.CENTER
-        : AlignmentType.JUSTIFIED;
+      paragraphs = lines.map((line: string) => {
+        const trimmed = line.trim();
+        const isQuocHieu = isQuocHieuTieuNgu(line);
+        const isCoQuan = isCoQuanBanHanh(line);
+        const isTieuDe = isTieuDeVanBan(line);
+        const isSo = isSoHieu(line);
+        const isDanhSach = isMucTieuMuc(line);
+        const isKy = isKyTen(line);
 
-      // First‑line indent is omitted for headings, list items, signatures, and empty lines
-      const needsIndent = !(
-        isQuocHieu ||
-        isCoQuan ||
-        isTieuDe ||
-        isSo ||
-        isDanhSach ||
-        isKy ||
-        trimmed.length === 0
-      );
-      const indent = needsIndent ? { firstLine: 720 } : undefined;
+        // Alignment: center for headings, otherwise justified
+        const alignment = (isQuocHieu || isCoQuan || isTieuDe || isSo)
+          ? AlignmentType.CENTER
+          : AlignmentType.JUSTIFIED;
 
-      return new Paragraph({
-        alignment,
-        ...(indent ? { indent } : {}),
-        spacing: {
-          before: 120, // 6pt = 120 twentieths of a point (dxa)
-          after: 120,  // 6pt = 120 twentieths of a point (dxa)
-          line: 240,   // Single line spacing (12pt * 20)
-        },
-        children: [
-          new TextRun({
-            text: line,
-            font: "Times New Roman",
-            size: 28, // 14pt = 28 half-points
-            color: "000000", // Black color
-          }),
-        ],
+        // First‑line indent is omitted for headings, list items, signatures, and empty lines
+        const needsIndent = !(
+          isQuocHieu ||
+          isCoQuan ||
+          isTieuDe ||
+          isSo ||
+          isDanhSach ||
+          isKy ||
+          trimmed.length === 0
+        );
+        const indent = needsIndent ? { firstLine: 720 } : undefined;
+
+        return new Paragraph({
+          alignment,
+          ...(indent ? { indent } : {}),
+          spacing: {
+            before: 120, // 6pt = 120 twentieths of a point (dxa)
+            after: 120,  // 6pt = 120 twentieths of a point (dxa)
+            line: 240,   // Single line spacing (12pt * 20)
+          },
+          children: [
+            new TextRun({
+              text: line,
+              font: "Times New Roman",
+              size: 28, // 14pt = 28 half-points
+              color: "000000", // Black color
+            }),
+          ],
+        });
       });
-    });
+    }
 
     const doc = new Document({
       defaultTabStop: 720, // Default tab stop: 1.27 cm (720 dxa)
@@ -80,15 +105,19 @@ export async function onRequestPost({ request }: { request: any }) {
               color: "000000",
             },
             paragraph: {
-              alignment: AlignmentType.JUSTIFIED,
+              alignment: mode === "flatten_center" ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
               spacing: {
                 before: 120,
                 after: 120,
                 line: 240,
               },
-              indent: {
-                firstLine: 720,
-              },
+              ...(mode === "flatten_center"
+                ? {}
+                : {
+                    indent: {
+                      firstLine: 720,
+                    },
+                  }),
             },
           },
         },
@@ -117,12 +146,13 @@ export async function onRequestPost({ request }: { request: any }) {
     const arrayBuffer = await Packer.toArrayBuffer(doc);
     const docBuffer = new Uint8Array(arrayBuffer);
     const safeFileName = fileName ? fileName.replace(/\.[^/.]+$/, "") : "Van_Ban_OCR";
+    const suffix = mode === "flatten_center" ? "LienTuc" : "ND30";
 
     return new Response(docBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="${safeFileName}_ND30.docx"`,
+        "Content-Disposition": `attachment; filename="${safeFileName}_${suffix}.docx"`,
       },
     });
   } catch (error: any) {

@@ -264,3 +264,15 @@ export function isSoHieu(line: string): boolean {
   // Look for "SỐ" followed by optional punctuation and then a mix of numbers/letters/slash/dash
   return /^SỐ[:\s]*[0-9A-Z\/\-\.\s]+$/i.test(txt);
 }
+
+export function flattenTextForManualLineBreak(input: string): string {
+  return input
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}

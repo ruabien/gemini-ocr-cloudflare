@@ -1,4 +1,4 @@
-import { normalizeTextForDocx } from "../src/utils/docxTextNormalizer";
+import { normalizeTextForDocx, flattenTextForManualLineBreak } from "../src/utils/docxTextNormalizer";
 
 const testCases = [
   {
@@ -44,6 +44,20 @@ for (const tc of testCases) {
     console.error(result);
     failed = true;
   }
+}
+
+const flattenResult = flattenTextForManualLineBreak(`Tiến hành hòa giải để
+các đương sự thỏa thuận với
+nhau về việc   giải quyết  `);
+
+const expectedFlatten = "Tiến hành hòa giải để các đương sự thỏa thuận với nhau về việc giải quyết";
+if (flattenResult === expectedFlatten) {
+  console.log("✅ Test 5: flattenTextForManualLineBreak PASSED");
+} else {
+  console.error("❌ Test 5: flattenTextForManualLineBreak FAILED");
+  console.error(`Expected: "${expectedFlatten}"`);
+  console.error(`Actual:   "${flattenResult}"`);
+  failed = true;
 }
 
 if (failed) {

@@ -160,6 +160,7 @@ export default function OcrEditor({
     phones: number;
   } | null>(null);
   const [mergeBrokenLines, setMergeBrokenLines] = useState(false);
+  const [exportMode, setExportMode] = useState<"nd30" | "flatten_center">("nd30");
 
   // PDF / image preview
   useEffect(() => {
@@ -349,14 +350,16 @@ useEffect(() => {
         body: JSON.stringify({
           text: sanitizeText(editorText),
           fileName: document.name,
-          mergeBrokenLines
+          mergeBrokenLines,
+          mode: exportMode
         })
       });
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = window.document.createElement("a");
       link.href = downloadUrl;
-      link.download = `${document.name.replace(/\.[^/.]+$/, "")}_ND30.docx`;
+      const suffix = exportMode === "flatten_center" ? "LienTuc" : "ND30";
+      link.download = `${document.name.replace(/\.[^/.]+$/, "")}_${suffix}.docx`;
       window.document.body.appendChild(link);
       link.click();
       link.remove();
@@ -482,23 +485,41 @@ useEffect(() => {
             <span>Xuất bản thô (.TXT)</span>
           </button>
 
-          <div className="flex items-center space-x-2 mr-2">
-            <input
-              type="checkbox"
-              id="mergeBrokenLines"
-              checked={mergeBrokenLines}
-              onChange={(e) => setMergeBrokenLines(e.target.checked)}
-              className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded cursor-pointer"
-              title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
-            />
-            <label
-              htmlFor="mergeBrokenLines"
-              className="text-[11px] font-bold text-slate-600 cursor-pointer"
-              title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
+          <div className="flex items-center space-x-2 mr-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+            <select
+              value={exportMode}
+              onChange={(e) => setExportMode(e.target.value as "nd30" | "flatten_center")}
+              className="text-[11px] font-bold text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none m-0 p-0 pr-4"
+              title={
+                exportMode === "flatten_center"
+                  ? "Gộp toàn bộ nội dung OCR thành một đoạn duy nhất. Phù hợp khi bản OCR bị ngắt dòng sai; người dùng có thể tự nhấn Enter tại vị trí mong muốn."
+                  : "Xuất văn bản theo chuẩn thể thức Nghị định 30/2020/NĐ-CP"
+              }
             >
-              Gộp dòng OCR bị ngắt giữa câu
-            </label>
+              <option value="nd30">Chuẩn Nghị định 30</option>
+              <option value="flatten_center">Xuất một dòng liên tục để tự xuống dòng thủ công</option>
+            </select>
           </div>
+
+          {exportMode === "nd30" && (
+            <div className="flex items-center space-x-2 mr-2">
+              <input
+                type="checkbox"
+                id="mergeBrokenLines"
+                checked={mergeBrokenLines}
+                onChange={(e) => setMergeBrokenLines(e.target.checked)}
+                className="h-4 w-4 text-red-600 focus:ring-red-500 border-slate-300 rounded cursor-pointer"
+                title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
+              />
+              <label
+                htmlFor="mergeBrokenLines"
+                className="text-[11px] font-bold text-slate-600 cursor-pointer"
+                title="Giúp file Word liền mạch hơn, giảm thời gian sửa thủ công sau OCR."
+              >
+                Gộp dòng bị ngắt
+              </label>
+            </div>
+          )}
 
           <button
             onClick={handleExportDocx}
