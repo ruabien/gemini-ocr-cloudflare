@@ -19,6 +19,12 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  const navigateTo = (view: string) => {
+    setActiveTab(view);
+    setIsMobileMenuOpen(false);
+  };
 
   // Lắng nghe click outside dropdown & mobile menu & ESC key
   useEffect(() => {
@@ -26,7 +32,11 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node) &&
+        (!drawerRef.current || !drawerRef.current.contains(event.target as Node))
+      ) {
         setIsMobileMenuOpen(false);
       }
     };
@@ -231,105 +241,96 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Drawer */}
       {isMobileMenuOpen && (
-<div className="md:hidden absolute top-16 left-0 w-full bg-slate-900 border-b border-rose-900/10 shadow-lg py-4 px-4 space-y-2.5 z-[9999] pointer-events-auto flex flex-col animate-fade-in">
+        <div
+          ref={drawerRef}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              console.info("[MOBILE NAV]", "close");
+              setIsMobileMenuOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-[99999] bg-slate-950/95 md:hidden pointer-events-auto flex flex-col justify-center items-center p-6"
+        >
+          {/* Nút đóng X ở góc phải */}
           <button
+            type="button"
             onClick={() => {
-              setActiveTab("dashboard");
+              console.info("[MOBILE NAV]", "close");
               setIsMobileMenuOpen(false);
             }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-3 transition-all ${
-              activeTab === "dashboard"
-                ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
-                : "text-slate-300 hover:bg-slate-800 hover:text-white"
-            }`}
+            className="absolute top-4 right-4 p-3 text-slate-400 hover:text-white cursor-pointer touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-slate-900 transition-colors"
+            aria-label="Đóng menu"
           >
-            <LayoutDashboard className="h-4.5 w-4.5" />
-            <span>Tổng quan</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              setActiveTab("scanner");
-              setIsMobileMenuOpen(false);
-            }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-3 transition-all ${
-              activeTab === "scanner" || activeTab === "editor"
-                ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
-                : "text-slate-300 hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <ScanLine className="h-4.5 w-4.5" />
-            <span>Phân tích OCR</span>
+            <X className="h-8 w-8" />
           </button>
 
-          <button
-            onClick={() => {
-              setActiveTab("upgrade");
-              setIsMobileMenuOpen(false);
-            }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-3 transition-all ${
-              activeTab === "upgrade"
-                ? "bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20"
-                : "text-amber-300 hover:bg-slate-800/60 hover:text-amber-200"
-            }`}
-          >
-            <Sparkles className="h-4.5 w-4.5 text-amber-500 animate-pulse" />
-            <span>Nâng cấp PRO</span>
-          </button>
+          {/* Các menu items */}
+          <div className="w-full max-w-xs space-y-6 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => {
+                console.info("[MOBILE NAV]", "dashboard");
+                navigateTo("dashboard");
+              }}
+              className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
+            >
+              <LayoutDashboard className="h-5 w-5 text-yellow-400" />
+              <span>Tổng quan</span>
+            </button>
 
-          <button
-            onClick={() => {
-              setActiveTab("settings");
-              setIsMobileMenuOpen(false);
-            }}
-            className={`px-4 py-2.5 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-3 transition-all ${
-              activeTab === "settings"
-                ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
-                : "text-slate-300 hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <Settings className="h-4.5 w-4.5" />
-            <span>Cài đặt</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                console.info("[MOBILE NAV]", "ocr");
+                navigateTo("scanner");
+              }}
+              className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
+            >
+              <ScanLine className="h-5 w-5 text-yellow-400" />
+              <span>Phân tích OCR</span>
+            </button>
 
-          {/* Hỗ trợ thông tin tài khoản nếu đã đăng nhập và nút đăng xuất */}
-          {user && (
-            <div className="border-t border-slate-850 pt-2.5 mt-1 space-y-2.5">
-              <div className="px-4 py-2 bg-slate-850 rounded-lg flex items-center justify-between">
-                <div className="flex items-center space-x-2.5 truncate">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="Avatar" className="h-7 w-7 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-7 w-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-yellow-400">
-                      {(user.displayName || user.email || "A").charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="text-xs font-bold text-slate-200 truncate">
-                    {user.displayName || user.email?.split("@")[0]}
-                  </span>
-                </div>
-                {user.plan === "pro" ? (
-                  <span className="px-1.5 py-0.5 rounded text-[8px] tracking-wider uppercase font-black bg-amber-500/20 text-amber-400 border border-amber-500/35">
-                    PRO
-                  </span>
-                ) : (
-                  <span className="px-1.5 py-0.5 rounded text-[8px] tracking-wider uppercase font-black bg-slate-700 text-slate-400 border border-slate-600">
-                    FREE
-                  </span>
-                )}
-              </div>
+            <button
+              type="button"
+              onClick={() => {
+                console.info("[MOBILE NAV]", "upgrade");
+                navigateTo("upgrade");
+              }}
+              className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-amber-500/20 transition-colors"
+            >
+              <Sparkles className="h-5 w-5 text-amber-550 text-amber-500 animate-pulse" />
+              <span>Nâng cấp PRO</span>
+            </button>
 
-              <button 
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-950/20 flex items-center space-x-3 transition-colors"
+            <button
+              type="button"
+              onClick={() => {
+                console.info("[MOBILE NAV]", "settings");
+                navigateTo("settings");
+              }}
+              className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
+            >
+              <Settings className="h-5 w-5 text-yellow-400" />
+              <span>Cài đặt</span>
+            </button>
+
+            {/* Nút đăng xuất nếu user đã login */}
+            {user && (
+              <button
+                type="button"
+                onClick={() => {
+                  console.info("[MOBILE NAV]", "logout");
+                  handleLogout();
+                }}
+                className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-rose-950/20 hover:bg-rose-900/30 text-rose-400 rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-rose-500/20 transition-colors"
               >
-                <LogOut className="h-4.5 w-4.5 text-rose-500" />
+                <LogOut className="h-5 w-5 text-rose-500" />
                 <span>Đăng xuất</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </header>
