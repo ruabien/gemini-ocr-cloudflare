@@ -60,6 +60,47 @@ if (flattenResult === expectedFlatten) {
   failed = true;
 }
 
+// Test page break marker removal logic
+const testPageBreakText = `Đoạn 1
+
+--- [TRANG KẾ TIẾP] ---
+
+Đoạn 2`;
+
+const expectedPageBreakOutput = `Đoạn 1
+
+Đoạn 2`;
+
+import { removePageBreakMarkers as removePageBreakMarkersTS } from "../src/utils/docxTextNormalizer";
+
+const pbResult = removePageBreakMarkersTS(testPageBreakText);
+if (pbResult.trim() === expectedPageBreakOutput.trim()) {
+  console.log("✅ Test 6: removePageBreakMarkers PASSED");
+} else {
+  console.error("❌ Test 6: removePageBreakMarkers FAILED");
+  console.error(`Expected: "${expectedPageBreakOutput}"`);
+  console.error(`Actual:   "${pbResult}"`);
+  failed = true;
+}
+
+// Test "Một dòng" mode with page break markers
+const testOneLineText = `Đoạn 1
+
+--- [TRANG KẾ TIẾP] ---
+
+Đoạn 2`;
+
+const expectedOneLineOutput = "Đoạn 1 Đoạn 2";
+const oneLineResult = flattenTextForManualLineBreak(testOneLineText);
+if (oneLineResult === expectedOneLineOutput) {
+  console.log("✅ Test 7: One Line Mode with Page Break Markers PASSED");
+} else {
+  console.error("❌ Test 7: One Line Mode with Page Break Markers FAILED");
+  console.error(`Expected: "${expectedOneLineOutput}"`);
+  console.error(`Actual:   "${oneLineResult}"`);
+  failed = true;
+}
+
 if (failed) {
   process.exit(1);
 } else {

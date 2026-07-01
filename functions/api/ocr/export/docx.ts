@@ -7,21 +7,23 @@ import {
   isSoHieu,
   isMucTieuMuc,
   isKyTen,
-  flattenTextForManualLineBreak
+  flattenTextForManualLineBreak,
+  removePageBreakMarkers
 } from "../../../../src/utils/docxTextNormalizer";
 
 export async function onRequestPost({ request }: { request: any }) {
   try {
     const { text, fileName, mergeBrokenLines, mode } = await request.json();
-    const contentText = text || "";
+const contentText = text || "";
+const cleanedContent = removePageBreakMarkers(contentText);
 
     let paragraphs: Paragraph[];
 
-    if (mode === "flatten_center") {
-      const flattened = flattenTextForManualLineBreak(contentText);
+if (mode === "flatten_center") {
+const flattened = flattenTextForManualLineBreak(cleanedContent);
       paragraphs = [
         new Paragraph({
-          alignment: AlignmentType.CENTER,
+alignment: AlignmentType.JUSTIFIED,
           spacing: {
             before: 120, // 6pt = 120 twentieths of a point (dxa)
             after: 120,  // 6pt = 120 twentieths of a point (dxa)
@@ -43,7 +45,7 @@ export async function onRequestPost({ request }: { request: any }) {
         mergeBrokenLines: !!mergeBrokenLines,
         preserveLegalStructure: true
       };
-      const normalizedText = normalizeTextForDocx(contentText, options);
+const normalizedText = normalizeTextForDocx(cleanedContent, options);
 
       // Split text into lines/paragraphs
       const lines = normalizedText.split(/\r?\n/);

@@ -265,14 +265,17 @@ export function isSoHieu(line: string): boolean {
   return /^SỐ[:\s]*[0-9A-Z\/\-\.\s]+$/i.test(txt);
 }
 
+export function removePageBreakMarkers(text: string): string {
+  if (!text) return "";
+  let cleaned = text.replace(/^\s*---\s*\[TRANG KẾ TIẾP\]\s*---\s*$/gm, '');
+  cleaned = cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n');
+  return cleaned;
+}
+
 export function flattenTextForManualLineBreak(input: string): string {
-  return input
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean)
-    .join(" ")
+  let cleaned = removePageBreakMarkers(input);
+  return cleaned
+    .replace(/\r?\n/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

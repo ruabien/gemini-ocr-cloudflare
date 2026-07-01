@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
+import { removePageBreakMarkers } from "./docxTextNormalizer";
 import * as XLSX from 'xlsx';
 
 /**
@@ -30,7 +31,7 @@ export function exportTxt(text, filename) {
   if (!text) {
     throw new Error("Không có nội dung để xuất file.");
   }
-  const cleanText = text
+  const cleanText = removePageBreakMarkers(text)
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/\*\*/g, '')
     .replace(/\*/g, '')
