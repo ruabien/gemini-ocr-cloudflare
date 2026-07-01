@@ -46,14 +46,32 @@ function computeStats(text: string): ValidationResult {
  * unit normalisation such as “m2” → “m²”).
  */
 export function validateProcessedText(processed: string, original: string): boolean {
+  if (processed.trim().length === 0 || original.trim().length === 0) return false;
+
   // Normalise by removing all whitespace
   const norm = (s: string) => s.replace(/\s+/g, "");
   const procNorm = norm(processed);
   const origNorm = norm(original);
   if (procNorm.length === 0 || origNorm.length === 0) return false;
 
-  // Allow tiny differences due to unit normalisation (e.g., m2 → m²)
-  const tolerance = 0.02; // 2 %
+  // 1. Character count validation (allow 2% tolerance for unit normalisation etc.)
+  const tolerance = 0.02; // 2%
   const diff = Math.abs(procNorm.length - origNorm.length) / Math.max(1, origNorm.length);
-  return diff <= tolerance;
+  if (diff > tolerance) return false;
+
+  // 2. Strict check for digits (dates, money, codes, GCN, etc.)
+  // We exclude the '2' and '3' from 'm2'/'m3' conversions because they become '²'/'³'
+  const removeAreaUnits = (s: string) => s
+    .replace(/m2/gi, "m")
+    .replace(/m3/gi, "m")
+    .replace(/m²/gi, "m")
+    .replace(/m³/gi, "m");
+  const origDigits = (removeAreaUnits(norm(original)).match(/\d/g) || []).join("");
+  const procDigits = (removeAreaUnits(norm(processed)).match(/\d/g) || []).join("");
+
+  if (origDigits !== procDigits) {
+    return false; // Changed important numbers (money, dates, IDs, etc.)
+  }
+
+  return true;
 }

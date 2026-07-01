@@ -92,7 +92,8 @@ const files = [
   "mediation.txt",
   "administrative_notice.txt",
   "indictment.txt",
-  "judgment.txt"
+  "judgment.txt",
+  "docFormatter/real_judgment_excerpt.txt"
 ];
 
 files.forEach(file => {

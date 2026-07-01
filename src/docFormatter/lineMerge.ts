@@ -1,50 +1,180 @@
 /**
- * Smart line merging for OCR’ed Vietnamese legal text.
+ * DOCX AI Clean – Smart line merging.
  *
- * Implements the core rule set described in the task:
- *   - If the current line does NOT end with a terminal punctuation mark
- *     (., :, ;, !, ?, “, ”) and the next line is NOT a heading/list/legal label,
- *     merge the two lines with a single space.
- *   - Preserve empty lines (paragraph breaks) and short lines (≤ 25 characters)
- *     to avoid over‑merging.
+ * This module implements the line‑merging logic required for the
+ * DOCX Pro pipeline. It follows the rules described in the task:
  *
- * The implementation mirrors the logic already present in `docxTextNormalizer`
- * but is exposed as a separate reusable function.
+ * 1. Merge a line that ends with “:” with the next non‑empty line
+ *    if that line starts with a digit (e.g. monetary values, dates,
+ *    quantities). Blank lines between them are ignored.
+ *
+ * 2. If a line ends with a connector word, always merge it with the
+ *    following line. The connector list contains the words supplied
+ *    in the specification (e.g. “và”, “của”, “với”, …).
+ *
+ * 3. Merge when the next line starts with a lowercase letter.
+ *
+ * 4. Merge when the next line starts with a person title
+ *    (“bà”, “ông”, “anh”, “chị”) *and* the current line ends with one
+ *    of the specific connectors “và”, “của”, “với”, “cho”.
+ *
+ * 5. Default merge behaviour: merge unless the current line ends with
+ *    terminal punctuation (.,!?,; ) or a closing quote.
+ *
+ * 6. Heading/section lines (e.g. “1.”, “3.2.1.”, “II.”) are protected
+ *    and must never be merged.
+ *
+ * The implementation follows the same public API as the original
+ * version (`export function mergeLines(rawText: string): string`).
  */
-import {
-  isQuocHieuTieuNgu,
-  isCoQuanBanHanh,
-  isTieuDeVanBan,
-  isSoHieu,
-  isMucTieuMuc,
-  isKyTen,
-  isAllUpper,
-} from "../utils/docxTextNormalizer";
-import { isHeading } from "./heading";
+
+const CONNECTOR_WORDS = [
+  "và",
+  "của",
+  "với",
+  "theo",
+  "cho",
+  "tại",
+  "là",
+  "gồm",
+  "về",
+  "trong",
+  "đó",
+  "đối",
+  "với",
+  "quyền",
+  "tài",
+  "sử",
+  "dụng",
+  "sở",
+  "hữu",
+  "đăng",
+  "ký",
+  "chuyển",
+  "quyền",
+  "thi",
+  "hành",
+  "án",
+  "lãi",
+  "suất",
+  "pháp",
+  "quy",
+];
+
+const SPECIFIC_CONNECTORS_FOR_PERSON = ["và", "của", "với", "cho"];
+const PERSON_TITLES = ["bà", "ông", "anh", "chị"];
 
 /**
- * Determines whether a line should be treated as a heading or list item that
- * must not be merged with the following line.
+ * Determine whether a line should be protected from merging.
+ * Protected lines are numeric headings such as “1.”, “3.2.”,
+ * “3.2.1.” or Roman numeral headings.
  */
 function isProtectedLine(line: string): boolean {
-  return (
-    isHeading(line) ||
-    isQuocHieuTieuNgu(line) ||
-    isCoQuanBanHanh(line) ||
-    isTieuDeVanBan(line) ||
-    isSoHieu(line) ||
-    isMucTieuMuc(line) ||
-    isKyTen(line) ||
-    isAllUpper(line)
+  const trimmed = line.trim();
+
+  // Numeric headings like 1., 2., 3.2., 3.2.1., 9.2.1.
+  if (/^\d+(?:\.\d+)*\.(?:\s|$)/.test(trimmed)) {
+    return true;
+  }
+
+  // Roman numerals (I., II., III., …)
+  if (/^[IVXLCDM]+\./i.test(trimmed)) {
+    return true;
+  }
+
+  // Common legal section prefixes
+  const prefixes = [
+    "Điều",
+    "Mục",
+    "Phần",
+    "Chương",
+    "Điều luật",
+    "Quyết định",
+    "Án phí",
+    "Nhận định",
+    "Quyết định",
+    "Thứ",
+  ];
+  if (prefixes.some((p) => trimmed.startsWith(p + " "))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Returns true if the supplied line ends with any of the connector words.
+ */
+function endsWithConnector(line: string): boolean {
+  return CONNECTOR_WORDS.some(
+    (w) => line.endsWith(` ${w}`) || line.endsWith(`${w}`)
   );
 }
 
 /**
- * Returns true if the line ends with a terminal punctuation mark.
- * The set includes typical Vietnamese punctuation and closing quotes.
+ * Returns true if the supplied line ends with one of the specific connectors
+ * used for the “person‑title” rule.
  */
-function endsWithPunctuation(line: string): boolean {
-  return /[.:;!?)]$|[”]$/.test(line.trim());
+function endsWithSpecificConnector(line: string): boolean {
+  return SPECIFIC_CONNECTORS_FOR_PERSON.some(
+    (w) => line.endsWith(` ${w}`) || line.endsWith(`${w}`)
+  );
+}
+
+/**
+ * Returns true if the supplied line starts with a lowercase Vietnamese letter.
+ */
+function startsWithLowercase(line: string): boolean {
+  const first = line[0];
+  return first === first.toLocaleLowerCase() && first !== first.toLocaleUpperCase();
+}
+
+/**
+ * Returns true if the supplied line starts with a person title.
+ */
+function startsWithPersonTitle(line: string): boolean {
+  const lower = line.toLocaleLowerCase();
+  return PERSON_TITLES.some((title) => lower.startsWith(title + " "));
+}
+
+/**
+ * Core decision function – decides if two lines should be merged.
+ */
+function shouldMerge(current: string, next: string): boolean {
+  const cur = current.trim();
+  const nxt = next.trim();
+
+  if (isProtectedLine(next)) {
+    return false;
+  }
+
+  // 1. Current ends with “:” and next starts with a digit
+  if (cur.endsWith(":") && /^\d/.test(nxt)) {
+    return true;
+  }
+
+  // 2. Current ends with a generic connector word
+  if (endsWithConnector(cur)) {
+    return true;
+  }
+
+  // 3. Next line starts with a lowercase letter
+  if (startsWithLowercase(nxt)) {
+    return true;
+  }
+
+  // 4. Person‑title rule
+  if (startsWithPersonTitle(nxt) && endsWithSpecificConnector(cur)) {
+    return true;
+  }
+
+  // 5. Default – merge unless current ends with terminal punctuation
+  const endsWithTerminal = /[.!?;)]$|[”"]$/.test(cur);
+  if (!endsWithTerminal) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -70,43 +200,40 @@ export function mergeLines(rawText: string): string {
       continue;
     }
 
-    // Short line check removed – allow merging of short lines
-
-    // If the current line is protected (heading, list, legal label), keep it separate
-    if (isProtectedLine(line)) {
-      result.push(line);
-      i++;
-      continue;
-    }
-
-    // If the current line already ends with punctuation, do not merge further
-    if (endsWithPunctuation(line)) {
-      result.push(line);
-      i++;
-      continue;
-    }
-
     // Attempt to merge subsequent lines while conditions allow it
     while (i + 1 < rawLines.length) {
-      const next = rawLines[i + 1];
-      const nextTrim = next.trim();
+      let nextIndex = i + 1;
+      let next = rawLines[nextIndex];
+      let nextTrim = next.trim();
+
+      // Skip a blank line if current ends with “:” and the line after the blank
+      // starts with a digit (e.g. monetary amounts)
+      if (nextTrim === "" && line.trim().endsWith(":")) {
+        const afterNext = rawLines[i + 2];
+        if (afterNext && /^\d/.test(afterNext.trim())) {
+          nextIndex = i + 2;
+          next = afterNext;
+          nextTrim = next.trim();
+        }
+      }
 
       // Stop on empty line – paragraph break
       if (nextTrim === "") break;
 
-      // Do not merge if next line is protected
+      // Do not merge if next line is protected (heading/section)
       if (isProtectedLine(next)) break;
 
-      // Stop if next line ends with punctuation – it likely starts a new sentence
-      if (endsWithPunctuation(next)) break;
-
-      // Merge the next line
-      line = line.replace(/\s+$/g, "") + " " + nextTrim;
-      i++; // advance pointer to the merged line
+      // Merge according to the decision function
+      if (shouldMerge(line, next)) {
+        line = line.replace(/\s+$/g, "") + " " + nextTrim;
+        i = nextIndex; // advance pointer to the merged line
+      } else {
+        break;
+      }
     }
 
     result.push(line);
-    i++; // move to the line after the last merged one
+    i++;
   }
 
   return result.join("\n");
