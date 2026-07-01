@@ -233,7 +233,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 w-full bg-slate-900 border-b border-rose-900/10 shadow-lg py-4 px-4 space-y-2.5 z-50 flex flex-col animate-fade-in">
+<div className="md:hidden absolute top-16 left-0 w-full bg-slate-900 border-b border-rose-900/10 shadow-lg py-4 px-4 space-y-2.5 z-[9999] pointer-events-auto flex flex-col animate-fade-in">
           <button
             onClick={() => {
               setActiveTab("dashboard");
