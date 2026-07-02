@@ -6,7 +6,7 @@ async function compressForOcrSpace(file) {
     return file;
   }
   
-  console.log(`[OCR.space] File size ${file.size} exceeds 5MB limit, compressing...`);
+  if (import.meta.env.DEV) console.log(`[OCR.space] File size ${file.size} exceeds 5MB limit, compressing...`);
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
@@ -81,7 +81,7 @@ export const ocrWithOcrSpace = async (fileOrBlob, options = {}) => {
   }
 
   // Log dev mode chỉ hiển thị thông tin language, không log API key hay nội dung tài liệu
-  console.log(`[OCR.space Proxy Dev Log] Gửi yêu cầu fallback đến proxy nội bộ. Ngôn ngữ: ${lang}`);
+  if (import.meta.env.DEV) console.log(`[OCR.space Proxy Dev Log] Gửi yêu cầu fallback đến proxy nội bộ. Ngôn ngữ: ${lang}`);
 
   const formData = new FormData();
   formData.append('file', fileToOcr);

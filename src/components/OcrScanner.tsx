@@ -356,7 +356,8 @@ if (pageProcessingLockRef.current[pageNum]) {
 }
       pageProcessingLockRef.current[pageNum] = true;
 
-console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}` } ---`);
+// @ts-ignore
+if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}` } ---`);
       try {
         let fileType = file.type || '';
       if (!fileType) {
@@ -535,7 +536,8 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
       // Helper to perform a Gemini request with a specific key
       const makeRequest = (activeKey: string, isRetry: boolean = false): Promise<string> => {
         return new Promise<string>((resolve, reject) => {
-console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
+// @ts-ignore
+if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
           setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
           const xhr = new XMLHttpRequest();
 const selectedModel = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
@@ -557,13 +559,15 @@ const selectedModel = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-
             
 if (xhr.status === 429) {
   // Gemini quota exceeded – move to next key
-  console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received 429, switching key`);
+  // @ts-ignore
+  if (import.meta.env.DEV) console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received 429, switching key`);
   setBatchProgressText(`Gemini key ${activeKeyIndex + 1} quá tải, thử key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
   reject({ status: 429 });
   return;
 } else if (xhr.status === 401 || xhr.status === 403) {
   // Auth error – skip this key
-  console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received ${xhr.status}, skipping`);
+  // @ts-ignore
+  if (import.meta.env.DEV) console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received ${xhr.status}, skipping`);
   setBatchProgressText(`Gemini key ${activeKeyIndex + 1} không hợp lệ (${xhr.status}), thử key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
   reject({ status: xhr.status });
   return;
@@ -600,7 +604,8 @@ if (xhr.status === 429) {
                 if (finishReason === "RECITATION" || !sanitizedText) {
                   shouldFallback = true;
                 } else {
-console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
+// @ts-ignore
+if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
                   setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
                   editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
                   resolve(sanitizedText);
@@ -674,7 +679,8 @@ while (true) {
   const currentKey = geminiKeyPool[activeKeyIndex];
   if (!currentKey) {
     // No more keys – use OCR.space fallback
-    console.info('All Gemini keys exhausted, falling back to OCR.space');
+    // @ts-ignore
+    if (import.meta.env.DEV) console.info('All Gemini keys exhausted, falling back to OCR.space');
     setBatchProgressText(`Tất cả Gemini key quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
     return await runOcrSpaceFallback();
   }

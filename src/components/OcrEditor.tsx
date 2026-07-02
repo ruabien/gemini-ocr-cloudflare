@@ -257,8 +257,10 @@ useEffect(() => {
 
   // Anonymization toggle (opens modal for manual confirmation)
   const handleToggleAnonymize = () => {
-    console.info("[ANONYMIZE CLICK]");
-    console.info("[ANONYMIZE] editor length:", editorText?.length || 0);
+    // @ts-ignore
+    if (import.meta.env.DEV) console.info("[ANONYMIZE CLICK]");
+    // @ts-ignore
+    if (import.meta.env.DEV) console.info("[ANONYMIZE] editor length:", editorText?.length || 0);
 
     if (isAnonymized) {
       // Restore original
@@ -291,10 +293,13 @@ useEffect(() => {
     }
 
     try {
-      console.time("[ANONYMIZE] total");
-      console.time("[ANONYMIZE] run");
+      // @ts-ignore
+      if (import.meta.env.DEV) console.time("[ANONYMIZE] total");
+      // @ts-ignore
+      if (import.meta.env.DEV) console.time("[ANONYMIZE] run");
       const result = anonymizeLegalText(currentText);
-      console.timeEnd("[ANONYMIZE] run");
+      // @ts-ignore
+      if (import.meta.env.DEV) console.timeEnd("[ANONYMIZE] run");
 
       // Apply result automatically (no modal confirmation)
       setOriginalBackup(currentText);
@@ -323,7 +328,8 @@ useEffect(() => {
         idNumbers: idMatches.size,
         phones: phoneMatches.size
       });
-      console.timeEnd("[ANONYMIZE] total");
+      // @ts-ignore
+      if (import.meta.env.DEV) console.timeEnd("[ANONYMIZE] total");
     } catch (err) {
       console.error("Anonymize error:", err);
       alert("Không thể tạo bản ẩn danh.");
