@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState, useRef } from "react";
-import { Shield, UserCheck, LogOut, ScanLine, LayoutDashboard, Settings, Sparkles, User, Key, ChevronDown, Menu, X } from "lucide-react";
+import { Shield, UserCheck, LogOut, ScanLine, Settings, Sparkles, User, Key, ChevronDown, Menu, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 interface NavbarProps {
@@ -73,7 +73,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
       <div id="flag-bar" className="h-1 bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 w-full" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab("landing")}>
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab("scanner")}>
           <div className="h-9 w-9 bg-red-600 rounded-lg flex items-center justify-center shadow-lg border border-yellow-500/30">
             <Shield className="h-5 w-5 text-yellow-400" />
           </div>
@@ -88,18 +88,6 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
 
         {/* Menu chuyển trang mượt mà */}
         <nav className="hidden md:flex items-center space-x-1">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
-              activeTab === "dashboard"
-                ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
-                : "text-slate-300 hover:bg-slate-800 hover:text-white"
-            }`}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            <span>Tổng quan</span>
-          </button>
-          
 <button
   onClick={() => setActiveTab("scanner")}
   className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
@@ -268,18 +256,6 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
 
           {/* Các menu items */}
           <div className="w-full max-w-xs space-y-6 flex flex-col items-center">
-            <button
-              type="button"
-              onClick={() => {
-                console.info("[MOBILE NAV]", "dashboard");
-                navigateTo("dashboard");
-              }}
-              className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
-            >
-              <LayoutDashboard className="h-5 w-5 text-yellow-400" />
-              <span>Tổng quan</span>
-            </button>
-
             <button
               type="button"
               onClick={() => {
