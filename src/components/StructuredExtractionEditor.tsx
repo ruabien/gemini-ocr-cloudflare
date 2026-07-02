@@ -861,16 +861,15 @@ export default function StructuredExtractionEditor({
               <table className="w-full text-left border-collapse table-fixed">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase text-slate-500 font-bold">
-                    <th className="py-2.5 px-3 w-1/3">Tên trường</th>
-                    <th className="py-2.5 px-2 w-5/12">Giá trị trích xuất</th>
-                    <th className="py-2.5 px-2 w-2/12 text-center">Độ tin cậy</th>
+                    <th className="py-2.5 px-3 w-4/12">Tên trường</th>
+                    <th className="py-2.5 px-2 w-7/12">Giá trị trích xuất</th>
                     <th className="py-2.5 px-2 w-1/12 text-center">Xóa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {rows.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-8 text-center text-slate-400">
+                      <td colSpan={3} className="p-8 text-center text-slate-400">
                         Chưa có trường dữ liệu nào. Vui lòng thêm trường ở phía dưới.
                       </td>
                     </tr>
@@ -891,9 +890,6 @@ export default function StructuredExtractionEditor({
                             onChange={(e) => handleRowChange(row.id, "value", e.target.value)}
                             className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded px-1.5 py-1 text-slate-600 font-medium leading-normal h-8 resize-y"
                           />
-                        </td>
-                        <td className="py-2 px-2 text-center font-mono text-[10px] text-slate-500 font-bold">
-                          {row.confidence || "---"}
                         </td>
                         <td className="py-2 px-2 text-center">
                           <button
