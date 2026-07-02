@@ -24,6 +24,7 @@ export default function UpgradeComponent({
 }: UpgradeProps) {
   const { user } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+  const [currentCycle, setCurrentCycle] = useState<string>(() => localStorage.getItem('lexocr_pro_cycle') || 'yearly');
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "verifying" | "success">("pending");
   const [timerSeconds, setTimerSeconds] = useState<number>(300); // 5 minutes
@@ -107,6 +108,8 @@ export default function UpgradeComponent({
       timeoutIds.push(setTimeout(() => {
         setPaymentStatus("success");
         setMembershipRole("Pro");
+        localStorage.setItem('lexocr_pro_cycle', billingCycle);
+        setCurrentCycle(billingCycle);
         setLogs(prev => [...prev, "KÍCH HOẠT THÀNH CÔNG: Tài khoản LEXOCR PRO đã được mở khóa!"]);
       }, 9500));
     }
@@ -137,11 +140,14 @@ export default function UpgradeComponent({
     return `${mins}:${rem < 10 ? "0" : ""}${rem}`;
   };
 
+  const isProMonthly = membershipRole === "Pro" && currentCycle === 'monthly';
+  const isProYearly = membershipRole === "Pro" && currentCycle === 'yearly';
+
   return (
-    <div id="upgrade-view" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+    <div id="upgrade-view" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       
       {/* HEADER QUYỀN TÁC VỤ */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-6 gap-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-4 gap-4">
         <div>
           <div className="inline-flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-800 px-3 py-1 rounded-full text-xs font-bold uppercase mb-2">
             <Trophy className="h-3.5 w-3.5 text-amber-600" />
@@ -164,62 +170,75 @@ export default function UpgradeComponent({
         </button>
       </div>
 
-      {membershipRole === "Pro" && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6 text-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center space-x-4">
-            <div className="h-12 w-12 bg-amber-500 rounded-full flex items-center justify-center text-slate-950 flex-shrink-0">
-              <UserCheck className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-base text-amber-905">Độc quyền Tài khoản LexOCR PRO Đang hoạt động</h3>
-              <p className="text-xs text-slate-600 mt-1">
-                Kính gửi <strong className="font-bold">{name}</strong>. Toàn bộ tính năng cao cấp không giới hạn đã được mở khóa toàn diện.
-              </p>
-            </div>
+      {/* THÔNG TIN GÓI HIỆN TẠI */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center space-x-3">
+          <div className="h-10 w-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <Trophy className={`h-5 w-5 ${membershipRole === "Pro" ? "text-amber-500" : "text-slate-400"}`} />
           </div>
-          <div className="flex items-center space-x-3 w-full md:w-auto">
-            <button
-              onClick={() => setActiveTab("scanner")}
-              className="w-full md:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer text-center"
-            >
-              Phân tích tệp ngay
-            </button>
+          <div>
+            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">Gói hiện tại</p>
+            <h3 className="font-bold text-sm text-slate-900">
+              {membershipRole === "Pro" ? `LexOCR PRO ${currentCycle === 'monthly' ? 'Tháng' : 'Năm'}` : "LexOCR Free"}
+            </h3>
           </div>
         </div>
-      )}
 
-      {/* BOX SO SÁNH QUYỀN LỢI FREE VÀ PRO */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 text-xs">
+          <div className="flex flex-col">
+            <span className="text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Trạng thái</span>
+            <span className="font-medium flex items-center text-slate-700">
+              <span className={`h-1.5 w-1.5 rounded-full mr-1.5 ${membershipRole === "Pro" ? "bg-emerald-500" : "bg-slate-400"}`}></span>
+              Đang hoạt động
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Ngày hết hạn</span>
+            <span className="font-medium text-slate-700">--</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Còn lại</span>
+            <span className="font-medium text-slate-700">--</span>
+          </div>
+          <button className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-lg transition-colors ml-auto sm:ml-0 border border-slate-200 shadow-sm cursor-pointer">
+            Gia hạn
+          </button>
+        </div>
+      </div>
+
+      {/* BOX SO SÁNH & BẢNG GIÁ */}
+      <div className="flex flex-col-reverse lg:grid lg:grid-cols-12 gap-6 items-start">
         
         {/* BAN BIỂU SO SÁNH CÁC TÍNH NĂNG CHUYÊN BIỆT */}
-        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 bg-slate-50/70">
-            <h3 className="font-sans font-bold text-sm sm:text-base text-slate-800 flex items-center space-x-2">
-              <Layers className="h-5 w-5 text-red-600" />
-              <span>Bảng so sánh chi tiết tính năng nghiệp vụ</span>
+        <div className="w-full lg:col-span-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-slate-50/70">
+            <h3 className="font-sans font-bold text-sm text-slate-800 flex items-center space-x-2">
+              <Layers className="h-4 w-4 text-red-600" />
+              <span>Bảng so sánh chi tiết tính năng</span>
             </h3>
           </div>
           
-          <div className="divide-y divide-slate-100">
-            
-            {/* Tiêu đề cột bảng so sánh */}
-            <div className="grid grid-cols-12 p-4 bg-slate-50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-150">
-              <div className="col-span-6 text-slate-700">
-                Tính năng nghiệp vụ
+          <div className="overflow-x-auto">
+            <div className="min-w-[480px] divide-y divide-slate-100">
+              
+              {/* Tiêu đề cột bảng so sánh */}
+              <div className="grid grid-cols-12 p-3 bg-slate-50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-150">
+                <div className="col-span-6 text-slate-700">
+                  Tính năng
+                </div>
+                <div className="col-span-3 text-slate-600">
+                  Miễn phí
+                </div>
+                <div className="col-span-3 text-amber-800">
+                  Pro
+                </div>
               </div>
-              <div className="col-span-3 text-slate-600">
-                Bản Miễn phí (Free)
-              </div>
-              <div className="col-span-3 text-amber-800">
-                Bản Cao cấp (Pro)
-              </div>
-            </div>
-            
-            {/* Hàng 1 */}
-            <div className="grid grid-cols-12 p-4 text-xs items-center gap-2 hover:bg-slate-50/50">
-              <div className="col-span-6 font-bold text-slate-700">
-                Bóc tách tài liệu hồ sơ vụ án
-              </div>
+              
+              {/* Hàng 1 */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Bóc tách hồ sơ
+                </div>
               <div className="col-span-3 text-slate-500 font-mono">
                 Tối đa 15 trang / tệp
               </div>
@@ -229,99 +248,100 @@ export default function UpgradeComponent({
               </div>
             </div>
 
-            {/* Hàng 2 */}
-            <div className="grid grid-cols-12 p-4 text-xs items-center gap-2 hover:bg-slate-50/50">
-              <div className="col-span-6 font-bold text-slate-700">
-                Xuất kết quả chỉnh sửa thô (.TXT)
+              {/* Hàng 2 */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Xuất văn bản thô (.TXT)
+                </div>
+                <div className="col-span-3 text-slate-500">
+                  Hỗ trợ
+                </div>
+                <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span>Hỗ trợ</span>
+                </div>
               </div>
-              <div className="col-span-3 text-slate-500">
-                Hỗ trợ
-              </div>
-              <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4 text-emerald-500" />
-                <span>Hỗ trợ</span>
-              </div>
-            </div>
 
-            {/* Hàng 3 */}
-            <div className="grid grid-cols-12 p-4 text-xs items-center gap-2 hover:bg-slate-50/50">
-              <div className="col-span-6 font-bold text-slate-700">
-                Kết xuất văn bản chuẩn Nghị định 30 (Lề tố tụng Word .DOCX)
+              {/* Hàng 3 */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Kết xuất DOCX tố tụng
+                </div>
+                <div className="col-span-3 text-red-500 font-medium">
+                  Khóa
+                </div>
+                <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span>Mở khóa</span>
+                </div>
               </div>
-              <div className="col-span-3 text-red-500 font-medium">
-                Bị khóa (Chỉ copy text)
-              </div>
-              <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4 text-emerald-500" />
-                <span>Mở khóa hoàn toàn</span>
-              </div>
-            </div>
 
-            {/* Hàng 4 */}
-            <div className="grid grid-cols-12 p-4 text-xs items-center gap-2 hover:bg-slate-50/50">
-              <div className="col-span-6 font-bold text-slate-700">
-                Tách lập bảng danh mục bị can, tội danh sang Excel (.XLSX)
+              {/* Hàng 4 */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Xuất Excel danh mục
+                </div>
+                <div className="col-span-3 text-red-500 font-medium">
+                  Khóa
+                </div>
+                <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span>Mở khóa</span>
+                </div>
               </div>
-              <div className="col-span-3 text-red-500 font-medium">
-                Bị khóa
-              </div>
-              <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4 text-emerald-500" />
-                <span>Chuẩn hóa tố tụng</span>
-              </div>
-            </div>
 
-            {/* Hàng 5 */}
-            <div className="grid grid-cols-12 p-4 text-xs items-center gap-2 hover:bg-slate-50/50">
-              <div className="col-span-6 font-bold text-slate-700">
-                Nhận diện cấu trúc văn bản hành chính Việt Nam phức tạp
+              {/* Hàng 5 */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Trích xuất biểu mẫu
+                </div>
+                <div className="col-span-3 text-slate-400">
+                  Cơ bản
+                </div>
+                <div className="col-span-3 text-amber-700 font-bold flex items-center space-x-1">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                  <span>Thông minh</span>
+                </div>
               </div>
-              <div className="col-span-3 text-slate-400">
-                Cơ bản
-              </div>
-              <div className="col-span-3 text-amber-700 font-bold flex items-center space-x-1">
-                <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
-                <span>Mô hình thông minh nhất</span>
-              </div>
-            </div>
 
-            {/* Hàng 6 */}
-            <div className="grid grid-cols-12 p-4 text-xs items-center gap-2 hover:bg-slate-50/50">
-              <div className="col-span-6 font-bold text-slate-700">
-                Tốc độ xử lý OCR & phân trang thông tin tự động
+              {/* Hàng 6 */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Ưu tiên tốc độ OCR
+                </div>
+                <div className="col-span-3 text-slate-400">
+                  Chia sẻ
+                </div>
+                <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span>Cao nhất</span>
+                </div>
               </div>
-              <div className="col-span-3 text-slate-400">
-                Băng thông chia sẻ
-              </div>
-              <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4 text-emerald-500" />
-                <span>Ưu tiên Edge Node cao nhất</span>
-              </div>
-            </div>
 
-            {/* Hàng 7 */}
-            <div className="grid grid-cols-12 p-4 text-xs items-center gap-2 hover:bg-slate-50/50">
-              <div className="col-span-6 font-bold text-slate-700">
-                Cam kết Stateless & Bảo mật AES-256 đầu cuối
+              {/* Hàng 7 */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Bảo mật AES-256
+                </div>
+                <div className="col-span-3 text-slate-500">
+                  Hỗ trợ
+                </div>
+                <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span>Tuyệt đối</span>
+                </div>
               </div>
-              <div className="col-span-3 text-slate-500">
-                Hỗ trợ
-              </div>
-              <div className="col-span-3 text-emerald-600 font-bold flex items-center space-x-1">
-                <Check className="h-4 w-4 text-emerald-500" />
-                <span>Bảo chứng tuyệt đối</span>
-              </div>
-            </div>
 
+            </div>
           </div>
 
-          <div className="p-4 bg-slate-50 text-[10.5px] text-slate-500 border-t border-slate-150 leading-relaxed italic">
-            * Hệ thống tuân thủ Nghị quyết số 51 và các Chỉ thị về chuyển đổi số định hướng tư pháp của Viện trưởng Viện kiểm sát nhân dân tối cao.
+          <div className="p-3 bg-slate-50 text-[10px] text-slate-500 border-t border-slate-150 leading-relaxed italic">
+            * Tuân thủ chuyển đổi số định hướng tư pháp của VKSND Tối cao.
           </div>
         </div>
 
         {/* BẢNG GIÁ & NÚT NÂNG CẤP CHỌN GÓI */}
-        <div className="lg:col-span-6">
+        <div className="w-full lg:col-span-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end h-full">
             
             {/* GÓI THÁNG */}
@@ -355,13 +375,24 @@ export default function UpgradeComponent({
                   </ul>
                 </div>
 
-                <div className="pt-6">
-                  <button
-                    onClick={() => handleOpenPayment("monthly")}
-                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 px-4 rounded-xl text-xs shadow-sm transition-all text-center cursor-pointer border border-slate-300"
-                  >
-                    Đăng ký Pro Tháng
-                  </button>
+                <div className="pt-5">
+                  {isProMonthly ? (
+                    <button disabled className="w-full bg-emerald-50 text-emerald-700 font-bold py-2.5 px-4 rounded-xl text-xs flex justify-center items-center space-x-1.5 border border-emerald-200">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Đang sử dụng</span>
+                    </button>
+                  ) : isProYearly ? (
+                    <button disabled className="w-full bg-slate-50 text-slate-400 font-bold py-2.5 px-4 rounded-xl text-xs text-center border border-slate-200 cursor-not-allowed">
+                      Chuyển xuống PRO Tháng
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleOpenPayment("monthly")}
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs shadow-sm transition-all text-center cursor-pointer border border-slate-300"
+                    >
+                      Đăng ký Pro Tháng
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -412,17 +443,32 @@ export default function UpgradeComponent({
                   </ul>
                 </div>
 
-                <div className="pt-6 space-y-3">
-                  <button
-                    onClick={() => handleOpenPayment("yearly")}
-                    className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-3 px-4 rounded-xl text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
-                  >
-                    <CreditCard className="h-4.5 w-4.5 text-amber-100" />
-                    <span>NÂNG CẤP PRO NĂM</span>
-                  </button>
+                <div className="pt-5 space-y-2.5">
+                  {isProYearly ? (
+                    <button disabled className="w-full bg-emerald-50 text-emerald-700 font-bold py-2.5 px-4 rounded-xl text-sm flex justify-center items-center space-x-1.5 border border-emerald-200">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Đang sử dụng</span>
+                    </button>
+                  ) : isProMonthly ? (
+                    <button
+                      onClick={() => handleOpenPayment("yearly")}
+                      className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
+                    >
+                      <Trophy className="h-4 w-4 text-amber-100" />
+                      <span>NÂNG CẤP PRO NĂM</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleOpenPayment("yearly")}
+                      className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
+                    >
+                      <CreditCard className="h-4 w-4 text-amber-100" />
+                      <span>ĐĂNG KÝ PRO NĂM</span>
+                    </button>
+                  )}
 
                   <p className="text-[9px] text-center text-slate-400 italic leading-tight">
-                    * Kích hoạt tự động sau khi hoàn tất giao dịch. Có xuất hóa đơn đỏ (VAT 8%) nếu được yêu cầu.
+                    * Kích hoạt tự động sau khi hoàn tất giao dịch. Xuất hóa đơn đỏ (VAT 8%).
                   </p>
                 </div>
               </div>
