@@ -73,7 +73,11 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
       <div id="flag-bar" className="h-1 bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 w-full" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab("scanner")}>
+        <div
+          className="flex items-center space-x-3 cursor-pointer"
+          onClick={() => setActiveTab("landing")}
+          aria-label="Về trang chủ LexOCR"
+        >
           <div className="h-9 w-9 bg-red-600 rounded-lg flex items-center justify-center shadow-lg border border-yellow-500/30">
             <Shield className="h-5 w-5 text-yellow-400" />
           </div>
