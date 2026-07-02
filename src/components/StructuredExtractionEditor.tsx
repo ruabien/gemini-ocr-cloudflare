@@ -700,19 +700,10 @@ export default function StructuredExtractionEditor({
     }
 
     try {
-      // Tiêu đề cột
-      const headers = ["Tên trường", "Giá trị trích xuất", "Độ tin cậy", "Ghi chú"];
-      const csvRows = [headers.map((h) => `"${h}"`).join(",")];
-
-      rows.forEach((row) => {
-        const line = [
-          `"${row.name.replace(/"/g, '""')}"`,
-          `"${row.value.replace(/"/g, '""')}"`,
-          `"${(row.confidence || "100%").replace(/"/g, '""')}"`,
-          `"${row.note.replace(/"/g, '""')}"`
-        ];
-        csvRows.push(line.join(","));
-      });
+      // Build horizontal CSV with field names as headers
+      const headers = rows.map((row) => `"${row.name.replace(/"/g, '""')}"`);
+      const values = rows.map((row) => `"${(row.value ?? "").replace(/"/g, '""')}"`);
+      const csvRows = [headers.join(","), values.join(",")];
 
       const csvContent = csvRows.join("\n");
 
@@ -728,7 +719,7 @@ export default function StructuredExtractionEditor({
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement("a");
       link.href = url;
-      
+
       const cleanFileName = document.name.replace(/\.[^/.]+$/, "");
       link.download = `${cleanFileName}_TRICH_XUAT.csv`;
       window.document.body.appendChild(link);
