@@ -24,8 +24,42 @@ import { OcrDocument } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import LoginPromptModal from "./LoginPromptModal";
 
-export type StructuredDocumentType = "thong_bao_thu_ly" | "quyet_dinh_khoi_to_bi_can";
-export type CaseType = "hinh_su" | "dan_su" | "hanh_chinh";
+export type CaseType = "dan_su" | "hinh_su" | "hanh_chinh" | "khac";
+
+const defaultSchemas: Record<CaseType, string[]> = {
+  dan_su: [
+    "Số thụ lý",
+    "Ngày thụ lý",
+    "Quan hệ pháp luật",
+    "Nguyên đơn 1",
+    "Bị đơn 1",
+    "Người có quyền lợi, nghĩa vụ liên quan 1"
+  ],
+  hinh_su: [
+    "Số quyết định / số văn bản",
+    "Ngày ban hành",
+    "Cơ quan ban hành",
+    "Bị can/Bị cáo 1",
+    "Năm sinh",
+    "Nơi cư trú",
+    "Nghề nghiệp",
+    "Số CCCD/CMND",
+    "Tội danh",
+    "Điều luật áp dụng"
+  ],
+  hanh_chinh: [
+    "Số thụ lý",
+    "Ngày thụ lý",
+    "Người khởi kiện 1",
+    "Người bị kiện 1",
+    "Quyết định/hành vi bị kiện",
+    "Yêu cầu khởi kiện"
+  ],
+  khac: [
+    "Trường 1",
+    "Trường 2"
+  ]
+};
 
 interface ExtractionRow {
   id: string;
@@ -345,16 +379,9 @@ function extractPersonsFromRoleBlock(block: string): string[] {
   return result;
 }
 
-// Hàm heuristic để bóc tách thông tin từ văn bản OCR thô
-function runRuleBasedExtraction(
-  text: string,
-  docType: StructuredDocumentType,
-  caseType: CaseType
-): ExtractionRow[] {
-  const cleanText = text || "";
-  const lines = cleanText.split("\n");
-
-  // Regex hỗ trợ tìm ngày tháng
+// Hàm heuristic để bóc tách thông tin từ văn bản OCR thô dựa trên danh sách trường
+function extractValueForField(text: string, fieldName: string, lines: string[]): { value: string, confidence: string, note: string } {
+  const nameLow = fieldName.toLowerCase();
   const dateRegex = /(ngày\s+\d{1,2}\s+tháng\s+\d{1,2}\s+năm\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4})/i;
 
   const findLineWithKeyword = (keywords: string[]): string => {
@@ -372,10 +399,8 @@ function runRuleBasedExtraction(
         const idx = line.toLowerCase().indexOf(kw.toLowerCase());
         if (idx !== -1) {
           let value = line.substring(idx + kw.length).trim();
-          // Cắt các ký tự đặc biệt đầu dòng như :, -, v.v.
           value = value.replace(/^[:\-\s]+/, "").trim();
           if (value) {
-            // Loại bỏ các từ khóa dính ở dòng nếu có
             if (cleanKeywords.length > 0) {
               cleanKeywords.forEach((ckw) => {
                 if (value.toLowerCase().includes(ckw.toLowerCase())) {
@@ -392,205 +417,162 @@ function runRuleBasedExtraction(
     return "";
   };
 
-  // 1. Template: Thông báo thụ lý - Dân sự
-  if (docType === "thong_bao_thu_ly" && caseType === "dan_su") {
-    // Tìm số thụ lý: "Số: ... /... /TB-TL"
-    const soLine = findLineWithKeyword(["Số:", "Thụ lý số:"]);
-    const soMatch = soLine ? soLine.match(/(Số\s*:\s*[^\s,\n]+|Thụ lý số\s*:\s*[^\s,\n]+)/i) : null;
-    const soThuLy = soMatch ? soMatch[0].replace(/^(Số|Thụ lý số)\s*:\s*/i, "").trim() : "";
+  if (nameLow.includes("số thụ lý") || nameLow.includes("số quyết định") || nameLow.includes("số văn bản")) {
+    const soLine = findLineWithKeyword(["Số:", "Thụ lý số:", "Quyết định số:"]);
+    const soMatch = soLine ? soLine.match(/(Số\s*:\s*[^\s,\n]+|Thụ lý số\s*:\s*[^\s,\n]+|Quyết định số\s*:\s*[^\s,\n]+)/i) : null;
+    const value = soMatch ? soMatch[0].replace(/^(Số|Thụ lý số|Quyết định số)\s*:\s*/i, "").trim() : "";
+    return { value, confidence: value ? "90%" : "---", note: "Tìm kiếm từ khóa Số/Quyết định" };
+  }
 
-    const dateMatch = cleanText.match(dateRegex);
-    const ngayThuLy = dateMatch ? dateMatch[0] : "";
+  if (nameLow.includes("ngày thụ lý") || nameLow.includes("ngày ban hành") || nameLow.includes("ngày quyết định")) {
+    const dateMatch = text.match(dateRegex);
+    const value = dateMatch ? dateMatch[0] : "";
+    return { value, confidence: value ? "85%" : "---", note: "Tìm kiếm định dạng ngày" };
+  }
 
-    const stopLabelsCommon = [
-      "Người có quyền", "Người liên quan", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn",
-      "Nội dung", "Theo đơn", "Căn cứ", "\\nNgày\\b", "Tòa án nhân dân", "đã thụ lý vụ án",
-      "Những vấn đề", "yêu cầu", "Tòa án thông báo", "Kèm theo", "Người khởi kiện", "Người bị kiện"
-    ];
-
-    const nguyenDonRaw = extractRoleBlock(cleanText, ["Nguyên đơn", "Người khởi kiện"], ["Bị đơn", "Người bị kiện", ...stopLabelsCommon]);
-    const biDonRaw = extractRoleBlock(cleanText, ["Bị đơn", "Người bị kiện"], stopLabelsCommon);
-    const nguoiLienQuanRaw = extractRoleBlock(cleanText, ["Người có quyền lợi, nghĩa vụ liên quan", "Người liên quan"], stopLabelsCommon);
-    
+  if (nameLow.includes("quan hệ pháp luật") || nameLow.includes("tranh chấp")) {
     let quanHe = "";
-    const quanHeMatch1 = cleanText.match(/về việc\s*["“”]([^"“”]+)["“”]/i);
+    const quanHeMatch1 = text.match(/về việc\s*["“”]([^"“”]+)["“”]/i);
     if (quanHeMatch1 && quanHeMatch1[1]) {
       quanHe = quanHeMatch1[1].trim();
     } else {
-      const quanHeMatch2 = cleanText.match(/về việc\s+(.+?)(?:\.|\n|$)/i);
+      const quanHeMatch2 = text.match(/về việc\s+(.+?)(?:\.|\n|$)/i);
       if (quanHeMatch2 && quanHeMatch2[1]) {
         quanHe = quanHeMatch2[1].trim();
       } else {
-        quanHe = extractSectionText(cleanText, ["Quan hệ pháp luật tranh chấp:", "Quan hệ pháp luật:", "Về việc:", "Tranh chấp về:"], ["Nguyên đơn:", "Người khởi kiện:", "Bị đơn:", "Người bị kiện:", "Người có quyền", "Người liên quan:", "Thẩm phán", "Thời hạn"]);
+        quanHe = extractSectionText(text, ["Quan hệ pháp luật tranh chấp:", "Quan hệ pháp luật:", "Về việc:", "Tranh chấp về:"], ["Nguyên đơn:", "Người khởi kiện:", "Bị đơn:", "Người bị kiện:", "Người có quyền", "Người liên quan:", "Thẩm phán", "Thời hạn"]);
       }
     }
-    
-    if (quanHe) {
-      quanHe = quanHe.replace(/\*\*/g, "").replace(/^["“”]+|["“”]+$/g, "").trim();
-    }
-
-    const nguyenDonList = extractPersonsFromRoleBlock(removeRepresentativeSegments(nguyenDonRaw));
-    const biDonList = extractPersonsFromRoleBlock(removeRepresentativeSegments(biDonRaw));
-    const nguoiLienQuanList = extractPersonsFromRoleBlock(removeRepresentativeSegments(nguoiLienQuanRaw));
-
-    const nguyenDons = nguyenDonList.length > 0 ? nguyenDonList : [""];
-    const biDons = biDonList.length > 0 ? biDonList : [""];
-    const nguoiLienQuans = nguoiLienQuanList;
-
-    const extractedRows: ExtractionRow[] = [];
-    let idCounter = 1;
-
-    extractedRows.push({
-      id: String(idCounter++),
-      name: "Số thụ lý",
-      value: soThuLy || "Số: .../TB-TL",
-      confidence: "90%",
-      note: "Bóc tách từ từ khóa 'Số:'"
-    });
-
-    extractedRows.push({
-      id: String(idCounter++),
-      name: "Ngày thụ lý",
-      value: ngayThuLy,
-      confidence: "85%",
-      note: "Bóc tách bằng biểu thức ngày tháng"
-    });
-
-    extractedRows.push({
-      id: String(idCounter++),
-      name: "Quan hệ pháp luật",
-      value: quanHe || "Tranh chấp hợp đồng dân sự",
-      confidence: "70%",
-      note: "Bóc tách sau 'Quan hệ pháp luật'"
-    });
-
-    nguyenDons.forEach((val, idx) => {
-      extractedRows.push({
-        id: String(idCounter++),
-        name: `Nguyên đơn ${idx + 1}`,
-        value: val,
-        confidence: val ? "75%" : "---",
-        note: "Bóc tách từ phần 'Nguyên đơn'"
-      });
-    });
-
-    biDons.forEach((val, idx) => {
-      extractedRows.push({
-        id: String(idCounter++),
-        name: `Bị đơn ${idx + 1}`,
-        value: val,
-        confidence: val ? "75%" : "---",
-        note: "Bóc tách từ phần 'Bị đơn'"
-      });
-    });
-
-    nguoiLienQuans.forEach((val, idx) => {
-      extractedRows.push({
-        id: String(idCounter++),
-        name: `Người liên quan ${idx + 1}`,
-        value: val,
-        confidence: val ? "60%" : "---",
-        note: "Bóc tách từ phần 'Người có quyền lợi, nghĩa vụ liên quan'"
-      });
-    });
-
-    return extractedRows;
+    if (quanHe) quanHe = quanHe.replace(/\*\*/g, "").replace(/^["“”]+|["“”]+$/g, "").trim();
+    return { value: quanHe, confidence: quanHe ? "70%" : "---", note: "Tìm từ khóa Quan hệ pháp luật/Về việc" };
   }
 
-  // 2. Template: Thông báo thụ lý - Hành chính
-  if (docType === "thong_bao_thu_ly" && caseType === "hanh_chinh") {
-    const soLine = findLineWithKeyword(["Số:", "Thụ lý số:"]);
-    const soMatch = soLine ? soLine.match(/(Số\s*:\s*[^\s,\n]+|Thụ lý số\s*:\s*[^\s,\n]+)/i) : null;
-    const soThuLy = soMatch ? soMatch[0].replace(/Số\s*:\s*/i, "").trim() : "TB-TL/HC";
+  const stopLabelsCommon = [
+    "Người có quyền", "Người liên quan", "Quan hệ pháp luật", "Thẩm phán", "Thời hạn",
+    "Nội dung", "Theo đơn", "Căn cứ", "\\nNgày\\b", "Tòa án nhân dân", "đã thụ lý vụ án",
+    "Những vấn đề", "yêu cầu", "Tòa án thông báo", "Kèm theo", "Người khởi kiện", "Người bị kiện"
+  ];
 
-    const dateMatch = cleanText.match(dateRegex);
-    const ngayThuLy = dateMatch ? dateMatch[0] : "Chưa tìm thấy ngày";
-
-    const toaAnLine = findLineWithKeyword(["Tòa án nhân dân", "TAND"]);
-    const toaAn = toaAnLine ? toaAnLine.trim() : "Tòa án nhân dân";
-
-    const nguoiKhoiKien = extractValueAfterKeyword(["Người khởi kiện:"], ["Người bị kiện", "Địa chỉ"]);
-    const nguoiBiKien = extractValueAfterKeyword(["Người bị kiện:"], ["Người có quyền", "Địa chỉ"]);
-    const nguoiLienQuan = extractValueAfterKeyword(["Người có quyền lợi", "Nghĩa vụ liên quan:"], ["Đối tượng", "Địa chỉ"]);
-    const doiTuongKhieuKien = extractValueAfterKeyword(["Đối tượng khởi kiện:", "Khiếu kiện đối với:"], ["Thẩm phán"]);
-    const quyetDinhBiKien = extractValueAfterKeyword(["Quyết định hành chính bị kiện:", "Hành vi hành chính bị kiện:"], ["Thẩm phán"]);
-    const thamPhan = extractValueAfterKeyword(["Thẩm phán được phân công:", "Thẩm phán giải quyết:"], ["Thư ký"]);
-
-    return [
-      { id: "1", name: "Số thụ lý", value: soThuLy || "Số: .../TB-TL", confidence: "90%", note: "Bóc tách từ từ khóa 'Số:'" },
-      { id: "2", name: "Ngày thụ lý", value: ngayThuLy, confidence: "85%", note: "Bóc tách bằng biểu thức ngày tháng" },
-      { id: "3", name: "Tòa án thụ lý", value: toaAn || "Tòa án nhân dân...", confidence: "80%", note: "Tìm kiếm dòng có chứa 'Tòa án'" },
-      { id: "4", name: "Người khởi kiện", value: nguoiKhoiKien || "", confidence: "75%", note: "Bóc tách sau từ khóa 'Người khởi kiện'" },
-      { id: "5", name: "Người bị kiện", value: nguoiBiKien || "Chủ tịch Ủy ban nhân dân...", confidence: "75%", note: "Bóc tách sau từ khóa 'Người bị kiện'" },
-      { id: "6", name: "Người có quyền lợi, nghĩa vụ liên quan", value: nguoiLienQuan || "Không có", confidence: "60%", note: "Bóc tách sau từ khóa 'Người có quyền lợi'" },
-      { id: "7", name: "Đối tượng khiếu kiện", value: doiTuongKhieuKien || "Quyết định giải quyết tranh chấp đất đai", confidence: "70%", note: "Bóc tách sau 'Đối tượng khởi kiện'" },
-      { id: "8", name: "Quyết định hành chính/hành vi hành chính bị kiện", value: quyetDinhBiKien || "Quyết định số 123/QĐ-UBND", confidence: "70%", note: "Bóc tách sau 'Quyết định hành chính bị kiện'" },
-      { id: "9", name: "Thẩm phán được phân công", value: thamPhan || "Lê Hoàng D", confidence: "80%", note: "Bóc tách sau 'Thẩm phán'" }
-    ];
+  if (nameLow.includes("nguyên đơn")) {
+    const raw = extractRoleBlock(text, ["Nguyên đơn"], ["Bị đơn", "Người bị kiện", ...stopLabelsCommon]);
+    const list = extractPersonsFromRoleBlock(removeRepresentativeSegments(raw));
+    const value = list.length > 0 ? list.join("\n") : extractValueAfterKeyword(["Nguyên đơn:", "Nguyên đơn"]);
+    return { value, confidence: value ? "75%" : "---", note: "Phân tích khối Nguyên đơn" };
   }
 
-  // 3. Template: Quyết định khởi tố bị can - Hình sự
-  if (docType === "quyet_dinh_khoi_to_bi_can" || caseType === "hinh_su") {
-    // Quyết định khởi tố bị can thường đi với hình sự
-    const soLine = findLineWithKeyword(["Số:", "Quyết định số:"]);
-    const soMatch = soLine ? soLine.match(/(Số\s*:\s*[^\s,\n]+|Quyết định số\s*:\s*[^\s,\n]+)/i) : null;
-    const soQuyetDinh = soMatch ? soMatch[0].replace(/Số\s*:\s*/i, "").trim() : "QĐKT/HS";
+  if (nameLow.includes("bị đơn")) {
+    const raw = extractRoleBlock(text, ["Bị đơn"], stopLabelsCommon);
+    const list = extractPersonsFromRoleBlock(removeRepresentativeSegments(raw));
+    const value = list.length > 0 ? list.join("\n") : extractValueAfterKeyword(["Bị đơn:", "Bị đơn"]);
+    return { value, confidence: value ? "75%" : "---", note: "Phân tích khối Bị đơn" };
+  }
 
-    const dateMatch = cleanText.match(dateRegex);
-    const ngayQuyetDinh = dateMatch ? dateMatch[0] : "Chưa tìm thấy ngày";
+  if (nameLow.includes("người khởi kiện")) {
+    const raw = extractRoleBlock(text, ["Người khởi kiện"], ["Người bị kiện", "Bị đơn", ...stopLabelsCommon]);
+    const list = extractPersonsFromRoleBlock(removeRepresentativeSegments(raw));
+    const val2 = extractValueAfterKeyword(["Người khởi kiện:"]);
+    const value = list.length > 0 ? list.join("\n") : val2;
+    return { value, confidence: value ? "75%" : "---", note: "Phân tích khối Người khởi kiện" };
+  }
 
-    const coQuanLine = findLineWithKeyword(["Cơ quan cảnh sát điều tra", "Viện kiểm sát nhân dân", "Cơ quan An ninh điều tra"]);
-    const coQuan = coQuanLine ? coQuanLine.trim() : "Cơ quan cảnh sát điều tra";
+  if (nameLow.includes("người bị kiện")) {
+    const raw = extractRoleBlock(text, ["Người bị kiện"], ["Người có quyền", ...stopLabelsCommon]);
+    const list = extractPersonsFromRoleBlock(removeRepresentativeSegments(raw));
+    const val2 = extractValueAfterKeyword(["Người bị kiện:"]);
+    const value = list.length > 0 ? list.join("\n") : val2;
+    return { value, confidence: value ? "75%" : "---", note: "Phân tích khối Người bị kiện" };
+  }
 
-    const dieuTraVien = extractValueAfterKeyword(["Điều tra viên:", "Kiểm sát viên:"], ["Họ tên bị can", "Bị can"]);
-    const hoTenBiCan = extractValueAfterKeyword(["Họ tên bị can:", "Bị can:", "Khởi tố đối với bị can:"], ["Ngày sinh", "Nơi cư trú"]);
-    const ngaySinh = extractValueAfterKeyword(["Ngày sinh:", "Năm sinh:", "Sinh ngày:"], ["Nơi cư trú", "Nghề nghiệp"]);
-    const noiCuTru = extractValueAfterKeyword(["Nơi cư trú:", "Nơi đăng ký HKTT:", "Chỗ ở hiện nay:"], ["Nghề nghiệp", "Dân tộc"]);
-    const ngheNghiep = extractValueAfterKeyword(["Nghề nghiệp:"], ["Số CCCD", "CMND"]);
-    const soCccd = extractValueAfterKeyword(["Số CCCD:", "Số CMND:", "Số định danh cá nhân:"], ["Tội danh", "Khởi tố"]);
+  if (nameLow.includes("người có quyền lợi") || nameLow.includes("người liên quan")) {
+    const raw = extractRoleBlock(text, ["Người có quyền lợi, nghĩa vụ liên quan", "Người liên quan"], stopLabelsCommon);
+    const list = extractPersonsFromRoleBlock(removeRepresentativeSegments(raw));
+    const value = list.length > 0 ? list.join("\n") : extractValueAfterKeyword(["Người có quyền lợi, nghĩa vụ liên quan:"]);
+    return { value, confidence: value ? "60%" : "---", note: "Phân tích khối Người có quyền lợi" };
+  }
 
-    // Tìm tội danh
-    let toiDanh = extractValueAfterKeyword(["Tội danh:", "Khởi tố về tội:"], ["Điều luật", "Bộ luật hình sự"]);
-    if (!toiDanh) {
-      // Tìm xem có cụm từ "về tội" trong văn bản hình sự không
+  if (nameLow.includes("cơ quan ban hành")) {
+    const coQuanLine = findLineWithKeyword(["Cơ quan cảnh sát điều tra", "Viện kiểm sát nhân dân", "Cơ quan An ninh điều tra", "Tòa án nhân dân", "TAND"]);
+    const value = coQuanLine ? coQuanLine.trim() : "";
+    return { value, confidence: value ? "80%" : "---", note: "Tìm tên cơ quan" };
+  }
+
+  if (nameLow.includes("bị can") || nameLow.includes("bị cáo")) {
+    const value = extractValueAfterKeyword(["Họ tên bị can:", "Bị can:", "Khởi tố đối với bị can:", "Bị cáo:"], ["Ngày sinh", "Nơi cư trú"]);
+    return { value, confidence: value ? "75%" : "---", note: "Tìm từ khóa Bị can/Bị cáo" };
+  }
+
+  if (nameLow.includes("năm sinh") || nameLow.includes("ngày sinh")) {
+    const value = extractValueAfterKeyword(["Ngày sinh:", "Năm sinh:", "Sinh ngày:"], ["Nơi cư trú", "Nghề nghiệp"]);
+    return { value, confidence: value ? "75%" : "---", note: "Tìm từ khóa Năm sinh/Ngày sinh" };
+  }
+
+  if (nameLow.includes("cư trú") || nameLow.includes("địa chỉ")) {
+    const value = extractValueAfterKeyword(["Nơi cư trú:", "Nơi đăng ký HKTT:", "Chỗ ở hiện nay:", "Địa chỉ:"], ["Nghề nghiệp", "Dân tộc"]);
+    return { value, confidence: value ? "65%" : "---", note: "Tìm từ khóa Nơi cư trú/Địa chỉ" };
+  }
+
+  if (nameLow.includes("nghề nghiệp")) {
+    const value = extractValueAfterKeyword(["Nghề nghiệp:"], ["Số CCCD", "CMND", "Dân tộc"]);
+    return { value, confidence: value ? "60%" : "---", note: "Tìm từ khóa Nghề nghiệp" };
+  }
+
+  if (nameLow.includes("cccd") || nameLow.includes("cmnd") || nameLow.includes("định danh")) {
+    const value = extractValueAfterKeyword(["Số CCCD:", "Số CMND:", "Số định danh cá nhân:", "CCCD/CMND:"], ["Tội danh", "Khởi tố", "Ngày cấp"]);
+    return { value, confidence: value ? "80%" : "---", note: "Tìm từ khóa CCCD/CMND" };
+  }
+
+  if (nameLow.includes("tội danh") || nameLow.includes("về tội")) {
+    let value = extractValueAfterKeyword(["Tội danh:", "Khởi tố về tội:"], ["Điều luật", "Bộ luật hình sự", "Quy định tại"]);
+    if (!value) {
       const toiLine = findLineWithKeyword(["về tội"]);
       if (toiLine) {
         const toiIdx = toiLine.toLowerCase().indexOf("về tội");
-        toiDanh = toiLine.substring(toiIdx + 6).trim();
+        value = toiLine.substring(toiIdx + 6).trim();
       }
     }
-
-    // Tìm điều luật
-    let dieuLuat = extractValueAfterKeyword(["Điều:", "Khoản:", "Áp dụng điều:", "Theo quy định tại Điều"], ["Bộ luật hình sự"]);
-    if (!dieuLuat) {
-      const dieuLine = findLineWithKeyword(["Điều "]);
-      const dieuMatch = dieuLine ? dieuLine.match(/Điều\s+\d+/i) : null;
-      dieuLuat = dieuMatch ? dieuMatch[0] : "Chưa định vị điều luật";
-    }
-
-    const bienPhap = extractValueAfterKeyword(["Biện pháp ngăn chặn:", "Áp dụng biện pháp:"], ["Cơ quan"]);
-
-    return [
-      { id: "1", name: "Số quyết định", value: soQuyetDinh || "Số: .../QĐ-CSĐT", confidence: "90%", note: "Bóc tách từ từ khóa 'Số:'" },
-      { id: "2", name: "Ngày quyết định", value: ngayQuyetDinh, confidence: "85%", note: "Bóc tách bằng biểu thức ngày tháng" },
-      { id: "3", name: "Cơ quan ban hành", value: coQuan || "Cơ quan Cảnh sát điều tra", confidence: "80%", note: "Tìm cơ quan tư pháp ban hành" },
-      { id: "4", name: "Điều tra viên/Kiểm sát viên", value: dieuTraVien || "Nguyễn Văn T", confidence: "70%", note: "Bóc tách sau 'Điều tra viên'/'Kiểm sát viên'" },
-      { id: "5", name: "Họ tên bị can", value: hoTenBiCan || "Trần Văn X", confidence: "75%", note: "Bóc tách sau từ khóa 'Bị can'" },
-      { id: "6", name: "Ngày sinh/Năm sinh", value: ngaySinh || "1990", confidence: "75%", note: "Bóc tách sau 'Ngày sinh'" },
-      { id: "7", name: "Nơi cư trú", value: noiCuTru || "123 Đường Lê Duẩn, Quận Hải Châu, Đà Nẵng", confidence: "65%", note: "Bóc tách sau 'Nơi cư trú'" },
-      { id: "8", name: "Nghề nghiệp", value: ngheNghiep || "Lao động tự do", confidence: "60%", note: "Bóc tách sau 'Nghề nghiệp'" },
-      { id: "9", name: "Số CCCD/CMND", value: soCccd || "048090001234", confidence: "80%", note: "Bóc tách sau 'CCCD/CMND'" },
-      { id: "10", name: "Tội danh", value: toiDanh || "Tội lừa đảo chiếm đoạt tài sản", confidence: "70%", note: "Bóc tách sau 'về tội' hoặc 'Tội danh'" },
-      { id: "11", name: "Điều luật áp dụng", value: dieuLuat || "Điều 174 Bộ luật Hình sự", confidence: "80%", note: "Bóc tách sau từ khóa 'Điều'" },
-      { id: "12", name: "Biện pháp ngăn chặn", value: bienPhap || "Tạm giam", confidence: "70%", note: "Bóc tách sau 'Biện pháp ngăn chặn'" }
-    ];
+    return { value, confidence: value ? "70%" : "---", note: "Tìm từ khóa Tội danh/về tội" };
   }
 
-  // Fallback mặc định
-  return [
-    { id: "1", name: "Họ và tên đối tượng", value: "", confidence: "50%", note: "Không khớp biểu mẫu chính" },
-    { id: "2", name: "Số định danh / CCCD", value: "", confidence: "50%", note: "Không khớp biểu mẫu chính" }
-  ];
+  if (nameLow.includes("điều luật") || nameLow.includes("áp dụng")) {
+    let value = extractValueAfterKeyword(["Điều:", "Khoản:", "Áp dụng điều:", "Theo quy định tại Điều"], ["Bộ luật hình sự"]);
+    if (!value) {
+      const dieuLine = findLineWithKeyword(["Điều "]);
+      const dieuMatch = dieuLine ? dieuLine.match(/Điều\s+\d+/i) : null;
+      value = dieuMatch ? dieuMatch[0] : "";
+    }
+    return { value, confidence: value ? "80%" : "---", note: "Tìm từ khóa Điều luật" };
+  }
+
+  if (nameLow.includes("quyết định") || nameLow.includes("hành vi bị kiện") || nameLow.includes("đối tượng khởi kiện")) {
+    const value = extractValueAfterKeyword(["Quyết định hành chính bị kiện:", "Hành vi hành chính bị kiện:", "Đối tượng khởi kiện:"], ["Thẩm phán", "Yêu cầu"]);
+    return { value, confidence: value ? "70%" : "---", note: "Tìm từ khóa bị kiện" };
+  }
+
+  if (nameLow.includes("yêu cầu khởi kiện")) {
+    const value = extractValueAfterKeyword(["Yêu cầu khởi kiện:", "Yêu cầu:"], ["Kèm theo"]);
+    return { value, confidence: value ? "70%" : "---", note: "Tìm từ khóa Yêu cầu khởi kiện" };
+  }
+
+  return { value: "", confidence: "Thủ công", note: "Trường tùy chỉnh" };
+}
+
+function runSchemaBasedExtraction(
+  text: string,
+  schema: string[]
+): ExtractionRow[] {
+  const cleanText = text || "";
+  const lines = cleanText.split("\n");
+
+  return schema.map((fieldName, index) => {
+    const { value, confidence, note } = extractValueForField(cleanText, fieldName, lines);
+    return {
+      id: `field-${index}-${Date.now()}`,
+      name: fieldName,
+      value,
+      confidence,
+      note
+    };
+  });
 }
 
 export default function StructuredExtractionEditor({
@@ -633,20 +615,9 @@ export default function StructuredExtractionEditor({
     return "";
   })();
 
-  // Cấu hình Loại văn bản & Loại án
-  const [docType, setDocType] = useState<StructuredDocumentType>(() => {
-    if (document.name?.toLowerCase().includes("thụ lý") || document.name?.toLowerCase().includes("thu ly")) {
-      return "thong_bao_thu_ly";
-    }
-    if (document.name?.toLowerCase().includes("khởi tố") || document.name?.toLowerCase().includes("khoi to")) {
-      return "quyet_dinh_khoi_to_bi_can";
-    }
-    return "thong_bao_thu_ly";
-  });
-
+  // Cấu hình Loại án
   const [caseType, setCaseType] = useState<CaseType>(() => {
-    if (docType === "quyet_dinh_khoi_to_bi_can") return "hinh_su";
-    if (document.name?.toLowerCase().includes("hình sự") || document.name?.toLowerCase().includes("hinh su")) {
+    if (document.name?.toLowerCase().includes("hình sự") || document.name?.toLowerCase().includes("hinh su") || document.name?.toLowerCase().includes("khởi tố") || document.name?.toLowerCase().includes("khoi to")) {
       return "hinh_su";
     }
     if (document.name?.toLowerCase().includes("hành chính") || document.name?.toLowerCase().includes("hanh chinh")) {
@@ -654,13 +625,6 @@ export default function StructuredExtractionEditor({
     }
     return "dan_su";
   });
-
-  // Khi thay đổi loại văn bản, tự động định tuyến loại án phù hợp
-  useEffect(() => {
-    if (docType === "quyet_dinh_khoi_to_bi_can") {
-      setCaseType("hinh_su");
-    }
-  }, [docType]);
 
   // Trạng thái bảng trích xuất dữ liệu
   const [rows, setRows] = useState<ExtractionRow[]>([]);
@@ -676,19 +640,20 @@ export default function StructuredExtractionEditor({
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginFeatureName, setLoginFeatureName] = useState("");
 
-  // Chạy bóc tách dữ liệu khi thay đổi cấu hình hoặc tài liệu gốc
+  // Chạy bóc tách dữ liệu sử dụng mặc định
   const handleExtract = () => {
-    const extracted = runRuleBasedExtraction(rawContentText, docType, caseType);
+    const schema = defaultSchemas[caseType];
+    const extracted = runSchemaBasedExtraction(rawContentText, schema);
     setRows(extracted);
   };
 
   useEffect(() => {
     handleExtract();
-  }, [docType, caseType, rawContentText]);
+  }, [caseType, rawContentText]);
 
-  // Reset về cấu hình ban đầu
+  // Khôi phục mặc định
   const handleReset = () => {
-    if (window.confirm("Bạn có chắc chắn muốn khôi phục trích xuất ban đầu? Các chỉnh sửa thủ công của bạn sẽ bị ghi đè.")) {
+    if (window.confirm("Bạn có chắc chắn muốn khôi phục danh sách trường mặc định? Các chỉnh sửa sẽ bị ghi đè.")) {
       handleExtract();
     }
   };
@@ -740,7 +705,7 @@ export default function StructuredExtractionEditor({
 
   // Kiểm tra mẫu tồn tại trong localStorage
   const checkTemplateExists = () => {
-    const key = `${docType}:${caseType.replace(/_/g, "")}`;
+    const key = caseType;
     const stored = localStorage.getItem("lexocr_structured_templates");
     if (stored) {
       try {
@@ -756,7 +721,7 @@ export default function StructuredExtractionEditor({
 
   useEffect(() => {
     checkTemplateExists();
-  }, [docType, caseType]);
+  }, [caseType]);
 
   const generateKey = (label: string) => {
     return label
@@ -774,11 +739,9 @@ export default function StructuredExtractionEditor({
     try {
       const stored = localStorage.getItem("lexocr_structured_templates") || "{}";
       const templates = JSON.parse(stored);
-      const caseTypeKey = caseType.replace(/_/g, "");
-      const key = `${docType}:${caseTypeKey}`;
+      const key = caseType;
       
-      const docTypeLabel = docType === "thong_bao_thu_ly" ? "Thông báo thụ lý" : "Quyết định khởi tố bị can";
-      const caseTypeLabel = caseType === "dan_su" ? "Dân sự" : caseType === "hinh_su" ? "Hình sự" : "Hành chính";
+      const caseTypeLabel = caseType === "dan_su" ? "Dân sự" : caseType === "hinh_su" ? "Hình sự" : caseType === "hanh_chinh" ? "Hành chính" : "Khác / Tùy chỉnh";
 
       const templateFields = rows.map((row) => ({
         label: row.name,
@@ -786,9 +749,8 @@ export default function StructuredExtractionEditor({
       }));
 
       templates[key] = {
-        name: `${docTypeLabel} - ${caseTypeLabel}`,
-        documentType: docType,
-        caseType: caseTypeKey,
+        name: `Mẫu - ${caseTypeLabel}`,
+        caseType: caseType,
         fields: templateFields,
         updatedAt: new Date().toISOString()
       };
@@ -808,40 +770,15 @@ export default function StructuredExtractionEditor({
       const stored = localStorage.getItem("lexocr_structured_templates");
       if (!stored) return;
       const templates = JSON.parse(stored);
-      const key = `${docType}:${caseType.replace(/_/g, "")}`;
+      const key = caseType;
       const template = templates[key];
       if (!template || !template.fields) return;
 
       const templateFields: { label: string; key: string }[] = template.fields;
-
-      // Sắp xếp các trường hiện có theo mẫu.
-      // Nếu mẫu có trường chưa có trong kết quả hiện tại, thêm trường với giá trị rỗng.
-      // Nếu kết quả hiện tại có trường ngoài mẫu, giữ lại ở cuối danh sách.
-      const currentRows = [...rows];
-      const newRows: ExtractionRow[] = [];
-
-      templateFields.forEach((tField) => {
-        const foundIdx = currentRows.findIndex(
-          (r) => r.name.trim().toLowerCase() === tField.label.trim().toLowerCase()
-        );
-        if (foundIdx !== -1) {
-          newRows.push(currentRows[foundIdx]);
-          currentRows.splice(foundIdx, 1);
-        } else {
-          newRows.push({
-            id: `template-${Date.now()}-${Math.random()}`,
-            name: tField.label,
-            value: "",
-            confidence: "Thủ công",
-            note: "Thêm từ mẫu"
-          });
-        }
-      });
-
-      // Thêm các trường ngoài mẫu vào cuối danh sách
-      newRows.push(...currentRows);
-
-      setRows(newRows);
+      const schema = templateFields.map((f: { label: string }) => f.label);
+      const extracted = runSchemaBasedExtraction(rawContentText, schema);
+      
+      setRows(extracted);
       alert("Đã áp dụng mẫu thành công!");
     } catch (error) {
       console.error(error);
@@ -852,12 +789,28 @@ export default function StructuredExtractionEditor({
   // Thêm trường mới
   const handleAddRow = () => {
     if (!newFieldName.trim()) return;
+    const name = newFieldName.trim();
+    // Nếu người dùng không nhập giá trị, thử trích xuất tự động
+    let value = newFieldValue.trim();
+    let confidence = "Thủ công";
+    let note = newFieldNote.trim() || "Thêm thủ công bởi người dùng";
+    
+    if (!value) {
+      const lines = rawContentText.split("\n");
+      const extracted = extractValueForField(rawContentText, name, lines);
+      if (extracted.value) {
+        value = extracted.value;
+        confidence = extracted.confidence;
+        note = extracted.note;
+      }
+    }
+
     const newRow: ExtractionRow = {
       id: Date.now().toString(),
-      name: newFieldName.trim(),
-      value: newFieldValue.trim(),
-      confidence: "Thủ công",
-      note: newFieldNote.trim() || "Thêm thủ công bởi kiểm sát viên"
+      name,
+      value,
+      confidence,
+      note
     };
     setRows((prev) => [...prev, newRow]);
     setNewFieldName("");
@@ -960,35 +913,20 @@ export default function StructuredExtractionEditor({
             </h3>
 
             <div className="space-y-3">
-              {/* Chọn Loại tài liệu */}
-              <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">
-                  Loại tài liệu
-                </label>
-                <select
-                  value={docType}
-                  onChange={(e) => setDocType(e.target.value as StructuredDocumentType)}
-                  className="w-full bg-white border border-slate-300 rounded p-2 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-                >
-                  <option value="thong_bao_thu_ly">Thông báo thụ lý</option>
-                  <option value="quyet_dinh_khoi_to_bi_can">Quyết định khởi tố bị can</option>
-                </select>
-              </div>
-
               {/* Chọn Loại án */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">
-                  Loại án vụ việc
+                  Loại án/vụ việc
                 </label>
                 <select
                   value={caseType}
                   onChange={(e) => setCaseType(e.target.value as CaseType)}
-                  disabled={docType === "quyet_dinh_khoi_to_bi_can"} // Khởi tố bị can luôn là hình sự
-                  className="w-full bg-white border border-slate-300 rounded p-2 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white border border-slate-300 rounded p-2 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                 >
                   <option value="dan_su">Dân sự</option>
                   <option value="hinh_su">Hình sự</option>
                   <option value="hanh_chinh">Hành chính</option>
+                  <option value="khac">Khác / Tùy chỉnh</option>
                 </select>
               </div>
 
