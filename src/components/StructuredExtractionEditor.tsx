@@ -14,7 +14,11 @@ import {
   AlertTriangle,
   CheckCircle2,
   X,
-  FileText
+  FileText,
+  ArrowUp,
+  ArrowDown,
+  Save,
+  LayoutTemplate
 } from "lucide-react";
 import { OcrDocument } from "../types";
 import { useAuth } from "../contexts/AuthContext";
@@ -701,6 +705,150 @@ export default function StructuredExtractionEditor({
     setRows((prev) => prev.filter((row) => row.id !== id));
   };
 
+  // Di chuyển lên
+  const handleMoveUp = (id: string) => {
+    setRows((prev) => {
+      const idx = prev.findIndex((r) => r.id === id);
+      if (idx > 0) {
+        const newRows = [...prev];
+        const temp = newRows[idx];
+        newRows[idx] = newRows[idx - 1];
+        newRows[idx - 1] = temp;
+        return newRows;
+      }
+      return prev;
+    });
+  };
+
+  // Di chuyển xuống
+  const handleMoveDown = (id: string) => {
+    setRows((prev) => {
+      const idx = prev.findIndex((r) => r.id === id);
+      if (idx !== -1 && idx < prev.length - 1) {
+        const newRows = [...prev];
+        const temp = newRows[idx];
+        newRows[idx] = newRows[idx + 1];
+        newRows[idx + 1] = temp;
+        return newRows;
+      }
+      return prev;
+    });
+  };
+
+  // State theo dõi xem có mẫu đã lưu tương ứng hay không
+  const [hasSavedTemplate, setHasSavedTemplate] = useState(false);
+
+  // Kiểm tra mẫu tồn tại trong localStorage
+  const checkTemplateExists = () => {
+    const key = `${docType}:${caseType.replace(/_/g, "")}`;
+    const stored = localStorage.getItem("lexocr_structured_templates");
+    if (stored) {
+      try {
+        const templates = JSON.parse(stored);
+        setHasSavedTemplate(!!templates[key]);
+      } catch {
+        setHasSavedTemplate(false);
+      }
+    } else {
+      setHasSavedTemplate(false);
+    }
+  };
+
+  useEffect(() => {
+    checkTemplateExists();
+  }, [docType, caseType]);
+
+  const generateKey = (label: string) => {
+    return label
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // loại bỏ dấu tiếng Việt
+      .replace(/đ/g, "d")
+      .replace(/[^\w\s-]/g, "") // loại bỏ ký tự đặc biệt trừ khoảng trắng/gạch ngang
+      .trim()
+      .replace(/[-\s]+/g, "_"); // chuyển khoảng trắng/gạch ngang thành gạch dưới
+  };
+
+  // Lưu mẫu
+  const handleSaveTemplate = () => {
+    try {
+      const stored = localStorage.getItem("lexocr_structured_templates") || "{}";
+      const templates = JSON.parse(stored);
+      const caseTypeKey = caseType.replace(/_/g, "");
+      const key = `${docType}:${caseTypeKey}`;
+      
+      const docTypeLabel = docType === "thong_bao_thu_ly" ? "Thông báo thụ lý" : "Quyết định khởi tố bị can";
+      const caseTypeLabel = caseType === "dan_su" ? "Dân sự" : caseType === "hinh_su" ? "Hình sự" : "Hành chính";
+
+      const templateFields = rows.map((row) => ({
+        label: row.name,
+        key: generateKey(row.name)
+      }));
+
+      templates[key] = {
+        name: `${docTypeLabel} - ${caseTypeLabel}`,
+        documentType: docType,
+        caseType: caseTypeKey,
+        fields: templateFields,
+        updatedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem("lexocr_structured_templates", JSON.stringify(templates));
+      setHasSavedTemplate(true);
+      alert("Đã lưu mẫu trường dữ liệu thành công!");
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi khi lưu mẫu.");
+    }
+  };
+
+  // Áp dụng mẫu
+  const handleApplyTemplate = () => {
+    try {
+      const stored = localStorage.getItem("lexocr_structured_templates");
+      if (!stored) return;
+      const templates = JSON.parse(stored);
+      const key = `${docType}:${caseType.replace(/_/g, "")}`;
+      const template = templates[key];
+      if (!template || !template.fields) return;
+
+      const templateFields: { label: string; key: string }[] = template.fields;
+
+      // Sắp xếp các trường hiện có theo mẫu.
+      // Nếu mẫu có trường chưa có trong kết quả hiện tại, thêm trường với giá trị rỗng.
+      // Nếu kết quả hiện tại có trường ngoài mẫu, giữ lại ở cuối danh sách.
+      const currentRows = [...rows];
+      const newRows: ExtractionRow[] = [];
+
+      templateFields.forEach((tField) => {
+        const foundIdx = currentRows.findIndex(
+          (r) => r.name.trim().toLowerCase() === tField.label.trim().toLowerCase()
+        );
+        if (foundIdx !== -1) {
+          newRows.push(currentRows[foundIdx]);
+          currentRows.splice(foundIdx, 1);
+        } else {
+          newRows.push({
+            id: `template-${Date.now()}-${Math.random()}`,
+            name: tField.label,
+            value: "",
+            confidence: "Thủ công",
+            note: "Thêm từ mẫu"
+          });
+        }
+      });
+
+      // Thêm các trường ngoài mẫu vào cuối danh sách
+      newRows.push(...currentRows);
+
+      setRows(newRows);
+      alert("Đã áp dụng mẫu thành công!");
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi khi áp dụng mẫu.");
+    }
+  };
+
   // Thêm trường mới
   const handleAddRow = () => {
     if (!newFieldName.trim()) return;
@@ -843,9 +991,31 @@ export default function StructuredExtractionEditor({
                   <option value="hanh_chinh">Hành chính</option>
                 </select>
               </div>
+
+              {/* Quản lý mẫu trường dữ liệu */}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                <button
+                  onClick={handleSaveTemplate}
+                  className="bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded border border-slate-300 text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
+                  title="Lưu cấu trúc trường hiện tại làm mẫu"
+                >
+                  <Save className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Lưu mẫu</span>
+                </button>
+                <button
+                  onClick={handleApplyTemplate}
+                  disabled={!hasSavedTemplate}
+                  className="bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded border border-slate-300 text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={hasSavedTemplate ? "Áp dụng mẫu đã lưu" : "Chưa có mẫu nào được lưu"}
+                >
+                  <LayoutTemplate className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Áp dụng mẫu</span>
+                </button>
+              </div>
             </div>
 
             <div className="bg-emerald-50 border border-emerald-200/50 rounded-lg p-3 text-[11px] text-emerald-800 leading-relaxed font-semibold">
+```
               Hệ thống tự động điều phối cấu trúc mẫu trường dữ liệu tương ứng với tài liệu thụ lý dân sự/hình sự/hành chính để cán bộ kiểm sát dễ dàng rà soát và kiểm duyệt nhanh.
             </div>
           </div>
@@ -892,19 +1062,20 @@ export default function StructuredExtractionEditor({
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase text-slate-500 font-bold">
                     <th className="py-2.5 px-3 w-4/12">Tên trường</th>
-                    <th className="py-2.5 px-2 w-7/12">Giá trị trích xuất</th>
-                    <th className="py-2.5 px-2 w-1/12 text-center">Xóa</th>
+                    <th className="py-2.5 px-2 w-6/12">Giá trị trích xuất</th>
+                    <th className="py-2.5 px-2 w-1.5/12 text-center">Thứ tự</th>
+                    <th className="py-2.5 px-2 w-0.5/12 text-center">Xóa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {rows.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="p-8 text-center text-slate-400">
+                      <td colSpan={4} className="p-8 text-center text-slate-400">
                         Chưa có trường dữ liệu nào. Vui lòng thêm trường ở phía dưới.
                       </td>
                     </tr>
                   ) : (
-                    rows.map((row) => (
+                    rows.map((row, index) => (
                       <tr key={row.id} className="hover:bg-slate-50/60 transition-colors">
                         <td className="py-2 px-3 align-top">
                           <input
@@ -921,6 +1092,26 @@ export default function StructuredExtractionEditor({
                             className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded p-3 text-slate-600 font-medium leading-normal min-h-[100px] resize-y"
                             style={{ lineHeight: '1.5', display: 'block', alignSelf: 'stretch' }}
                           />
+                        </td>
+                        <td className="py-2 px-2 text-center align-top">
+                          <div className="flex items-center justify-center space-x-1">
+                            <button
+                              onClick={() => handleMoveUp(row.id)}
+                              disabled={index === 0}
+                              className="p-1 text-slate-450 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-450 hover:bg-slate-100 rounded transition-all cursor-pointer disabled:cursor-not-allowed"
+                              title="Di chuyển lên"
+                            >
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleMoveDown(row.id)}
+                              disabled={index === rows.length - 1}
+                              className="p-1 text-slate-450 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-450 hover:bg-slate-100 rounded transition-all cursor-pointer disabled:cursor-not-allowed"
+                              title="Di chuyển xuống"
+                            >
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                         <td className="py-2 px-2 text-center align-top">
                           <button
