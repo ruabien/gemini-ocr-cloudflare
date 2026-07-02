@@ -38,6 +38,36 @@ interface StructuredExtractionEditorProps {
   setActiveTab: (tab: string) => void;
 }
 
+interface AutoGrowingTextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  value: string;
+}
+
+function AutoGrowingTextArea({ value, onChange, className, ...props }: AutoGrowingTextAreaProps) {
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  };
+
+  useEffect(() => {
+    adjustHeight();
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={onChange}
+      className={className}
+      {...props}
+    />
+  );
+}
+
 function extractSectionText(text: string, startKeywords: string[], stopKeywords: string[]): string {
   const cleanText = text || "";
   let startIdx = -1;
@@ -876,7 +906,7 @@ export default function StructuredExtractionEditor({
                   ) : (
                     rows.map((row) => (
                       <tr key={row.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-2 px-3">
+                        <td className="py-2 px-3 align-top">
                           <input
                             type="text"
                             value={row.name}
@@ -884,14 +914,15 @@ export default function StructuredExtractionEditor({
                             className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded px-1.5 py-1 font-bold text-slate-700"
                           />
                         </td>
-                        <td className="py-2 px-2">
-                          <textarea
+                        <td className="py-2 px-2 align-top" style={{ verticalAlign: 'top' }}>
+                          <AutoGrowingTextArea
                             value={row.value}
                             onChange={(e) => handleRowChange(row.id, "value", e.target.value)}
-                            className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded px-1.5 py-1 text-slate-600 font-medium leading-normal h-8 resize-y"
+                            className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded p-3 text-slate-600 font-medium leading-normal min-h-[100px] resize-y"
+                            style={{ lineHeight: '1.5', display: 'block', alignSelf: 'stretch' }}
                           />
                         </td>
-                        <td className="py-2 px-2 text-center">
+                        <td className="py-2 px-2 text-center align-top">
                           <button
                             onClick={() => handleRemoveRow(row.id)}
                             className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all cursor-pointer"
