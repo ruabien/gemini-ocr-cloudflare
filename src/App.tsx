@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import LandingPage from "./components/LandingPage";
-import Dashboard from "./components/Dashboard";
+<!-- Dashboard component removed per MVP simplification -->
 import OcrScanner from "./components/OcrScanner";
 import OcrEditor from "./components/OcrEditor";
 import StructuredExtractionEditor from "./components/StructuredExtractionEditor";
@@ -67,9 +67,7 @@ function AppContent() {
         {activeTab === "landing" && (
           <LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />
         )}
-        {activeTab === "dashboard" && (
-          <Dashboard onStartOcr={handleStart} />
-        )}
+<!-- Dashboard view removed -->
         {activeTab === "scanner" && (
           <OcrScanner
             onFileLoaded={(fileData) => {
