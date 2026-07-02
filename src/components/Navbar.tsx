@@ -100,18 +100,6 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
             <span>Bóc tách tài liệu</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("upgrade")}
-            className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
-              activeTab === "upgrade"
-                ? "bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20"
-                : "text-amber-300 hover:bg-slate-800/60 hover:text-amber-200"
-            }`}
-          >
-            <Sparkles className="h-4 w-4 text-amber-550 text-amber-500 animate-pulse" />
-            <span>Gói thành viên</span>
-          </button>
-
 <button
   onClick={() => {
     setActiveTab("settings");
@@ -182,13 +170,23 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
                       <Key className="h-4 w-4 text-slate-500" />
                       <span>Quản lý API Key</span>
                     </button>
-                    <button 
-                      onClick={() => { setIsDropdownOpen(false); setActiveTab("upgrade"); }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 text-amber-700 flex items-center space-x-2 transition-colors"
-                    >
-                      <Sparkles className="h-4 w-4 text-amber-550 text-amber-500" />
-                      <span className="font-medium">Gói thành viên</span>
-                    </button>
+                    {user?.plan !== "pro" ? (
+                      <button 
+                        onClick={() => { setIsDropdownOpen(false); setActiveTab("upgrade"); }}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 text-amber-700 flex items-center space-x-2 transition-colors font-semibold"
+                      >
+                        <Sparkles className="h-4 w-4 text-amber-500 animate-pulse" />
+                        <span>Nâng cấp PRO</span>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => { setIsDropdownOpen(false); setActiveTab("upgrade"); }}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-slate-700 flex items-center space-x-2 transition-colors"
+                      >
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <span>Gói thành viên</span>
+                      </button>
+                    )}
                     
                     <div className="border-t border-slate-100 mt-1 pt-1">
                       <button 
@@ -266,18 +264,6 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
             >
               <ScanLine className="h-5 w-5 text-yellow-400" />
               <span>Bóc tách tài liệu</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                console.info("[MOBILE NAV]", "upgrade");
-                navigateTo("upgrade");
-              }}
-              className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-amber-500/20 transition-colors"
-            >
-              <Sparkles className="h-5 w-5 text-amber-550 text-amber-500 animate-pulse" />
-              <span>Gói thành viên</span>
             </button>
 
             <button
