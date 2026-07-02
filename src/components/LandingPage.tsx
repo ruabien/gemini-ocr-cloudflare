@@ -377,14 +377,17 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       <section className="bg-slate-100 border-t border-slate-200 py-8">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <p className="text-slate-500 text-[11px] sm:text-xs leading-relaxed font-medium">
-            LexOCR miễn phí cho nhu cầu số hóa hồ sơ cơ bản bằng API Gemini của chính người dùng.
+            LexOCR hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng nhanh chóng, an toàn và miễn phí cho nhu cầu sử dụng cơ bản.
           </p>
         </div>
       </section>
 
       {/* Footer hành chính */}
       <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs flex flex-col items-center justify-center space-y-1.5">
+          <p className="text-slate-500 text-[10px] font-normal tracking-wide">
+            Phiên bản: Procuracy v2.5 • Cập nhật: Tháng 7/2026
+          </p>
           <p>© 2026 LexOCR</p>
         </div>
       </footer>
