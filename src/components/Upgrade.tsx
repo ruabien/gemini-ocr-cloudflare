@@ -207,10 +207,10 @@ export default function UpgradeComponent({
       </div>
 
       {/* BOX SO SÁNH & BẢNG GIÁ */}
-      <div className="flex flex-col-reverse lg:grid lg:grid-cols-12 gap-6 items-start">
+      <section className="mt-8 flex flex-col-reverse lg:grid lg:grid-cols-[1.4fr_0.65fr_0.75fr] gap-6 items-start">
         
         {/* BAN BIỂU SO SÁNH CÁC TÍNH NĂNG CHUYÊN BIỆT */}
-        <div className="w-full lg:col-span-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="w-full bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50/70">
             <h3 className="font-sans font-bold text-sm text-slate-800 flex items-center space-x-2">
               <Layers className="h-4 w-4 text-red-600" />
@@ -340,12 +340,8 @@ export default function UpgradeComponent({
           </div>
         </div>
 
-        {/* BẢNG GIÁ & NÚT NÂNG CẤP CHỌN GÓI */}
-        <div className="w-full lg:col-span-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end h-full">
-            
-            {/* GÓI THÁNG */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col h-full relative">
+        {/* GÓI THÁNG */}
+        <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col h-full relative">
               <div className="flex flex-col justify-between flex-1">
                 <div className="space-y-4">
                   <h3 className="font-sans font-black text-slate-900 text-lg flex items-center space-x-1">
@@ -397,15 +393,15 @@ export default function UpgradeComponent({
               </div>
             </div>
 
-            {/* GÓI NĂM */}
-            <div className="flex flex-col h-[105%] relative">
-              {/* Banner "Khuyến nghị" */}
-              <div className="bg-[#F59E0B] text-white font-bold text-xs py-1.5 rounded-t-2xl text-center uppercase tracking-wider shadow-sm flex items-center justify-center space-x-1">
-                <span>⭐ Khuyến nghị</span>
-              </div>
-              
-              {/* Card nội dung */}
-              <div className="bg-white rounded-b-2xl border-2 border-[#FBBF24] border-t-0 shadow-[0_4px_12px_rgba(245,158,11,0.18)] p-6 flex flex-col justify-between flex-1 relative">
+        {/* GÓI NĂM */}
+        <div className="w-full flex flex-col h-full relative bg-white rounded-2xl border-2 border-[#FBBF24] shadow-[0_4px_12px_rgba(245,158,11,0.18)] overflow-hidden">
+          {/* Banner "Khuyến nghị" */}
+          <div className="bg-[#F59E0B] text-white font-bold text-xs py-1.5 text-center uppercase tracking-wider shadow-sm flex items-center justify-center space-x-1 w-full">
+            <span>⭐ Khuyến nghị</span>
+          </div>
+          
+          {/* Card nội dung */}
+          <div className="p-6 flex flex-col justify-between flex-1 relative bg-white">
                 <div className="space-y-4">
                   <h3 className="font-sans font-black text-slate-900 text-lg flex items-center space-x-1">
                     <span>PRO NĂM</span>
@@ -471,13 +467,10 @@ export default function UpgradeComponent({
                     * Kích hoạt tự động sau khi hoàn tất giao dịch. Xuất hóa đơn đỏ (VAT 8%).
                   </p>
                 </div>
-              </div>
-            </div>
-
           </div>
         </div>
 
-      </div>
+      </section>
 
       {/* MODAL HIỂN THỊ QR CHUYỂN KHOẢN VIETQR (REAL-TIME ACTIVATION) */}
       {showQRModal && (

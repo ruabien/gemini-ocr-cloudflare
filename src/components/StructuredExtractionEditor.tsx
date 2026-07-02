@@ -572,13 +572,13 @@ export default function StructuredExtractionEditor({
           <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
           <h2 className="text-lg font-bold text-slate-800 mb-2">Chưa có dữ liệu hồ sơ được chọn.</h2>
           <p className="text-slate-600 mb-6">
-            Vui lòng quay lại trang Phân tích OCR để chọn file và tiến hành bóc tách.
+            Vui lòng quay lại trang Bóc tách tài liệu để chọn file và tiến hành bóc tách.
           </p>
           <button
             onClick={onBack}
             className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-colors"
           >
-            Quay lại Phân tích OCR
+            Quay lại Bóc tách tài liệu
           </button>
         </div>
       </div>

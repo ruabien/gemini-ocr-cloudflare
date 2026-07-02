@@ -97,7 +97,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
   }`}
 >
             <ScanLine className="h-4 w-4" />
-            <span>Phân tích OCR</span>
+            <span>Bóc tách tài liệu</span>
           </button>
 
           <button
@@ -109,7 +109,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
             }`}
           >
             <Sparkles className="h-4 w-4 text-amber-550 text-amber-500 animate-pulse" />
-            <span>Nâng cấp PRO</span>
+            <span>Gói thành viên</span>
           </button>
 
 <button
@@ -187,7 +187,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
                       className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 text-amber-700 flex items-center space-x-2 transition-colors"
                     >
                       <Sparkles className="h-4 w-4 text-amber-550 text-amber-500" />
-                      <span className="font-medium">Nâng cấp PRO</span>
+                      <span className="font-medium">Gói thành viên</span>
                     </button>
                     
                     <div className="border-t border-slate-100 mt-1 pt-1">
@@ -265,7 +265,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
               className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
             >
               <ScanLine className="h-5 w-5 text-yellow-400" />
-              <span>Phân tích OCR</span>
+              <span>Bóc tách tài liệu</span>
             </button>
 
             <button
@@ -277,7 +277,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
               className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-amber-500/20 transition-colors"
             >
               <Sparkles className="h-5 w-5 text-amber-550 text-amber-500 animate-pulse" />
-              <span>Nâng cấp PRO</span>
+              <span>Gói thành viên</span>
             </button>
 
             <button
