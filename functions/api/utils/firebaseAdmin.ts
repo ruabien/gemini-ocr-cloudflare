@@ -89,9 +89,14 @@ export async function verifyFirebaseIdToken(token: string, projectId: string): P
   }
 
   // 3. Fetch Google public keys and verify signature
-  const res = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken-system@system.gserviceaccount.com");
+  // Fetch Google public JWKs for Firebase token verification.
+  // Updated URL per Firebase documentation to avoid Unauthorized errors.
+  const res = await fetch("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com");
   if (!res.ok) {
-    throw new Error("Failed to fetch Google public keys");
+    // Include status for better diagnostics.
+    const errorBody = await res.text();
+    console.error("Failed to fetch Google public keys:", res.status, errorBody);
+    throw new Error(`Failed to fetch Google public keys: ${res.status}`);
   }
 
   const { keys } = await res.json() as { keys: any[] };

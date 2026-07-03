@@ -94,8 +94,38 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
 
     // 5. Generate unique orderCode
     const orderCode = generateOrderCode();
+    const createdAt = new Date();
+    const expiredAt = new Date(createdAt.getTime() + 15 * 60 * 1000);
 
-    // 6. Call PayOS to create payment link
+    // 6. Save initial pending record to Firestore (with empty checkoutUrl/qrCode)
+    const initialPaymentRecord = {
+      uid,
+      email: email || "",
+      planType,
+      amount,
+      status: "PENDING",
+      orderCode,
+      createdAt,
+      expiredAt,
+      checkoutUrl: "",
+      qrCode: ""
+    };
+
+    try {
+      await savePaymentRecord(
+        env.FIREBASE_SERVICE_ACCOUNT_JSON,
+        String(orderCode),
+        initialPaymentRecord
+      );
+    } catch (firestoreErr: any) {
+      console.error("Firestore initial write failed:", firestoreErr);
+      return new Response(
+        JSON.stringify({ success: false, error: `Database Error: ${firestoreErr.message}` }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    // 7. Call PayOS to create payment link
     const origin = new URL(request.url).origin;
     const returnUrl = `${origin}/?payment_success=true&orderCode=${orderCode}`;
     const cancelUrl = `${origin}/?payment_cancel=true`;
@@ -117,13 +147,25 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
         }
       );
     } catch (payosErr: any) {
+      console.error("PayOS create link failed:", payosErr);
+      try {
+        await updatePaymentStatus(env.FIREBASE_SERVICE_ACCOUNT_JSON, String(orderCode), "FAILED");
+      } catch (updateErr) {
+        console.error("Failed to update status to FAILED after PayOS error:", updateErr);
+      }
       return new Response(
-        JSON.stringify({ success: false, error: payosErr.message }),
+        JSON.stringify({ success: false, error: `PayOS Error: ${payosErr.message}` }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
     if (payosResponse.code !== "00" || !payosResponse.data) {
+      console.error("PayOS returned non-zero code or empty data:", payosResponse);
+      try {
+        await updatePaymentStatus(env.FIREBASE_SERVICE_ACCOUNT_JSON, String(orderCode), "FAILED");
+      } catch (updateErr) {
+        console.error("Failed to update status to FAILED after PayOS failure response:", updateErr);
+      }
       return new Response(
         JSON.stringify({ success: false, error: `PayOS Error: ${payosResponse.desc}` }),
         { status: 500, headers: { "Content-Type": "application/json" } }
@@ -132,19 +174,10 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
 
     const checkoutUrl = payosResponse.data.checkoutUrl;
     const qrCode = payosResponse.data.qrCode;
-    const createdAt = new Date();
-    const expiredAt = new Date(createdAt.getTime() + 15 * 60 * 1000);
 
-    // 7. Save pending record to Firestore
-    const paymentRecord = {
-      uid,
-      email: email || "",
-      planType,
-      amount,
-      status: "PENDING",
-      orderCode,
-      createdAt,
-      expiredAt,
+    // 8. Update checkoutUrl/qrCode into payment in Firestore
+    const updatedPaymentRecord = {
+      ...initialPaymentRecord,
       checkoutUrl,
       qrCode
     };
@@ -153,16 +186,17 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       await savePaymentRecord(
         env.FIREBASE_SERVICE_ACCOUNT_JSON,
         String(orderCode),
-        paymentRecord
+        updatedPaymentRecord
       );
-    } catch (firestoreErr: any) {
+    } catch (firestoreUpdateErr: any) {
+      console.error("Firestore update write failed:", firestoreUpdateErr);
       return new Response(
-        JSON.stringify({ success: false, error: firestoreErr.message }),
+        JSON.stringify({ success: false, error: `Database Update Error: ${firestoreUpdateErr.message}` }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // 8. Return required output
+    // 9. Return required output/session to frontend
     return new Response(
       JSON.stringify({
         success: true,
