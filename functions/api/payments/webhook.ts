@@ -9,10 +9,21 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
   const url = new URL(request.url);
   const method = request.method;
   const pathname = url.pathname;
-  const basicHeaders = {
-    "user-agent": request.headers.get("user-agent"),
-    "content-type": request.headers.get("content-type")
+  
+  // Requirement: Logging method, full URL, pathname, query string, headers (user-agent, content-type, host), timestamp
+  const logInfo = {
+    timestamp,
+    method,
+    fullUrl: request.url,
+    pathname,
+    queryString: url.search,
+    headers: {
+      "user-agent": request.headers.get("user-agent"),
+      "content-type": request.headers.get("content-type"),
+      "host": request.headers.get("host")
+    }
   };
+  console.log(`[Webhook POST Request Received]`, JSON.stringify(logInfo, null, 2));
 
   // Read raw body for logging
   let rawBody = "";
@@ -24,8 +35,6 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
   const bodyLength = rawBody.length;
   const preview = rawBody.slice(0, 500);
 
-  console.log(`[Webhook Log] ${timestamp} ${method} ${pathname}`);
-  console.log(`[Webhook Headers]`, basicHeaders);
   console.log(`[Webhook Body] length=${bodyLength} preview=${preview}`);
 
   try {
@@ -190,6 +199,27 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
 };
 
 export const onRequestGet = async (context: { request: Request; env: any }) => {
+  const { request } = context;
+  const timestamp = new Date().toISOString();
+  const url = new URL(request.url);
+  const method = request.method;
+  const pathname = url.pathname;
+
+  // Requirement: Logging method, full URL, pathname, query string, headers (user-agent, content-type, host), timestamp
+  const logInfo = {
+    timestamp,
+    method,
+    fullUrl: request.url,
+    pathname,
+    queryString: url.search,
+    headers: {
+      "user-agent": request.headers.get("user-agent"),
+      "content-type": request.headers.get("content-type"),
+      "host": request.headers.get("host")
+    }
+  };
+  console.log(`[Webhook GET Request Received]`, JSON.stringify(logInfo, null, 2));
+
   return new Response(
     JSON.stringify({ success: true, message: "PayOS webhook endpoint ready" }),
     { status: 200, headers: { "Content-Type": "application/json" } }
