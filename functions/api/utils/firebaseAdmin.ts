@@ -248,6 +248,101 @@ async function getOAuth2Token(serviceAccount: any): Promise<string> {
 /**
  * Saves a payment pending record to Firestore using the Service Account config.
  */
+export async function getRecentPendingPayments(
+  serviceAccountJson: string | undefined,
+  uid: string
+): Promise<any[]> {
+  if (!serviceAccountJson) return [];
+  let serviceAccount: any;
+  try {
+    serviceAccount = JSON.parse(serviceAccountJson);
+  } catch (e) {
+    return [];
+  }
+  const accessToken = await getOAuth2Token(serviceAccount);
+  const projectId = serviceAccount.project_id;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  
+  const query = {
+    structuredQuery: {
+      from: [{ collectionId: "payments" }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "uid" },
+          op: "EQUAL",
+          value: { stringValue: uid }
+        }
+      }
+    }
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(query)
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = await response.json() as any[];
+  const docs: any[] = [];
+  
+  for (const item of data) {
+    if (item.document && item.document.fields) {
+      const docId = item.document.name.split("/").pop();
+      const fields = item.document.fields;
+      docs.push({
+        id: docId,
+        uid: fields.uid?.stringValue,
+        status: fields.status?.stringValue,
+        createdAt: fields.createdAt?.timestampValue ? new Date(fields.createdAt.timestampValue) : null,
+        expiredAt: fields.expiredAt?.timestampValue ? new Date(fields.expiredAt.timestampValue) : null,
+        orderCode: fields.orderCode?.integerValue ? parseInt(fields.orderCode.integerValue, 10) : null,
+        checkoutUrl: fields.checkoutUrl?.stringValue,
+        qrCode: fields.qrCode?.stringValue,
+        amount: fields.amount?.integerValue ? parseInt(fields.amount.integerValue, 10) : fields.amount?.doubleValue
+      });
+    }
+  }
+  
+  return docs.filter(d => d.status === "PENDING").sort((a, b) => {
+    const timeA = a.createdAt ? a.createdAt.getTime() : 0;
+    const timeB = b.createdAt ? b.createdAt.getTime() : 0;
+    return timeB - timeA; // Descending
+  });
+}
+
+export async function updatePaymentStatus(
+  serviceAccountJson: string | undefined,
+  paymentId: string,
+  status: string
+): Promise<void> {
+  if (!serviceAccountJson) return;
+  const serviceAccount = JSON.parse(serviceAccountJson);
+  const accessToken = await getOAuth2Token(serviceAccount);
+  const projectId = serviceAccount.project_id;
+  
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/payments/${paymentId}?updateMask.fieldPaths=status`;
+  
+  await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      fields: {
+        status: { stringValue: status }
+      }
+    })
+  });
+}
+
 export async function savePaymentRecord(
   serviceAccountJson: string | undefined,
   paymentId: string,
@@ -259,6 +354,9 @@ export async function savePaymentRecord(
     status: string;
     orderCode: number;
     createdAt: Date;
+    expiredAt: Date;
+    checkoutUrl: string;
+    qrCode: string;
   }
 ): Promise<void> {
   if (!serviceAccountJson) {
