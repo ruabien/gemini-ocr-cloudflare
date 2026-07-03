@@ -103,6 +103,11 @@ Webhook giúp PayOS tự động gửi tín hiệu về Backend của bạn ngay
 1. Truy cập trang quản trị **PayOS**.
 2. Chọn dự án `LexOCR` và tìm đến phần cấu hình **Webhook**.
 3. Điền đường dẫn Webhook URL:
-   - **Production:** `https://<your-custom-domain>/api/payments/webhook`
+   - **Webhook PayOS:**
+     `https://lexocr.com/api/payments/webhook`
+   - **Return URL:**
+     `https://lexocr.com`
+   - **Cancel URL:**
+     `https://lexocr.com`
    - **Local Development:** Cần sử dụng các công cụ forward port như `ngrok` hoặc `localtunnel` để expose local worker (VD: `http://localhost:8787`) ra internet công cộng (VD: `https://abc-xyz.ngrok-free.app/api/payments/webhook`).
 4. Bật chế độ webhook và lưu cấu hình.

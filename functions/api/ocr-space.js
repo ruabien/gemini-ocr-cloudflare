@@ -1,6 +1,6 @@
 const getCorsHeaders = (request) => {
   const origin = request.headers.get("Origin") || "";
-  const allowedOrigins = ["https://doc.hotro.online"];
+  const allowedOrigins = ["https://lexocr.com"];
   
   if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) {
     return {
@@ -19,7 +19,7 @@ const getCorsHeaders = (request) => {
   }
   
   return {
-    "Access-Control-Allow-Origin": "https://doc.hotro.online",
+    "Access-Control-Allow-Origin": "https://lexocr.com",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
