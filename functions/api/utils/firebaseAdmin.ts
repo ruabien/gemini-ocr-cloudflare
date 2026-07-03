@@ -317,6 +317,159 @@ export async function getRecentPendingPayments(
   });
 }
 
+export async function getPaymentRecord(
+  serviceAccountJson: string | undefined,
+  orderCode: number
+): Promise<any | null> {
+  if (!serviceAccountJson) return null;
+  let serviceAccount: any;
+  try {
+    serviceAccount = JSON.parse(serviceAccountJson);
+  } catch (e) {
+    return null;
+  }
+  const accessToken = await getOAuth2Token(serviceAccount);
+  const projectId = serviceAccount.project_id;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/payments/${orderCode}`;
+  
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+    }
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const item = await response.json() as any;
+  if (item && item.fields) {
+    const fields = item.fields;
+    return {
+      id: orderCode.toString(),
+      uid: fields.uid?.stringValue,
+      email: fields.email?.stringValue,
+      status: fields.status?.stringValue,
+      createdAt: fields.createdAt?.timestampValue ? new Date(fields.createdAt.timestampValue) : null,
+      expiredAt: fields.expiredAt?.timestampValue ? new Date(fields.expiredAt.timestampValue) : null,
+      orderCode: fields.orderCode?.integerValue ? parseInt(fields.orderCode.integerValue, 10) : null,
+      checkoutUrl: fields.checkoutUrl?.stringValue,
+      qrCode: fields.qrCode?.stringValue,
+      amount: fields.amount?.integerValue ? parseInt(fields.amount.integerValue, 10) : fields.amount?.doubleValue,
+      planType: fields.planType?.stringValue,
+      payosTransactionId: fields.payosTransactionId?.stringValue,
+      paidAt: fields.paidAt?.timestampValue ? new Date(fields.paidAt.timestampValue) : null,
+    };
+  }
+  return null;
+}
+
+export async function getUserProfile(
+  serviceAccountJson: string | undefined,
+  uid: string
+): Promise<any | null> {
+  if (!serviceAccountJson) return null;
+  let serviceAccount: any;
+  try {
+    serviceAccount = JSON.parse(serviceAccountJson);
+  } catch (e) {
+    return null;
+  }
+  const accessToken = await getOAuth2Token(serviceAccount);
+  const projectId = serviceAccount.project_id;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}`;
+  
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+    }
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const item = await response.json() as any;
+  if (item && item.fields) {
+    const fields = item.fields;
+    return {
+      id: uid,
+      plan: fields.plan?.stringValue,
+      planType: fields.planType?.stringValue,
+      expiredAt: fields.expiredAt?.timestampValue ? new Date(fields.expiredAt.timestampValue) : null,
+    };
+  }
+  return null;
+}
+
+export async function updateUserProfile(
+  serviceAccountJson: string | undefined,
+  uid: string,
+  data: {
+    plan: string;
+    planType: string;
+    expiredAt: Date;
+    updatedAt: Date;
+  }
+): Promise<void> {
+  if (!serviceAccountJson) return;
+  const serviceAccount = JSON.parse(serviceAccountJson);
+  const accessToken = await getOAuth2Token(serviceAccount);
+  const projectId = serviceAccount.project_id;
+  
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}?updateMask.fieldPaths=plan&updateMask.fieldPaths=planType&updateMask.fieldPaths=expiredAt&updateMask.fieldPaths=updatedAt`;
+  
+  await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      fields: {
+        plan: { stringValue: data.plan },
+        planType: { stringValue: data.planType },
+        expiredAt: { timestampValue: data.expiredAt.toISOString() },
+        updatedAt: { timestampValue: data.updatedAt.toISOString() }
+      }
+    })
+  });
+}
+
+export async function updatePaymentOnSuccess(
+  serviceAccountJson: string | undefined,
+  paymentId: string,
+  payosTransactionId: string | null,
+  paidAt: Date
+): Promise<void> {
+  if (!serviceAccountJson) return;
+  const serviceAccount = JSON.parse(serviceAccountJson);
+  const accessToken = await getOAuth2Token(serviceAccount);
+  const projectId = serviceAccount.project_id;
+  
+  let url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/payments/${paymentId}?updateMask.fieldPaths=status&updateMask.fieldPaths=paidAt`;
+  const fields: Record<string, any> = {
+    status: { stringValue: "PAID" },
+    paidAt: { timestampValue: paidAt.toISOString() }
+  };
+  
+  if (payosTransactionId) {
+    url += "&updateMask.fieldPaths=payosTransactionId";
+    fields.payosTransactionId = { stringValue: payosTransactionId };
+  }
+  
+  await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fields })
+  });
+}
+
 export async function updatePaymentStatus(
   serviceAccountJson: string | undefined,
   paymentId: string,

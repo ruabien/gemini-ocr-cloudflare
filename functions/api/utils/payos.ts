@@ -2,7 +2,7 @@
  * PayOS Helper using standard fetch and Web Crypto API.
  */
 
-async function hmacSha256(key: string, data: string): Promise<string> {
+export async function hmacSha256(key: string, data: string): Promise<string> {
   const encoder = new TextEncoder();
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
@@ -94,4 +94,34 @@ export async function createPayOSPaymentLink(
 
   const result = await response.json() as PayOSResponse;
   return result;
+}
+
+export async function verifyWebhookData(
+  data: any,
+  checksumKey: string,
+  expectedSignature: string
+): Promise<boolean> {
+  if (!data || !checksumKey || !expectedSignature) return false;
+  
+  // Sort keys alphabetically
+  const keys = Object.keys(data).sort();
+  const params: string[] = [];
+  
+  for (const key of keys) {
+    if (key === "signature") continue;
+    const value = data[key];
+    if (value === null || value === undefined) continue;
+    
+    let strVal = "";
+    if (typeof value === "object") {
+      strVal = JSON.stringify(value);
+    } else {
+      strVal = String(value);
+    }
+    params.push(`${key}=${strVal}`);
+  }
+  
+  const signatureData = params.join("&");
+  const computedSignature = await hmacSha256(checksumKey, signatureData);
+  return computedSignature === expectedSignature;
 }
