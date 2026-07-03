@@ -26,7 +26,15 @@ export function calculateNewExpiry(
 export async function createPaymentSession(
   idToken: string,
   planType: "month" | "year"
-): Promise<{ checkoutUrl?: string; orderCode?: number; amount?: number; error?: string }> {
+): Promise<{
+  checkoutUrl?: string;
+  orderCode?: number;
+  amount?: number;
+  qrCode?: string;
+  expiredAt?: string;
+  isReuseOrder?: boolean;
+  error?: string;
+}> {
   try {
     const response = await fetch("/api/payments/create", {
       method: "POST",
@@ -45,7 +53,10 @@ export async function createPaymentSession(
     return {
       checkoutUrl: data.checkoutUrl,
       orderCode: data.orderCode,
-      amount: data.amount
+      amount: data.amount,
+      qrCode: data.qrCode,
+      expiredAt: data.expiredAt,
+      isReuseOrder: data.isReuseOrder
     };
   } catch (error: any) {
     return { error: error.message || "Lỗi kết nối mạng." };
