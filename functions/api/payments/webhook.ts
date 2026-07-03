@@ -5,35 +5,56 @@ import { calculateNewExpiry } from "../../../src/utils/payment";
 export const onRequestPost = async (context: { request: Request; env: any }) => {
   const { request, env } = context;
 
+  const timestamp = new Date().toISOString();
+  const url = new URL(request.url);
+  const method = request.method;
+  const pathname = url.pathname;
+  const basicHeaders = {
+    "user-agent": request.headers.get("user-agent"),
+    "content-type": request.headers.get("content-type")
+  };
+
+  // Read raw body for logging
+  let rawBody = "";
+  try {
+    rawBody = await request.clone().text();
+  } catch (e) {
+    // ignore parsing error for logging
+  }
+  const bodyLength = rawBody.length;
+  const preview = rawBody.slice(0, 500);
+
+  console.log(`[Webhook Log] ${timestamp} ${method} ${pathname}`);
+  console.log(`[Webhook Headers]`, basicHeaders);
+  console.log(`[Webhook Body] length=${bodyLength} preview=${preview}`);
+
   try {
     // 1. Parse request body
     let body: any;
     try {
-      body = await request.json();
+      body = await request.clone().json();
     } catch (e) {
       return new Response(
-        JSON.stringify({ success: true, message: "Webhook endpoint is active" }),
+        JSON.stringify({ success: true, message: "Webhook endpoint received" }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
     const { data, signature } = body;
     
-    // Check if it's a test webhook / webhook confirmation / empty payload / no transaction data
+    // Determine if this is a test or empty webhook
     const isTestWebhook = 
-      !data || 
-      !signature || 
+      !data ||
+      !signature ||
       typeof data !== "object" ||
-      data.orderCode === undefined || 
-      data.orderCode === null || 
+      data.orderCode === undefined ||
+      data.orderCode === null ||
       data.orderCode === 0 ||
-      data.description === "confirm-webhook" || 
-      data.description === "confirm" ||
-      data.description === "demo";
+      ["confirm-webhook", "confirm", "demo"].includes(data.description);
 
     if (isTestWebhook) {
       return new Response(
-        JSON.stringify({ success: true, message: "PayOS webhook endpoint ready" }),
+        JSON.stringify({ success: true, message: "Webhook endpoint received" }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
