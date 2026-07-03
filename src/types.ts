@@ -55,3 +55,28 @@ export interface OcrDocument {
   documentType?: string;
   caseType?: string;
 }
+
+export type PlanType = "month" | "year";
+
+export type PaymentStatus = "PENDING" | "PAID" | "CANCELLED" | "FAILED";
+
+export interface UserSubscription {
+  uid: string;
+  email: string;
+  displayName: string;
+  plan: "free" | "pro";
+  planType: PlanType | null;
+  expiredAt: number | null;
+  updatedAt: number;
+}
+
+export interface PaymentRecord {
+  uid: string;
+  orderCode: number;
+  amount: number;
+  planType: PlanType;
+  status: PaymentStatus;
+  payosTransactionId: string | null;
+  createdAt: number;
+  paidAt: number | null;
+}
