@@ -28,11 +28,12 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       data.orderCode === null || 
       data.orderCode === 0 ||
       data.description === "confirm-webhook" || 
-      data.description === "confirm";
+      data.description === "confirm" ||
+      data.description === "demo";
 
     if (isTestWebhook) {
       return new Response(
-        JSON.stringify({ success: true, message: "Webhook endpoint is active" }),
+        JSON.stringify({ success: true, message: "PayOS webhook endpoint ready" }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
