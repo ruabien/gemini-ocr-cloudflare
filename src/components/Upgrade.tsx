@@ -43,6 +43,7 @@ export default function UpgradeComponent({
     isReuseOrder?: boolean;
   } | null>(null);
   const [isExpired, setIsExpired] = useState<boolean>(false);
+  const [qrLoadError, setQrLoadError] = useState<boolean>(false);
 
   const name = user ? (user.displayName || user.email?.split("@")[0] || "User") : "Khách";
 
@@ -71,6 +72,18 @@ export default function UpgradeComponent({
   const formattedInfo = encodeURIComponent(`LEXOCR PRO ${cleanNameForQr} ${billingCycle === "yearly" ? "1Y" : "1M"}`);
   
   const vietQrUrl = `https://api.vietqr.io/image/970422-190820268888-qF68VpM.jpg?accountName=${formattedAccountName}&amount=${activePlan.amount}&addInfo=${formattedInfo}`;
+
+  const qrCodeUrl = (() => {
+    if (paymentSession) {
+      if (paymentSession.qrCode && (paymentSession.qrCode.startsWith("http") || paymentSession.qrCode.startsWith("data:"))) {
+        return paymentSession.qrCode;
+      }
+      if (paymentSession.checkoutUrl) {
+        return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(paymentSession.checkoutUrl)}`;
+      }
+    }
+    return vietQrUrl;
+  })();
 
   // Timer Countdown
   useEffect(() => {
@@ -128,6 +141,7 @@ export default function UpgradeComponent({
     setTimerSeconds(300); 
     setIsExpired(false);
     setPaymentSession(null);
+    setQrLoadError(false);
     setLogs([
       "Đang kết nối đến cổng thanh toán PayOS...",
       "Đang khởi tạo đơn hàng thanh toán..."
@@ -598,11 +612,29 @@ export default function UpgradeComponent({
                             Tạo mã mới
                           </button>
                         </div>
+                      ) : qrLoadError ? (
+                        <div className="h-56 w-56 flex flex-col items-center justify-center bg-slate-50 p-4 space-y-3 text-center border border-slate-100 rounded-xl">
+                          <AlertTriangle className="h-8 w-8 text-amber-500" />
+                          <p className="text-xs font-bold text-slate-700 leading-tight">
+                            Không tải được mã QR, vui lòng mở trang thanh toán.
+                          </p>
+                          {paymentSession?.checkoutUrl && (
+                            <a
+                              href={paymentSession.checkoutUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer transition-colors mt-2"
+                            >
+                              Mở trang thanh toán PayOS
+                            </a>
+                          )}
+                        </div>
                       ) : (
                         <div className="relative">
                           <img 
                             referrerPolicy="no-referrer"
-                            src={paymentSession?.qrCode ?? vietQrUrl} 
+                            src={qrCodeUrl} 
+                            onError={() => setQrLoadError(true)}
                             alt="Mã QR thanh toán PayOS" 
                             className="h-56 w-56 object-contain"
                           />
