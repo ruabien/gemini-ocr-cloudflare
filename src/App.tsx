@@ -30,9 +30,9 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState("landing");
   const [userGeminiKey, setUserGeminiKey] = useState<string>("");
 
-  const { user, updateUserPlan } = useAuth();
+  const { user, updateUserPlan, isPro } = useAuth();
 
-  const membershipRole = user?.plan === "pro" ? "Pro" : "Free";
+  const membershipRole = isPro ? "Pro" : "Free";
   const setMembershipRole = (role: "Free" | "Pro") => {
     updateUserPlan(role === "Pro" ? "pro" : "free");
   };

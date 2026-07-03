@@ -14,7 +14,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ activeTab, setActiveTab, membershipRole }: NavbarProps) {
-  const { user, loginWithGoogle, logout } = useAuth();
+  const { user, loginWithGoogle, logout, isPro } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -132,7 +132,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
                   <span className="text-xs font-bold text-slate-200">
                     {user.displayName || user.email?.split("@")[0]}
                   </span>
-                  {user.plan === "pro" ? (
+                  {isPro ? (
                     <span className="px-1.5 py-0.5 rounded text-[9px] tracking-wider uppercase font-black bg-amber-500/20 text-amber-400 border border-amber-500/35 animate-pulse">
                       PRO
                     </span>
@@ -174,7 +174,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
                       <Key className="h-4 w-4 text-slate-500" />
                       <span>Quản lý API Key</span>
                     </button>
-                    {user?.plan !== "pro" ? (
+                    {!isPro ? (
                       <button 
                         onClick={() => { setIsDropdownOpen(false); setActiveTab("upgrade"); }}
                         className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 text-amber-700 flex items-center space-x-2 transition-colors font-semibold"
