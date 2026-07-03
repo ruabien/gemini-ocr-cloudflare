@@ -12,16 +12,28 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       body = await request.json();
     } catch (e) {
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid JSON body" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, message: "Webhook endpoint is active" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
     const { data, signature } = body;
-    if (!data || !signature) {
+    
+    // Check if it's a test webhook / webhook confirmation / empty payload / no transaction data
+    const isTestWebhook = 
+      !data || 
+      !signature || 
+      typeof data !== "object" ||
+      data.orderCode === undefined || 
+      data.orderCode === null || 
+      data.orderCode === 0 ||
+      data.description === "confirm-webhook" || 
+      data.description === "confirm";
+
+    if (isTestWebhook) {
       return new Response(
-        JSON.stringify({ success: false, error: "Missing data or signature in payload" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, message: "Webhook endpoint is active" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
       );
     }
 
@@ -153,4 +165,11 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
+};
+
+export const onRequestGet = async (context: { request: Request; env: any }) => {
+  return new Response(
+    JSON.stringify({ success: true, message: "PayOS webhook endpoint ready" }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
 };
