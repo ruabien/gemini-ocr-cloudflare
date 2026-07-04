@@ -336,16 +336,11 @@ useEffect(() => {
     }
   };
 
-  // Copy All (Pro only)
+  // Copy All (Free for everyone)
   const handleCopyAll = async () => {
     if (!user) {
       setLoginFeatureName("Sao chép tất cả nội dung (Copy All)");
       setShowLoginPrompt(true);
-      return;
-    }
-    if (membershipRole !== "Pro") {
-      setUpgradeFeature("Sao chép tất cả nội dung (Copy All)");
-      setShowUpgradeModal(true);
       return;
     }
 
@@ -530,14 +525,10 @@ useEffect(() => {
 
           <button
             onClick={handleCopyAll}
-            className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0 transition-all ${
-              membershipRole === "Pro"
-                ? "bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent"
-                : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
-            }`}
+            className="px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0 transition-all bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent"
           >
             {isCopied ? <Check className="h-4 w-4 flex-shrink-0" /> : <Copy className="h-4 w-4 flex-shrink-0" />}
-            <span className="truncate">{isCopied ? "Đã copy" : membershipRole === "Pro" ? "Copy All" : "Copy PRO"}</span>
+            <span className="truncate">{isCopied ? "Đã copy" : "Copy All"}</span>
           </button>
 
           <button
