@@ -143,7 +143,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* PHẦN 5 - DEMO OCR THỰC TẾ */}
-      <section className="bg-slate-50 py-16 px-6 sm:px-12 w-full border-y border-slate-200">
+      <section className="bg-slate-100/50 py-16 px-6 sm:px-12 w-full border-y border-slate-200">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
@@ -378,14 +378,13 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* Footer hành chính */}
-      <footer className="bg-slate-900 text-slate-400 py-12 px-6 sm:px-12 w-full border-t border-slate-800 mt-12">
+      <div className="text-center text-xs flex flex-col items-center justify-center space-y-2 mt-12 mb-6">
+        <p className="text-slate-500 text-[11px] leading-relaxed font-medium max-w-xl mx-auto px-4 mb-2">
+          LexOCR hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng nhanh chóng, an toàn và miễn phí cho nhu cầu sử dụng cơ bản.
+        </p>
+      </div>
+      <footer className="bg-slate-900 text-slate-400 py-6 px-6 sm:px-12 w-full border-t border-slate-800">
         <div className="max-w-7xl mx-auto text-center text-xs flex flex-col items-center justify-center space-y-2">
-          <p className="text-slate-500 text-[11px] leading-relaxed font-medium max-w-xl mx-auto px-4 mb-2">
-            LexOCR hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng nhanh chóng, an toàn và miễn phí cho nhu cầu sử dụng cơ bản.
-          </p>
-          <p className="text-slate-500 text-[10px] font-normal tracking-wide">
-            Phiên bản: Procuracy v2.5 • Cập nhật: Tháng 7/2026
-          </p>
           <p>© 2026 LexOCR</p>
         </div>
       </footer>
