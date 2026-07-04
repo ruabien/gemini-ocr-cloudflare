@@ -273,7 +273,6 @@ export default function UpgradeComponent({
             </button>
           </div>
         </div>
-      </div>
 
       {/* THÔNG TIN GÓI HIỆN TẠI */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
