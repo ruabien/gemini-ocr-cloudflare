@@ -21,7 +21,7 @@ export default function AppLayout({
         Header is 72px fixed. So we use pt-[72px] to push content down.
         The content wrapper has the exact unified container specifications.
       */}
-      <main className="flex-1 w-full max-w-[1280px] mx-auto px-[16px] md:px-[24px] py-6 flex flex-col pt-[calc(72px+1.5rem)]">
+<main className={`flex-1 w-full flex flex-col ${activeTab === "landing" ? "pt-[72px]" : "max-w-[1280px] mx-auto px-[16px] md:px-[24px] py-6 pt-[calc(72px+1.5rem)]"}`}>
         {children}
       </main>
     </div>

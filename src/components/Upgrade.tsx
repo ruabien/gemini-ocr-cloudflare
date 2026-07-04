@@ -248,28 +248,31 @@ export default function UpgradeComponent({
   return (
     <div id="upgrade-view" className="space-y-6">
       
-      {/* HEADER QUYỀN TÁC VỤ */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-4 gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-800 px-3 py-1 rounded-full text-xs font-bold uppercase mb-2">
-            <Trophy className="h-3.5 w-3.5 text-amber-600" />
-            <span>NÂNG THẾ NGHIỆP VỤ CÔNG TỐ & KIỂM SÁT</span>
+        {/* HEADER QUYỀN TÁC VỤ */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-4 gap-4">
+            <div>
+              <div className="inline-flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-800 px-3 py-1 rounded-full text-xs font-bold uppercase mb-2">
+                <Trophy className="h-3.5 w-3.5 text-amber-600" />
+                <span>NÂNG THẾ NGHIỆP CÔNG TỐ & KIỂM SÁT</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-sans font-bold text-slate-900 tracking-tight flex items-center">
+                Mở khóa Toàn năng Trợ lý Số hóa LexOCR PRO
+              </h2>
+              <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
+                Mở rộng tính năng bóc tách tự động, cấu trúc tệp Cáo trạng/Bản án lớn và hỗ trợ đặc quyền Kiểm sát viên các cấp.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setActiveTab("scanner")}
+              className="flex items-center space-x-1 text-xs text-slate-500 hover:text-slate-800 font-bold border border-slate-200 hover:border-slate-300 bg-white rounded-lg px-3 py-2 transition-all cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Về trang bóc tách</span>
+            </button>
           </div>
-          <h2 className="text-xl sm:text-2xl font-sans font-bold text-slate-900 tracking-tight flex items-center">
-            Mở khóa Toàn năng Trợ lý Số hóa LexOCR PRO
-          </h2>
-          <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-            Mở rộng tính năng bóc tách tự động, cấu trúc tệp Cáo trạng/Bản án lớn và hỗ trợ đặc quyền Kiểm sát viên các cấp.
-          </p>
         </div>
-        
-        <button
-          onClick={() => setActiveTab("scanner")}
-          className="flex items-center space-x-1 text-xs text-slate-500 hover:text-slate-800 font-bold border border-slate-200 hover:border-slate-300 bg-white rounded-lg px-3 py-2 transition-all cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Về trang bóc tách</span>
-        </button>
       </div>
 
       {/* THÔNG TIN GÓI HIỆN TẠI */}
