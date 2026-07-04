@@ -30,6 +30,8 @@ export default function UpgradeComponent({
   const currentCycle = planType === "month" ? "monthly" : planType === "year" ? "yearly" : (localStorage.getItem('lexocr_pro_cycle') || 'yearly');
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success">("pending");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState<number>(300); // countdown in seconds
   const [logs, setLogs] = useState<string[]>([
     "Khởi tạo hóa đơn nghiệp vụ...",
@@ -45,6 +47,11 @@ export default function UpgradeComponent({
   } | null>(null);
   const [isExpired, setIsExpired] = useState<boolean>(false);
   const [qrLoadError, setQrLoadError] = useState<boolean>(false);
+
+  // Requirement 4: Track baseline subscription state when modal opens to avoid false successes
+  const [initialExpiredAt, setInitialExpiredAt] = useState<number | null>(null);
+  const [initialPlanType, setInitialPlanType] = useState<string | null>(null);
+  const [initialIsPro, setInitialIsPro] = useState<boolean>(false);
 
   const name = user ? (user.displayName || user.email?.split("@")[0] || "User") : "Khách";
 
@@ -106,20 +113,43 @@ export default function UpgradeComponent({
 
   // If isPro realtime becomes true in AuthContext when the modal is open, sync to paymentStatus = success
   useEffect(() => {
-    // Only set success if the newly updated plan matches what the user just bought, 
-    // or if they are now PRO and we're actively waiting for it.
-    if (showQRModal && isPro && paymentStatus !== "success") {
-      // It's possible they were already PRO Monthly, and they bought PRO Yearly.
-      // In that case, we need to check if the planType in AuthContext updated to 'year'
-      if (billingCycle === "yearly" && planType !== "year") {
-        return; // Still waiting for the yearly plan update
+    // Requirement 4: Don't show "Thanh toán thành công" false success screen just because user is already PRO.
+    // Only show success when subscription changes or transaction completes.
+    if (showQRModal && paymentStatus !== "success" && paymentSession) {
+      // Check if subscription has updated after the modal was opened
+      const hasPlanTypeChanged = planType !== initialPlanType;
+      const hasExpiryExtended = expiredAt && initialExpiredAt ? (expiredAt > initialExpiredAt) : (expiredAt && !initialExpiredAt);
+      const hasBecomePro = isPro && !initialIsPro;
+
+      if (hasPlanTypeChanged || hasExpiryExtended || hasBecomePro) {
+        setPaymentStatus("success");
+        setLogs(prev => [...prev, "Thanh toán thành công! LexOCR PRO đã được kích hoạt."]);
+        setTimerSeconds(3); // 3 seconds auto-close countdown
       }
-      
-      setPaymentStatus("success");
-      setLogs(prev => [...prev, "Thanh toán thành công! LexOCR PRO đã được kích hoạt."]);
-      setTimerSeconds(3); // 3 seconds auto-close countdown
     }
-  }, [showQRModal, isPro, paymentStatus, billingCycle, planType]);
+  }, [showQRModal, isPro, expiredAt, planType, paymentStatus, paymentSession, initialExpiredAt, initialPlanType, initialIsPro]);
+
+  // Toast handling for successful payment via URL query param (Requirement 6)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const isSuccessParam = params.get("payment_success") === "true";
+      const statusParam = params.get("status");
+      
+      if (isSuccessParam || statusParam === "PAID") {
+        setToastMessage("Thanh toán thành công. Gói LexOCR PRO đã được kích hoạt.");
+        setShowToast(true);
+        // Auto hide after 3 seconds
+        const timer = setTimeout(() => {
+          setShowToast(false);
+          // Clean query params from URL without reload
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, "", newUrl);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
 
   // Handle auto‑close countdown on success
   useEffect(() => {
@@ -144,6 +174,11 @@ export default function UpgradeComponent({
       window.alert("Vui lòng đăng nhập Google để thực hiện nâng cấp tài khoản PRO.");
       return;
     }
+
+    // Capture baseline subscription details
+    setInitialExpiredAt(expiredAt);
+    setInitialPlanType(planType);
+    setInitialIsPro(isPro);
 
     setBillingCycle(cycle);
     setPaymentStatus("pending");
@@ -261,7 +296,17 @@ export default function UpgradeComponent({
           </div>
           <div className="flex flex-col">
             <span className="text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Ngày hết hạn</span>
-            <span className="font-medium text-slate-700">{expiredAt ? new Date(expiredAt).toLocaleDateString('vi-VN') : '--'}</span>
+            <span className="font-medium text-slate-700">
+              {expiredAt 
+                ? (() => {
+                    const dateObj = new Date(expiredAt);
+                    const dd = String(dateObj.getDate()).padStart(2, '0');
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const yyyy = dateObj.getFullYear();
+                    return `${dd}/${mm}/${yyyy}`;
+                  })()
+                : '--'}
+            </span>
           </div>
           <div className="flex flex-col">
             <span className="text-slate-500 text-[10px] uppercase tracking-wider mb-0.5">Còn lại</span>
@@ -274,9 +319,29 @@ export default function UpgradeComponent({
                 : '--'}
             </span>
           </div>
-          <button className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-lg transition-colors ml-auto sm:ml-0 border border-slate-200 shadow-sm cursor-pointer">
-            Gia hạn
-          </button>
+          {(() => {
+            if (membershipRole !== "Pro") return null;
+            const diff = expiredAt ? Math.ceil((expiredAt - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+            if (diff > 7) return null;
+            if (diff >= 1) {
+              return (
+                <button 
+                  onClick={() => handleOpenPayment(currentCycle === 'monthly' ? 'monthly' : 'yearly')}
+                  className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium rounded-lg transition-colors ml-auto sm:ml-0 border border-slate-200 shadow-sm cursor-pointer"
+                >
+                  Gia hạn
+                </button>
+              );
+            }
+            return (
+              <button 
+                onClick={() => handleOpenPayment(currentCycle === 'monthly' ? 'monthly' : 'yearly')}
+                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition-colors ml-auto sm:ml-0 border border-amber-500 shadow-sm cursor-pointer animate-pulse"
+              >
+                Gia hạn ngay
+              </button>
+            );
+          })()}
         </div>
       </div>
 
@@ -520,13 +585,18 @@ export default function UpgradeComponent({
                   <span>Đang sử dụng</span>
                 </button>
               ) : isProMonthly ? (
-                <button
-                  onClick={() => handleOpenPayment("yearly")}
-                  className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
-                >
-                  <Trophy className="h-4 w-4 text-amber-100" />
-                  <span>NÂNG CẤP PRO NĂM</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => handleOpenPayment("yearly")}
+                    className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
+                  >
+                    <Trophy className="h-4 w-4 text-amber-100" />
+                    <span>Chuyển sang PRO Năm</span>
+                  </button>
+                  <p className="text-[11px] text-slate-500 italic mt-1 leading-normal text-center">
+                    Thời gian còn lại của gói hiện tại sẽ được cộng dồn sau khi thanh toán.
+                  </p>
+                </>
               ) : (
                 <button
                   onClick={() => handleOpenPayment("yearly")}
