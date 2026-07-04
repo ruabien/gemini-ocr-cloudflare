@@ -66,23 +66,17 @@ export default function UpgradeComponent({
 
   const activePlan = billingCycle === "monthly" ? prices.monthly : prices.yearly;
 
-  // Real VietQR Image generation using public vietqr api (fallback)
-  const formattedAccountName = encodeURIComponent("DU AN LEXOCR CHUYEN NGHIEP");
-  const cleanNameForQr = name.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9 ]/g, "");
-  const formattedInfo = encodeURIComponent(`LEXOCR PRO ${cleanNameForQr} ${billingCycle === "yearly" ? "1Y" : "1M"}`);
-  
-  const vietQrUrl = `https://api.vietqr.io/image/970422-190820268888-qF68VpM.jpg?accountName=${formattedAccountName}&amount=${activePlan.amount}&addInfo=${formattedInfo}`;
-
   const qrCodeUrl = (() => {
-    if (paymentSession) {
-      if (paymentSession.qrCode && (paymentSession.qrCode.startsWith("http") || paymentSession.qrCode.startsWith("data:"))) {
-        return paymentSession.qrCode;
+    if (paymentSession && paymentSession.qrCode) {
+      const qr = paymentSession.qrCode.trim();
+      if (qr.startsWith("http") || qr.startsWith("data:")) {
+        return qr;
       }
-      if (paymentSession.checkoutUrl) {
-        return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(paymentSession.checkoutUrl)}`;
+      if (qr.startsWith("000201")) {
+        return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qr)}`;
       }
     }
-    return vietQrUrl;
+    return null;
   })();
 
   // Timer Countdown
@@ -154,6 +148,11 @@ export default function UpgradeComponent({
       const planType = cycle === "monthly" ? "month" : "year";
       const res = await createPaymentSession(idToken, planType);
       
+      // DEV Logging for PayOS response
+      console.log("DEV - PayOS response keys:", res ? Object.keys(res) : []);
+      console.log("DEV - PayOS response qrCode type:", typeof res?.qrCode);
+      console.log("DEV - PayOS response checkoutUrl exists:", res?.checkoutUrl ? "Yes" : "No");
+
       if (res.error) {
         setLogs(prev => [...prev, `Lỗi: ${res.error}`]);
         return;
@@ -599,9 +598,14 @@ export default function UpgradeComponent({
                       <p className="text-[10px] text-slate-500">Mở ứng dụng Mobile Banking của bạn để quét mã và giao dịch tự động</p>
                     </div>
 
-                    {/* QR BOX */}
-                    <div className="border border-slate-200 p-2.5 rounded-2xl bg-white shadow-inner relative group select-none">
-                      {isExpired ? (
+                    {/* QR BOX OR FALLBACK MESSAGE */}
+                    {!paymentSession ? (
+                      <div className="h-56 w-56 flex flex-col items-center justify-center bg-slate-50 space-y-3 border border-slate-200 p-2.5 rounded-2xl">
+                        <RefreshCw className="h-8 w-8 text-amber-500 animate-spin" />
+                        <p className="text-xs text-slate-500">Đang khởi tạo mã QR...</p>
+                      </div>
+                    ) : isExpired ? (
+                      <div className="border border-slate-200 p-2.5 rounded-2xl bg-white shadow-inner relative group select-none">
                         <div className="h-56 w-56 flex flex-col items-center justify-center bg-slate-50 space-y-3">
                           <AlertTriangle className="h-10 w-10 text-red-500 animate-pulse" />
                           <p className="text-xs font-bold text-slate-700">Mã thanh toán đã hết hạn</p>
@@ -612,7 +616,9 @@ export default function UpgradeComponent({
                             Tạo mã mới
                           </button>
                         </div>
-                      ) : qrLoadError ? (
+                      </div>
+                    ) : qrLoadError ? (
+                      <div className="border border-slate-200 p-2.5 rounded-2xl bg-white shadow-inner relative group select-none">
                         <div className="h-56 w-56 flex flex-col items-center justify-center bg-slate-50 p-4 space-y-3 text-center border border-slate-100 rounded-xl">
                           <AlertTriangle className="h-8 w-8 text-amber-500" />
                           <p className="text-xs font-bold text-slate-700 leading-tight">
@@ -629,7 +635,16 @@ export default function UpgradeComponent({
                             </a>
                           )}
                         </div>
-                      ) : (
+                      </div>
+                    ) : !qrCodeUrl ? (
+                      <div className="h-56 w-56 flex flex-col items-center justify-center bg-amber-50/50 p-4 space-y-3 text-center border border-amber-200 rounded-2xl">
+                        <AlertTriangle className="h-8 w-8 text-amber-500 animate-pulse" />
+                        <p className="text-xs font-bold text-amber-800 leading-normal">
+                          Không có mã QR thanh toán hợp lệ. Vui lòng mở trang thanh toán PayOS.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="border border-slate-200 p-2.5 rounded-2xl bg-white shadow-inner relative group select-none">
                         <div className="relative">
                           <img 
                             referrerPolicy="no-referrer"
@@ -643,8 +658,8 @@ export default function UpgradeComponent({
                             <span>Mã hết hạn trong: {formatTime(timerSeconds)}</span>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* Button to open checkout url directly */}
                     {paymentSession?.checkoutUrl && !isExpired && (
