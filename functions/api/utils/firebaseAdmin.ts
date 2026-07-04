@@ -255,7 +255,9 @@ async function getOAuth2Token(serviceAccount: any): Promise<string> {
  */
 export async function getRecentPendingPayments(
   serviceAccountJson: string | undefined,
-  uid: string
+  uid: string,
+  planType?: string,
+  amount?: number
 ): Promise<any[]> {
   if (!serviceAccountJson) return [];
   let serviceAccount: any;
@@ -268,6 +270,7 @@ export async function getRecentPendingPayments(
   const projectId = serviceAccount.project_id;
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
   
+  // We query only by uid to avoid Firestore composite index requirements
   const query = {
     structuredQuery: {
       from: [{ collectionId: "payments" }],
@@ -310,16 +313,24 @@ export async function getRecentPendingPayments(
         orderCode: fields.orderCode?.integerValue ? parseInt(fields.orderCode.integerValue, 10) : null,
         checkoutUrl: fields.checkoutUrl?.stringValue,
         qrCode: fields.qrCode?.stringValue,
-        amount: fields.amount?.integerValue ? parseInt(fields.amount.integerValue, 10) : fields.amount?.doubleValue
+        amount: fields.amount?.integerValue ? parseInt(fields.amount.integerValue, 10) : fields.amount?.doubleValue,
+        planType: fields.planType?.stringValue
       });
     }
   }
   
-  return docs.filter(d => d.status === "PENDING").sort((a, b) => {
-    const timeA = a.createdAt ? a.createdAt.getTime() : 0;
-    const timeB = b.createdAt ? b.createdAt.getTime() : 0;
-    return timeB - timeA; // Descending
-  });
+  return docs
+    .filter(d => {
+      if (d.status !== "PENDING") return false;
+      if (planType !== undefined && d.planType !== planType) return false;
+      if (amount !== undefined && d.amount !== amount) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const timeA = a.createdAt ? a.createdAt.getTime() : 0;
+      const timeB = b.createdAt ? b.createdAt.getTime() : 0;
+      return timeB - timeA; // Descending
+    });
 }
 
 export async function getPaymentRecord(

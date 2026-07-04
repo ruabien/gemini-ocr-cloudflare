@@ -59,7 +59,7 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
 
     // 4. Check for active pending payments
     const serviceAccountJson = env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    const pendingPayments = await getRecentPendingPayments(serviceAccountJson, uid);
+    const pendingPayments = await getRecentPendingPayments(serviceAccountJson, uid, planType, amount);
     
     if (pendingPayments && pendingPayments.length > 0) {
       const latestPending = pendingPayments[0];

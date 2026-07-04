@@ -106,12 +106,20 @@ export default function UpgradeComponent({
 
   // If isPro realtime becomes true in AuthContext when the modal is open, sync to paymentStatus = success
   useEffect(() => {
+    // Only set success if the newly updated plan matches what the user just bought, 
+    // or if they are now PRO and we're actively waiting for it.
     if (showQRModal && isPro && paymentStatus !== "success") {
+      // It's possible they were already PRO Monthly, and they bought PRO Yearly.
+      // In that case, we need to check if the planType in AuthContext updated to 'year'
+      if (billingCycle === "yearly" && planType !== "year") {
+        return; // Still waiting for the yearly plan update
+      }
+      
       setPaymentStatus("success");
       setLogs(prev => [...prev, "Thanh toán thành công! LexOCR PRO đã được kích hoạt."]);
       setTimerSeconds(3); // 3 seconds auto-close countdown
     }
-  }, [showQRModal, isPro, paymentStatus]);
+  }, [showQRModal, isPro, paymentStatus, billingCycle, planType]);
 
   // Handle auto‑close countdown on success
   useEffect(() => {
