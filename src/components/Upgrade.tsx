@@ -475,7 +475,7 @@ export default function UpgradeComponent({
           </div>
 
           <div className="p-3 bg-slate-50 text-[10px] text-slate-500 border-t border-slate-150 leading-relaxed italic">
-            * Tuân thủ chuyển đổi số định hướng tư pháp của VKSND Tối cao.
+            * Tuân thủ chuyển đổi số trong lĩnh vực tư pháp.
           </div>
         </div>
 
@@ -606,10 +606,6 @@ export default function UpgradeComponent({
                   <span>ĐĂNG KÝ PRO NĂM</span>
                 </button>
               )}
-
-              <p className="text-[9px] text-center text-slate-400 italic leading-tight">
-                * Kích hoạt tự động sau khi hoàn tất giao dịch. Xuất hóa đơn đỏ (VAT 8%).
-              </p>
             </div>
           </div>
         </div>
