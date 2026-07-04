@@ -246,7 +246,7 @@ export default function UpgradeComponent({
   const isProYearly = isPro && currentCycle === 'yearly';
 
   return (
-    <div id="upgrade-view" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div id="upgrade-view" className="space-y-6">
       
       {/* HEADER QUYỀN TÁC VỤ */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-4 gap-4">

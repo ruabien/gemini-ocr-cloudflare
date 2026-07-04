@@ -30,10 +30,10 @@ interface LandingPageProps {
 export default function LandingPage({ onStart, setActiveTab }: LandingPageProps) {
 
   return (
-    <div id="landing-container" className="min-h-[calc(100vh-4rem)] bg-slate-50 text-slate-800">
+    <div id="landing-container" className="flex flex-col space-y-12">
       
       {/* Hero section */}
-      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white pt-16 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white py-16 px-6 sm:px-12 overflow-hidden rounded-2xl shadow-xl">
         {/* Background decorative grids */}
         <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:3rem_3rem]" />
         
@@ -85,7 +85,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* PHẦN 4 - THÊM KHỐI LỢI ÍCH NGAY SAU HERO */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <section>
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             LexOCR giúp gì cho Kiểm sát viên?
@@ -141,8 +141,8 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* PHẦN 5 - DEMO OCR THỰC TẾ */}
-      <section className="bg-slate-100 border-t border-b border-slate-200 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-slate-100/50 border border-slate-200 py-12 px-6 sm:px-12 rounded-2xl shadow-sm">
+        <div>
           <div className="text-center max-w-3xl mx-auto mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               Từ hồ sơ giấy đến dữ liệu nghiên cứu
@@ -247,7 +247,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* PHẦN 7 - SỐ LIỆU (Hiệu quả thực tế) */}
-      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white py-16 px-6 sm:px-12 overflow-hidden rounded-2xl shadow-xl">
         {/* Background decorative grids */}
         <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:3rem_3rem]" />
         
@@ -299,8 +299,8 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* PHẦN 8 - BẢO MẬT & QUY TRÌNH STATELESS */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-16">
-        <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
+      <div className="py-8">
+        <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center justify-center">
           <Shield className="h-5 w-5 text-red-600 mr-2" />
           <span>KIẾN TRÚC BẢO MẬT & TIÊU CHUẨN AN TOÀN TƯ PHÁP</span>
         </h3>
@@ -373,18 +373,12 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         </div>
       </div>
 
-      {/* Gentle PRO introduction / Miễn phí */}
-      <section className="bg-slate-100 border-t border-slate-200 py-8">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <p className="text-slate-500 text-[11px] sm:text-xs leading-relaxed font-medium">
+      {/* Footer hành chính */}
+      <footer className="bg-slate-900 text-slate-400 py-6 border border-slate-800 rounded-2xl shadow-xl mt-12 mb-6">
+        <div className="text-center text-xs flex flex-col items-center justify-center space-y-2">
+          <p className="text-slate-500 text-[11px] leading-relaxed font-medium max-w-xl mx-auto px-4 mb-2">
             LexOCR hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng nhanh chóng, an toàn và miễn phí cho nhu cầu sử dụng cơ bản.
           </p>
-        </div>
-      </section>
-
-      {/* Footer hành chính */}
-      <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs flex flex-col items-center justify-center space-y-1.5">
           <p className="text-slate-500 text-[10px] font-normal tracking-wide">
             Phiên bản: Procuracy v2.5 • Cập nhật: Tháng 7/2026
           </p>

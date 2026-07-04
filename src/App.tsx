@@ -7,6 +7,7 @@ import StructuredExtractionEditor from "./components/StructuredExtractionEditor"
 import Navbar from "./components/Navbar";
 import Upgrade from "./components/Upgrade";
 import Settings from "./components/Settings";
+import AppLayout from "./components/AppLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { getUserStorageItem } from "./utils/userStorage";
 
@@ -61,58 +62,55 @@ function AppContent() {
   };
 
   return (
-    <>
-      <Navbar activeTab={activeTab} setActiveTab={handleActiveTab} membershipRole={membershipRole} />
-      <div className="pt-16 min-h-[calc(100vh-4rem)] bg-slate-50 text-slate-900">
-        {activeTab === "landing" && (
-          <LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />
-        )}
-        {/* Dashboard view removed */}
-        {activeTab === "scanner" && (
-          <OcrScanner
-            onFileLoaded={(fileData) => {
-              setDocument(fileData);
-              setActiveTab("editor");
-            }}
-            config={config}
-            setConfig={setConfig}
-          />
-        )}
-        {activeTab === "editor" && (
-          document?.outputMode === "structured" ? (
-            <StructuredExtractionEditor
-              document={document}
-              onBack={handleStart}
-              membershipRole={membershipRole}
-              setActiveTab={handleActiveTab}
-            />
-          ) : (
-            <OcrEditor
-              document={document}
-              onBack={handleStart}
-              membershipRole={membershipRole}
-              setActiveTab={handleActiveTab}
-            />
-          )
-        )}
-        {activeTab === "upgrade" && (
-          <Upgrade
+    <AppLayout activeTab={activeTab} setActiveTab={handleActiveTab} membershipRole={membershipRole}>
+      {activeTab === "landing" && (
+        <LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />
+      )}
+      {/* Dashboard view removed */}
+      {activeTab === "scanner" && (
+        <OcrScanner
+          onFileLoaded={(fileData) => {
+            setDocument(fileData);
+            setActiveTab("editor");
+          }}
+          config={config}
+          setConfig={setConfig}
+        />
+      )}
+      {activeTab === "editor" && (
+        document?.outputMode === "structured" ? (
+          <StructuredExtractionEditor
+            document={document}
+            onBack={handleStart}
             membershipRole={membershipRole}
-            setMembershipRole={setMembershipRole}
             setActiveTab={handleActiveTab}
           />
-        )}
-        {activeTab === "settings" && (
-          <Settings
-            userGeminiKey={userGeminiKey}
-            setUserGeminiKey={setUserGeminiKey}
+        ) : (
+          <OcrEditor
+            document={document}
+            onBack={handleStart}
             membershipRole={membershipRole}
-            setMembershipRole={setMembershipRole}
             setActiveTab={handleActiveTab}
           />
-        )}
-      </div>
-    </>
+        )
+      )}
+      {activeTab === "upgrade" && (
+        <Upgrade
+          membershipRole={membershipRole}
+          setMembershipRole={setMembershipRole}
+          setActiveTab={handleActiveTab}
+        />
+      )}
+      {activeTab === "settings" && (
+        <Settings
+          userGeminiKey={userGeminiKey}
+          setUserGeminiKey={setUserGeminiKey}
+          membershipRole={membershipRole}
+          setMembershipRole={setMembershipRole}
+          setActiveTab={handleActiveTab}
+        />
+      )}
+    </AppLayout>
   );
 }
 

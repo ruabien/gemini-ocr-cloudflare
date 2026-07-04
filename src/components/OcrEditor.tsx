@@ -436,7 +436,7 @@ useEffect(() => {
   return (
     <div
       id="ocr-editor-view"
-      className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 w-full overflow-x-hidden"
+      className="space-y-6 w-full overflow-x-hidden"
     >
       {isAnonymized && anonymizeStats && (
         <div className="bg-emerald-50 border border-emerald-250 p-4 rounded-xl flex items-center justify-between shadow-sm animate-fadeIn">

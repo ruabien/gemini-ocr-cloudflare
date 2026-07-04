@@ -68,11 +68,11 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
   };
 
   return (
-    <header id="gov-header" className="border-b border-rose-900/10 bg-slate-900 text-white fixed top-0 left-0 w-full z-50 shadow-md">
+    <header id="gov-header" className="border-b border-rose-900/10 bg-slate-900 text-white fixed top-0 left-0 w-full z-50 shadow-md h-[72px]">
       {/* Thanh cờ Tổ quốc trang nghiêm ở phần rìa trên */}
       <div id="flag-bar" className="h-1 bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 w-full" />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-[1280px] mx-auto px-[16px] md:px-[24px] h-[68px] flex items-center justify-between">
         <div
           className="flex items-center space-x-3 cursor-pointer"
           onClick={() => setActiveTab("landing")}

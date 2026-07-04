@@ -948,8 +948,7 @@ while (true) {
 };
 
   return (
-    <div id="ocr-scanner-tab" className="min-h-[calc(100vh-4rem)] bg-slate-50 pb-12 flex flex-col">
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4 flex-grow">
+    <div id="ocr-scanner-tab" className="flex flex-col space-y-4 pb-12 bg-slate-50">
       
         {/* HEADER SECTION */}
         <div className="border-b border-slate-200 pb-3">
@@ -1442,8 +1441,6 @@ while (true) {
             </div>
           );
         })()}
-
-      </div>
 
       {/* ERROR MODAL */}
       {errorModalMsg && (

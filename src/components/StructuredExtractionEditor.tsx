@@ -864,7 +864,7 @@ export default function StructuredExtractionEditor({
   };
 
   return (
-    <div id="structured-extraction-view" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div id="structured-extraction-view" className="space-y-6 w-full">
       {/* A. HEADER */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center space-x-3">
