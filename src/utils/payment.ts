@@ -33,6 +33,11 @@ export async function createPaymentSession(
   qrCode?: string;
   expiredAt?: string;
   isReuseOrder?: boolean;
+  paymentLinkId?: string;
+  bin?: string;
+  accountNumber?: string;
+  accountName?: string;
+  description?: string;
   error?: string;
 }> {
   try {
@@ -56,7 +61,12 @@ export async function createPaymentSession(
       amount: data.amount,
       qrCode: data.qrCode,
       expiredAt: data.expiredAt,
-      isReuseOrder: data.isReuseOrder
+      isReuseOrder: data.isReuseOrder,
+      paymentLinkId: data.paymentLinkId,
+      bin: data.bin,
+      accountNumber: data.accountNumber,
+      accountName: data.accountName,
+      description: data.description
     };
   } catch (error: any) {
     return { error: error.message || "Lỗi kết nối mạng." };

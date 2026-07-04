@@ -77,7 +77,13 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
             checkoutUrl: latestPending.checkoutUrl,
             qrCode: latestPending.qrCode,
             expiredAt: expiredAt.toISOString(),
-            isReuseOrder: true
+            isReuseOrder: true,
+            // Reused items might not have all payos fields in firestore, passing what is known
+            paymentLinkId: latestPending.paymentLinkId || "",
+            bin: latestPending.bin || "",
+            accountNumber: latestPending.accountNumber || "",
+            accountName: latestPending.accountName || "",
+            description: latestPending.description || `LexOCR PRO ${latestPending.planType === "month" ? "1M" : "1Y"}`
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
@@ -172,6 +178,19 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       );
     }
 
+    // Log DEV-safe fields from PayOS create payment link response
+    console.log("DEV - PayOS Response fields:", {
+      checkoutUrl: payosResponse.data.checkoutUrl,
+      paymentLinkId: payosResponse.data.paymentLinkId,
+      qrCode: payosResponse.data.qrCode,
+      bin: payosResponse.data.bin,
+      accountNumber: payosResponse.data.accountNumber,
+      accountName: payosResponse.data.accountName,
+      amount: payosResponse.data.amount,
+      description: payosResponse.data.description,
+      orderCode: payosResponse.data.orderCode
+    });
+
     const checkoutUrl = payosResponse.data.checkoutUrl;
     const qrCode = payosResponse.data.qrCode;
 
@@ -206,7 +225,12 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
         checkoutUrl,
         qrCode,
         expiredAt: expiredAt.toISOString(),
-        isReuseOrder: false
+        isReuseOrder: false,
+        paymentLinkId: payosResponse.data.paymentLinkId,
+        bin: payosResponse.data.bin,
+        accountNumber: payosResponse.data.accountNumber,
+        accountName: payosResponse.data.accountName,
+        description: payosResponse.data.description
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );

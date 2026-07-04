@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { createPaymentSession } from "../utils/payment";
 import { auth } from "../lib/firebase";
+import { QRCodeSVG } from "qrcode.react";
 
 interface UpgradeProps {
   membershipRole: "Free" | "Pro";
@@ -66,17 +67,23 @@ export default function UpgradeComponent({
 
   const activePlan = billingCycle === "monthly" ? prices.monthly : prices.yearly;
 
-  const qrCodeUrl = (() => {
+  const qrType = (() => {
     if (paymentSession && paymentSession.qrCode) {
       const qr = paymentSession.qrCode.trim();
-      if (qr.startsWith("http") || qr.startsWith("data:")) {
-        return qr;
-      }
+      // Chuẩn VietQR / EMV Co
       if (qr.startsWith("000201")) {
-        return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qr)}`;
+        return "vietqr_payload";
+      }
+      // Dạng ảnh URL hoặc Base64 Image
+      if (qr.startsWith("http") || qr.startsWith("data:image/")) {
+        // Không nhận dạng URL thanh toán (checkout) thành mã QR
+        if (qr === paymentSession.checkoutUrl || qr.includes("checkout")) {
+          return "invalid";
+        }
+        return "image";
       }
     }
-    return null;
+    return "invalid";
   })();
 
   // Timer Countdown
@@ -150,7 +157,7 @@ export default function UpgradeComponent({
       
       // DEV Logging for PayOS response
       console.log("DEV - PayOS response keys:", res ? Object.keys(res) : []);
-      console.log("DEV - PayOS response qrCode type:", typeof res?.qrCode);
+      console.log("DEV - PayOS response typeof qrCode:", typeof res?.qrCode);
       console.log("DEV - PayOS response checkoutUrl exists:", res?.checkoutUrl ? "Yes" : "No");
 
       if (res.error) {
@@ -636,7 +643,7 @@ export default function UpgradeComponent({
                           )}
                         </div>
                       </div>
-                    ) : !qrCodeUrl ? (
+                    ) : qrType === "invalid" ? (
                       <div className="h-56 w-56 flex flex-col items-center justify-center bg-amber-50/50 p-4 space-y-3 text-center border border-amber-200 rounded-2xl">
                         <AlertTriangle className="h-8 w-8 text-amber-500 animate-pulse" />
                         <p className="text-xs font-bold text-amber-800 leading-normal">
@@ -645,14 +652,23 @@ export default function UpgradeComponent({
                       </div>
                     ) : (
                       <div className="border border-slate-200 p-2.5 rounded-2xl bg-white shadow-inner relative group select-none">
-                        <div className="relative">
-                          <img 
-                            referrerPolicy="no-referrer"
-                            src={qrCodeUrl} 
-                            onError={() => setQrLoadError(true)}
-                            alt="Mã QR thanh toán PayOS" 
-                            className="h-56 w-56 object-contain"
-                          />
+                        <div className="relative flex items-center justify-center h-56 w-56 bg-white overflow-hidden">
+                          {qrType === "vietqr_payload" ? (
+                            <QRCodeSVG 
+                              value={paymentSession.qrCode?.trim() || ""} 
+                              size={220}
+                              level="M"
+                              includeMargin={true}
+                            />
+                          ) : (
+                            <img 
+                              referrerPolicy="no-referrer"
+                              src={paymentSession.qrCode?.trim()} 
+                              onError={() => setQrLoadError(true)}
+                              alt="Mã QR thanh toán PayOS" 
+                              className="h-56 w-56 object-contain"
+                            />
+                          )}
                           <div className="absolute top-2 right-2 bg-slate-900 border border-slate-800/40 px-2 py-0.5 rounded text-[8px] text-white font-mono font-bold flex items-center space-x-1 shadow">
                             <Clock className="h-3 w-3 text-red-500 animate-pulse" />
                             <span>Mã hết hạn trong: {formatTime(timerSeconds)}</span>
