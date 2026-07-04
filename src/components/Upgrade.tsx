@@ -623,7 +623,7 @@ export default function UpgradeComponent({
                               href={paymentSession.checkoutUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-md cursor-pointer transition-colors mt-2"
+                              className="px-4 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-lg border border-slate-200 shadow-sm cursor-pointer transition-all text-center mt-2 inline-block"
                             >
                               Mở trang thanh toán PayOS
                             </a>
@@ -652,7 +652,7 @@ export default function UpgradeComponent({
                         href={paymentSession.checkoutUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all text-center"
+                        className="px-4 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-lg border border-slate-200 shadow-sm cursor-pointer transition-all text-center"
                       >
                         Mở trang thanh toán PayOS
                       </a>
