@@ -1,4 +1,4 @@
-import { verifyFirebaseIdToken, savePaymentRecord, getRecentPendingPayments, updatePaymentStatus } from "../utils/firebaseAdmin";
+import { verifyFirebaseIdToken, savePaymentRecord, getRecentPendingPayments, updatePaymentStatus, getUserProfile } from "../utils/firebaseAdmin";
 import { createPayOSPaymentLink } from "../utils/payos";
 
 // orderCode generator ensuring: unique, fits in int64/int32, easy to debug (YYMMDDHHmmssXX)
@@ -103,6 +103,25 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
     const createdAt = new Date();
     const expiredAt = new Date(createdAt.getTime() + 15 * 60 * 1000);
 
+    // Determine transactionType based on current user profile
+    let transactionType: "purchase" | "renewal" | "upgrade" = "purchase";
+    try {
+      const profile = await getUserProfile(serviceAccountJson, uid);
+      if (profile && profile.plan === "pro" && profile.expiredAt) {
+        const expiredTime = new Date(profile.expiredAt).getTime();
+        const isCurrentlyPro = expiredTime > Date.now();
+        if (isCurrentlyPro) {
+          if (profile.planType === planType) {
+            transactionType = "renewal";
+          } else if (profile.planType === "month" && planType === "year") {
+            transactionType = "upgrade";
+          }
+        }
+      }
+    } catch (profileErr) {
+      console.error("Failed to fetch user profile for transactionType:", profileErr);
+    }
+
     // 6. Save initial pending record to Firestore (with empty checkoutUrl/qrCode)
     const initialPaymentRecord = {
       uid,
@@ -114,7 +133,8 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
       createdAt,
       expiredAt,
       checkoutUrl: "",
-      qrCode: ""
+      qrCode: "",
+      transactionType
     };
 
     try {

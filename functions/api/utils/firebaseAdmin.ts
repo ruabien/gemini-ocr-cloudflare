@@ -314,7 +314,8 @@ export async function getRecentPendingPayments(
         checkoutUrl: fields.checkoutUrl?.stringValue,
         qrCode: fields.qrCode?.stringValue,
         amount: fields.amount?.integerValue ? parseInt(fields.amount.integerValue, 10) : fields.amount?.doubleValue,
-        planType: fields.planType?.stringValue
+        planType: fields.planType?.stringValue,
+        transactionType: fields.transactionType?.stringValue
       });
     }
   }
@@ -376,6 +377,7 @@ export async function getPaymentRecord(
       planType: fields.planType?.stringValue,
       payosTransactionId: fields.payosTransactionId?.stringValue,
       paidAt: fields.paidAt?.timestampValue ? new Date(fields.paidAt.timestampValue) : null,
+      transactionType: fields.transactionType?.stringValue,
     };
   }
   return null;
@@ -526,6 +528,7 @@ export async function savePaymentRecord(
     expiredAt: Date;
     checkoutUrl: string;
     qrCode: string;
+    transactionType?: "purchase" | "renewal" | "upgrade";
   }
 ): Promise<void> {
   if (!serviceAccountJson) {

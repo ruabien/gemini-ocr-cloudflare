@@ -84,4 +84,5 @@ export interface PaymentRecord {
   payosTransactionId: string | null;
   createdAt: number;
   paidAt: number | null;
+  transactionType?: "purchase" | "renewal" | "upgrade";
 }

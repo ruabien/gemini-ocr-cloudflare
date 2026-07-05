@@ -43,29 +43,12 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
             status: data.status,
             payosTransactionId: data.payosTransactionId,
             createdAt,
-            paidAt: data.paidAt
+            paidAt: data.paidAt,
+            transactionType: data.transactionType
           };
         });
 
-        // Determine "Gia hạn" by checking prior PAID status
-        const ascending = [...fetchedPayments].reverse();
-        let hasPriorPro = false;
-        
-        const processed = ascending.map(p => {
-          let name = p.planType === "year" ? "PRO Năm" : "PRO Tháng";
-          if (hasPriorPro) {
-            name = "Gia hạn " + name;
-          }
-          if (p.status === "PAID") {
-            hasPriorPro = true;
-          }
-          return {
-            ...p,
-            displayPlanName: name
-          };
-        });
-
-        setPayments(processed.reverse());
+        setPayments(fetchedPayments);
       } catch (error) {
         console.error("Error fetching payments:", error);
       } finally {
@@ -233,11 +216,11 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
                 <span className="text-sm text-slate-600 font-medium">Ngày tham gia</span>
-                <span className="text-sm font-bold text-slate-900">{formatDateTime(user.metadata.creationTime)}</span>
+                <span className="text-sm font-bold text-slate-900">{formatDateTime(user?.metadata?.creationTime)}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
                 <span className="text-sm text-slate-600 font-medium">Lần đăng nhập gần nhất</span>
-                <span className="text-sm font-bold text-slate-900">{formatDateTime(user.metadata.lastSignInTime)}</span>
+                <span className="text-sm font-bold text-slate-900">{formatDateTime(user?.metadata?.lastSignInTime)}</span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-sm text-slate-600 font-medium">UID</span>
@@ -404,7 +387,10 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
                       }) : "N/A"}
                     </td>
                     <td className="py-3 px-4 text-sm font-medium text-slate-900 whitespace-nowrap">
-                      {payment.displayPlanName || (payment.planType === "year" ? "PRO Năm" : "PRO Tháng")}
+                      {payment.transactionType === "purchase" ? (payment.planType === "year" ? "PRO Năm" : "PRO Tháng") :
+                       payment.transactionType === "renewal" ? (payment.planType === "year" ? "Gia hạn PRO Năm" : "Gia hạn PRO Tháng") :
+                       payment.transactionType === "upgrade" ? "Nâng cấp lên PRO Năm" :
+                       (payment.displayPlanName || (payment.planType === "year" ? "PRO Năm" : "PRO Tháng"))}
                     </td>
                     <td className="py-3 px-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
                       {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(payment.amount || 0)}
