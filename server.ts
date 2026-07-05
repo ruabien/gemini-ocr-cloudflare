@@ -97,6 +97,28 @@ else if (req.path === '/.well-known/mcp/server-card.json') {
     console.error(err);
   }
 }
+else if (req.path === '/.well-known/agent-skills/index.json') {
+  try {
+    const filePath = path.join(process.cwd(), 'public/.well-known/agent-skills/index.json');
+    const content = fs.readFileSync(filePath, 'utf-8');
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.status(200).send(content);
+  } catch (err) {
+    console.error(err);
+  }
+}
+else if (req.path === '/.well-known/agent-skills/lexocr-skill/SKILL.md') {
+  try {
+    const filePath = path.join(process.cwd(), 'public/.well-known/agent-skills/lexocr-skill/SKILL.md');
+    const content = fs.readFileSync(filePath, 'utf-8');
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.status(200).send(content);
+  } catch (err) {
+    console.error(err);
+  }
+}
   next();
 });
 

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "lexocr-skill",
+      "type": "skill-md",
+      "description": "OCR and sensitive information anonymization for legal documents",
+      "url": "/.well-known/agent-skills/lexocr-skill/SKILL.md",
+      "digest": "sha256:adbc365ef22e4d9e4d70faeea702a52baee64da5cc6a0a3674997c70ed815d5c"
+    }
+  ]
+}

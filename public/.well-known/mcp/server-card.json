@@ -1,15 +1,15 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
-  "description": "Gemini OCR Cloudflare server provides OCR and anonymization services.",
-  "name": "ruabien/gemini-ocr-cloudflare",
-  "version": "0.0.0",
-  "remotes": [
-    {
-      "type": "streamable-http",
-      "url": "https://gemini-ocr-cloudflare.example.com",
-      "supportedProtocolVersions": [
-        "v1"
-      ]
-    }
-  ]
+  "serverInfo": {
+    "name": "lexocr",
+    "version": "1.0.0"
+  },
+  "transport": {
+    "type": "sse",
+    "endpoint": "/mcp"
+  },
+  "capabilities": {
+    "tools": {},
+    "resources": {},
+    "prompts": {}
+  }
 }

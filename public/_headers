@@ -22,6 +22,14 @@
   Content-Type: application/json
   Access-Control-Allow-Origin: *
 
+/.well-known/agent-skills/index.json
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+
+/.well-known/agent-skills/lexocr-skill/SKILL.md
+  Content-Type: text/markdown; charset=utf-8
+  Access-Control-Allow-Origin: *
+
 /.well-known/oauth-protected-resource
   Content-Type: application/json
   Access-Control-Allow-Origin: *
