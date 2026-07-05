@@ -7,11 +7,12 @@ import React, { useState, useEffect } from "react";
 import { 
   Sparkles, Check, ChevronRight, ShieldCheck, CreditCard, 
   Clock, AlertTriangle, Layers, FileSpreadsheet, FileText, 
-  ShieldAlert, RefreshCw, HelpCircle, ArrowLeft, Trophy, CheckCircle2, UserCheck, X
+  ShieldAlert, RefreshCw, HelpCircle, ArrowLeft, Trophy, CheckCircle2, UserCheck, X, Receipt
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { createPaymentSession } from "../utils/payment";
-import { auth } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
+import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { QRCodeSVG } from "qrcode.react";
 
 interface UpgradeProps {
@@ -52,6 +53,65 @@ export default function UpgradeComponent({
   const [initialExpiredAt, setInitialExpiredAt] = useState<number | null>(null);
   const [initialPlanType, setInitialPlanType] = useState<string | null>(null);
   const [initialIsPro, setInitialIsPro] = useState<boolean>(false);
+
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (!user || !db) return;
+      setLoadingPayments(true);
+      try {
+        const q = query(
+          collection(db, "payments"),
+          where("uid", "==", user.uid),
+          orderBy("createdAt", "desc"),
+          limit(20)
+        );
+        const querySnapshot = await getDocs(q);
+        const fetchedPayments = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          let createdAt = data.createdAt;
+          if (createdAt && typeof createdAt.toMillis === 'function') {
+            createdAt = createdAt.toMillis();
+          } else if (createdAt && typeof createdAt.getTime === 'function') {
+            createdAt = createdAt.getTime();
+          }
+          return {
+            id: doc.id,
+            uid: data.uid,
+            orderCode: data.orderCode,
+            amount: data.amount,
+            planType: data.planType,
+            status: data.status,
+            payosTransactionId: data.payosTransactionId,
+            createdAt,
+            paidAt: data.paidAt,
+            transactionType: data.transactionType,
+            displayPlanName: data.displayPlanName
+          };
+        });
+
+        setPayments(fetchedPayments);
+      } catch (error) {
+        console.error("Error fetching payments:", error);
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+
+    fetchPayments();
+  }, [user]);
+
+  const getStatusBadge = (status: string) => {
+    const s = status?.toUpperCase() || "";
+    if (s === "PAID") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-green-50 text-green-600 border border-green-200">PAID</span>;
+    if (s === "PENDING") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-orange-50 text-orange-600 border border-orange-200">PENDING</span>;
+    if (s === "EXPIRED") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-gray-50 text-gray-600 border border-gray-200">EXPIRED</span>;
+    if (s === "CANCELLED" || s === "FAILED") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-red-50 text-red-600 border border-red-200">CANCELLED</span>;
+    
+    return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-slate-50 text-slate-600 border border-slate-200">{s}</span>;
+  };
 
   const name = user ? (user.displayName || user.email?.split("@")[0] || "User") : "Khách";
 
@@ -613,6 +673,59 @@ export default function UpgradeComponent({
         </div>
 
       </section>
+
+      {/* LỊCH SỬ THANH TOÁN */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5 mt-8">
+        <h3 className="font-bold text-sm sm:text-base text-slate-800 flex items-center space-x-2 border-b border-slate-100 pb-3">
+          <Receipt className="h-5 w-5 text-slate-500" />
+          <span>LỊCH SỬ THANH TOÁN</span>
+        </h3>
+
+        {loadingPayments ? (
+          <div className="text-center py-8 text-slate-500">Đang tải lịch sử...</div>
+        ) : payments.length === 0 ? (
+          <div className="text-center py-8 text-slate-500">
+            <Receipt className="h-8 w-8 text-slate-300 mx-auto mb-3" />
+            <p>Chưa có giao dịch nào.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider bg-slate-50">
+                  <th className="py-3 px-4 font-semibold rounded-tl-lg">Ngày</th>
+                  <th className="py-3 px-4 font-semibold">Tên gói</th>
+                  <th className="py-3 px-4 font-semibold">Số tiền</th>
+                  <th className="py-3 px-4 font-semibold rounded-tr-lg">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
+                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("vi-VN", {
+                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                      }) : "N/A"}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium text-slate-900 whitespace-nowrap">
+                      {payment.transactionType === "purchase" ? (payment.planType === "year" ? "PRO Năm" : "PRO Tháng") :
+                       payment.transactionType === "renewal" ? (payment.planType === "year" ? "Gia hạn PRO Năm" : "Gia hạn PRO Tháng") :
+                       payment.transactionType === "upgrade" ? "Nâng cấp lên PRO Năm" :
+                       (payment.displayPlanName || (payment.planType === "year" ? "PRO Năm" : "PRO Tháng"))}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(payment.amount || 0)}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      {getStatusBadge(payment.status)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* MODAL HIỂN THỊ QR CHUYỂN KHOẢN PAYOS */}
       {showQRModal && (

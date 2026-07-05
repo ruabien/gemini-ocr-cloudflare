@@ -161,18 +161,11 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
                     </div>
                     
                     <button 
-                      onClick={() => { setIsDropdownOpen(false); setActiveTab("account"); }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center space-x-2 transition-colors"
-                    >
-                      <User className="h-4 w-4 text-slate-500" />
-                      <span>Hồ sơ cá nhân</span>
-                    </button>
-                    <button 
                       onClick={() => { setIsDropdownOpen(false); setActiveTab("settings"); }}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center space-x-2 transition-colors"
                     >
                       <Key className="h-4 w-4 text-slate-500" />
-                      <span>Quản lý API Key</span>
+                      <span>Cài đặt & Gói</span>
                     </button>
                     {!isPro ? (
                       <button 
