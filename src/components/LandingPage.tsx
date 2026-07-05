@@ -301,90 +301,97 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* PHẦN 8 - BẢO MẬT & QUY TRÌNH STATELESS */}
-      <section className="py-16 px-6 sm:px-12 bg-white w-full border-b border-slate-200">
+      <section className="bg-slate-50 py-16 px-6 sm:px-12 w-full border-t border-slate-200">
         <div className="max-w-7xl mx-auto">
-          <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center justify-center">
-          <Shield className="h-5 w-5 text-red-600 mr-2" />
-          <span>KIẾN TRÚC BẢO MẬT & TIÊU CHUẨN AN TOÀN TƯ PHÁP</span>
-        </h3>
+          <h3 className="text-xl font-bold text-slate-900 mb-8 flex items-center">
+            <Shield className="h-5 w-5 text-red-600 mr-2" />
+            <span>KIẾN TRÚC BẢO MẬT & TIÊU CHUẨN AN TOÀN TƯ PHÁP</span>
+          </h3>
 
-        {/* SƠ ĐỒ 4 BƯỚC STATELESS */}
-        <div className="flex flex-col md:flex-row items-stretch justify-center gap-2 mb-6">
-          {/* Step 1 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#2563eb" }}>
-            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#2563eb" }}>
-              1
+          {/* SƠ ĐỒ 4 BƯỚC STATELESS */}
+          <div className="flex flex-col lg:flex-row items-stretch justify-center gap-4 lg:gap-2 mb-6">
+            {/* Step 1 */}
+            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#2563eb" }}>
+              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#2563eb" }}>
+                1
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#2563eb" }}>1. Tải hồ sơ & mã hóa</h4>
+                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
+                  Hồ sơ được nạp trực tiếp từ thiết bị người dùng và xử lý trong môi trường an toàn.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#2563eb" }}>1. Tải hồ sơ & mã hóa</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Hồ sơ được nạp trực tiếp từ thiết bị người dùng và xử lý trong môi trường an toàn.
-              </p>
+            
+            <div className="flex items-center justify-center text-slate-400 self-center py-1 lg:py-0 flex-shrink-0">
+              <span className="hidden lg:inline text-xl font-black px-1 opacity-60">→</span>
+              <span className="inline lg:hidden text-xl font-black py-1 opacity-60">↓</span>
             </div>
-          </div>
-          <div className="flex items-center justify-center text-blue-600 self-center py-2 md:py-0">
-            <span className="hidden md:inline text-2xl font-black px-1 opacity-90">→</span>
-            <span className="inline md:hidden text-2xl font-black py-1 opacity-90">↓</span>
-          </div>
 
-          {/* Step 2 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#7c3aed" }}>
-            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#7c3aed" }}>
-              2
+            {/* Step 2 */}
+            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#7c3aed" }}>
+              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#7c3aed" }}>
+                2
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#7c3aed" }}>2. OCR & bóc tách dữ liệu</h4>
+                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
+                  Hệ thống tự động nhận diện và bóc tách nội dung từ PDF hoặc ảnh chụp hồ sơ.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#7c3aed" }}>2. OCR & bóc tách dữ liệu</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Hệ thống tự động nhận diện và bóc tách nội dung từ PDF hoặc ảnh chụp hồ sơ.
-              </p>
+            
+            <div className="flex items-center justify-center text-slate-400 self-center py-1 lg:py-0 flex-shrink-0">
+              <span className="hidden lg:inline text-xl font-black px-1 opacity-60">→</span>
+              <span className="inline lg:hidden text-xl font-black py-1 opacity-60">↓</span>
             </div>
-          </div>
-          <div className="flex items-center justify-center text-purple-600 self-center py-2 md:py-0">
-            <span className="hidden md:inline text-2xl font-black px-1 opacity-90">→</span>
-            <span className="inline md:hidden text-2xl font-black py-1 opacity-90">↓</span>
-          </div>
 
-          {/* Step 3 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#f59e0b" }}>
-            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#f59e0b" }}>
-              3
+            {/* Step 3 */}
+            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#f59e0b" }}>
+              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#f59e0b" }}>
+                3
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#f59e0b" }}>3. Chuẩn hóa & ẩn danh</h4>
+                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
+                  Dữ liệu được chuẩn hóa để phục vụ nghiên cứu hồ sơ, báo cáo và lưu trữ.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#f59e0b" }}>3. Chuẩn hóa & ẩn danh</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Dữ liệu được chuẩn hóa để phục vụ nghiên cứu hồ sơ, báo cáo và lưu trữ.
-              </p>
+            
+            <div className="flex items-center justify-center text-slate-400 self-center py-1 lg:py-0 flex-shrink-0">
+              <span className="hidden lg:inline text-xl font-black px-1 opacity-60">→</span>
+              <span className="inline lg:hidden text-xl font-black py-1 opacity-60">↓</span>
             </div>
-          </div>
-          <div className="flex items-center justify-center text-amber-600 self-center py-2 md:py-0">
-            <span className="hidden md:inline text-2xl font-black px-1 opacity-90">→</span>
-            <span className="inline md:hidden text-2xl font-black py-1 opacity-90">↓</span>
-          </div>
 
-          {/* Step 4 */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#10b981" }}>
-            <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#10b981" }}>
-              4
-            </div>
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#10b981" }}>4. Xuất kết quả nghiên cứu</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                Kết xuất dữ liệu dưới dạng văn bản hoặc bảng biểu phục vụ công việc chuyên môn.
-              </p>
+            {/* Step 4 */}
+            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#10b981" }}>
+              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#10b981" }}>
+                4
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#10b981" }}>4. Xuất kết quả nghiên cứu</h4>
+                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
+                  Kết xuất dữ liệu dưới dạng văn bản hoặc bảng biểu phục vụ công việc chuyên môn.
+                </p>
+              </div>
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Gentle PRO introduction / Miễn phí */}
+      <section className="bg-slate-50 border-t border-slate-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium md:whitespace-nowrap">
+            LexOCR hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng nhanh chóng, an toàn và miễn phí cho nhu cầu sử dụng cơ bản.
+          </p>
         </div>
       </section>
 
       {/* Footer hành chính */}
-      <div className="text-center text-xs flex flex-col items-center justify-center space-y-2 mt-12 mb-6">
-        <p className="text-slate-500 text-[11px] leading-relaxed font-medium max-w-xl mx-auto px-4 mb-2">
-          LexOCR hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng nhanh chóng, an toàn và miễn phí cho nhu cầu sử dụng cơ bản.
-        </p>
-      </div>
-      <footer className="bg-slate-900 text-slate-400 py-6 px-6 sm:px-12 w-full border-t border-slate-800">
-        <div className="max-w-7xl mx-auto text-center text-xs flex flex-col items-center justify-center space-y-2">
+      <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
           <p>© 2026 LexOCR</p>
         </div>
       </footer>
