@@ -1,4 +1,4 @@
-# Agent Registration – LexOCR
+# auth.md - LexOCR Agent Registration
 
 Welcome to **LexOCR** – the AI‑powered OCR service for Vietnamese legal documents.
 

@@ -4,8 +4,12 @@
   "token_endpoint": "https://lexocr.com/api/auth/token",
   "jwks_uri": "https://lexocr.com/.well-known/jwks.json",
   "agent_auth": {
+    "skill": "https://lexocr.com/auth.md",
     "register_uri": "https://lexocr.com/auth/register",
     "identity_types_supported": ["email"],
+    "identity_assertion": {
+      "assertion_types_supported": ["verified_email"]
+    },
     "credential_types_supported": ["oauth"],
     "claim_uri": "https://lexocr.com/api/claims",
     "revocation_uri": "https://lexocr.com/api/revoke"
