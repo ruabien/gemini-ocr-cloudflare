@@ -161,7 +161,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
                     </div>
                     
                     <button 
-                      onClick={() => { setIsDropdownOpen(false); /* Optional hook */ }}
+                      onClick={() => { setIsDropdownOpen(false); setActiveTab("account"); }}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 flex items-center space-x-2 transition-colors"
                     >
                       <User className="h-4 w-4 text-slate-500" />

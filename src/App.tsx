@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import Upgrade from "./components/Upgrade";
 import Settings from "./components/Settings";
 import AppLayout from "./components/AppLayout";
+import Account from "./components/Account";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { getUserStorageItem } from "./utils/userStorage";
 
@@ -109,6 +110,9 @@ function AppContent() {
           setMembershipRole={setMembershipRole}
           setActiveTab={handleActiveTab}
         />
+      )}
+      {activeTab === "account" && (
+        <Account setActiveTab={handleActiveTab} />
       )}
     </AppLayout>
   );
