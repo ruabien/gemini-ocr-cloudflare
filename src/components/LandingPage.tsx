@@ -28,6 +28,46 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onStart, setActiveTab }: LandingPageProps) {
+  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
+
+  const faqs = [
+    {
+      question: "LexOCR có lưu hồ sơ của tôi không?",
+      answer: "Không. LexOCR không lưu PDF, hình ảnh, nội dung OCR hoặc dữ liệu trích xuất sau khi hoàn tất xử lý."
+    },
+    {
+      question: "Vì sao tôi phải sử dụng API Gemini của riêng mình?",
+      answer: "Điều này giúp dữ liệu được xử lý trực tiếp thông qua tài khoản Google AI Studio của bạn và giảm thiểu việc chia sẻ dữ liệu qua bên thứ ba."
+    },
+    {
+      question: "Gói Free có giới hạn gì?",
+      answer: "Gói Free đáp ứng nhu cầu OCR cơ bản bằng API Gemini của chính người dùng. Một số tính năng nâng cao như DOCX chuẩn Nghị định 30, Ẩn danh và Trích xuất Excel nâng cao thuộc gói PRO."
+    },
+    {
+      question: "Gói PRO có cộng dồn thời gian không?",
+      answer: "Có. Nếu mua thêm khi gói PRO còn hạn, thời gian sẽ được cộng dồn."
+    },
+    {
+      question: "Tôi có thể sử dụng LexOCR trong cơ quan không?",
+      answer: "Có. LexOCR được thiết kế phục vụ nhu cầu số hóa và nghiên cứu hồ sơ trong lĩnh vực tư pháp."
+    },
+    {
+      question: "Tôi có thể sử dụng API Gemini miễn phí không?",
+      answer: "Có. Google AI Studio cung cấp quota miễn phí phù hợp với nhu cầu sử dụng thông thường."
+    },
+    {
+      question: "LexOCR có hỗ trợ OCR tiếng Việt không?",
+      answer: "Có. LexOCR được tối ưu cho tài liệu tiếng Việt."
+    },
+    {
+      question: "Sau khi hết hạn PRO thì sao?",
+      answer: "Tài khoản sẽ tự động chuyển về gói Free, dữ liệu tài khoản vẫn được giữ nguyên."
+    }
+  ];
+
+  const toggleFaq = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
 
   return (
     <div id="landing-container" className="flex flex-col w-full animate-fade-in">
@@ -376,6 +416,53 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-16 px-6 sm:px-12 bg-white w-full border-t border-slate-200">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              Câu hỏi thường gặp (FAQ)
+            </h2>
+            <p className="mt-3 text-slate-500 text-xs sm:text-sm">
+              Giải đáp các thắc mắc phổ biến về dịch vụ, bảo mật và tính năng của LexOCR.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {faqs.map((faq, index) => {
+              const isOpen = openIndex === index;
+              return (
+                <div 
+                  key={index}
+                  className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/30 hover:bg-slate-50/80 transition-colors duration-200"
+                >
+                  <button
+                    onClick={() => toggleFaq(index)}
+                    className="w-full px-5 py-4 flex items-center justify-between text-left font-bold text-slate-800 text-sm sm:text-base hover:text-red-650 transition-colors duration-200 focus:outline-none"
+                  >
+                    <span>{faq.question}</span>
+                    <ChevronDown 
+                      className={`h-5 w-5 text-slate-400 transform transition-transform duration-300 flex-shrink-0 ml-4 ${
+                        isOpen ? "rotate-180 text-red-600" : ""
+                      }`}
+                    />
+                  </button>
+                  <div 
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                      isOpen ? "max-h-[500px] opacity-100 border-t border-slate-150" : "max-h-0 opacity-0 pointer-events-none"
+                    }`}
+                  >
+                    <div className="px-5 py-4 text-xs sm:text-sm text-slate-600 leading-relaxed bg-white">
+                      {faq.answer}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
