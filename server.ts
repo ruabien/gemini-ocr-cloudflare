@@ -30,6 +30,14 @@ const PORT = 3000;
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// Thiết lập Link header cho agent discovery ở trang chủ (RFC 8288)
+app.use((req: any, res: any, next: any) => {
+  if (req.path === '/' || req.path === '/index.html') {
+    res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog"');
+  }
+  next();
+});
+
 // Khởi tạo Gemini API nếu có Key từ Secrets
 let aiInstance: GoogleGenAI | null = null;
 if (process.env.GEMINI_API_KEY) {

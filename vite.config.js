@@ -6,7 +6,26 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    react()
+    react(),
+    {
+      name: 'agent-discovery-headers',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url === '/' || req.url === '/index.html' || req.url?.split('?')[0] === '/') {
+            res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog"');
+          }
+          next();
+        });
+      },
+      configurePreviewServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url === '/' || req.url === '/index.html' || req.url?.split('?')[0] === '/') {
+            res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog"');
+          }
+          next();
+        });
+      }
+    }
   ],
   server: {
     proxy: {
