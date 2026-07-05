@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,16 +16,40 @@ export default defineConfig({
       name: 'agent-discovery-headers',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (req.url === '/' || req.url === '/index.html' || req.url?.split('?')[0] === '/') {
+          const urlPath = req.url?.split('?')[0] || '';
+          if (urlPath === '/' || urlPath === '/index.html') {
             res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog"');
+          } else if (urlPath === '/.well-known/api-catalog') {
+            try {
+              const filePath = path.join(__dirname, 'public/.well-known/api-catalog');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/linkset+json');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
           }
           next();
         });
       },
       configurePreviewServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (req.url === '/' || req.url === '/index.html' || req.url?.split('?')[0] === '/') {
+          const urlPath = req.url?.split('?')[0] || '';
+          if (urlPath === '/' || urlPath === '/index.html') {
             res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog"');
+          } else if (urlPath === '/.well-known/api-catalog') {
+            try {
+              const filePath = path.join(__dirname, 'public/.well-known/api-catalog');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/linkset+json');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
           }
           next();
         });

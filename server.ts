@@ -6,6 +6,7 @@
 import express from "express";
 import path from "path";
 import crypto from "crypto";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
@@ -34,6 +35,16 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use((req: any, res: any, next: any) => {
   if (req.path === '/' || req.path === '/index.html') {
     res.setHeader('Link', '</.well-known/api-catalog>; rel="api-catalog"');
+  } else if (req.path === '/.well-known/api-catalog') {
+    try {
+      const filePath = path.join(process.cwd(), 'public/.well-known/api-catalog');
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.setHeader('Content-Type', 'application/linkset+json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(200).send(content);
+    } catch (err) {
+      console.error(err);
+    }
   }
   next();
 });

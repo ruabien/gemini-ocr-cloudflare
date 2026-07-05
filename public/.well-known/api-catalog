@@ -1,9 +1,25 @@
 {
-  "openapi": "3.0.0",
-  "info": {
-    "title": "Gemini OCR Cloudflare API",
-    "description": "Placeholder API catalog for agent discovery.",
-    "version": "1.0.0"
-  },
-  "paths": {}
+  "linkset": [
+    {
+      "anchor": "https://lexocr.com",
+      "service-desc": [
+        {
+          "href": "https://lexocr.com/openapi.json",
+          "type": "application/vnd.oai.openapi+json;version=3.0"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://lexocr.com",
+          "type": "text/html"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://lexocr.com/api/health",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
 }

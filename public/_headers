@@ -6,3 +6,6 @@
   Cache-Control: no-cache, no-store, must-revalidate
   Pragma: no-cache
   Expires: 0
+
+/.well-known/api-catalog
+  Content-Type: application/linkset+json
