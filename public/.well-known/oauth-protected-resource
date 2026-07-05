@@ -1,0 +1,11 @@
+{
+  "resource": "https://lexocr.com",
+  "authorization_servers": [
+    "https://lexocr.com"
+  ],
+  "scopes_supported": [
+    "ocr",
+    "anonymize",
+    "export"
+  ]
+}

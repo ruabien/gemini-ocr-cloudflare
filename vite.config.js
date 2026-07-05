@@ -30,6 +30,28 @@ export default defineConfig({
             } catch (err) {
               console.error(err);
             }
+          } else if (urlPath === '/.well-known/openid-configuration') {
+            try {
+              const filePath = path.join(__dirname, 'public/.well-known/openid-configuration');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
+          } else if (urlPath === '/.well-known/oauth-protected-resource') {
+            try {
+              const filePath = path.join(__dirname, 'public/.well-known/oauth-protected-resource');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
           }
           next();
         });
@@ -44,6 +66,28 @@ export default defineConfig({
               const filePath = path.join(__dirname, 'public/.well-known/api-catalog');
               const content = fs.readFileSync(filePath, 'utf-8');
               res.setHeader('Content-Type', 'application/linkset+json');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
+          } else if (urlPath === '/.well-known/openid-configuration') {
+            try {
+              const filePath = path.join(__dirname, 'public/.well-known/openid-configuration');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
+          } else if (urlPath === '/.well-known/oauth-protected-resource') {
+            try {
+              const filePath = path.join(__dirname, 'public/.well-known/oauth-protected-resource');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/json');
               res.setHeader('Access-Control-Allow-Origin', '*');
               res.end(content);
               return;

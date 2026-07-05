@@ -45,6 +45,26 @@ app.use((req: any, res: any, next: any) => {
     } catch (err) {
       console.error(err);
     }
+  } else if (req.path === '/.well-known/openid-configuration') {
+    try {
+      const filePath = path.join(process.cwd(), 'public/.well-known/openid-configuration');
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(200).send(content);
+    } catch (err) {
+      console.error(err);
+    }
+  } else if (req.path === '/.well-known/oauth-protected-resource') {
+    try {
+      const filePath = path.join(process.cwd(), 'public/.well-known/oauth-protected-resource');
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(200).send(content);
+    } catch (err) {
+      console.error(err);
+    }
   }
   next();
 });
