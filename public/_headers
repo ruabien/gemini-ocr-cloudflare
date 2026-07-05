@@ -18,6 +18,10 @@
   Content-Type: application/json
   Access-Control-Allow-Origin: *
 
+/.well-known/mcp/server-card.json
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+
 /.well-known/oauth-protected-resource
   Content-Type: application/json
   Access-Control-Allow-Origin: *
