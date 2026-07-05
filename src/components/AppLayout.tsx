@@ -14,6 +14,8 @@ export default function AppLayout({
   membershipRole,
   children,
 }: AppLayoutProps) {
+  const showFooter = ["privacy", "terms"].includes(activeTab);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} membershipRole={membershipRole} />
@@ -24,6 +26,28 @@ export default function AppLayout({
 <main className={`flex-1 w-full flex flex-col ${activeTab === "landing" ? "pt-[72px]" : "max-w-[1280px] mx-auto px-[16px] md:px-[24px] py-6 pt-[calc(72px+1.5rem)]"}`}>
         {children}
       </main>
+      
+      {showFooter && (
+        <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 w-full mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-2">
+              <button
+                onClick={() => setActiveTab("privacy")}
+                className="hover:text-white transition-colors cursor-pointer"
+              >
+                Chính sách bảo mật
+              </button>
+              <button
+                onClick={() => setActiveTab("terms")}
+                className="hover:text-white transition-colors cursor-pointer"
+              >
+                Điều khoản sử dụng
+              </button>
+            </div>
+            <p>© 2026 LexOCR</p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

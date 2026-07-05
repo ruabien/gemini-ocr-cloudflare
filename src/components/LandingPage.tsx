@@ -477,6 +477,12 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             >
               Chính sách bảo mật
             </button>
+            <button
+              onClick={() => setActiveTab("terms")}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Điều khoản sử dụng
+            </button>
           </div>
           <p>© 2026 LexOCR</p>
         </div>

@@ -3,6 +3,7 @@ import LandingPage from "./components/LandingPage";
 // Dashboard component removed per MVP simplification
 import OcrScanner from "./components/OcrScanner";
 import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsOfUse from "./components/TermsOfUse";
 import OcrEditor from "./components/OcrEditor";
 import StructuredExtractionEditor from "./components/StructuredExtractionEditor";
 import Navbar from "./components/Navbar";
@@ -117,6 +118,9 @@ function AppContent() {
       )}
       {activeTab === "privacy" && (
         <PrivacyPolicy />
+      )}
+      {activeTab === "terms" && (
+        <TermsOfUse />
       )}
     </AppLayout>
   );
