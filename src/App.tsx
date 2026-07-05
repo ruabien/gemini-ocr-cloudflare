@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import LandingPage from "./components/LandingPage";
 // Dashboard component removed per MVP simplification
 import OcrScanner from "./components/OcrScanner";
+import PrivacyPolicy from "./components/PrivacyPolicy";
 import OcrEditor from "./components/OcrEditor";
 import StructuredExtractionEditor from "./components/StructuredExtractionEditor";
 import Navbar from "./components/Navbar";
@@ -113,6 +114,9 @@ function AppContent() {
       )}
       {activeTab === "account" && (
         <Account setActiveTab={handleActiveTab} />
+      )}
+      {activeTab === "privacy" && (
+        <PrivacyPolicy />
       )}
     </AppLayout>
   );

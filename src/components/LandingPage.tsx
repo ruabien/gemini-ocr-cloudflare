@@ -470,6 +470,14 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       {/* Footer hành chính */}
       <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-2">
+            <button
+              onClick={() => setActiveTab("privacy")}
+              className="hover:text-white transition-colors cursor-pointer"
+            >
+              Chính sách bảo mật
+            </button>
+          </div>
           <p>© 2026 LexOCR</p>
         </div>
       </footer>
