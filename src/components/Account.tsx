@@ -1,6 +1,8 @@
-import React from "react";
-import { User, LogOut, Settings, Sparkles, ScanLine, Shield, Key, Calendar, CreditCard } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { User, LogOut, Settings, Sparkles, ScanLine, Shield, Key, Calendar, CreditCard, Receipt } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 interface AccountProps {
   setActiveTab: (tab: string) => void;
@@ -8,6 +10,70 @@ interface AccountProps {
 
 export default function AccountComponent({ setActiveTab }: AccountProps) {
   const { user, isPro, planType, expiredAt, logout } = useAuth();
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (!user || !db) return;
+      setLoadingPayments(true);
+      try {
+        const q = query(
+          collection(db, "payments"),
+          where("uid", "==", user.uid),
+          orderBy("createdAt", "desc"),
+          limit(20)
+        );
+        const querySnapshot = await getDocs(q);
+        const fetchedPayments = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          let createdAt = data.createdAt;
+          if (createdAt && typeof createdAt.toMillis === 'function') {
+            createdAt = createdAt.toMillis();
+          } else if (createdAt && typeof createdAt.getTime === 'function') {
+            createdAt = createdAt.getTime();
+          }
+          return {
+            id: doc.id,
+            uid: data.uid,
+            orderCode: data.orderCode,
+            amount: data.amount,
+            planType: data.planType,
+            status: data.status,
+            payosTransactionId: data.payosTransactionId,
+            createdAt,
+            paidAt: data.paidAt
+          };
+        });
+
+        // Determine "Gia hạn" by checking prior PAID status
+        const ascending = [...fetchedPayments].reverse();
+        let hasPriorPro = false;
+        
+        const processed = ascending.map(p => {
+          let name = p.planType === "year" ? "PRO Năm" : "PRO Tháng";
+          if (hasPriorPro) {
+            name = "Gia hạn " + name;
+          }
+          if (p.status === "PAID") {
+            hasPriorPro = true;
+          }
+          return {
+            ...p,
+            displayPlanName: name
+          };
+        });
+
+        setPayments(processed.reverse());
+      } catch (error) {
+        console.error("Error fetching payments:", error);
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+
+    fetchPayments();
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -44,6 +110,16 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
   }
 
   const daysRemaining = getDaysRemaining();
+
+  const getStatusBadge = (status: string) => {
+    const s = status?.toUpperCase() || "";
+    if (s === "PAID") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-green-50 text-green-600 border border-green-200">PAID</span>;
+    if (s === "PENDING") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-orange-50 text-orange-600 border border-orange-200">PENDING</span>;
+    if (s === "EXPIRED") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-gray-50 text-gray-600 border border-gray-200">EXPIRED</span>;
+    if (s === "CANCELLED" || s === "FAILED") return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-red-50 text-red-600 border border-red-200">CANCELLED</span>;
+    
+    return <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-bold bg-slate-50 text-slate-600 border border-slate-200">{s}</span>;
+  };
 
   return (
     <div id="account-view" className="space-y-6">
@@ -214,6 +290,56 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
           </div>
         </div>
 
+      </div>
+
+      {/* LỊCH SỬ THANH TOÁN */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+        <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2 border-b border-slate-100 pb-3">
+          <Receipt className="h-4 w-4 text-slate-500" />
+          <span>Lịch sử thanh toán</span>
+        </h4>
+
+        {loadingPayments ? (
+          <div className="text-center py-8 text-slate-500">Đang tải lịch sử...</div>
+        ) : payments.length === 0 ? (
+          <div className="text-center py-8 text-slate-500">
+            <Receipt className="h-8 w-8 text-slate-300 mx-auto mb-3" />
+            <p>Chưa có giao dịch nào.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs text-slate-500 uppercase tracking-wider bg-slate-50">
+                  <th className="py-3 px-4 font-semibold rounded-tl-lg">Ngày</th>
+                  <th className="py-3 px-4 font-semibold">Tên gói</th>
+                  <th className="py-3 px-4 font-semibold">Số tiền</th>
+                  <th className="py-3 px-4 font-semibold rounded-tr-lg">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
+                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("vi-VN", {
+                        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+                      }) : "N/A"}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium text-slate-900 whitespace-nowrap">
+                      {payment.displayPlanName || (payment.planType === "year" ? "PRO Năm" : "PRO Tháng")}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-semibold text-slate-700 whitespace-nowrap">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(payment.amount || 0)}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      {getStatusBadge(payment.status)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
