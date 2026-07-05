@@ -380,15 +380,6 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         </div>
       </section>
 
-      {/* Gentle PRO introduction / Miễn phí */}
-      <section className="bg-slate-50 border-t border-slate-200 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium md:whitespace-nowrap">
-            LexOCR hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng nhanh chóng, an toàn và miễn phí cho nhu cầu sử dụng cơ bản.
-          </p>
-        </div>
-      </section>
-
       {/* Footer hành chính */}
       <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
