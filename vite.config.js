@@ -25,6 +25,53 @@ export default defineConfig({
           next();
         });
       }
+    },
+    {
+      name: 'markdown-negotiation',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const acceptHeader = req.headers['accept'] || '';
+          if (acceptHeader.includes('text/markdown')) {
+            const urlPath = req.url?.split('?')[0] || '';
+            const isApi = urlPath.startsWith('/api');
+            const isStatic = /\.(js|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|txt|xml|woff|woff2|ttf|eot)$/i.test(urlPath);
+            
+            if (!isApi && !isStatic) {
+              const markdown = `# Trợ lý số hóa hồ sơ tư pháp bằng AI (LexOCR)\n\nLexOCR là công cụ chuyển đổi hình ảnh, tài liệu scan sang định dạng văn bản (OCR) chuyên biệt cho ngành tư pháp Việt Nam.\n\n## Bắt đầu sử dụng\nTruy cập [LexOCR](https://lexocr.com/) để tải lên tài liệu của bạn.`;
+              const tokenCount = Math.ceil(markdown.length / 4);
+              
+              res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+              res.setHeader('x-markdown-tokens', String(tokenCount));
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(markdown);
+              return;
+            }
+          }
+          next();
+        });
+      },
+      configurePreviewServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const acceptHeader = req.headers['accept'] || '';
+          if (acceptHeader.includes('text/markdown')) {
+            const urlPath = req.url?.split('?')[0] || '';
+            const isApi = urlPath.startsWith('/api');
+            const isStatic = /\.(js|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|txt|xml|woff|woff2|ttf|eot)$/i.test(urlPath);
+            
+            if (!isApi && !isStatic) {
+              const markdown = `# Trợ lý số hóa hồ sơ tư pháp bằng AI (LexOCR)\n\nLexOCR là công cụ chuyển đổi hình ảnh, tài liệu scan sang định dạng văn bản (OCR) chuyên biệt cho ngành tư pháp Việt Nam.\n\n## Bắt đầu sử dụng\nTruy cập [LexOCR](https://lexocr.com/) để tải lên tài liệu của bạn.`;
+              const tokenCount = Math.ceil(markdown.length / 4);
+              
+              res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+              res.setHeader('x-markdown-tokens', String(tokenCount));
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(markdown);
+              return;
+            }
+          }
+          next();
+        });
+      }
     }
   ],
   server: {
