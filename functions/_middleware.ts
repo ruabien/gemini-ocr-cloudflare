@@ -2,11 +2,30 @@ export const onRequest = async (context: { request: Request; next: () => Promise
   const url = new URL(context.request.url);
   const acceptHeader = context.request.headers.get("accept") || "";
 
+  // Explicitly serve auth.md if requested
+  if (url.pathname === "/auth.md") {
+    try {
+      // Fetch the auth.md file from the public asset directory
+      const response = await context.next();
+      if (response.status === 200) {
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set("Content-Type", "text/markdown; charset=utf-8");
+        newHeaders.set("Access-Control-Allow-Origin", "*");
+        return new Response(response.body, {
+          status: 200,
+          headers: newHeaders,
+        });
+      }
+    } catch (e) {
+      // Fallback in case fetch fails
+    }
+  }
+
   // Check if request is asking for markdown
   if (acceptHeader.includes("text/markdown")) {
     // Only return markdown for page routes, not static assets or api endpoints
     const isApi = url.pathname.startsWith("/api");
-    const isStatic = /\.(js|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|txt|xml|woff|woff2|ttf|eot)$/i.test(url.pathname);
+    const isStatic = /\.(js|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|txt|xml|woff|woff2|ttf|eot|md)$/i.test(url.pathname);
 
     if (!isApi && !isStatic) {
       const markdown = `# Trợ lý số hóa hồ sơ tư pháp bằng AI (LexOCR)

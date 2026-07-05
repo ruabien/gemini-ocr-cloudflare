@@ -65,6 +65,26 @@ app.use((req: any, res: any, next: any) => {
     } catch (err) {
       console.error(err);
     }
+  } else if (req.path === '/auth.md') {
+    try {
+      const filePath = path.join(process.cwd(), 'public/auth.md');
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(200).send(content);
+    } catch (err) {
+      console.error(err);
+    }
+  } else if (req.path === '/.well-known/oauth-authorization-server') {
+    try {
+      const filePath = path.join(process.cwd(), 'public/.well-known/oauth-authorization-server');
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(200).send(content);
+    } catch (err) {
+      console.error(err);
+    }
   }
   next();
 });

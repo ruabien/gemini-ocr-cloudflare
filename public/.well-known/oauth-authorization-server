@@ -1,0 +1,13 @@
+{
+  "issuer": "https://lexocr.com",
+  "authorization_endpoint": "https://lexocr.com/api/auth/url",
+  "token_endpoint": "https://lexocr.com/api/auth/token",
+  "jwks_uri": "https://lexocr.com/.well-known/jwks.json",
+  "agent_auth": {
+    "register_uri": "https://lexocr.com/auth/register",
+    "identity_types_supported": ["email"],
+    "credential_types_supported": ["oauth"],
+    "claim_uri": "https://lexocr.com/api/claims",
+    "revocation_uri": "https://lexocr.com/api/revoke"
+  }
+}

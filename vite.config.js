@@ -52,6 +52,28 @@ export default defineConfig({
             } catch (err) {
               console.error(err);
             }
+          } else if (urlPath === '/auth.md') {
+            try {
+              const filePath = path.join(__dirname, 'public/auth.md');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
+          } else if (urlPath === '/.well-known/oauth-authorization-server') {
+            try {
+              const filePath = path.join(__dirname, 'public/.well-known/oauth-authorization-server');
+              const content = fs.readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/json');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(content);
+              return;
+            } catch (err) {
+              console.error(err);
+            }
           }
           next();
         });
