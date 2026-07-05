@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { User, LogOut, Settings, Sparkles, ScanLine, Shield, Key, Calendar, CreditCard, Receipt } from "lucide-react";
+import { User, LogOut, Settings, Sparkles, ScanLine, Shield, Key, Calendar, CreditCard, Receipt, Copy, Check, Info } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -12,6 +12,7 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
   const { user, isPro, planType, expiredAt, logout } = useAuth();
   const [payments, setPayments] = useState<any[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [copiedUid, setCopiedUid] = useState(false);
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -97,6 +98,47 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
     });
   };
 
+  const formatDateTime = (dateString?: string) => {
+    if (!dateString) return "--";
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return "--";
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = d.getHours().toString().padStart(2, '0');
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    } catch {
+      return "--";
+    }
+  };
+
+  const getProviderName = () => {
+    if (user?.providerData && user.providerData.length > 0) {
+      const provider = user.providerData[0].providerId;
+      if (provider.includes("google")) return "Google";
+      if (provider.includes("facebook")) return "Facebook";
+      if (provider.includes("github")) return "GitHub";
+      if (provider.includes("password")) return "Email/Mật khẩu";
+      return provider;
+    }
+    return "--";
+  };
+
+  const getShortUid = (uid?: string) => {
+    if (!uid) return "--";
+    if (uid.length <= 10) return uid;
+    return `${uid.substring(0, 8)}...${uid.substring(uid.length - 6)}`;
+  };
+
+  const handleCopyUid = () => {
+    if (!user?.uid) return;
+    navigator.clipboard.writeText(user.uid);
+    setCopiedUid(true);
+    setTimeout(() => setCopiedUid(false), 2000);
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -173,6 +215,42 @@ export default function AccountComponent({ setActiveTab }: AccountProps) {
                     FREE
                   </span>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* THÔNG TIN HỒ SƠ */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2 border-b border-slate-100 pb-3">
+              <Info className="h-4 w-4 text-slate-500" />
+              <span>Thông tin hồ sơ</span>
+            </h4>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
+                <span className="text-sm text-slate-600 font-medium">Đăng nhập bằng</span>
+                <span className="text-sm font-bold text-slate-900">{getProviderName()}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
+                <span className="text-sm text-slate-600 font-medium">Ngày tham gia</span>
+                <span className="text-sm font-bold text-slate-900">{formatDateTime(user.metadata.creationTime)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed">
+                <span className="text-sm text-slate-600 font-medium">Lần đăng nhập gần nhất</span>
+                <span className="text-sm font-bold text-slate-900">{formatDateTime(user.metadata.lastSignInTime)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm text-slate-600 font-medium">UID</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-mono text-slate-900 bg-slate-100 px-2 py-1 rounded-md">{getShortUid(user.uid)}</span>
+                  <button 
+                    onClick={handleCopyUid}
+                    title="Copy UID"
+                    className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-md transition-colors"
+                  >
+                    {copiedUid ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

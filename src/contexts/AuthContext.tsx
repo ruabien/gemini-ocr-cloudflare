@@ -46,6 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           displayName: firebaseUser.displayName ?? "",
           photoURL: firebaseUser.photoURL ?? undefined,
           plan: "free",
+          providerData: firebaseUser.providerData,
+          metadata: {
+            creationTime: firebaseUser.metadata.creationTime,
+            lastSignInTime: firebaseUser.metadata.lastSignInTime,
+          },
         };
         setUser(profile);
         localStorage.setItem("lexocr_user", JSON.stringify(profile));
@@ -125,6 +130,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         displayName: firebaseUser.displayName ?? "",
         photoURL: firebaseUser.photoURL ?? undefined,
         plan: "free", // Plan will be synced from Firestore
+        providerData: firebaseUser.providerData,
+        metadata: {
+          creationTime: firebaseUser.metadata.creationTime,
+          lastSignInTime: firebaseUser.metadata.lastSignInTime,
+        },
       };
       setUser(profile);
       localStorage.setItem("lexocr_user", JSON.stringify(profile));

@@ -11,6 +11,11 @@ export interface UserProfile {
   displayName: string;
   photoURL?: string;
   plan: "free" | "pro";
+  providerData?: any[];
+  metadata?: {
+    creationTime?: string;
+    lastSignInTime?: string;
+  };
 }
 
 export interface RecentActivity {
