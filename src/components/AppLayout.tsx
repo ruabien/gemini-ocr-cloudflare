@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect } from "react";
 import Navbar from "./Navbar";
 
 interface AppLayoutProps {
@@ -14,6 +14,10 @@ export default function AppLayout({
   membershipRole,
   children,
 }: AppLayoutProps) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [activeTab]);
+
   const showFooter = ["privacy", "terms"].includes(activeTab);
 
   return (
