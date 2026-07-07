@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.10",
     "@xyflow/react": "^12.10.2",
     "dagre": "^0.8.5",
     "docx": "^9.7.1",
@@ -24,6 +26,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^6.30.4",
+    "resend": "^6.17.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
