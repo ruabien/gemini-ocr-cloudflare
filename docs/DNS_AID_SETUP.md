@@ -6,12 +6,12 @@ Since DNS records cannot be configured directly from this repository without Inf
 
 ## 1. Add SVCB / HTTPS Records
 
-Log into your DNS Management Dashboard (e.g., Cloudflare), select your domain (e.g., `doc.hotro.online` or `lexocr.com`), and navigate to the **DNS > Records** section. Add the following records:
+Log into your DNS Management Dashboard (e.g., Cloudflare), select your domain (e.g., `lexocr.com`), and navigate to the **DNS > Records** section. Add the following records:
 
 ### Record 1: Agent Index
 * **Type:** `SVCB` (or `HTTPS`)
 * **Name:** `_index._agents`
-* **Target:** `doc.hotro.online` (or your domain name)
+* **Target:** `lexocr.com` (or your domain name)
 * **Priority:** `1`
 * **TTL:** `Auto` (or `3600`)
 * **SVCB Parameters:** 
@@ -22,7 +22,7 @@ Log into your DNS Management Dashboard (e.g., Cloudflare), select your domain (e
 ### Record 2: Agent-to-Agent (A2A)
 * **Type:** `SVCB` (or `HTTPS`)
 * **Name:** `_a2a._agents`
-* **Target:** `doc.hotro.online` (or your domain name)
+* **Target:** `lexocr.com` (or your domain name)
 * **Priority:** `1`
 * **TTL:** `Auto` (or `3600`)
 * **SVCB Parameters:** 
@@ -35,8 +35,8 @@ Log into your DNS Management Dashboard (e.g., Cloudflare), select your domain (e
 ### BIND Zone File Equivalent
 If your DNS provider supports importing zone files natively, you can copy and paste the following snippet:
 ```dns
-_index._agents.doc.hotro.online. 3600 IN SVCB 1 doc.hotro.online. alpn="a2a" port=443 mandatory=alpn,port
-_a2a._agents.doc.hotro.online. 3600 IN SVCB 1 doc.hotro.online. alpn="a2a" port=443 mandatory=alpn,port
+_index._agents.lexocr.com. 3600 IN SVCB 1 lexocr.com. alpn="a2a" port=443 mandatory=alpn,port
+_a2a._agents.lexocr.com. 3600 IN SVCB 1 lexocr.com. alpn="a2a" port=443 mandatory=alpn,port
 ```
 
 ## 2. Enable DNSSEC
@@ -55,7 +55,7 @@ Once the records have propagated and DNSSEC is active, you can validate your set
 ```bash
 curl -X POST https://isitagentready.com/api/scan \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://doc.hotro.online"}'
+  -d '{"url": "https://lexocr.com"}'
 ```
 
 Verify that `checks.discoverability.dnsAid.status` returns `"pass"`.
