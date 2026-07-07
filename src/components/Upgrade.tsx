@@ -640,35 +640,43 @@ export default function UpgradeComponent({
               </ul>
             </div>
 
-            <div className="pt-5 space-y-2.5">
-              {isProYearly ? (
-                <button disabled className="w-full bg-emerald-50 text-emerald-700 font-bold py-2.5 px-4 rounded-xl text-sm flex justify-center items-center space-x-1.5 border border-emerald-200">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Đang sử dụng</span>
-                </button>
-              ) : isProMonthly ? (
-                <>
-                  <button
-                    onClick={() => handleOpenPayment("yearly")}
-                    className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
-                  >
-                    <Trophy className="h-4 w-4 text-amber-100" />
-                    <span>Chuyển sang PRO Năm</span>
-                  </button>
-                  <p className="text-[11px] text-slate-500 italic mt-1 leading-normal text-center">
-                    Thời gian còn lại của gói hiện tại sẽ được cộng dồn sau khi thanh toán.
-                  </p>
-                </>
-              ) : (
-                <button
-                  onClick={() => handleOpenPayment("yearly")}
-                  className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
-                >
-                  <CreditCard className="h-4 w-4 text-amber-100" />
-                  <span>ĐĂNG KÝ PRO NĂM</span>
-                </button>
-              )}
+        <div className="pt-5 space-y-2.5">
+          {isProYearly ? (
+            <div className="flex flex-col space-y-2">
+              <button disabled className="w-full bg-emerald-50 text-emerald-700 font-bold py-2.5 px-4 rounded-xl text-sm flex justify-center items-center space-x-1.5 border border-emerald-200">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Đang sử dụng</span>
+              </button>
+              <button
+                onClick={() => handleOpenPayment("yearly")}
+                className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm flex justify-center items-center space-x-1.5 border border-[#FBBF24]/20"
+              >
+                Gia hạn PRO Năm
+              </button>
             </div>
+          ) : isProMonthly ? (
+            <>
+              <button
+                onClick={() => handleOpenPayment("yearly")}
+                className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
+              >
+                <Trophy className="h-4 w-4 text-amber-100" />
+                <span>Chuyển sang PRO Năm</span>
+              </button>
+              <p className="text-[11px] text-slate-500 italic mt-1 leading-normal text-center">
+                Thời gian còn lại của gói hiện tại sẽ được cộng dồn sau khi thanh toán.
+              </p>
+            </>
+          ) : (
+            <button
+              onClick={() => handleOpenPayment("yearly")}
+              className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-center cursor-pointer flex items-center justify-center space-x-2 border border-[#FBBF24]/20"
+            >
+              <CreditCard className="h-4 w-4 text-amber-100" />
+              <span>ĐĂNG KÝ PRO NĂM</span>
+            </button>
+          )}
+        </div>
           </div>
         </div>
 
