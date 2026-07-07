@@ -302,8 +302,8 @@ export default function UpgradeComponent({
     return `${mins}:${rem < 10 ? "0" : ""}${rem}`;
   };
 
-  const isProMonthly = isPro && currentCycle === 'monthly';
-  const isProYearly = isPro && currentCycle === 'yearly';
+  const isProMonthly = isPro && planType === "month";
+  const isProYearly = isPro && planType === "year";
 
   return (
     <div id="upgrade-view" className="space-y-6">
@@ -572,12 +572,20 @@ export default function UpgradeComponent({
               </ul>
             </div>
 
-            <div className="pt-5">
+            <div className="pt-5 space-y-2.5">
               {isProMonthly ? (
-                <button disabled className="w-full bg-emerald-50 text-emerald-700 font-bold py-2.5 px-4 rounded-xl text-xs flex justify-center items-center space-x-1.5 border border-emerald-200">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Đang sử dụng</span>
-                </button>
+                <div className="flex flex-col space-y-2">
+                  <button disabled className="w-full bg-emerald-50 text-emerald-700 font-bold py-2.5 px-4 rounded-xl text-xs flex justify-center items-center space-x-1.5 border border-emerald-200">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Đang sử dụng</span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenPayment("monthly")}
+                    className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-white font-black py-2.5 px-4 rounded-xl text-xs flex justify-center items-center space-x-1.5 border border-[#FBBF24]/20 cursor-pointer"
+                  >
+                    <span>Gia hạn thêm 30 ngày</span>
+                  </button>
+                </div>
               ) : isProYearly ? (
                 <button disabled className="w-full bg-slate-50 text-slate-400 font-bold py-2.5 px-4 rounded-xl text-xs text-center border border-slate-200 cursor-not-allowed">
                   Chuyển xuống PRO Tháng
