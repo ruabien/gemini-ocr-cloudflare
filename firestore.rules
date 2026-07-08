@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Quyền truy cập cho collection users
+    match /users/{userId} {
+      // Chỉ cho phép user đã đăng nhập đọc thông tin cá nhân của chính mình
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Tuyệt đối không cho phép frontend tự ghi/cập nhật thông tin gói thành viên
+      allow write: if false;
+    }
+    
+    // Quyền truy cập cho collection payments
+    match /payments/{paymentId} {
+      // Chỉ cho phép user đọc lịch sử thanh toán của chính mình
+      allow read: if request.auth != null
+                  && resource.data.uid == request.auth.uid;
+      // Tuyệt đối không cho phép frontend tự tạo hoặc sửa đổi trạng thái thanh toán trực tiếp
+      allow write: if false;
+    }
+  }
+}

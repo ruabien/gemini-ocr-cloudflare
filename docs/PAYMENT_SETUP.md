@@ -86,7 +86,8 @@ service cloud.firestore {
     // Quyền truy cập cho collection payments
     match /payments/{paymentId} {
       // Chỉ cho phép user đọc lịch sử thanh toán của chính mình
-      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow read: if request.auth != null
+                  && resource.data.uid == request.auth.uid;
       // Tuyệt đối không cho phép frontend tự tạo hoặc sửa đổi trạng thái thanh toán trực tiếp
       allow write: if false;
     }
