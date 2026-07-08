@@ -56,7 +56,7 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
     // 3. Determine Amount
     const isTestPayment = String(env.TEST_PAYMENT).toLowerCase() === "true";
     const amount = isTestPayment
-      ? (planType === "month" ? 1000 : 2000)
+      ? (planType === "month" ? 2000 : 3000)
       : (planType === "month" ? 50000 : 500000);
 
     console.log("[PAYMENT CREATE] TEST_PAYMENT:", env.TEST_PAYMENT);
