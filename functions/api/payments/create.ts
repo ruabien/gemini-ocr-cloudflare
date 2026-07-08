@@ -57,6 +57,8 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
     const amount = env.TEST_PAYMENT === "true"
       ? (planType === "month" ? 1000 : 2000)
       : (planType === "month" ? 50000 : 500000);
+    console.log("TEST_PAYMENT =", env.TEST_PAYMENT);
+    console.log("Calculated amount =", amount);
     const description = `LexOCR PRO ${planType === "month" ? "1M" : "1Y"}`;
 
     // 4. Check for active pending payments
