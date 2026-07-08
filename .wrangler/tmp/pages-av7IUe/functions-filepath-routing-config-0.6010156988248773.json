@@ -1,0 +1,117 @@
+{
+  "routes": [
+    {
+      "routePath": "/api/ocr/export/docx",
+      "mountPath": "/api/ocr/export",
+      "method": "POST",
+      "module": [
+        "api/ocr/export/docx.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/ocr/export/excel",
+      "mountPath": "/api/ocr/export",
+      "method": "POST",
+      "module": [
+        "api/ocr/export/excel.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/ocr/anonymize",
+      "mountPath": "/api/ocr",
+      "method": "POST",
+      "module": [
+        "api/ocr/anonymize.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/ocr/process",
+      "mountPath": "/api/ocr",
+      "method": "POST",
+      "module": [
+        "api/ocr/process.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/payments/create",
+      "mountPath": "/api/payments",
+      "method": "POST",
+      "module": [
+        "api/payments/create.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/payments/webhook",
+      "mountPath": "/api/payments",
+      "method": "GET",
+      "module": [
+        "api/payments/webhook.ts:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/payments/webhook",
+      "mountPath": "/api/payments",
+      "method": "POST",
+      "module": [
+        "api/payments/webhook.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/payments/:path",
+      "mountPath": "/api/payments",
+      "method": "",
+      "module": [
+        "api/payments/[path].ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/api/ocr-space",
+      "mountPath": "/api",
+      "method": "OPTIONS",
+      "module": [
+        "api/ocr-space.js:onRequestOptions"
+      ]
+    },
+    {
+      "routePath": "/api/ocr-space",
+      "mountPath": "/api",
+      "method": "POST",
+      "module": [
+        "api/ocr-space.js:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/api/ocr",
+      "mountPath": "/api",
+      "method": "",
+      "module": [
+        "api/ocr.ts:onRequest"
+      ]
+    },
+    {
+      "routePath": "/payos-webhook",
+      "mountPath": "/",
+      "method": "GET",
+      "module": [
+        "payos-webhook.ts:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/payos-webhook",
+      "mountPath": "/",
+      "method": "POST",
+      "module": [
+        "payos-webhook.ts:onRequestPost"
+      ]
+    },
+    {
+      "routePath": "/",
+      "mountPath": "/",
+      "method": "",
+      "middleware": [
+        "_middleware.ts:onRequest"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}
