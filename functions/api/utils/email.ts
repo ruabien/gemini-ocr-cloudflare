@@ -45,7 +45,7 @@ export async function sendPaymentSuccessEmail({
     const resend = new Resend(resendApiKey);
 
     const { data, error } = await resend.emails.send({
-      from: "billing@lexocr.com",
+      from: "LexOCR Billing <billing@lexocr.com>",
       to: email,
       subject: "Thanh toán LexOCR PRO thành công",
       html: htmlContent,

@@ -25,7 +25,7 @@ export interface PaymentSuccessEmailProps {
 }
 
 export const PaymentSuccessEmail = ({
-  displayName = "Khách hàng",
+  displayName = "",
   planType = "Pro",
   amount = 0,
   orderCode = "000000",
@@ -51,22 +51,27 @@ export const PaymentSuccessEmail = ({
     day: "2-digit"
   });
 
+  const displayPlanType =
+    String(planType).toLowerCase() === "month"
+      ? "LexOCR PRO Tháng"
+      : String(planType).toLowerCase() === "year"
+      ? "LexOCR PRO Năm"
+      : String(planType).toUpperCase();
+
   return (
     <Html>
       <Head />
       <Preview>Thanh toán LexOCR PRO thành công</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Img
-            src="https://lexocr.com/logo.svg"
-            width="40"
-            height="40"
-            alt="LexOCR"
-            style={logo}
-          />
+          <div style={logoTextContainer}>
+            <Text style={logoMainText}>LEXOCR</Text>
+            <Text style={logoSubText}>Procuracy v2.5</Text>
+            <Text style={logoDescText}>Hệ thống bóc tách hồ sơ & trợ lý Kiểm sát viên</Text>
+          </div>
           <Heading style={heading}>Thanh toán LexOCR PRO thành công</Heading>
           
-          <Text style={paragraph}>Xin chào {displayName},</Text>
+          <Text style={paragraph}>Xin chào {displayName ? displayName : "bạn"},</Text>
           <Text style={paragraph}>Cảm ơn bạn đã sử dụng LexOCR.</Text>
 
           <Section style={card}>
@@ -74,7 +79,7 @@ export const PaymentSuccessEmail = ({
             
             <Row style={row}>
               <Column style={labelColumn}><Text style={label}>Gói:</Text></Column>
-              <Column style={valueColumn}><Text style={value}>{String(planType).toUpperCase()}</Text></Column>
+              <Column style={valueColumn}><Text style={value}>{displayPlanType}</Text></Column>
             </Row>
             
             <Row style={row}>
@@ -100,7 +105,7 @@ export const PaymentSuccessEmail = ({
 
           <Section style={buttonContainer}>
             <Button style={button} href="https://lexocr.com">
-              Đăng nhập LexOCR
+              Mở LexOCR
             </Button>
           </Section>
 
@@ -133,10 +138,30 @@ const container = {
   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
 };
 
-const logo = {
-  margin: "0 auto",
-  display: "block",
+const logoTextContainer = {
+  textAlign: "center" as const,
   marginBottom: "24px",
+};
+
+const logoMainText = {
+  margin: "0",
+  fontSize: "28px",
+  fontWeight: "800",
+  color: "#163A70",
+  letterSpacing: "2px",
+};
+
+const logoSubText = {
+  margin: "4px 0",
+  fontSize: "16px",
+  fontWeight: "600",
+  color: "#3B82F6",
+};
+
+const logoDescText = {
+  margin: "4px 0 0 0",
+  fontSize: "14px",
+  color: "#6B7280",
 };
 
 const heading = {
