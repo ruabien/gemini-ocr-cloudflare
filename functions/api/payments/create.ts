@@ -91,7 +91,13 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
             bin: latestPending.bin || "",
             accountNumber: latestPending.accountNumber || "",
             accountName: latestPending.accountName || "",
-            description: latestPending.description || `LexOCR PRO ${latestPending.planType === "month" ? "1M" : "1Y"}`
+            description: latestPending.description || `LexOCR PRO ${latestPending.planType === "month" ? "1M" : "1Y"}`,
+            debug: {
+              envTestPayment: env.TEST_PAYMENT,
+              isTestPayment,
+              planType,
+              amount
+            }
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
@@ -258,7 +264,13 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
         bin: payosResponse.data.bin,
         accountNumber: payosResponse.data.accountNumber,
         accountName: payosResponse.data.accountName,
-        description: payosResponse.data.description
+        description: payosResponse.data.description,
+        debug: {
+          envTestPayment: env.TEST_PAYMENT,
+          isTestPayment,
+          planType,
+          amount
+        }
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
