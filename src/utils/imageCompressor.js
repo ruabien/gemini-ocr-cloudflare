@@ -45,8 +45,6 @@ export const compressImageIfNeeded = async (file) => {
         return;
       }
 
-      console.log(`Tiến hành nén ảnh: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB, Kích thước: ${width}x${height}px)`);
-
       // Tính toán kích thước mới duy trì tỷ lệ khung hình (aspect ratio)
       let newWidth = width;
       let newHeight = height;
@@ -90,7 +88,6 @@ export const compressImageIfNeeded = async (file) => {
           lastModified: Date.now()
         });
 
-        console.log(`Đã nén xong: ${compressedFile.name} (${(compressedFile.size / 1024).toFixed(2)} KB)`);
         resolve(compressedFile);
       }, outputType, 0.8);
     };
