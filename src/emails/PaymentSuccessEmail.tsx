@@ -22,6 +22,9 @@ export interface PaymentSuccessEmailProps {
   orderCode: number | string;
   paidAt: string | Date;
   expiredAt: string | Date;
+  transactionType?: "purchase" | "renewal" | "upgrade";
+  testPayment?: boolean;
+  email?: string;
 }
 
 export const PaymentSuccessEmail = ({
@@ -31,6 +34,9 @@ export const PaymentSuccessEmail = ({
   orderCode = "000000",
   paidAt = new Date(),
   expiredAt = new Date(),
+  transactionType = "purchase",
+  testPayment = false,
+  email = "",
 }: PaymentSuccessEmailProps) => {
   const formattedAmount = new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -58,10 +64,37 @@ export const PaymentSuccessEmail = ({
       ? "LexOCR PRO Năm"
       : String(planType).toUpperCase();
 
+  let bodyContent = null;
+  if (transactionType === "renewal") {
+    bodyContent = (
+      <>
+        <Text style={paragraph}>Gia hạn thành công.</Text>
+        <Text style={paragraph}>Ngày hết hạn mới: {formattedExpiredAt}</Text>
+      </>
+    );
+  } else if (transactionType === "upgrade") {
+    bodyContent = (
+      <>
+        <Text style={paragraph}>Chúc mừng!</Text>
+        <Text style={paragraph}>Bạn đã nâng cấp lên LexOCR PRO Năm.</Text>
+      </>
+    );
+  } else {
+    bodyContent = (
+      <Text style={paragraph}>Cảm ơn bạn đã sử dụng LexOCR.</Text>
+    );
+  }
+
+  const subjectText = {
+    purchase: "Thanh toán LexOCR PRO thành công",
+    renewal: "Gia hạn LexOCR PRO thành công",
+    upgrade: "Nâng cấp lên LexOCR PRO Năm thành công"
+  }[transactionType] || "Thanh toán LexOCR PRO thành công";
+
   return (
     <Html>
       <Head />
-      <Preview>Thanh toán LexOCR PRO thành công</Preview>
+      <Preview>{subjectText}</Preview>
       <Body style={main}>
         <Container style={container}>
           <div style={logoTextContainer}>
@@ -69,10 +102,16 @@ export const PaymentSuccessEmail = ({
             <Text style={logoSubText}>Procuracy v2.5</Text>
             <Text style={logoDescText}>Hệ thống bóc tách hồ sơ & trợ lý Kiểm sát viên</Text>
           </div>
-          <Heading style={heading}>Thanh toán LexOCR PRO thành công</Heading>
+<Heading style={heading}>{subjectText}</Heading>
           
-          <Text style={paragraph}>Xin chào {displayName ? displayName : "bạn"},</Text>
-          <Text style={paragraph}>Cảm ơn bạn đã sử dụng LexOCR.</Text>
+<Text style={paragraph}>Xin chào {displayName ? displayName : "bạn"},</Text>
+{email && (
+  <Text style={paragraph}>
+    Tài khoản:<br />
+    {email}
+  </Text>
+)}
+          {bodyContent}
 
           <Section style={card}>
             <Text style={cardTitle}>Thông tin giao dịch</Text>
@@ -82,10 +121,10 @@ export const PaymentSuccessEmail = ({
               <Column style={valueColumn}><Text style={value}>{displayPlanType}</Text></Column>
             </Row>
             
-            <Row style={row}>
-              <Column style={labelColumn}><Text style={label}>Giá tiền:</Text></Column>
-              <Column style={valueColumn}><Text style={value}>{formattedAmount}</Text></Column>
-            </Row>
+<Row style={row}>
+  <Column style={labelColumn}><Text style={label}>Giá tiền:</Text></Column>
+  <Column style={valueColumn}><Text style={value}>{formattedAmount}{testPayment ? " (Chế độ kiểm thử)" : ""}</Text></Column>
+</Row>
             
             <Row style={row}>
               <Column style={labelColumn}><Text style={label}>Mã giao dịch:</Text></Column>
@@ -111,10 +150,12 @@ export const PaymentSuccessEmail = ({
 
           <Hr style={hr} />
           
-          <Text style={footer}>
-            support@lexocr.com<br />
-            © 2026 LexOCR
-          </Text>
+<Text style={footer}>
+  LexOCR không lưu trữ tài liệu hồ sơ của người dùng.<br />
+  support@lexocr.com<br />
+  https://lexocr.com<br />
+  © 2026 LexOCR
+</Text>
         </Container>
       </Body>
     </Html>

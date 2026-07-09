@@ -70,7 +70,7 @@ function notImplementedClass(name3) {
 }
 var init_utils = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/_internal/utils.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -84,7 +84,7 @@ var init_utils = __esm({
 var _timeOrigin, _performanceNow, nodeTiming, PerformanceEntry, PerformanceMark, PerformanceMeasure, PerformanceResourceTiming, PerformanceObserverEntryList, Performance, PerformanceObserver, performance;
 var init_performance = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/internal/perf_hooks/performance.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -331,7 +331,7 @@ var init_performance = __esm({
 // C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/perf_hooks.mjs
 var init_perf_hooks = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/perf_hooks.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -369,7 +369,7 @@ var init_performance2 = __esm({
 var noop_default;
 var init_noop = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/mock/noop.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -383,7 +383,7 @@ import { Writable } from "node:stream";
 var _console, _ignoreErrors, _stderr, _stdout, log, info, trace, debug, table, error, warn, createTask, clear, count, countReset, dir, dirxml, group, groupEnd, groupCollapsed, profile, profileEnd, time, timeEnd, timeLog, timeStamp, Console, _times, _stdoutErrorHandler, _stderrErrorHandler;
 var init_console = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/console.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -426,7 +426,7 @@ var init_console = __esm({
 var workerdConsole, assert, clear2, context, count2, countReset2, createTask2, debug2, dir2, dirxml2, error2, group2, groupCollapsed2, groupEnd2, info2, log2, profile2, profileEnd2, table2, time2, timeEnd2, timeLog2, timeStamp2, trace2, warn2, console_default;
 var init_console2 = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/@cloudflare/unenv-preset/dist/runtime/node/console.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -489,7 +489,7 @@ var init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console = __
 var hrtime;
 var init_hrtime = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/internal/process/hrtime.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -517,7 +517,7 @@ var init_hrtime = __esm({
 var ReadStream;
 var init_read_stream = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/internal/tty/read-stream.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -543,7 +543,7 @@ var init_read_stream = __esm({
 var WriteStream;
 var init_write_stream = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/internal/tty/write-stream.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -601,7 +601,7 @@ var init_write_stream = __esm({
 // C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/tty.mjs
 var init_tty = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/tty.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -614,7 +614,7 @@ var init_tty = __esm({
 var NODE_VERSION;
 var init_node_version = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/internal/process/node-version.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -627,7 +627,7 @@ import { EventEmitter } from "node:events";
 var Process;
 var init_process = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/unenv/dist/runtime/node/internal/process/process.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -874,7 +874,7 @@ var init_process = __esm({
 var globalProcess, getBuiltinModule, workerdProcess, unenvProcess, exit, features, platform, _channel, _debugEnd, _debugProcess, _disconnect, _events, _eventsCount, _exiting, _fatalException, _getActiveHandles, _getActiveRequests, _handleQueue, _kill, _linkedBinding, _maxListeners, _pendingMessage, _preload_modules, _rawDebug, _send, _startProfilerIdleNotifier, _stopProfilerIdleNotifier, _tickCallback, abort, addListener, allowedNodeEnvironmentFlags, arch, argv, argv0, assert2, availableMemory, binding, channel, chdir, config, connected, constrainedMemory, cpuUsage, cwd, debugPort, disconnect, dlopen, domain, emit, emitWarning, env, eventNames, execArgv, execPath, exitCode, finalization, getActiveResourcesInfo, getegid, geteuid, getgid, getgroups, getMaxListeners, getuid, hasUncaughtExceptionCaptureCallback, hrtime3, initgroups, kill, listenerCount, listeners, loadEnvFile, mainModule, memoryUsage, moduleLoadList, nextTick, off, on, once, openStdin, permission, pid, ppid, prependListener, prependOnceListener, rawListeners, reallyExit, ref, release, removeAllListeners, removeListener, report, resourceUsage, send, setegid, seteuid, setgid, setgroups, setMaxListeners, setSourceMapsEnabled, setuid, setUncaughtExceptionCaptureCallback, sourceMapsEnabled, stderr, stdin, stdout, throwDeprecation, title, traceDeprecation, umask, unref, uptime, version, versions, _process, process_default;
 var init_process2 = __esm({
   "C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -1270,7 +1270,7 @@ function _asyncToGenerator(n2) {
 var __create2, __defProp2, __getOwnPropDesc2, __getOwnPropNames2, __getProtoOf2, __hasOwnProp2, __esmMin, __commonJSMin, __copyProps2, __toESM2, __require2, BaseXmlComponent, EMPTY_OBJECT, XmlComponent, IgnoreIfEmptyXmlComponent, XmlAttributeComponent, NextAttributeComponent, Attributes, require_events, require_inherits_browser, global2, init_dist$1, browser, process2, cachedSetTimeout, cachedClearTimeout, queue, draining, currentQueue, queueIndex, browserExports, process$1, init_dist2, require_stream_browser, require_base64_js, require_ieee754, require_buffer, require_shams$1, require_shams, require_es_object_atoms, require_es_errors, require_eval, require_range, require_ref, require_syntax, require_type, require_uri, require_abs, require_floor, require_max, require_min, require_pow, require_round, require_isNaN, require_sign, require_gOPD, require_gopd, require_es_define_property, require_has_symbols, require_Reflect_getPrototypeOf, require_Object_getPrototypeOf, require_implementation, require_function_bind, require_functionCall, require_functionApply, require_reflectApply, require_actualApply, require_call_bind_apply_helpers, require_get, require_get_proto, require_hasown, require_get_intrinsic, require_call_bound, require_is_arguments, require_is_generator_function, require_is_callable, require_for_each, require_possible_typed_array_names, require_available_typed_arrays, require_define_data_property, require_has_property_descriptors, require_set_function_length, require_applyBind, require_call_bind, require_which_typed_array, require_is_typed_array, require_types, require_isBufferBrowser, require_util, require_buffer_list, require_destroy, require_errors_browser, require_state, require_browser, require__stream_writable, require__stream_duplex, require_safe_buffer, require_string_decoder, require_end_of_stream, require_async_iterator, require_from_browser, require__stream_readable, require__stream_transform, require__stream_passthrough, require_pipeline, require_stream_browserify, require_sax, require_array_helper, require_options_helper, require_xml2js, require_xml2json, require_js2xml, require_json2xml, import_lib, convertToXmlComponent, ImportedXmlComponentAttributes, ImportedXmlComponent, ImportedRootElementAttributes, InitializableXmlComponent, decimalNumber, unsignedDecimalNumber, hexBinary, uCharHexNumber, universalMeasureValue, positiveUniversalMeasureValue, hexColorValue, signedTwipsMeasureValue, hpsMeasureValue, twipsMeasureValue, eighthPointMeasureValue, pointMeasureValue, dateTimeValue, OnOffElement, HpsMeasureElement, EmptyElement, StringValueElement, createStringElement, NumberValueElement, StringContainer, BuilderElement, AlignmentType, createAlignment, createBorderElement, BorderStyle, Border, ThematicBreak, createIndent, createBreak, FieldCharacterType, createFieldChar, createBegin, createSeparate, createEnd, SpaceType, TextAttributes, Page, NumberOfPages, NumberOfPagesSection, CurrentSection, createShading, ChangeAttributes, DeletionTrackChange, InsertionTrackChange, EmphasisMarkType, createEmphasisMark, CharacterSpacing, Color, Highlight, HighlightComplexScript, createLanguageComponent, createRunFonts, createVerticalAlignRun, createSuperScript, createSubScript, UnderlineType, createUnderline, RunProperties, ParagraphRunProperties, RunPropertiesChange, Text, PageNumber, Run, TextRun, require_minimalistic_assert, require_utils, require_common$1, require_common, require__1, require__256, require__224, require__512, require__384, require_sha, require_ripemd, require_hmac, import_hash, urlAlphabet, customAlphabet, nanoid, convertInchesToTwip, uniqueNumericIdCreator, abstractNumUniqueNumericIdGen, concreteNumUniqueNumericIdGen, bookmarkUniqueNumericIdGen, uniqueId, generateUuidPart, uniqueUuid, encodeUtf8, RelationshipsAttributes, TargetModeType, createRelationship, Relationships, CommentAttributes, RootCommentsAttributes, Comment, commentIdToParaId, Comments, CommentsExtendedAttributes, CommentExAttributes, CommentEx, CommentsExtended, EndnoteReference, PageBreakBefore, LineRuleType, createSpacing, HeadingLevel, createParagraphStyle, TabStopType, createTabStopItem, createTabStop, NumberProperties, IndentLevel, NumberId, FileChild, HyperlinkAttributes, ConcreteHyperlink, ExternalHyperlink, BookmarkStartAttributes, BookmarkEndAttributes, Bookmark, BookmarkStart, BookmarkEnd, createOutlineLevel, createFontRelationship, createFont, createRegularFont, createFontTable, FontWrapper, createWordWrap, createFrameProperties, ParagraphProperties, ParagraphPropertiesChange, Paragraph, VerticalAlignTable, VerticalAlignSection, createVerticalAlign, NONE_BORDER, DEFAULT_BORDER, TableBorders, AppPropertiesAttributes, AppProperties, ContentTypeAttributes, createDefault, createOverride, ContentTypes, DocumentAttributeNamespaces, DocumentAttributes, CoreProperties, TimestampElementProperties, TimestampElement, CustomPropertiesAttributes, CustomPropertyAttributes, CustomProperty, CustomPropertyValue, CustomProperties, createColumns, createDocumentGrid, HeaderFooterReferenceType, HeaderFooterType, createHeaderFooterReference, createLineNumberType, PageBordersAttributes, PageBorders, createPageMargin, createPageNumberType, PageOrientation, createPageSize, PageTextDirectionAttributes, PageTextDirection, createSectionType, sectionMarginDefaults, sectionPageSizeDefaults, SectionProperties, SectionPropertiesChange, Body, DocumentBackgroundAttributes, DocumentBackground, Document, DocumentWrapper, EndnotesAttributes, EndnoteAttributes, EndnoteRefRun, EndnoteType, Endnote, ContinuationSeperator, ContinuationSeperatorRun, Seperator, SeperatorRun, Endnotes, EndnotesWrapper, FooterAttributes, Footer$1, FooterWrapper, FootnoteAttributes, FootnoteRef, FootnoteRefRun, FootnoteType, Footnote, FootnotesAttributes, FootNotes, FootnotesWrapper, HeaderAttributes, Header$1, HeaderWrapper, Media, LevelFormat, LevelAttributes, NumberFormat$1, LevelText, LevelJc, Suffix, IsLegalNumberingStyle, LevelBase, Level, MultiLevelType, AbstractNumberingAttributes, AbstractNumbering, AbstractNumId, NumAttributes, ConcreteNumbering, LevelOverrideAttributes, LevelOverride, StartOverrideAttributes, StartOverride, Numbering, createCompatibilitySetting, Compatibility, SettingsAttributes, Settings, ComponentAttributes, Name, UiPriority, StyleAttributes, Style, StyleForParagraph, StyleForCharacter, HeadingStyle, TitleStyle, Heading1Style, Heading2Style, Heading3Style, Heading4Style, Heading5Style, Heading6Style, StrongStyle, ListParagraph, FootnoteText, FootnoteReferenceStyle, FootnoteTextChar, EndnoteText, EndnoteReferenceStyle, EndnoteTextChar, HyperlinkStyle, Styles, ParagraphPropertiesDefaults, RunPropertiesDefaults, DocumentDefaults, ExternalStylesFactory, DefaultStylesFactory, File, require_jszip_min, require_escapeForXML, require_xml, import_stream_browserify, import_jszip_min, import_xml, obfuscatedStartOffset, obfuscatedEndOffset, guidSize, obfuscate, Formatter, ImageReplacer, NumberingReplacer, Compiler, PrettifyType, convertPrettifyType, Packer, formatter$1, toJson, createTextElementContents, patchSpaceAttribute, getFirstLevelElements, appendContentType, getIdFromRelationshipId, getNextRelationshipIndex, appendRelationship, TokenNotFoundError, findRunElementIndexWithToken, splitRunElement, ReplaceMode, replaceTokenInParagraphElement, patchTextElement, renderParagraphNode, renderRunNode, buildNodePath, elementsToWrapper, traverse, findLocationOfText, formatter, SPLIT_TOKEN, replacer, goToElementFromPath, goToParentElementFromPath, getLastElementIndexFromPath, PatchType, imageReplacer, UTF16LE, UTF16BE, compareByteArrays, patchDocument, toXml, createRelationshipFile, patchDetector, findPatchKeys;
 var init_dist = __esm({
   "../node_modules/docx/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -19708,7 +19708,7 @@ function isListItem(line) {
 }
 var init_listItem = __esm({
   "../src/docFormatter/listItem.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -19738,7 +19738,7 @@ function isLegalStructure(line) {
 var PROTECTED_PREFIXES;
 var init_legalStructure = __esm({
   "../src/docFormatter/legalStructure.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -19862,7 +19862,7 @@ function mergeLines(rawText) {
 var CONNECTOR_WORDS, SPECIFIC_CONNECTORS_FOR_PERSON, PERSON_TITLES;
 var init_lineMerge = __esm({
   "../src/docFormatter/lineMerge.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -19941,7 +19941,7 @@ function isHeading(line) {
 var HEADING_EXACT_KEYWORDS, HEADING_PREFIX_KEYWORDS;
 var init_heading = __esm({
   "../src/docFormatter/heading.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20131,7 +20131,7 @@ function mergeNamesAndLocations(text) {
 var LEGAL_PHRASE_PARTS, PERSON_TITLES2, LOCATION_PREFIXES;
 var init_personName = __esm({
   "../src/docFormatter/personName.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20240,7 +20240,7 @@ function mergeNumbersAndUnits(text) {
 var UNITS;
 var init_numberUnit = __esm({
   "../src/docFormatter/numberUnit.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20311,7 +20311,7 @@ function cleanParagraphs(text) {
 }
 var init_paragraph = __esm({
   "../src/docFormatter/paragraph.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20340,7 +20340,7 @@ function normalizeSpacingAndPunctuation(text) {
 }
 var init_spacing = __esm({
   "../src/docFormatter/spacing.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20377,7 +20377,7 @@ function validateProcessedText(processedText, originalText) {
 }
 var init_validator = __esm({
   "../src/docFormatter/validator.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20399,7 +20399,7 @@ function clean(rawText) {
 }
 var init_docFormatter = __esm({
   "../src/docFormatter/index.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20440,7 +20440,7 @@ function isMucSoCap1(line) {
 }
 var init_paragraphStyle = __esm({
   "../src/docFormatter/paragraphStyle.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20493,7 +20493,7 @@ function getParagraphConfig(line, mode) {
 }
 var init_docxStyles = __esm({
   "../src/docFormatter/docxStyles.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20515,7 +20515,7 @@ function flattenTextForManualLineBreak(input) {
 }
 var init_docxTextNormalizer = __esm({
   "../src/utils/docxTextNormalizer.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20644,7 +20644,7 @@ async function onRequestPost({ request }) {
 }
 var init_docx = __esm({
   "api/ocr/export/docx.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20720,7 +20720,7 @@ ${values}`;
 }
 var init_excel = __esm({
   "api/ocr/export/excel.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20772,7 +20772,7 @@ async function onRequestPost3({ request }) {
 }
 var init_anonymize = __esm({
   "api/ocr/anonymize.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -20853,7 +20853,7 @@ async function processWithOcrSpaceFallback(pagesToProcess, mimeType, ocrSpaceKey
 var ocrSpaceKeyRoundRobinIndex, MOCK_LEGAL_DOC_TEXT, MOCK_BAN_AN_TEXT, MOCK_CAO_TRANG_TEXT, onRequestPost4;
 var init_process3 = __esm({
   "api/ocr/process.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -21584,7 +21584,7 @@ async function savePaymentRecord(serviceAccountJson, paymentId, record) {
 }
 var init_firebaseAdmin = __esm({
   "api/utils/firebaseAdmin.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -21676,7 +21676,7 @@ async function verifyWebhookData(data, checksumKey, expectedSignature) {
 }
 var init_payos = __esm({
   "api/utils/payos.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -21701,7 +21701,7 @@ function generateOrderCode() {
 var onRequestPost5;
 var init_create = __esm({
   "api/payments/create.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -21738,7 +21738,11 @@ var init_create = __esm({
             { status: 400, headers: { "Content-Type": "application/json" } }
           );
         }
-        const amount = env2.TEST_PAYMENT === "true" ? planType === "month" ? 1e3 : 2e3 : planType === "month" ? 5e4 : 5e5;
+        const isTestPayment = String(env2.TEST_PAYMENT).toLowerCase() === "true";
+        const amount = isTestPayment ? planType === "month" ? 2e3 : 3e3 : planType === "month" ? 5e4 : 5e5;
+        console.log("[PAYMENT CREATE] TEST_PAYMENT:", env2.TEST_PAYMENT);
+        console.log("[PAYMENT CREATE] planType:", planType);
+        console.log("[PAYMENT CREATE] amount:", amount);
         const description = `LexOCR PRO ${planType === "month" ? "1M" : "1Y"}`;
         const serviceAccountJson = env2.FIREBASE_SERVICE_ACCOUNT_JSON;
         const pendingPayments = await getRecentPendingPayments(serviceAccountJson, uid, planType, amount);
@@ -21762,7 +21766,13 @@ var init_create = __esm({
                 bin: latestPending.bin || "",
                 accountNumber: latestPending.accountNumber || "",
                 accountName: latestPending.accountName || "",
-                description: latestPending.description || `LexOCR PRO ${latestPending.planType === "month" ? "1M" : "1Y"}`
+                description: latestPending.description || `LexOCR PRO ${latestPending.planType === "month" ? "1M" : "1Y"}`,
+                debug: {
+                  envTestPayment: env2.TEST_PAYMENT,
+                  isTestPayment,
+                  planType,
+                  amount
+                }
               }),
               { status: 200, headers: { "Content-Type": "application/json" } }
             );
@@ -21909,7 +21919,13 @@ var init_create = __esm({
             bin: payosResponse.data.bin,
             accountNumber: payosResponse.data.accountNumber,
             accountName: payosResponse.data.accountName,
-            description: payosResponse.data.description
+            description: payosResponse.data.description,
+            debug: {
+              envTestPayment: env2.TEST_PAYMENT,
+              isTestPayment,
+              planType,
+              amount
+            }
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         );
@@ -21936,7 +21952,7 @@ function calculateNewExpiry(currentExpiredAt, planType) {
 var MILLISECONDS_IN_A_DAY;
 var init_payment = __esm({
   "../src/utils/payment.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -21949,7 +21965,7 @@ var init_payment = __esm({
 var require_react_production = __commonJS({
   "../node_modules/react/cjs/react.production.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -22408,7 +22424,7 @@ var require_react_production = __commonJS({
 var require_react = __commonJS({
   "../node_modules/react/index.js"(exports, module) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -23791,7 +23807,7 @@ function st(e2) {
 var Nr, Dr, es, Ir, Wt, ts, qe, Rr, Zi, ke, rs, ns, T, ss, I, as, He, Fe, Ve, ot, be, we, lt, Te, ye, Ee, xe, ct, ut, z, pt, Le, ht, ft, ls, zt, Or, D, dt, Br, qr, G, S, y, ps, k, hs, Mr, Vr, Ur, ms, fs, jt, zr, ds, gs, P, Yt, Gr, $r, Ss, se, vs, Cs, jr, bs, Kr, Qr, X, xs, _t, St, ae, vt, Ue, Qt, Zr, Xt, en, Jt, oe, Rs, Zt, tn, js, Sn, vn, ir, Ks, kn, bn, wn, sr, Js, Tn, yn, En, xn, ea, ta, ra, na, Pn, ia, Nn, Dn, In, aa, On, Mn, oa, H, ua, Vn, ma, Un, F, J, Wn, Pt, ba, Gn, Qe, Ta, $n, Je, jn, Ea, Yn, xa, La, Kn, Qn, Xn, Jn, Zn, ei, ti, Aa, Pa, lr, et, Ia, pr, hr, mr, Oa, hi, Ma, Ba, qa, Ha, Fa, mi, Va, fi, m, di, tt, De, rt, p, Wa, te, de, _i, Si, vi, Ci, ki, bi, re, wi, Ti, ge, U, yi, fr, dr, gr, _e, za, Ga, ja, it, Ya, Ii, ro, Cr, x, no, Bi, io, Hi, kr, so, Fi, Co, Vi, Ui, br, Wi, ko, zi, Pr, Gi, wo, qt, $i, Ht, ji, ne, Tr, yr, Me, Ft, yo, Er, Vt, qo, Ho, Fo, Vo, Uo, Wo, zo;
 var init_html = __esm({
   "../node_modules/prettier/plugins/html.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -27614,7 +27630,7 @@ async function Vi2(t2, e2) {
 var Ru, yt2, Su, X2, vu, Lu, ne2, Ne2, At2, pr2, Mu, k2, dr2, Fr2, Yu, ju, Bt2, Er2, ze2, Uu, Vu, Wu, ue2, zu, y2, G2, U2, V2, I2, R2, v, x2, S2, T2, L2, M2, Y2, g, b2, N2, Ge2, q2, Ku, Nt2, Z2, _r2, Oe2, w2, qe2, Or2, Pr2, ae2, ee2, Ze2, Mr2, ke2, W, Ot2, Je2, Yr2, jr2, Vr2, Wr2, $r2, zr2, Gr2, Kr2, Pt2, St2, Hr2, to2, ro2, bt2, kt2, uo2, Jr2, oo2, Re2, so2, Do2, It2, Rt2, Zr2, K2, Q, vt2, he2, Lt2, en2, rt2, ge2, tn2, j2, nt2, ut2, rn2, $2, H2, ot2, Ut, Yt2, cn2, ve2, fn2, dn2, Le2, Me3, Bo2, le2, Fn2, wo2, Oo2, En2, So2, hn2, gn2, Ro2, st2, ie, An2, z2, xn2, Dt2, Ae2, Bn2, Nn2, xe2, Wt2, ct2, Lo2, O2, ft2, lt2, pt2, mt2, Ft2, Et2, Ct2, Ye2, jn2, Un2, Vn2, Wn2, ht2, Jt2, $n2, $o, zo2, qt2, zn2, Xt2, pe2, Gn2, je2, Zt2, er2, Kn2, Jo, tr2, Qo, ei2, ti2, qn2, se2, Xn2, me2, tu, or2, nu, li2, pi2, uu, su, Ei2, lu, au, ar2, _i2, yi2, Ai2, gu, fr2, Be, Te2, We2, gt2, _u, yu, Au, xu, Bu, Si2, bi2, Nu, wu, Ou, Wi2, $i2;
 var init_standalone = __esm({
   "../node_modules/prettier/standalone.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -28653,7 +28669,7 @@ function isTag(elem) {
 var ElementType, Root, Text2, Directive, Comment2, Script, Style2, Tag, CDATA, Doctype;
 var init_esm = __esm({
   "../node_modules/domelementtype/lib/esm/index.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -28762,7 +28778,7 @@ function cloneChildren(childs) {
 var Node, DataNode, Text3, Comment3, ProcessingInstruction, NodeWithChildren, CDATA2, Document2, Element2;
 var init_node = __esm({
   "../node_modules/domhandler/lib/esm/node.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -28990,7 +29006,7 @@ var init_node = __esm({
 var defaultOpts, DomHandler;
 var init_esm2 = __esm({
   "../node_modules/domhandler/lib/esm/index.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -29206,7 +29222,7 @@ function c(e2) {
 var e;
 var init_leac = __esm({
   "../node_modules/leac/lib/leac.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -29380,7 +29396,7 @@ function chain(p3, f2) {
 }
 var init_core = __esm({
   "../node_modules/peberminta/lib/core.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -29562,7 +29578,7 @@ function _compareArrays(a2, b3) {
 var ws2, nl, nonascii, unicode, escape, nmstart, nmchar, name, ident, string1, string2, lexSelector, lexEscapedString, unicodeEscapedSequence_, escapedSequence_, anyChar_, escapedString_, whitespace_, optionalWhitespace_, identifier_, hashId_, string_, namespace_, qualifiedName_, uniSelector_, tagSelector_, classSelector_, idSelector_, attrModifier_, attrValue_, attrMatcher_, attrPresenceSelector_, attrValueSelector_, attrSelector_, typeSelector_, subclassSelector_, compoundSelector_, combinator_, combinatorSeparator_, complexSelector_, listSelector_;
 var init_parseley = __esm({
   "../node_modules/parseley/lib/parseley.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -30033,7 +30049,7 @@ function comparatorPreferLast(acc, next) {
 var DecisionTree, Picker;
 var init_selderee = __esm({
   "../node_modules/selderee/lib/selderee.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -30175,7 +30191,7 @@ function handlePopElementNode(node) {
 var getPrecedingElement, getParentElement;
 var init_hp2_builder = __esm({
   "../node_modules/@selderee/plugin-htmlparser2/lib/hp2-builder.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -30207,7 +30223,7 @@ var init_hp2_builder = __esm({
 var decode_data_html_default;
 var init_decode_data_html = __esm({
   "../node_modules/entities/lib/esm/generated/decode-data-html.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -30222,7 +30238,7 @@ var init_decode_data_html = __esm({
 var decode_data_xml_default;
 var init_decode_data_xml = __esm({
   "../node_modules/entities/lib/esm/generated/decode-data-xml.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -30244,7 +30260,7 @@ function replaceCodePoint(codePoint) {
 var _a2, decodeMap, fromCodePoint;
 var init_decode_codepoint = __esm({
   "../node_modules/entities/lib/esm/decode_codepoint.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -30361,7 +30377,7 @@ function determineBranch(decodeTree, current, nodeIdx, char) {
 var CharCodes, TO_LOWER_BIT, BinTrieFlags, EntityDecoderState, DecodingMode, EntityDecoder, htmlDecoder, xmlDecoder;
 var init_decode = __esm({
   "../node_modules/entities/lib/esm/decode.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -30695,7 +30711,7 @@ function isHexDigit(c2) {
 var CharCodes2, State, QuoteType, Sequences, Tokenizer;
 var init_Tokenizer = __esm({
   "../node_modules/htmlparser2/lib/esm/Tokenizer.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -31490,7 +31506,7 @@ var init_Tokenizer = __esm({
 var formTags, pTag, tableSectionTags, ddtTags, rtpTags, openImpliesClose, voidElements, foreignContextElements, htmlIntegrationElements, reNameEnd, Parser;
 var init_Parser = __esm({
   "../node_modules/htmlparser2/lib/esm/Parser.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -31951,7 +31967,7 @@ function restoreDiff(arr) {
 var encode_html_default;
 var init_encode_html = __esm({
   "../node_modules/entities/lib/esm/generated/encode-html.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -31997,7 +32013,7 @@ function getEscaper(regex, map2) {
 var xmlReplacer, xmlCodeMap, getCodePoint, escapeUTF8, escapeAttribute, escapeText;
 var init_escape = __esm({
   "../node_modules/entities/lib/esm/escape.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32034,7 +32050,7 @@ var init_escape = __esm({
 // ../node_modules/entities/lib/esm/encode.js
 var init_encode = __esm({
   "../node_modules/entities/lib/esm/encode.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32047,7 +32063,7 @@ var init_encode = __esm({
 var EntityLevel, EncodingMode;
 var init_esm3 = __esm({
   "../node_modules/entities/lib/esm/index.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32075,7 +32091,7 @@ var init_esm3 = __esm({
 var elementNames, attributeNames;
 var init_foreignNames = __esm({
   "../node_modules/dom-serializer/lib/esm/foreignNames.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32288,7 +32304,7 @@ function renderComment(elem) {
 var unencodedElements, singleTag, foreignModeIntegrationPoints, foreignElements;
 var init_esm4 = __esm({
   "../node_modules/dom-serializer/lib/esm/index.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32353,7 +32369,7 @@ var init_esm4 = __esm({
 // ../node_modules/domutils/lib/esm/stringify.js
 var init_stringify = __esm({
   "../node_modules/domutils/lib/esm/stringify.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32366,7 +32382,7 @@ var init_stringify = __esm({
 // ../node_modules/domutils/lib/esm/traversal.js
 var init_traversal = __esm({
   "../node_modules/domutils/lib/esm/traversal.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32377,7 +32393,7 @@ var init_traversal = __esm({
 // ../node_modules/domutils/lib/esm/manipulation.js
 var init_manipulation = __esm({
   "../node_modules/domutils/lib/esm/manipulation.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32387,7 +32403,7 @@ var init_manipulation = __esm({
 // ../node_modules/domutils/lib/esm/querying.js
 var init_querying = __esm({
   "../node_modules/domutils/lib/esm/querying.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32398,7 +32414,7 @@ var init_querying = __esm({
 // ../node_modules/domutils/lib/esm/legacy.js
 var init_legacy = __esm({
   "../node_modules/domutils/lib/esm/legacy.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32411,7 +32427,7 @@ var init_legacy = __esm({
 var DocumentPosition;
 var init_helpers = __esm({
   "../node_modules/domutils/lib/esm/helpers.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32429,7 +32445,7 @@ var init_helpers = __esm({
 // ../node_modules/domutils/lib/esm/feeds.js
 var init_feeds = __esm({
   "../node_modules/domutils/lib/esm/feeds.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32441,7 +32457,7 @@ var init_feeds = __esm({
 // ../node_modules/domutils/lib/esm/index.js
 var init_esm5 = __esm({
   "../node_modules/domutils/lib/esm/index.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32464,7 +32480,7 @@ function parseDocument(data, options2) {
 }
 var init_esm6 = __esm({
   "../node_modules/htmlparser2/lib/esm/index.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -32485,7 +32501,7 @@ var init_esm6 = __esm({
 var require_cjs = __commonJS({
   "../node_modules/deepmerge/dist/cjs.js"(exports, module) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -33282,7 +33298,7 @@ function handleDeprecatedOptions(options2) {
 var import_deepmerge, overwriteMerge$1, I3, V3, InlineTextBuilder, StackItem, BlockStackItem, ListStackItem, ListItemStackItem, TableStackItem, TableRowStackItem, TableCellStackItem, TransformerStackItem, WhitespaceProcessor, BlockTextBuilder, genericFormatters, textFormatters, DEFAULT_OPTIONS, concatMerge, overwriteMerge, selectorsMerge;
 var init_html_to_text = __esm({
   "../node_modules/html-to-text/lib/html-to-text.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -34278,7 +34294,7 @@ var init_html_to_text = __esm({
 var require_react_jsx_runtime_production = __commonJS({
   "../node_modules/react/cjs/react-jsx-runtime.production.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -34313,7 +34329,7 @@ var require_react_jsx_runtime_production = __commonJS({
 var require_jsx_runtime = __commonJS({
   "../node_modules/react/jsx-runtime.js"(exports, module) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -34329,7 +34345,7 @@ var require_jsx_runtime = __commonJS({
 var require_react_dom_production = __commonJS({
   "../node_modules/react-dom/cjs/react-dom.production.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -34486,7 +34502,7 @@ var require_react_dom_production = __commonJS({
 var require_react_dom = __commonJS({
   "../node_modules/react-dom/index.js"(exports, module) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -34517,7 +34533,7 @@ var require_react_dom = __commonJS({
 var require_react_dom_server_edge_production = __commonJS({
   "../node_modules/react-dom/cjs/react-dom-server.edge.production.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -40327,7 +40343,7 @@ performance.now();setTimeout(w,2300>q&&2E3<q?2300-q:500)})])},types:[]});z.ready
 var require_react_dom_server_legacy_browser_production = __commonJS({
   "../node_modules/react-dom/cjs/react-dom-server-legacy.browser.production.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -45341,7 +45357,7 @@ var require_react_dom_server_legacy_browser_production = __commonJS({
 var require_server_edge = __commonJS({
   "../node_modules/react-dom/server.edge.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -45427,7 +45443,7 @@ function createErrorBoundary(reject) {
 var import_react, import_jsx_runtime, modifiedHtml, defaults, pretty, plainTextSelectors, stripImagePreloadLinks, isImagePreloadLink, ATTRIBUTE_PATTERN, parseAttributes, decoder, readStream, importReactDom, render2;
 var init_edge = __esm({
   "../node_modules/@react-email/render/dist/edge/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -45744,7 +45760,7 @@ function decodeParameterValueContinuations(header) {
 var textEncoder, base64Chars, base64Lookup;
 var init_decode_strings = __esm({
   "../node_modules/postal-mime/src/decode-strings.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -45769,7 +45785,7 @@ var init_decode_strings = __esm({
 var PassThroughDecoder;
 var init_pass_through_decoder = __esm({
   "../node_modules/postal-mime/src/pass-through-decoder.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -45796,7 +45812,7 @@ var init_pass_through_decoder = __esm({
 var Base64Decoder;
 var init_base64_decoder = __esm({
   "../node_modules/postal-mime/src/base64-decoder.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -45845,7 +45861,7 @@ var init_base64_decoder = __esm({
 var VALID_QP_REGEX, QP_SPLIT_REGEX, SOFT_LINE_BREAK_REGEX, PARTIAL_QP_ENDING_REGEX, QPDecoder;
 var init_qp_decoder = __esm({
   "../node_modules/postal-mime/src/qp-decoder.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -45953,7 +45969,7 @@ var init_qp_decoder = __esm({
 var defaultDecoder, MimeNode;
 var init_mime_node = __esm({
   "../node_modules/postal-mime/src/mime-node.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -46244,7 +46260,7 @@ var init_mime_node = __esm({
 var htmlEntities, html_entities_default;
 var init_html_entities = __esm({
   "../node_modules/postal-mime/src/html-entities.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -48707,7 +48723,7 @@ function formatHtmlHeader(message) {
 }
 var init_text_format = __esm({
   "../node_modules/postal-mime/src/text-format.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -48919,7 +48935,7 @@ function addressParser(str, options2) {
 var Tokenizer2, MAX_NESTED_GROUP_DEPTH, address_parser_default;
 var init_address_parser = __esm({
   "../node_modules/postal-mime/src/address-parser.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -49061,7 +49077,7 @@ function base64ArrayBuffer(arrayBuffer) {
 }
 var init_base64_encoder = __esm({
   "../node_modules/postal-mime/src/base64-encoder.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -49076,7 +49092,7 @@ function toCamelCase(key) {
 var MAX_NESTING_DEPTH, MAX_HEADERS_SIZE, PostalMime;
 var init_postal_mime = __esm({
   "../node_modules/postal-mime/src/postal-mime.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -49523,7 +49539,7 @@ var init_postal_mime = __esm({
 var require_timing_safe_equal = __commonJS({
   "../node_modules/standardwebhooks/dist/timing_safe_equal.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -49564,7 +49580,7 @@ var require_timing_safe_equal = __commonJS({
 var require_base64 = __commonJS({
   "../node_modules/@stablelib/base64/lib/base64.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -49787,7 +49803,7 @@ var require_base64 = __commonJS({
 // ../node_modules/fast-sha256/sha256.js
 var require_sha256 = __commonJS({
   "../node_modules/fast-sha256/sha256.js"(exports, module) {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -50224,7 +50240,7 @@ var require_sha256 = __commonJS({
 var require_dist = __commonJS({
   "../node_modules/standardwebhooks/dist/index.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -50540,7 +50556,7 @@ function getDefaultUserAgent() {
 var import_standardwebhooks, version2, ApiKeys, AutomationRuns, Automations, Batch, Broadcasts, ContactProperties, ContactImports, ContactSegments, ContactTopics, Contacts, DomainClaims, Domains, Attachments$1, Attachments, Receiving, Emails, Events, Logs, OAuthGrants, Segments, ChainableTemplateResult, Templates, Topics, Webhooks, defaultBaseUrl, defaultUserAgent, Resend;
 var init_dist3 = __esm({
   "../node_modules/resend/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -51655,7 +51671,7 @@ var init_dist3 = __esm({
 var React2, import_jsx_runtime2, marginProperties, paddingProperties, Body2;
 var init_dist4 = __esm({
   "../node_modules/@react-email/body/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -51810,7 +51826,7 @@ function computeFontWidthAndSpaceCount(expectedWidth) {
 var React3, import_jsx_runtime3, pxToPt, maxFontWidth, Button;
 var init_dist5 = __esm({
   "../node_modules/@react-email/button/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -51866,7 +51882,7 @@ var init_dist5 = __esm({
 // ../node_modules/prismjs/prism.js
 var require_prism = __commonJS({
   "../node_modules/prismjs/prism.js"(exports, module) {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -53331,7 +53347,7 @@ var require_prism = __commonJS({
 var React$1, PrismImport, import_jsx_runtime4, Prism$1, stylesForToken, CodeBlockLine, CodeBlock;
 var init_dist6 = __esm({
   "../node_modules/@react-email/code-block/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68016,7 +68032,7 @@ var init_dist6 = __esm({
 var React4, import_jsx_runtime5, CodeInline;
 var init_dist7 = __esm({
   "../node_modules/@react-email/code-inline/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68059,7 +68075,7 @@ var init_dist7 = __esm({
 var React5, import_jsx_runtime6, Column;
 var init_dist8 = __esm({
   "../node_modules/@react-email/column/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68082,7 +68098,7 @@ var init_dist8 = __esm({
 var React6, import_jsx_runtime7, Container;
 var init_dist9 = __esm({
   "../node_modules/@react-email/container/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68116,7 +68132,7 @@ var init_dist9 = __esm({
 var import_jsx_runtime8;
 var init_dist10 = __esm({
   "../node_modules/@react-email/font/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68128,7 +68144,7 @@ var init_dist10 = __esm({
 var React7, import_jsx_runtime9, Head;
 var init_dist11 = __esm({
   "../node_modules/@react-email/head/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68154,7 +68170,7 @@ var init_dist11 = __esm({
 var React8, import_jsx_runtime10, withMargin, withSpace, Heading;
 var init_dist12 = __esm({
   "../node_modules/@react-email/heading/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68208,7 +68224,7 @@ var init_dist12 = __esm({
 var React9, import_jsx_runtime11, Hr3;
 var init_dist13 = __esm({
   "../node_modules/@react-email/hr/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68232,7 +68248,7 @@ var init_dist13 = __esm({
 var React10, import_jsx_runtime12, Html;
 var init_dist14 = __esm({
   "../node_modules/@react-email/html/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68253,7 +68269,7 @@ var init_dist14 = __esm({
 var React11, import_jsx_runtime13, Img;
 var init_dist15 = __esm({
   "../node_modules/@react-email/img/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68282,7 +68298,7 @@ var init_dist15 = __esm({
 var React12, import_jsx_runtime14, Link;
 var init_dist16 = __esm({
   "../node_modules/@react-email/link/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -68466,7 +68482,7 @@ function marked(src, opt) {
 var _defaults, noopTest, other, newline, blockCode, fences, hr3, heading, bullet, lheadingCore, lheading, lheadingGfm, _paragraph, blockText, _blockLabel, def, list, _tag, _comment, html, paragraph, blockquote, blockNormal, gfmTable, blockGfm, blockPedantic, escape3, inlineCode, br3, inlineText, _punctuation, _punctuationOrSpace, _notPunctuationOrSpace, punctuation, _punctuationGfmStrongEm, _punctuationOrSpaceGfmStrongEm, _notPunctuationOrSpaceGfmStrongEm, blockSkip, emStrongLDelimCore, emStrongLDelim, emStrongLDelimGfm, emStrongRDelimAstCore, emStrongRDelimAst, emStrongRDelimAstGfm, emStrongRDelimUnd, anyPunctuation, autolink, _inlineComment, tag, _inlineLabel, link, reflink, nolink, reflinkSearch, inlineNormal, inlinePedantic, inlineGfm, inlineBreaks, block, inline, escapeReplacements, getEscapeReplacement, _Tokenizer, _Lexer, _Renderer, _TextRenderer, _Parser, _Hooks, Marked, markedInstance, options, setOptions, use, walkTokens, parseInline, parser, lexer;
 var init_marked_esm = __esm({
   "../node_modules/marked/lib/marked.esm.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -70541,7 +70557,7 @@ function parseCssInJsToInlineCss(cssProperties) {
 var React13, import_jsx_runtime15, emptyStyle, baseHeaderStyles, h1, h2, h3, h4, h5, h6, bold, italic, blockQuote, codeInline, codeBlock, link2, styles, Markdown;
 var init_dist17 = __esm({
   "../node_modules/@react-email/markdown/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -70756,7 +70772,7 @@ ${text}</tr>
 var React14, import_jsx_runtime16, PREVIEW_MAX_LENGTH, Preview, whiteSpaceCodes, renderWhiteSpace;
 var init_dist18 = __esm({
   "../node_modules/@react-email/preview/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -70826,7 +70842,7 @@ function recursivelyMapDoc2(doc, callback) {
 var import_react2, import_jsx_runtime17, modifiedHtml2, decoder2;
 var init_edge2 = __esm({
   "../node_modules/@react-email/components/node_modules/@react-email/render/dist/edge/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -70857,7 +70873,7 @@ var init_edge2 = __esm({
 var React16, import_jsx_runtime18, Row;
 var init_dist19 = __esm({
   "../node_modules/@react-email/row/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -70891,7 +70907,7 @@ var init_dist19 = __esm({
 var React17, import_jsx_runtime19, Section;
 var init_dist20 = __esm({
   "../node_modules/@react-email/section/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -70974,7 +70990,7 @@ function computeMargins(properties2) {
 var React18, import_jsx_runtime20, Text4;
 var init_dist21 = __esm({
   "../node_modules/@react-email/text/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -71009,7 +71025,7 @@ var init_dist21 = __esm({
 var l2;
 var init_chunk_X4GG3EDV = __esm({
   "../node_modules/tailwindcss/dist/chunk-X4GG3EDV.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -71069,7 +71085,7 @@ function h(e2) {
 var E2, x3, B2, q3, V4, Z3, j3, Q2, J2, ee3, g2, l3, f, O3, w3, re3, L3, be3;
 var init_chunk_TDNFF6A4 = __esm({
   "../node_modules/tailwindcss/dist/chunk-TDNFF6A4.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -71117,7 +71133,7 @@ var init_chunk_TDNFF6A4 = __esm({
 // ../node_modules/tailwindcss/dist/chunk-4VTQOGRC.mjs
 var init_chunk_4VTQOGRC = __esm({
   "../node_modules/tailwindcss/dist/chunk-4VTQOGRC.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -71395,7 +71411,7 @@ function le3(e2, i) {
 var z3, hr4, ln3, vr3, wr3, an3, yr3, kr3, br4, xr3, on4, sn3, un3, Ar3, Cr3, It3, R3, Ut2, mn3, gn3, vn3, Bt3, Mr3, Un3, ae3, qr3, Zr3, Dt3, ze3;
 var init_lib = __esm({
   "../node_modules/tailwindcss/dist/lib.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -76234,7 +76250,7 @@ function parseLanguageRangeList() {
 var React$12, import_react3, import_jsx_runtime21, __defProp3, __commonJSMin2, __exportAll, EOF$1, Ident, Function2, AtKeyword, Hash, String$1, BadString, Url, BadUrl, Delim, Number$1, Percentage, Dimension, WhiteSpace, CDO, CDC, Colon, Semicolon, Comma, LeftSquareBracket, RightSquareBracket, LeftParenthesis, RightParenthesis, LeftCurlyBracket, RightCurlyBracket, Comment4, EOF, CATEGORY, EofCategory, WhiteSpaceCategory, DigitCategory, NameStartCategory, NonPrintableCategory, names_default, MIN_SIZE, N$4, F$2, R$2, OffsetToLocation, OFFSET_MASK, TYPE_SHIFT, balancePair$1, TokenStream, releasedCursors, List, MAX_LINE_LENGTH, OFFSET_CORRECTION, TAB_REPLACEMENT, NOOP, EXCLAMATIONMARK$3, NUMBERSIGN$4, SEMICOLON, LEFTCURLYBRACKET$1, NULL, require_base642, require_base64_vlq, require_util2, require_array_set, require_mapping_list, require_source_map_generator, import_source_map_generator, trackNodes, token_before_exports, PLUSSIGN$9, HYPHENMINUS$6, code, specPairs, safePairs, spec, safe, REVERSESOLIDUS, hasOwnProperty$3, noop$2, defaultLoc, SyntaxReferenceError, SyntaxMatchError, keywords, properties, HYPHENMINUS$5, keyword, property, cssWideKeywords, PLUSSIGN$8, HYPHENMINUS$4, N$3, DISALLOW_SIGN$1, ALLOW_SIGN$1, PLUSSIGN$7, HYPHENMINUS$3, QUESTIONMARK$2, U$1, calcFunctionNames, balancePair, tokenTypes, productionTypes, units_exports, length, angle, time3, frequency, resolution, flex, decibel, semitones, TAB$1, N$2, F$1, R$1, SPACE$3, NAME_CHAR, Scanner, TAB, N$1, F3, R4, SPACE$2, EXCLAMATIONMARK$2, NUMBERSIGN$3, AMPERSAND$5, APOSTROPHE$2, LEFTPARENTHESIS$2, RIGHTPARENTHESIS$2, ASTERISK$6, PLUSSIGN$6, COMMA, HYPERMINUS, LESSTHANSIGN$1, GREATERTHANSIGN$3, QUESTIONMARK$1, COMMERCIALAT, LEFTSQUAREBRACKET, RIGHTSQUAREBRACKET, LEFTCURLYBRACKET, VERTICALLINE$3, RIGHTCURLYBRACKET, INFINITY, COMBINATOR_PRECEDENCE, noop2, astToTokens, MATCH, MISMATCH, DISALLOW_EMPTY, LEFTPARENTHESIS$1, RIGHTPARENTHESIS$1, hasOwnProperty$2, STUB, TOKEN, OPEN_SYNTAX, CLOSE_SYNTAX, EXIT_REASON_MATCH, EXIT_REASON_MISMATCH, EXIT_REASON_ITERATION_LIMIT, ITERATION_LIMIT, totalIterationCount, trace_exports, hasOwnProperty$1, Lexer, create_default, patch, data_patch_default, mdnAtrules, mdnProperties, mdnSyntaxes, hasOwn, extendSyntax, data_default, AnPlusB_exports, PLUSSIGN$5, HYPHENMINUS$2, N3, DISALLOW_SIGN, ALLOW_SIGN, name$48, structure$48, Atrule_exports, name$47, walkContext$9, structure$47, AtrulePrelude_exports, name$46, walkContext$8, structure$46, AttributeSelector_exports, DOLLARSIGN$1, ASTERISK$5, EQUALSSIGN$1, CIRCUMFLEXACCENT, VERTICALLINE$2, TILDE$2, name$45, structure$45, Block_exports, AMPERSAND$4, name$44, walkContext$7, structure$44, Brackets_exports, name$43, structure$43, CDC_exports, name$42, structure$42, CDO_exports, name$41, structure$41, ClassSelector_exports, FULLSTOP$2, name$40, structure$40, Combinator_exports, PLUSSIGN$4, SOLIDUS$7, GREATERTHANSIGN$2, TILDE$1, name$39, structure$39, Comment_exports, ASTERISK$4, SOLIDUS$6, name$38, structure$38, Condition_exports, likelyFeatureToken, name$37, structure$37, parentheses, Declaration_exports, EXCLAMATIONMARK$1, NUMBERSIGN$2, DOLLARSIGN, AMPERSAND$3, ASTERISK$3, PLUSSIGN$3, SOLIDUS$5, name$36, walkContext$6, structure$36, DeclarationList_exports, AMPERSAND$2, name$35, structure$35, Dimension_exports, name$34, structure$34, Feature_exports, SOLIDUS$4, name$33, structure$33, FeatureFunction_exports, name$32, structure$32, FeatureRange_exports, SOLIDUS$3, LESSTHANSIGN, EQUALSSIGN, GREATERTHANSIGN$1, name$31, structure$31, Function_exports, name$30, walkContext$5, structure$30, GeneralEnclosed_exports, name$29, structure$29, Hash_exports, xxx, name$28, structure$28, Identifier_exports, name$27, structure$27, IdSelector_exports, name$26, structure$26, Layer_exports, FULLSTOP$1, name$25, structure$25, LayerList_exports, name$24, structure$24, MediaQuery_exports, name$23, structure$23, MediaQueryList_exports, name$22, structure$22, NestingSelector_exports, AMPERSAND$1, name$21, structure$21, Nth_exports, name$20, structure$20, Number_exports, name$19, structure$19, Operator_exports, name$18, structure$18, Parentheses_exports, name$17, structure$17, Percentage_exports, name$16, structure$16, PseudoClassSelector_exports, name$15, walkContext$4, structure$15, PseudoElementSelector_exports, name$14, walkContext$3, structure$14, Ratio_exports, SOLIDUS$2, name$13, structure$13, Raw_exports, name$12, structure$12, Rule_exports, name$11, walkContext$2, structure$11, Scope_exports, name$10, structure$10, Selector_exports, name$9, structure$9, SelectorList_exports, name$8, walkContext$1, structure$8, REVERSE_SOLIDUS$1, QUOTATION_MARK$1, APOSTROPHE$1, String_exports, name$7, structure$7, StyleSheet_exports, EXCLAMATIONMARK, name$6, walkContext, structure$6, SupportsDeclaration_exports, name$5, structure$5, TypeSelector_exports, ASTERISK$2, VERTICALLINE$1, name$4, structure$4, UnicodeRange_exports, PLUSSIGN$2, HYPHENMINUS$1, QUESTIONMARK, name$3, structure$3, SPACE$1, REVERSE_SOLIDUS, QUOTATION_MARK, APOSTROPHE, LEFTPARENTHESIS, RIGHTPARENTHESIS, Url_exports, name$2, structure$2, Value_exports, name$1, structure$1, WhiteSpace_exports, SPACE, name2, structure, node_exports, lexer_default, NUMBERSIGN$1, ASTERISK$1, PLUSSIGN$1, HYPHENMINUS, SOLIDUS$1, U3, atrulePrelude_default, NUMBERSIGN, AMPERSAND, ASTERISK, PLUSSIGN, SOLIDUS, FULLSTOP, GREATERTHANSIGN, VERTICALLINE, TILDE, selector_default, value_default, scope_exports, nonContainerNameKeywords, container_default, font_face_default, parseFunctions, import_default, layer_default, media_default, nest_default, page_default, scope_default, starting_style_default, supports_default, atrule_default, selectorList, selector, identList, langList, nth, pseudo_default, index_parse_exports, parser_default, walker_default, syntax_default, version3, tokenize, parse, generate, lexer2, createLexer, walk, find, findLast, findAll, toPlainObject, fromPlainObject, fork;
 var init_dist22 = __esm({
   "../node_modules/@react-email/tailwind/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -90343,7 +90359,7 @@ var init_dist22 = __esm({
 // ../node_modules/@react-email/components/dist/index.mjs
 var init_dist23 = __esm({
   "../node_modules/@react-email/components/dist/index.mjs"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -90374,7 +90390,7 @@ var init_dist23 = __esm({
 var React20, PaymentSuccessEmail, main, container, logoTextContainer, logoMainText, logoSubText, logoDescText, heading2, paragraph2, card, cardTitle, row, labelColumn, valueColumn, label, value, buttonContainer, button, hr5, footer;
 var init_PaymentSuccessEmail = __esm({
   "../src/emails/PaymentSuccessEmail.tsx"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -90386,7 +90402,10 @@ var init_PaymentSuccessEmail = __esm({
       amount = 0,
       orderCode = "000000",
       paidAt = /* @__PURE__ */ new Date(),
-      expiredAt = /* @__PURE__ */ new Date()
+      expiredAt = /* @__PURE__ */ new Date(),
+      transactionType = "purchase",
+      testPayment = false,
+      email = ""
     }) => {
       const formattedAmount = new Intl.NumberFormat("vi-VN", {
         style: "currency",
@@ -90405,7 +90424,20 @@ var init_PaymentSuccessEmail = __esm({
         day: "2-digit"
       });
       const displayPlanType = String(planType).toLowerCase() === "month" ? "LexOCR PRO Th\xE1ng" : String(planType).toLowerCase() === "year" ? "LexOCR PRO N\u0103m" : String(planType).toUpperCase();
-      return /* @__PURE__ */ React20.createElement(Html, null, /* @__PURE__ */ React20.createElement(Head, null), /* @__PURE__ */ React20.createElement(Preview, null, "Thanh to\xE1n LexOCR PRO th\xE0nh c\xF4ng"), /* @__PURE__ */ React20.createElement(Body2, { style: main }, /* @__PURE__ */ React20.createElement(Container, { style: container }, /* @__PURE__ */ React20.createElement("div", { style: logoTextContainer }, /* @__PURE__ */ React20.createElement(Text4, { style: logoMainText }, "LEXOCR"), /* @__PURE__ */ React20.createElement(Text4, { style: logoSubText }, "Procuracy v2.5"), /* @__PURE__ */ React20.createElement(Text4, { style: logoDescText }, "H\u1EC7 th\u1ED1ng b\xF3c t\xE1ch h\u1ED3 s\u01A1 & tr\u1EE3 l\xFD Ki\u1EC3m s\xE1t vi\xEAn")), /* @__PURE__ */ React20.createElement(Heading, { style: heading2 }, "Thanh to\xE1n LexOCR PRO th\xE0nh c\xF4ng"), /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "Xin ch\xE0o ", displayName ? displayName : "b\u1EA1n", ","), /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "C\u1EA3m \u01A1n b\u1EA1n \u0111\xE3 s\u1EED d\u1EE5ng LexOCR."), /* @__PURE__ */ React20.createElement(Section, { style: card }, /* @__PURE__ */ React20.createElement(Text4, { style: cardTitle }, "Th\xF4ng tin giao d\u1ECBch"), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "G\xF3i:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, displayPlanType))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "Gi\xE1 ti\u1EC1n:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, formattedAmount))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "M\xE3 giao d\u1ECBch:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, "#", orderCode))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "Ng\xE0y thanh to\xE1n:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, formattedPaidAt))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "Ng\xE0y h\u1EBFt h\u1EA1n:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, formattedExpiredAt)))), /* @__PURE__ */ React20.createElement(Section, { style: buttonContainer }, /* @__PURE__ */ React20.createElement(Button, { style: button, href: "https://lexocr.com" }, "M\u1EDF LexOCR")), /* @__PURE__ */ React20.createElement(Hr3, { style: hr5 }), /* @__PURE__ */ React20.createElement(Text4, { style: footer }, "support@lexocr.com", /* @__PURE__ */ React20.createElement("br", null), "\xA9 2026 LexOCR"))));
+      let bodyContent = null;
+      if (transactionType === "renewal") {
+        bodyContent = /* @__PURE__ */ React20.createElement(React20.Fragment, null, /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "Gia h\u1EA1n th\xE0nh c\xF4ng."), /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "Ng\xE0y h\u1EBFt h\u1EA1n m\u1EDBi: ", formattedExpiredAt));
+      } else if (transactionType === "upgrade") {
+        bodyContent = /* @__PURE__ */ React20.createElement(React20.Fragment, null, /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "Ch\xFAc m\u1EEBng!"), /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "B\u1EA1n \u0111\xE3 n\xE2ng c\u1EA5p l\xEAn LexOCR PRO N\u0103m."));
+      } else {
+        bodyContent = /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "C\u1EA3m \u01A1n b\u1EA1n \u0111\xE3 s\u1EED d\u1EE5ng LexOCR.");
+      }
+      const subjectText = {
+        purchase: "Thanh to\xE1n LexOCR PRO th\xE0nh c\xF4ng",
+        renewal: "Gia h\u1EA1n LexOCR PRO th\xE0nh c\xF4ng",
+        upgrade: "N\xE2ng c\u1EA5p l\xEAn LexOCR PRO N\u0103m th\xE0nh c\xF4ng"
+      }[transactionType] || "Thanh to\xE1n LexOCR PRO th\xE0nh c\xF4ng";
+      return /* @__PURE__ */ React20.createElement(Html, null, /* @__PURE__ */ React20.createElement(Head, null), /* @__PURE__ */ React20.createElement(Preview, null, subjectText), /* @__PURE__ */ React20.createElement(Body2, { style: main }, /* @__PURE__ */ React20.createElement(Container, { style: container }, /* @__PURE__ */ React20.createElement("div", { style: logoTextContainer }, /* @__PURE__ */ React20.createElement(Text4, { style: logoMainText }, "LEXOCR"), /* @__PURE__ */ React20.createElement(Text4, { style: logoSubText }, "Procuracy v2.5"), /* @__PURE__ */ React20.createElement(Text4, { style: logoDescText }, "H\u1EC7 th\u1ED1ng b\xF3c t\xE1ch h\u1ED3 s\u01A1 & tr\u1EE3 l\xFD Ki\u1EC3m s\xE1t vi\xEAn")), /* @__PURE__ */ React20.createElement(Heading, { style: heading2 }, subjectText), /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "Xin ch\xE0o ", displayName ? displayName : "b\u1EA1n", ","), email && /* @__PURE__ */ React20.createElement(Text4, { style: paragraph2 }, "T\xE0i kho\u1EA3n:", /* @__PURE__ */ React20.createElement("br", null), email), bodyContent, /* @__PURE__ */ React20.createElement(Section, { style: card }, /* @__PURE__ */ React20.createElement(Text4, { style: cardTitle }, "Th\xF4ng tin giao d\u1ECBch"), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "G\xF3i:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, displayPlanType))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "Gi\xE1 ti\u1EC1n:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, formattedAmount, testPayment ? " (Ch\u1EBF \u0111\u1ED9 ki\u1EC3m th\u1EED)" : ""))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "M\xE3 giao d\u1ECBch:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, "#", orderCode))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "Ng\xE0y thanh to\xE1n:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, formattedPaidAt))), /* @__PURE__ */ React20.createElement(Row, { style: row }, /* @__PURE__ */ React20.createElement(Column, { style: labelColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: label }, "Ng\xE0y h\u1EBFt h\u1EA1n:")), /* @__PURE__ */ React20.createElement(Column, { style: valueColumn }, /* @__PURE__ */ React20.createElement(Text4, { style: value }, formattedExpiredAt)))), /* @__PURE__ */ React20.createElement(Section, { style: buttonContainer }, /* @__PURE__ */ React20.createElement(Button, { style: button, href: "https://lexocr.com" }, "M\u1EDF LexOCR")), /* @__PURE__ */ React20.createElement(Hr3, { style: hr5 }), /* @__PURE__ */ React20.createElement(Text4, { style: footer }, "LexOCR kh\xF4ng l\u01B0u tr\u1EEF t\xE0i li\u1EC7u h\u1ED3 s\u01A1 c\u1EE7a ng\u01B0\u1EDDi d\xF9ng.", /* @__PURE__ */ React20.createElement("br", null), "support@lexocr.com", /* @__PURE__ */ React20.createElement("br", null), "https://lexocr.com", /* @__PURE__ */ React20.createElement("br", null), "\xA9 2026 LexOCR"))));
     }, "PaymentSuccessEmail");
     main = {
       backgroundColor: "#F8FAFC",
@@ -90526,7 +90558,9 @@ async function sendPaymentSuccessEmail({
   amount,
   expiredAt,
   orderCode,
-  resendApiKey
+  resendApiKey,
+  transactionType = "purchase",
+  testPayment = false
 }) {
   if (!resendApiKey) {
     console.error("[Email Error] RESEND_API_KEY is not defined");
@@ -90540,14 +90574,22 @@ async function sendPaymentSuccessEmail({
         amount,
         orderCode,
         paidAt: /* @__PURE__ */ new Date(),
-        expiredAt
+        expiredAt,
+        transactionType,
+        testPayment,
+        email
       })
     );
     const resend = new Resend(resendApiKey);
+    const subjectText = {
+      purchase: "Thanh to\xE1n LexOCR PRO th\xE0nh c\xF4ng",
+      renewal: "Gia h\u1EA1n LexOCR PRO th\xE0nh c\xF4ng",
+      upgrade: "N\xE2ng c\u1EA5p l\xEAn LexOCR PRO N\u0103m th\xE0nh c\xF4ng"
+    }[transactionType] || "Thanh to\xE1n LexOCR PRO th\xE0nh c\xF4ng";
     const { data, error: error3 } = await resend.emails.send({
       from: "LexOCR Billing <billing@lexocr.com>",
       to: email,
-      subject: "Thanh to\xE1n LexOCR PRO th\xE0nh c\xF4ng",
+      subject: subjectText,
       html: htmlContent
     });
     if (error3) {
@@ -90562,7 +90604,7 @@ async function sendPaymentSuccessEmail({
 var import_react4;
 var init_email = __esm({
   "api/utils/email.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -90578,7 +90620,7 @@ var init_email = __esm({
 var onRequestPost6, onRequestGet;
 var init_webhook = __esm({
   "api/payments/webhook.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -90723,7 +90765,9 @@ var init_webhook = __esm({
               amount: paymentRecord.amount,
               expiredAt: new Date(newExpiryMs).toISOString(),
               orderCode: paymentRecord.orderCode,
-              resendApiKey: env2.RESEND_API_KEY
+              resendApiKey: env2.RESEND_API_KEY,
+              transactionType: paymentRecord.transactionType ?? "purchase",
+              testPayment: env2.TEST_PAYMENT === "true" || env2.TEST_PAYMENT === true
             });
           } catch (emailErr) {
             console.error("[Email Send Error] Failed to send payment success email:", emailErr);
@@ -90776,7 +90820,7 @@ var init_webhook = __esm({
 var onRequest;
 var init_path = __esm({
   "api/payments/[path].ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -91149,7 +91193,7 @@ async function onRequestPost7(context2) {
 var getCorsHeaders, localIndexPointer;
 var init_ocr_space = __esm({
   "api/ocr-space.js"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -91187,7 +91231,7 @@ var init_ocr_space = __esm({
 var onRequest2;
 var init_ocr = __esm({
   "api/ocr.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -91207,7 +91251,7 @@ var init_ocr = __esm({
 var onRequestGet2, onRequestPost8;
 var init_payos_webhook = __esm({
   "payos-webhook.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -91273,7 +91317,7 @@ var init_payos_webhook = __esm({
 var onRequest3;
 var init_middleware = __esm({
   "_middleware.ts"() {
-    init_functionsRoutes_0_6806014953114787();
+    init_functionsRoutes_0_703581077106504();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
     init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
     init_performance2();
@@ -91337,10 +91381,10 @@ LexOCR l\xE0 c\xF4ng c\u1EE5 chuy\u1EC3n \u0111\u1ED5i h\xECnh \u1EA3nh, t\xE0i 
   }
 });
 
-// ../.wrangler/tmp/pages-av7IUe/functionsRoutes-0.6806014953114787.mjs
+// ../.wrangler/tmp/pages-ACH3ON/functionsRoutes-0.703581077106504.mjs
 var routes;
-var init_functionsRoutes_0_6806014953114787 = __esm({
-  "../.wrangler/tmp/pages-av7IUe/functionsRoutes-0.6806014953114787.mjs"() {
+var init_functionsRoutes_0_703581077106504 = __esm({
+  "../.wrangler/tmp/pages-ACH3ON/functionsRoutes-0.703581077106504.mjs"() {
     init_docx();
     init_excel();
     init_anonymize();
@@ -91459,13 +91503,13 @@ var init_functionsRoutes_0_6806014953114787 = __esm({
 });
 
 // C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/wrangler/templates/pages-template-worker.ts
-init_functionsRoutes_0_6806014953114787();
+init_functionsRoutes_0_703581077106504();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
 // C:/Users/LG/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/path-to-regexp/dist.es2015/index.js
-init_functionsRoutes_0_6806014953114787();
+init_functionsRoutes_0_703581077106504();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();

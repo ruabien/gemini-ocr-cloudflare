@@ -177,21 +177,23 @@ await updateUserProfile(serviceAccountJson, uid, {
   expiredAt: new Date(newExpiryMs),
   updatedAt: new Date()
 });
-// Send payment success email (non-blocking, errors logged only)
-try {
-  const displayName = paymentRecord.email?.split("@")[0] ?? "";
-  await sendPaymentSuccessEmail({
-    email: paymentRecord.email,
-    displayName,
-    planType: paymentRecord.planType,
-    amount: paymentRecord.amount,
-    expiredAt: new Date(newExpiryMs).toISOString(),
-    orderCode: paymentRecord.orderCode,
-    resendApiKey: env.RESEND_API_KEY,
-  });
-} catch (emailErr) {
-  console.error("[Email Send Error] Failed to send payment success email:", emailErr);
-}
+      // Send payment success email (non-blocking, errors logged only)
+      try {
+        const displayName = paymentRecord.email?.split("@")[0] ?? "";
+        await sendPaymentSuccessEmail({
+          email: paymentRecord.email,
+          displayName,
+          planType: paymentRecord.planType,
+          amount: paymentRecord.amount,
+          expiredAt: new Date(newExpiryMs).toISOString(),
+          orderCode: paymentRecord.orderCode,
+          resendApiKey: env.RESEND_API_KEY,
+          transactionType: paymentRecord.transactionType ?? "purchase",
+          testPayment: env.TEST_PAYMENT === "true" || env.TEST_PAYMENT === true,
+        });
+      } catch (emailErr) {
+        console.error("[Email Send Error] Failed to send payment success email:", emailErr);
+      }
 
       return new Response(
         JSON.stringify({ success: true }),

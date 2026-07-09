@@ -11,6 +11,8 @@ interface SendPaymentSuccessEmailParams {
   expiredAt: string | Date;
   orderCode: number | string;
   resendApiKey: string;
+  transactionType?: "purchase" | "renewal" | "upgrade";
+  testPayment?: boolean;
 }
 
 /**
@@ -24,6 +26,8 @@ export async function sendPaymentSuccessEmail({
   expiredAt,
   orderCode,
   resendApiKey,
+  transactionType = "purchase",
+  testPayment = false,
 }: SendPaymentSuccessEmailParams): Promise<void> {
   if (!resendApiKey) {
     console.error("[Email Error] RESEND_API_KEY is not defined");
@@ -39,15 +43,24 @@ export async function sendPaymentSuccessEmail({
         orderCode,
         paidAt: new Date(),
         expiredAt,
+        transactionType,
+        testPayment,
+        email,
       })
     );
 
     const resend = new Resend(resendApiKey);
 
+    const subjectText = {
+      purchase: "Thanh toán LexOCR PRO thành công",
+      renewal: "Gia hạn LexOCR PRO thành công",
+      upgrade: "Nâng cấp lên LexOCR PRO Năm thành công"
+    }[transactionType] || "Thanh toán LexOCR PRO thành công";
+
     const { data, error } = await resend.emails.send({
       from: "LexOCR Billing <billing@lexocr.com>",
       to: email,
-      subject: "Thanh toán LexOCR PRO thành công",
+      subject: subjectText,
       html: htmlContent,
     });
 
