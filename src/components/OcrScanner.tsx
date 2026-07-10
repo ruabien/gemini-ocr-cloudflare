@@ -1085,20 +1085,37 @@ while (true) {
                   </div>
                 </div>
 
-                {/* BASIC OPTIONS: Tối ưu ảnh trước OCR */}
+                {/* PHẠM VI TRÍCH XUẤT (PAGE RANGE) */}
                 <div>
-                  <label className="flex items-center space-x-2 text-slate-100 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={useImageOptimization}
-                      onChange={(e) => setUseImageOptimization(e.target.checked)}
-                      className="form-checkbox h-4 w-4 text-emerald-600 rounded"
-                    />
-                    <span className="text-xs font-bold uppercase tracking-wide">Tối ưu ảnh trước OCR</span>
+                  <label className="block text-[10px] font-bold text-slate-300 mb-1.5 uppercase tracking-wide">
+                    Phạm vi trích xuất (Page Range)
                   </label>
-                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                    Giúp OCR nhanh hơn với ảnh chụp dung lượng lớn. Nếu ảnh bị mờ hoặc kết quả OCR kém, hãy tắt tùy chọn này.
-                  </p>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-1/2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Từ trang"
+                        value={fromPage}
+                        onChange={(e) => setFromPage(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                        disabled={(queuedFiles || []).length > 1}
+                      />
+                    </div>
+                    <span className="text-slate-300 text-xs">—</span>
+                    <div className="w-1/2">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="Đến trang"
+                        value={toPage}
+                        onChange={(e) => setToPage(e.target.value)}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                        disabled={(queuedFiles || []).length > 1}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[9px] text-slate-400 mt-1.5">*Chỉ khả dụng khi chọn 1 tệp duy nhất.</p>
                 </div>
 
                 {/* ACCORDION FOR ADVANCED OPTIONS */}
@@ -1113,36 +1130,20 @@ while (true) {
 
                   {showAdvanced && (
                     <div className="mt-3 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                      {/* TỐI ƯU ẢNH TRƯỚC OCR */}
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-300 mb-1.5 uppercase tracking-wide">
-                          Phạm vi trích xuất (Page Range)
+                        <label className="flex items-center space-x-2 text-slate-100 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={useImageOptimization}
+                            onChange={(e) => setUseImageOptimization(e.target.checked)}
+                            className="form-checkbox h-4 w-4 text-emerald-600 rounded"
+                          />
+                          <span className="text-xs font-bold uppercase tracking-wide">Tối ưu ảnh trước OCR</span>
                         </label>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-1/2">
-                            <input
-                              type="number"
-                              min="1"
-                              placeholder="Từ trang"
-                              value={fromPage}
-                              onChange={(e) => setFromPage(e.target.value)}
-                              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
-                              disabled={(queuedFiles || []).length > 1}
-                            />
-                          </div>
-                          <span className="text-slate-300 text-xs">—</span>
-                          <div className="w-1/2">
-                            <input
-                              type="number"
-                              min="1"
-                              placeholder="Đến trang"
-                              value={toPage}
-                              onChange={(e) => setToPage(e.target.value)}
-                              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs font-medium text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
-                              disabled={(queuedFiles || []).length > 1}
-                            />
-                          </div>
-                        </div>
-                        <p className="text-[9px] text-slate-400 mt-1.5">*Chỉ khả dụng khi chọn 1 tệp duy nhất.</p>
+                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                          Giúp OCR nhanh hơn với ảnh chụp dung lượng lớn. Nếu ảnh bị mờ hoặc kết quả OCR kém, hãy tắt tùy chọn này.
+                        </p>
                       </div>
 
                       {useImageOptimization && (
@@ -1158,28 +1159,28 @@ while (true) {
                           </select>
                         </div>
                       )}
+
+                      <div className="flex items-start space-x-2.5 bg-slate-800 text-slate-300 p-3 rounded-lg border border-slate-700">
+                        <Shield className="h-4 w-4 flex-shrink-0 text-emerald-500 mt-0.5" />
+                        <p className="text-[10px] leading-relaxed font-medium">
+                          Toàn bộ tài liệu được xử lý theo kiến trúc Stateless. Hệ thống không lưu hồ sơ sau khi kết thúc OCR.
+                        </p>
+                      </div>
+
+                      {/* SECURITY BADGES */}
+                      <div className="border-t border-slate-850 pt-4 flex flex-wrap justify-center gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
+                          🛡️ Không lưu hồ sơ
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
+                          🛡️ Stateless
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
+                          🛡️ Xử lý an toàn
+                        </span>
+                      </div>
                     </div>
                   )}
-                </div>
-
-                <div className="flex items-start space-x-2.5 bg-slate-800 text-slate-300 p-3 rounded-lg border border-slate-700 mt-4">
-                  <Shield className="h-4 w-4 flex-shrink-0 text-emerald-500 mt-0.5" />
-                  <p className="text-[10px] leading-relaxed font-medium">
-                    Toàn bộ tài liệu được xử lý theo kiến trúc Stateless. Hệ thống không lưu hồ sơ sau khi kết thúc OCR.
-                  </p>
-                </div>
-
-                {/* SECURITY BADGES */}
-                <div className="mt-4 border-t border-slate-850 pt-4 flex flex-wrap justify-center gap-2">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
-                    🛡️ Không lưu hồ sơ
-                  </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
-                    🛡️ Stateless
-                  </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-400 border border-emerald-500/20">
-                    🛡️ Xử lý an toàn
-                  </span>
                 </div>
               </div>
             </div>
