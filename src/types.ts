@@ -5,6 +5,12 @@ export interface UserSession {
   isAuthenticated: boolean;
 }
 
+export interface DailyUsage {
+  date: string;
+  pages: number;
+  updatedAt: any;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -16,6 +22,7 @@ export interface UserProfile {
     creationTime?: string;
     lastSignInTime?: string;
   };
+  dailyUsage?: DailyUsage;
 }
 
 export interface RecentActivity {

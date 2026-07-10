@@ -5,6 +5,7 @@
 
 import React, { useState, useRef } from "react";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle, Trash2 } from "lucide-react";
+import { auth } from "../lib/firebase";
 import { OcrConfig } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
@@ -73,6 +74,17 @@ export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScann
   const [useImageOptimization, setUseImageOptimization] = useState(true);
   const [imageOptimizationLevel, setImageOptimizationLevel] = useState<"balanced" | "fast">("balanced");
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // ---------- Freemium limits & UI ----------
+  const [pagesUsedToday, setPagesUsedToday] = useState(0);
+  const [limitModal, setLimitModal] = useState<null | {
+    type: "batch" | "daily";
+    maxAllowed: number;
+    requested: number;
+    onAccept: () => void;
+    onReject: () => void;
+  }>(null);
+  const [softBanner, setSoftBanner] = useState<string | null>(null);
 
   const [fileErrors, setFileErrors] = useState<Record<number, string>>({});
   const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
@@ -289,14 +301,110 @@ const handleSelectedFiles = async (files: File[]) => {
 const startOcrProcess = async () => {
   // LOCK THE RUNTIME PROCESSING FUNCTION WITH A DEFENSIVE LOADING GUARD
   if (isProcessingRef.current || isBatchProcessing || isSlicing) return;
+
+  // ---- Pre‑flight usage checks for FREE users ----
+  let isPro = false;
+  let currentUsage = 0;
+  if (user?.uid) {
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const checkRes = await fetch("/api/usage/check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": idToken ? `Bearer ${idToken}` : "",
+        },
+      });
+      if (checkRes.ok) {
+        const data = await checkRes.json();
+        isPro = data.isPro;
+        currentUsage = data.pagesUsedToday;
+        setPagesUsedToday(currentUsage);
+        const remaining = data.remainingPages;
+        if (!isPro && remaining <= 10) {
+          setSoftBanner(
+            `Hôm nay bạn đã sử dụng ${currentUsage} / 50 trang miễn phí. Bạn còn ${remaining} trang. Nâng cấp LexOCR PRO để xử lý không giới hạn.`
+          );
+        } else {
+          setSoftBanner(null);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to check usage:", e);
+    }
+  }
+
+  // Count requested pages
+  const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
+  if (!filesToProcess || filesToProcess.length === 0) {
+    return;
+  }
+
+  if (!isPro) {
+    let totalRequestedPages = 0;
+    for (const q of filesToProcess) {
+      if (q.totalPages) {
+        // PDF – respect range
+        const start = fromPage ? parseInt(fromPage, 10) : 1;
+        const end = toPage ? parseInt(toPage, 10) : q.totalPages;
+        totalRequestedPages += Math.min(end, q.totalPages) - Math.max(start, 1) + 1;
+      } else {
+        totalRequestedPages += 1;
+      }
+    }
+
+    // 1. Check daily limit first
+    if (currentUsage >= 50) {
+      setLimitModal({
+        type: "daily",
+        maxAllowed: 0,
+        requested: totalRequestedPages,
+        onAccept: () => setLimitModal(null),
+        onReject: () => setLimitModal(null),
+      });
+      return;
+    }
+
+    if (currentUsage + totalRequestedPages > 50) {
+      const remainingPages = 50 - currentUsage;
+      setLimitModal({
+        type: "daily",
+        maxAllowed: remainingPages,
+        requested: totalRequestedPages,
+        onAccept: () => setLimitModal(null), // Just close, user must reduce range manually
+        onReject: () => setLimitModal(null),
+      });
+      return;
+    }
+
+    // 2. Check per-run limit of 20 pages
+    if (totalRequestedPages > 20) {
+      setLimitModal({
+        type: "batch",
+        maxAllowed: 20,
+        requested: totalRequestedPages,
+        onAccept: async () => {
+          // "Tiếp tục với 20 trang đầu": set range 1-20
+          setLimitModal(null);
+          setFromPage("1");
+          setToPage("20");
+          // Re-trigger start with the updated state in next cycle
+          setTimeout(() => {
+            const btn = document.querySelector(".start-ocr-btn-selector");
+            if (btn) (btn as HTMLElement).click();
+          }, 100);
+        },
+        onReject: () => {
+          setLimitModal(null);
+        },
+      });
+      return;
+    }
+  }
+
   isProcessingRef.current = true;
 
   try {
-    const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
-    if (!filesToProcess || filesToProcess.length === 0) {
-      isProcessingRef.current = false;
-      return;
-    }
 
     setIsBatchProcessing(true);
     setEditorContent("");
@@ -920,11 +1028,84 @@ while (true) {
       }
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsBatchProcessing(false);
       setProcessingFile(null);
       setProgress(0);
       isProcessingRef.current = false;
+
+      // -------------------------------------------------
+      // Record successful page usage (FREE users only)
+      // -------------------------------------------------
+      if (!isPro && user?.uid) {
+        try {
+          // Count successful pages from the final queuedFiles state
+          let successfulPages = 0;
+          queuedFiles.forEach(q => {
+            if (q.pageStates) {
+              Object.values(q.pageStates).forEach(state => {
+                if (state.status === "success") successfulPages += 1;
+              });
+            } else if (q.status === "done") {
+              // Single‑image file counted as one successful page
+              successfulPages += 1;
+            }
+          });
+
+          if (successfulPages > 0) {
+            const idToken = await auth.currentUser?.getIdToken();
+            const response = await fetch("/api/usage/commit", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": idToken ? `Bearer ${idToken}` : "",
+              },
+              body: JSON.stringify({ successfulPages }),
+            });
+
+            let data;
+            try {
+              data = await response.json();
+            } catch (e) {
+              data = null;
+            }
+
+            if (!response.ok || !data || !data.success) {
+              const code = data?.code || data?.error;
+              if (code === "quota_exceeded") {
+                 setErrorModalMsg("Kết quả OCR đã hoàn tất, nhưng hạn mức miễn phí hôm nay đã được sử dụng đồng thời ở phiên khác.");
+                 setPagesUsedToday(data?.pagesUsed || 50);
+                 const remaining = data?.remainingPages || 0;
+                 if (remaining <= 0) {
+                   setSoftBanner("Bạn đã sử dụng hết hạn mức miễn phí hôm nay. Nâng cấp LexOCR PRO để xử lý không giới hạn.");
+                 } else {
+                   setSoftBanner(`Hôm nay bạn đã sử dụng ${data?.pagesUsed} / 50 trang miễn phí. Bạn còn ${remaining} trang. Nâng cấp LexOCR PRO để xử lý không giới hạn.`);
+                 }
+              } else if (code === "transaction_failed" || code === "server_error") {
+                 console.error("Usage commit failed safely.", data?.message || "server error");
+                 setSoftBanner("Kết quả OCR đã hoàn tất nhưng hệ thống chưa thể cập nhật hạn mức sử dụng. Vui lòng thử lại sau.");
+              } else if (response.status === 400) {
+                 setErrorModalMsg(data?.message || "Dữ liệu không hợp lệ. Kết quả OCR vẫn được giữ nguyên.");
+              } else {
+                 setSoftBanner("Kết quả OCR đã hoàn tất nhưng hệ thống chưa thể cập nhật hạn mức sử dụng. Vui lòng thử lại sau.");
+              }
+            } else {
+              // success
+              const pagesUsed = data.pagesUsed;
+              const remaining = data.remainingPages;
+              setPagesUsedToday(pagesUsed);
+              if (!data.isPro && remaining <= 10) {
+                 setSoftBanner(`Hôm nay bạn đã sử dụng ${pagesUsed} / 50 trang miễn phí. Bạn còn ${remaining} trang. Nâng cấp LexOCR PRO để xử lý không giới hạn.`);
+              } else {
+                 setSoftBanner(null);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Network or parsing error on commit:", e);
+          setSoftBanner("Kết quả OCR đã hoàn tất nhưng hệ thống chưa thể cập nhật hạn mức sử dụng. Vui lòng thử lại sau.");
+        }
+      }
 
       const finalContent = editorContentRef.current;
       if (finalContent && finalContent.trim() !== "") {
@@ -950,6 +1131,21 @@ while (true) {
   return (
     <div id="ocr-scanner-tab" className="flex flex-col space-y-4 pb-12 bg-slate-50">
       
+        {/* SOFT WARNING BANNER */}
+        {softBanner && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between shadow-sm">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <span className="text-sm font-medium text-amber-800">
+                {softBanner}
+              </span>
+            </div>
+            <a href="/pricing" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded transition-colors">
+              Xem gói PRO
+            </a>
+          </div>
+        )}
+
         {/* HEADER SECTION */}
         <div className="border-b border-slate-200 pb-3">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center space-x-2">
@@ -1007,7 +1203,7 @@ while (true) {
               <button
                 onClick={startOcrProcess}
                 disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
-                className="w-full sm:w-[320px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-4 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-102 flex items-center justify-center space-x-2.5 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
+                className="start-ocr-btn-selector w-full sm:w-[320px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-4 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-102 flex items-center justify-center space-x-2.5 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
               >
                 {isBatchProcessing || isSlicing ? (
                   <Activity className="h-6 w-6 animate-spin" />
@@ -1443,21 +1639,104 @@ while (true) {
           );
         })()}
 
+      {/* LIMIT MODAL */}
+      {limitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full animate-in fade-in duration-200">
+            <div className="flex items-center space-x-2 text-red-600 mb-4">
+              <AlertTriangle className="h-6 w-6" />
+              <h3 className="text-lg font-bold">Giới hạn sử dụng</h3>
+            </div>
+            <div className="text-slate-600 text-sm mb-6 leading-relaxed space-y-3">
+              {limitModal.type === "daily" ? (
+                <>
+                  {limitModal.maxAllowed <= 0 ? (
+                    <p>Bạn đã sử dụng hết 50 trang miễn phí hôm nay.<br/><br/>Bạn có thể quay lại vào ngày mai hoặc nâng cấp LexOCR PRO để tiếp tục xử lý ngay.</p>
+                  ) : (
+                    <p>Hôm nay bạn còn <strong>{limitModal.maxAllowed}</strong> trang miễn phí.<br/><br/>Hãy giảm phạm vi xử lý xuống tối đa {limitModal.maxAllowed} trang hoặc nâng cấp LexOCR PRO.</p>
+                  )}
+                </>
+              ) : (
+                <p>
+                  Gói Free hỗ trợ xử lý tối đa 20 trang trong mỗi lần OCR.<br/><br/>
+                  Bạn có thể chọn một phạm vi tối đa 20 trang, ví dụ 1–20 hoặc 21–40, để tiếp tục sử dụng miễn phí.<br/><br/>
+                  Nâng cấp LexOCR PRO để xử lý toàn bộ tài liệu trong một lần.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col space-y-2">
+              {limitModal.type === "batch" && (
+                <>
+                  <button 
+                    onClick={limitModal.onAccept}
+                    className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    Tiếp tục với 20 trang đầu
+                  </button>
+                  <button 
+                    onClick={limitModal.onReject}
+                    className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    Quay lại chọn phạm vi
+                  </button>
+                </>
+              )}
+              {limitModal.type === "daily" && limitModal.maxAllowed > 0 && (
+                <button 
+                  onClick={limitModal.onAccept}
+                  className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
+                >
+                  Đóng
+                </button>
+              )}
+              {(limitModal.type === "daily" && limitModal.maxAllowed <= 0) && (
+                <button 
+                  onClick={limitModal.onReject}
+                  className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
+                >
+                  Đóng
+                </button>
+              )}
+              <a 
+                href="/pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setLimitModal(null)}
+                className={`w-full px-4 py-2 text-center text-sm font-semibold rounded-lg transition-colors ${limitModal.type === "daily" && limitModal.maxAllowed <= 0 ? "bg-red-600 hover:bg-red-700 text-white" : "text-red-600 bg-red-50 hover:bg-red-100"}`}
+              >
+                Khám phá LexOCR PRO
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ERROR MODAL */}
       {errorModalMsg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full animate-in fade-in duration-200">
             <div className="flex items-center space-x-2 text-red-600 mb-4">
               <AlertTriangle className="h-6 w-6" />
-              <h3 className="text-lg font-bold">Lỗi hệ thống</h3>
+              <h3 className="text-lg font-bold">Thông báo</h3>
             </div>
             <p className="text-slate-600 text-sm mb-6 leading-relaxed">
               {errorModalMsg}
             </p>
-            <div className="flex justify-end">
+            <div className="flex flex-col space-y-2">
+              {errorModalMsg.includes("hạn mức miễn phí") && (
+                <a 
+                  href="/pricing"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setErrorModalMsg(null)}
+                  className="w-full px-4 py-2 text-center text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
+                  Xem gói PRO
+                </a>
+              )}
               <button 
                 onClick={() => setErrorModalMsg(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
+                className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
               >
                 Đóng
               </button>

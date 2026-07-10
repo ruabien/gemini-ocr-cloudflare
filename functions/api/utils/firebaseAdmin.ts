@@ -175,6 +175,11 @@ function toFirestoreValue(val: any): any {
   return { stringValue: String(val) };
 }
 
+// Helper: Get Asia/Ho_Chi_Minh Date string (YYYY-MM-DD)
+export function getVNDateString(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
+}
+
 // Convert flat object to Firestore fields
 function toFirestoreFields(obj: Record<string, any>): Record<string, any> {
   const fields: Record<string, any> = {};
@@ -185,7 +190,7 @@ function toFirestoreFields(obj: Record<string, any>): Record<string, any> {
 }
 
 // Generate Google API OAuth2 Access Token using Service Account JWT
-async function getOAuth2Token(serviceAccount: any): Promise<string> {
+export async function getOAuth2Token(serviceAccount: any): Promise<string> {
   const header = {
     alg: "RS256",
     typ: "JWT",
@@ -575,4 +580,223 @@ export async function savePaymentRecord(
     const errorText = await response.text();
     throw new Error(`Firestore REST API Error: ${errorText}`);
   }
+}
+
+/**
+ * Commits daily usage transactionally using Firestore REST API.
+ */
+export async function commitDailyUsage(
+  serviceAccountJson: string | undefined,
+  uid: string,
+  successfulPages: number,
+  isPro: boolean
+): Promise<{ success: boolean; pagesUsed: number; remainingPages: number; error?: string }> {
+  if (!serviceAccountJson) {
+    throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_JSON");
+  }
+
+  let serviceAccount: any;
+  try {
+    serviceAccount = JSON.parse(serviceAccountJson);
+  } catch (e) {
+    throw new Error("Invalid service account JSON");
+  }
+
+  const accessToken = await getOAuth2Token(serviceAccount);
+  const projectId = serviceAccount.project_id;
+  const baseUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+  const userDocPath = `projects/${projectId}/databases/(default)/documents/users/${uid}`;
+
+  let attempt = 0;
+  const maxAttempts = 3;
+
+  while (attempt < maxAttempts) {
+    attempt++;
+    let transaction: string | undefined;
+    try {
+      // 1. Begin Transaction
+      const beginTxRes = await fetch(`${baseUrl}:beginTransaction`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!beginTxRes.ok) {
+        const status = beginTxRes.status;
+        const errText = await beginTxRes.text();
+        const isAuthOrVal = status === 400 || status === 401 || status === 403;
+        if (isAuthOrVal || attempt >= maxAttempts) {
+          throw new Error(`Failed to begin transaction (status ${status}): ${errText}`);
+        }
+        continue;
+      }
+
+      const beginJson = await beginTxRes.json() as { transaction: string };
+      transaction = beginJson.transaction;
+
+      // 2. Read User Profile within Transaction
+      const getRes = await fetch(`${baseUrl}/users/${uid}?transaction=${encodeURIComponent(transaction)}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`
+        }
+      });
+
+      let currentPages = 0;
+      const vnDate = getVNDateString();
+      let fields: any = {};
+
+      if (getRes.ok) {
+        const userDoc = await getRes.json() as any;
+        if (userDoc.fields) {
+          fields = userDoc.fields;
+          const dailyUsage = fields.dailyUsage?.mapValue?.fields;
+          if (dailyUsage) {
+            const date = dailyUsage.date?.stringValue;
+            const pages = dailyUsage.pages?.integerValue ? parseInt(dailyUsage.pages.integerValue, 10) : 0;
+            if (date === vnDate) {
+              currentPages = pages;
+            }
+          }
+        }
+      } else if (getRes.status === 404) {
+        // User doc not found, fine
+      } else {
+        const status = getRes.status;
+        const errText = await getRes.text();
+        const isAuthOrVal = status === 400 || status === 401 || status === 403;
+        if (isAuthOrVal || attempt >= maxAttempts) {
+          throw new Error(`Failed to read user doc (status ${status}): ${errText}`);
+        }
+        // Rollback transaction best effort
+        try {
+          await fetch(`${baseUrl}:rollback`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ transaction })
+          });
+        } catch (_) {}
+        continue;
+      }
+
+      // 3. Compute and check limits
+      const pagesAfterCommit = currentPages + successfulPages;
+      const remainingPages = isPro ? 999999 : Math.max(0, 50 - pagesAfterCommit);
+
+      if (!isPro && pagesAfterCommit > 50) {
+        // Rollback transaction best effort
+        try {
+          await fetch(`${baseUrl}:rollback`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ transaction })
+          });
+        } catch (_) {}
+        return { 
+          success: false, 
+          error: "quota_exceeded", 
+          pagesUsed: currentPages, 
+          remainingPages: Math.max(0, 50 - currentPages) 
+        };
+      }
+
+      // 4. Commit Transaction
+      const commitBody = {
+        transaction,
+        writes: [
+          {
+            updateMask: {
+              fieldPaths: ["dailyUsage"]
+            },
+            update: {
+              name: userDocPath,
+              fields: {
+                ...fields,
+                dailyUsage: {
+                  mapValue: {
+                    fields: {
+                      date: { stringValue: vnDate },
+                      pages: { integerValue: String(pagesAfterCommit) },
+                      updatedAt: { timestampValue: new Date().toISOString() }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      };
+
+      const commitRes = await fetch(`${baseUrl}:commit`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(commitBody)
+      });
+
+      if (!commitRes.ok) {
+        const status = commitRes.status;
+        const errText = await commitRes.text();
+        const isAuthOrVal = status === 400 || status === 401 || status === 403;
+        if (isAuthOrVal || attempt >= maxAttempts) {
+          throw new Error(`Failed to commit transaction (status ${status}): ${errText}`);
+        }
+        try {
+          await fetch(`${baseUrl}:rollback`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ transaction })
+          });
+        } catch (_) {}
+        continue;
+      }
+
+      return { 
+        success: true, 
+        pagesUsed: pagesAfterCommit, 
+        remainingPages 
+      };
+
+    } catch (error: any) {
+      if (transaction) {
+        try {
+          await fetch(`${baseUrl}:rollback`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ transaction })
+          });
+        } catch (_) {}
+      }
+
+      const errMessage = error?.message || "";
+      const isAuthOrVal = errMessage.includes("400") || errMessage.includes("401") || errMessage.includes("403") ||
+                          errMessage.includes("unauthorized") || errMessage.includes("forbidden") ||
+                          errMessage.includes("invalid") || errMessage.includes("validation");
+      
+      if (isAuthOrVal || attempt >= maxAttempts) {
+        throw error;
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 200 * attempt));
+    }
+  }
+
+  throw new Error("Transaction aborted due to contention or max retries exceeded");
 }

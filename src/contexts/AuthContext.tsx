@@ -93,9 +93,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isCurrentlyPro = expTime !== null && expTime > Date.now();
         setIsPro(isCurrentlyPro);
         
-        // Cập nhật lại user.plan
+        // Cập nhật lại user.plan và dailyUsage
         const currentPlan = isCurrentlyPro ? "pro" : "free";
-        setUser(prev => prev ? { ...prev, plan: currentPlan } : null);
+        setUser(prev => prev ? { 
+          ...prev, 
+          plan: currentPlan,
+          dailyUsage: data.dailyUsage ? {
+            date: data.dailyUsage.date,
+            pages: Number(data.dailyUsage.pages || 0),
+            updatedAt: data.dailyUsage.updatedAt
+          } : undefined
+        } : null);
         
       } else {
         // Fallback to FREE if no document
@@ -103,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setExpiredAt(null);
         setPlanType(null);
         setIsPro(false);
-        setUser(prev => prev ? { ...prev, plan: "free" } : null);
+        setUser(prev => prev ? { ...prev, plan: "free", dailyUsage: undefined } : null);
       }
       setLoadingSubscription(false);
     }, (error) => {
