@@ -109,6 +109,7 @@ function AppContent() {
               }}
               config={config}
               setConfig={setConfig}
+              setActiveTab={handleActiveTab}
             />
           </Suspense>
         )}

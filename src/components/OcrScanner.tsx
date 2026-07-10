@@ -17,6 +17,7 @@ interface OcrScannerProps {
   onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[]; outputMode?: "text" | "structured" }) => void;
   config: OcrConfig;
   setConfig: React.Dispatch<React.SetStateAction<OcrConfig>>;
+  setActiveTab?: (tab: string) => void;
 }
 
 interface QueuedFile {
@@ -54,7 +55,7 @@ const formatSize = (bytes: number) => {
   return `${Math.round(bytes / 1024)} KB`;
 };
 
-export default function OcrScanner({ onFileLoaded, config, setConfig }: OcrScannerProps) {
+export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveTab }: OcrScannerProps) {
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
@@ -1140,9 +1141,16 @@ while (true) {
                 {softBanner}
               </span>
             </div>
-            <a href="/pricing" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded transition-colors">
+            <button 
+              onClick={() => {
+                if (setActiveTab) {
+                  setActiveTab("upgrade");
+                }
+              }}
+              className="text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded transition-colors"
+            >
               Xem gói PRO
-            </a>
+            </button>
           </div>
         )}
 
@@ -1699,15 +1707,17 @@ while (true) {
                   Đóng
                 </button>
               )}
-              <a 
-                href="/pricing"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setLimitModal(null)}
+              <button 
+                onClick={() => {
+                  setLimitModal(null);
+                  if (setActiveTab) {
+                    setActiveTab("upgrade");
+                  }
+                }}
                 className={`w-full px-4 py-2 text-center text-sm font-semibold rounded-lg transition-colors ${limitModal.type === "daily" && limitModal.maxAllowed <= 0 ? "bg-red-600 hover:bg-red-700 text-white" : "text-red-600 bg-red-50 hover:bg-red-100"}`}
               >
                 Khám phá LexOCR PRO
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -1726,15 +1736,17 @@ while (true) {
             </p>
             <div className="flex flex-col space-y-2">
               {errorModalMsg.includes("hạn mức miễn phí") && (
-                <a 
-                  href="/pricing"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setErrorModalMsg(null)}
+                <button 
+                  onClick={() => {
+                    setErrorModalMsg(null);
+                    if (setActiveTab) {
+                      setActiveTab("upgrade");
+                    }
+                  }}
                   className="w-full px-4 py-2 text-center text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
                 >
                   Xem gói PRO
-                </a>
+                </button>
               )}
               <button 
                 onClick={() => setErrorModalMsg(null)}
