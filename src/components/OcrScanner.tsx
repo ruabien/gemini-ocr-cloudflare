@@ -1665,21 +1665,23 @@ while (true) {
               )}
             </div>
             <div className="flex flex-col space-y-2">
-              {limitModal.type === "batch" && (
-                <>
-                  <button 
-                    onClick={limitModal.onAccept}
-                    className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                  >
-                    Tiếp tục với 20 trang đầu
-                  </button>
+{limitModal.type === "batch" && (
+                <div className="flex flex-col space-y-2">
+                  {(!fromPage && !toPage) ? (
+                    <button 
+                      onClick={limitModal.onAccept}
+                      className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                    >
+                      Xử lý 20 trang đầu
+                    </button>
+                  ) : null}
                   <button 
                     onClick={limitModal.onReject}
-                    className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
+                    className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors border border-slate-200"
                   >
                     Quay lại chọn phạm vi
                   </button>
-                </>
+                </div>
               )}
               {limitModal.type === "daily" && limitModal.maxAllowed > 0 && (
                 <button 

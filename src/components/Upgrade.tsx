@@ -441,7 +441,21 @@ export default function UpgradeComponent({
                   Bóc tách hồ sơ
                 </div>
                 <div className="col-span-3 text-slate-500 font-mono">
-                  Tối đa 15 trang / tệp
+                  Tối đa 20 trang / lần OCR
+                </div>
+                <div className="col-span-3 font-semibold text-amber-700 flex items-center space-x-1 text-emerald-600 font-bold">
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span>Không giới hạn</span>
+                </div>
+              </div>
+
+              {/* Hàng mới */}
+              <div className="grid grid-cols-12 p-3 text-xs items-center gap-2 hover:bg-slate-50/50">
+                <div className="col-span-6 font-bold text-slate-700">
+                  Số trang sử dụng mỗi ngày
+                </div>
+                <div className="col-span-3 text-slate-500 font-mono">
+                  50 trang / ngày
                 </div>
                 <div className="col-span-3 font-semibold text-amber-700 flex items-center space-x-1 text-emerald-600 font-bold">
                   <Check className="h-4 w-4 text-emerald-500" />
@@ -536,8 +550,10 @@ export default function UpgradeComponent({
             </div>
           </div>
 
-          <div className="p-3 bg-slate-50 text-[10px] text-slate-500 border-t border-slate-150 leading-relaxed italic">
-            * Tuân thủ chuyển đổi số trong lĩnh vực tư pháp.
+          <div className="p-3 bg-slate-50 text-[10px] text-slate-500 border-t border-slate-150 leading-relaxed text-left">
+            Gói Free phù hợp để trải nghiệm và xử lý tài liệu ngắn.
+            <br />
+            LexOCR PRO được thiết kế cho nghiên cứu hồ sơ chuyên sâu và tài liệu nhiều trang.
           </div>
         </div>
 
