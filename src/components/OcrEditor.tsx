@@ -487,23 +487,6 @@ useEffect(() => {
 
         {/* Action buttons */}
         <div className="w-full lg:w-auto grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 mt-2 lg:mt-0">
-          {/* AES toggle (visual only) */}
-          <div
-            onClick={() => setIsEncryptActive(!isEncryptActive)}
-            className={`col-span-2 sm:col-span-1 px-3 py-2 sm:py-1.5 rounded-lg border text-[10px] font-bold font-mono flex items-center justify-center sm:justify-start space-x-1.5 cursor-pointer transition-all min-h-[40px] sm:min-h-0 ${
-              isEncryptActive
-                ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                : "bg-slate-100 border-slate-200 text-slate-500"
-            }`}
-          >
-            <Shield
-              className={`h-3.5 w-3.5 flex-shrink-0 ${
-                isEncryptActive ? "text-emerald-600 animate-pulse" : "text-slate-400"
-              }`}
-            />
-            <span className="truncate">AES-256: {isEncryptActive ? "Bật" : "Tắt"}</span>
-          </div>
-
           <button
             onClick={handleToggleAnonymize}
             disabled={isRedacting}
@@ -528,7 +511,7 @@ useEffect(() => {
             className="px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0 transition-all bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent"
           >
             {isCopied ? <Check className="h-4 w-4 flex-shrink-0" /> : <Copy className="h-4 w-4 flex-shrink-0" />}
-            <span className="truncate">{isCopied ? "Đã copy" : "Copy All"}</span>
+            <span className="truncate">{isCopied ? "Đã copy" : "Copy"}</span>
           </button>
 
           <button
@@ -537,7 +520,7 @@ useEffect(() => {
             title="Xuất văn bản thô (.TXT)"
           >
             <Download className="h-4 w-4 text-slate-350 flex-shrink-0" />
-            <span>TXT</span>
+            <span>Text</span>
           </button>
 
           <button
@@ -555,29 +538,9 @@ useEffect(() => {
               <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse flex-shrink-0" />
             )}
             <span className="truncate">
-              {isExportingDocx
-                ? "Đang xuất..."
-                : membershipRole === "Pro"
-                ? "DOCX"
-                : "DOCX PRO"}
+              {isExportingDocx ? "Đang xuất..." : "Word"}
             </span>
           </button>
-
-          <div className="col-span-2 flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 sm:py-1 shadow-sm min-h-[40px] sm:min-h-0 w-full sm:w-auto">
-            <select
-              value={exportMode}
-              onChange={(e) => setExportMode(e.target.value as "nd30" | "manual_edit")}
-              className="text-[11px] font-bold text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none m-0 p-0 w-full truncate"
-              title={
-                exportMode === "manual_edit"
-                  ? "Xóa toàn bộ ngắt dòng, gộp thành 1 paragraph căn đều. Người dùng tự nhấn Enter."
-                  : "Xuất văn bản theo chuẩn thể thức Nghị định 30/2020/NĐ-CP (Xóa ngắt dòng giữa câu, giữ cấu trúc)"
-              }
-            >
-              <option value="nd30">Chuẩn Nghị định 30 (Khuyến nghị)</option>
-              <option value="manual_edit">Chế độ chỉnh sửa thủ công</option>
-            </select>
-          </div>
         </div>
       </div>
 
