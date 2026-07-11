@@ -35,9 +35,13 @@ export const extractStructuredData = async (ocrText, template, config, options =
     modelName = 'gemini-2.5-pro';
   }
 
-  if (!ocrText || !ocrText.trim()) {
-    throw new Error("Không có nội dung văn bản OCR để trích xuất.");
+if (!ocrText || !ocrText.trim()) {
+  // Development-only logging of OCR details
+  if (import.meta.env.DEV) {
+    console.log(`==============================\nOCR TEXT\n==============================\nĐộ dài OCR text: ${ocrText.length}\n200 ký tự đầu:\n${ocrText.substring(0, 200)}\n\n200 ký tự cuối:\n${ocrText.substring(ocrText.length - 200)}\n`);
   }
+  throw new Error("Không có nội dung văn bản OCR để trích xuất.");
+}
 
   // Xây dựng mô tả chi tiết các trường để gửi cho AI
   let systemText = options.customSystemText;
@@ -77,6 +81,11 @@ VĂN BẢN OCR:
 ${ocrText}
 """`;
 
+// Development-only logging of the final prompt sent to Gemini
+if (import.meta.env.DEV) {
+  console.log(`==============================\nPROMPT\n==============================\nSystem Text:\n${systemText}\n\nUser Prompt:\n${promptText}`);
+}
+
   const errorsBreakdown = [];
   const maxRetriesPerKey = 3;
 
@@ -90,9 +99,8 @@ ${ocrText}
       // Dev log an toàn trước khi gọi Gemini theo đúng yêu cầu số 2
       console.log(`[Structured Extraction]
 feature: structured-extraction
-rawApiKey exists: ${!!rawApiKey}
-rawApiKey length: ${rawApiKey.length}
-parsedKeys count: ${keysArray.length}
+rawApiKey exists: ${keysArray.length > 0}
+rawApiKey count: ${keysArray.length}
 current key index: ${keyIdx}
 current key length: ${apiKey.length}
 modelName: ${modelName}`);
@@ -143,15 +151,25 @@ modelName: ${modelName}`);
           throw err;
         }
 
-        const data = await response.json();
-        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+const data = await response.json();
+const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        if (!textResponse) {
-          throw new Error("Gemini API không trả về kết quả hoặc bị chặn do chính sách nội dung.");
-        }
+if (!textResponse) {
+  throw new Error("Gemini API không trả về kết quả hoặc bị chặn do chính sách nội dung.");
+}
 
-        // Parse JSON an toàn
-        const parsedResult = parseStructuredResponse(textResponse);
+// Development-only logging of raw AI response
+if (import.meta.env.DEV) {
+  console.log(`==============================\nRAW AI RESPONSE\n==============================\n${textResponse}`);
+}
+
+// Parse JSON an toàn
+const parsedResult = parseStructuredResponse(textResponse);
+
+// Development-only logging of parsed JSON
+if (import.meta.env.DEV) {
+  console.log(`==============================\nPARSED JSON\n==============================\n`, parsedResult);
+}
 
         // Dev log thành công
         console.log(`[Structured Extraction]

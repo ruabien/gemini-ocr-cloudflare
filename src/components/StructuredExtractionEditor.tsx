@@ -564,6 +564,7 @@ async function runSchemaBasedExtraction(
 ): Promise<ExtractionRow[]> {
   const cleanText = text || "";
   const lines = cleanText.split("\n");
+  let normalizedFields: any = null;
 
   // 1. Chạy heuristic extraction (cũ) làm baseline
   const heuristicRows = schema.map((fieldName, index) => {
@@ -640,6 +641,81 @@ SCHEMA BẮT BUỘC TRẢ VỀ:
       const result:any = await extractStructuredData(cleanText, {} as any, {}, { customSystemText, customPromptText });
 
       if (result && typeof result === 'object') {
+ // @ts-ignore
+if (import.meta.env.DEV) {
+          // Helper to recursively normalize string values in an object
+          const getNormalizedObject = (parsed: any): any => {
+            if (!parsed) return parsed;
+            if (Array.isArray(parsed)) {
+              return parsed.map((item: any) => getNormalizedObject(item));
+            }
+            if (typeof parsed === 'object') {
+              const norm: any = {};
+              for (const [key, val] of Object.entries(parsed)) {
+                if (val && typeof val === 'object') {
+                  norm[key] = getNormalizedObject(val);
+                } else {
+                  norm[key] = normalizeData(val);
+                }
+              }
+              return norm;
+            }
+            return normalizeData(parsed);
+          };
+
+          const normalizedResult = getNormalizedObject(result);
+          console.log(`==============================\nNORMALIZED DATA\n==============================\n`, normalizedResult);
+
+          const firstParsedAccused = Array.isArray(result.accused) ? result.accused[0] : (result.accused || null);
+          const parsedFields = {
+            documentNumber: result.documentNumber,
+            issueDate: result.issueDate,
+            issuingAuthority: result.issuingAuthority,
+            accused: result.accused,
+            "accused[0]": firstParsedAccused,
+            fullName: firstParsedAccused?.fullName,
+            birthYear: firstParsedAccused?.dateOfBirth ?? firstParsedAccused?.birthYear,
+            identityNumber: firstParsedAccused?.identityNumber,
+            occupation: firstParsedAccused?.occupation,
+            residence: firstParsedAccused?.residence,
+            charge: result.charge,
+            legalProvision: result.legalProvision,
+          };
+
+          const firstNormalizedAccused = Array.isArray(normalizedResult?.accused) ? normalizedResult.accused[0] : (normalizedResult?.accused || null);
+          normalizedFields = {
+            documentNumber: normalizedResult?.documentNumber,
+            issueDate: normalizedResult?.issueDate,
+            issuingAuthority: normalizedResult?.issuingAuthority,
+            accused: normalizedResult?.accused,
+            "accused[0]": firstNormalizedAccused,
+            fullName: firstNormalizedAccused?.fullName,
+            birthYear: firstNormalizedAccused?.dateOfBirth ?? firstNormalizedAccused?.birthYear,
+            identityNumber: firstNormalizedAccused?.identityNumber,
+            occupation: firstNormalizedAccused?.occupation,
+            residence: firstNormalizedAccused?.residence,
+            charge: normalizedResult?.charge,
+            legalProvision: normalizedResult?.legalProvision,
+          };
+
+          const isFieldLost = (beforeVal: any, afterVal: any): boolean => {
+            if (beforeVal === null || beforeVal === undefined || beforeVal === "") return false;
+            if (Array.isArray(beforeVal) && beforeVal.length === 0) return false;
+            if (typeof beforeVal === 'object' && Object.keys(beforeVal).length === 0) return false;
+
+            if (afterVal === null || afterVal === undefined || afterVal === "") return true;
+            if (Array.isArray(afterVal) && afterVal.length === 0) return true;
+            if (typeof afterVal === 'object' && Object.keys(afterVal).length === 0) return true;
+            return false;
+          };
+
+          for (const key of Object.keys(parsedFields)) {
+            if (isFieldLost((parsedFields as any)[key], (normalizedFields as any)[key])) {
+              console.log(`MẤT DỮ LIỆU Ở BƯỚC PARSED → NORMALIZED (Trường: ${key})`);
+            }
+          }
+        }
+
         // Map alias (yêu cầu 5)
         aiExtractedMap.set("Số quyết định / số văn bản", normalizeData(result.documentNumber));
         aiExtractedMap.set("Số quyết định", normalizeData(result.documentNumber));
@@ -721,12 +797,125 @@ SCHEMA BẮT BUỘC TRẢ VỀ:
       return row;
     });
 
-    return [...finalRows, ...multipleAccusedRows];
+    const finalRowsAndMulti = [...finalRows, ...multipleAccusedRows];
 
-  } catch (e) {
+ // @ts-ignore
+if (import.meta.env.DEV && caseType === "hinh_su") {
+      const getUiValue = (names: string[]) => {
+        for (const name of names) {
+          const r = finalRowsAndMulti.find(row => row.name === name);
+          if (r && r.value !== undefined && r.value !== null && r.value !== "") {
+            return r.value;
+          }
+        }
+        return "";
+      };
+
+      const uiAccusedList: any[] = [];
+      const uiFirstAccused: any = {};
+      if (getUiValue(["Bị can/Bị cáo 1", "Bị can", "Họ tên bị can"])) {
+        uiFirstAccused.fullName = getUiValue(["Bị can/Bị cáo 1", "Bị can", "Họ tên bị can"]);
+        uiFirstAccused.dateOfBirth = getUiValue(["Năm sinh", "Ngày sinh"]);
+        uiFirstAccused.residence = getUiValue(["Nơi cư trú", "Địa chỉ"]);
+        uiFirstAccused.occupation = getUiValue(["Nghề nghiệp"]);
+        uiFirstAccused.identityNumber = getUiValue(["Số CCCD/CMND", "CCCD"]);
+        uiAccusedList.push(uiFirstAccused);
+      }
+      const extraAccusedMap = new Map<number, any>();
+      finalRowsAndMulti.forEach(r => {
+        const matchName = r.name.match(/^Bị can\/Bị cáo (\d+)$/);
+        if (matchName) {
+          const idx = parseInt(matchName[1], 10);
+          if (!extraAccusedMap.has(idx)) extraAccusedMap.set(idx, {});
+          extraAccusedMap.get(idx).fullName = r.value;
+        }
+        const matchDob = r.name.match(/^Năm sinh \((\d+)\)$/);
+        if (matchDob) {
+          const idx = parseInt(matchDob[1], 10);
+          if (!extraAccusedMap.has(idx)) extraAccusedMap.set(idx, {});
+          extraAccusedMap.get(idx).dateOfBirth = r.value;
+        }
+        const matchRes = r.name.match(/^Nơi cư trú \((\d+)\)$/);
+        if (matchRes) {
+          const idx = parseInt(matchRes[1], 10);
+          if (!extraAccusedMap.has(idx)) extraAccusedMap.set(idx, {});
+          extraAccusedMap.get(idx).residence = r.value;
+        }
+      });
+      const sortedIndices = Array.from(extraAccusedMap.keys()).sort((a, b) => a - b);
+      sortedIndices.forEach(idx => {
+        uiAccusedList.push(extraAccusedMap.get(idx));
+      });
+
+      const uiFields = {
+        documentNumber: getUiValue(["Số quyết định / số văn bản", "Số quyết định", "Số QĐ"]),
+        issueDate: getUiValue(["Ngày ban hành", "Ngày ra quyết định"]),
+        issuingAuthority: getUiValue(["Cơ quan ban hành"]),
+        accused: uiAccusedList,
+        "accused[0]": uiAccusedList[0] || null,
+        fullName: uiFirstAccused.fullName || "",
+        birthYear: uiFirstAccused.dateOfBirth || "",
+        identityNumber: uiFirstAccused.identityNumber || "",
+        occupation: uiFirstAccused.occupation || "",
+        residence: uiFirstAccused.residence || "",
+        charge: getUiValue(["Tội danh", "Về tội", "Có hành vi phạm tội"]),
+        legalProvision: getUiValue(["Điều luật áp dụng"]),
+      };
+
+      console.log(`==============================\nMAPPING RESULT\n==============================\n`, finalRowsAndMulti);
+      console.log(`Đặc biệt in riêng các trường:`);
+      console.log(`- documentNumber:`, uiFields.documentNumber);
+      console.log(`- issueDate:`, uiFields.issueDate);
+      console.log(`- issuingAuthority:`, uiFields.issuingAuthority);
+      console.log(`- accused:`, uiFields.accused);
+      console.log(`- accused[0]:`, uiFields["accused[0]"]);
+      console.log(`- fullName:`, uiFields.fullName);
+      console.log(`- birthYear:`, uiFields.birthYear);
+      console.log(`- identityNumber:`, uiFields.identityNumber);
+      console.log(`- occupation:`, uiFields.occupation);
+      console.log(`- residence:`, uiFields.residence);
+      console.log(`- charge:`, uiFields.charge);
+      console.log(`- legalProvision:`, uiFields.legalProvision);
+
+      const isFieldLost = (beforeVal: any, afterVal: any): boolean => {
+        if (beforeVal === null || beforeVal === undefined || beforeVal === "") return false;
+        if (Array.isArray(beforeVal) && beforeVal.length === 0) return false;
+        if (typeof beforeVal === 'object' && Object.keys(beforeVal).length === 0) return false;
+
+        if (afterVal === null || afterVal === undefined || afterVal === "") return true;
+        if (Array.isArray(afterVal) && afterVal.length === 0) return true;
+        if (typeof afterVal === 'object' && Object.keys(afterVal).length === 0) return true;
+        return false;
+      };
+
+      if (normalizedFields) {
+        for (const key of Object.keys(normalizedFields)) {
+          if (isFieldLost(normalizedFields[key], (uiFields as any)[key])) {
+            console.log(`MẤT DỮ LIỆU Ở BƯỚC NORMALIZED → UI (Trường: ${key})`);
+          }
+        }
+      }
+    }
+
+    return finalRowsAndMulti;
+
+  } catch (e: any) {
     console.error("AI extraction failed:", e);
-    // Nếu AI lỗi, fallback an toàn về heuristic
-    return heuristicRows;
+    // Yêu cầu 5: Không fallback âm thầm sang heuristic mà không thông báo
+    if (e.message && e.message.includes("Chưa cấu hình Gemini API Key")) {
+      alert("Chưa tìm thấy Gemini API Key. Vui lòng kiểm tra phần Cài đặt.");
+      // Trả về heuristic rows nhưng đánh dấu rõ đây là kết quả dự phòng
+      return heuristicRows.map(r => ({
+        ...r,
+        note: r.note ? `${r.note} (Kết quả dự phòng - Thiếu API Key)` : "Kết quả dự phòng (Thiếu API Key)"
+      }));
+    }
+    
+    // Các lỗi khác
+    return heuristicRows.map(r => ({
+      ...r,
+      note: r.note ? `${r.note} (Kết quả dự phòng - Lỗi AI)` : "Kết quả dự phòng (Lỗi AI)"
+    }));
   }
 }
 

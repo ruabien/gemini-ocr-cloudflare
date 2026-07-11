@@ -24,7 +24,10 @@ export const GeminiKeyManager = {
   getKeys(config) {
     let raw = config?.apiKey || '';
     if (!raw.trim()) {
-      raw = localStorage.getItem('ocr_api_key') || '';
+      raw = localStorage.getItem('vks_gemini_api_keys') || 
+            localStorage.getItem('apiKey') || 
+            localStorage.getItem('gemini_api_key') || 
+            localStorage.getItem('ocr_api_key') || '';
     }
     return this.parseGeminiKeys(raw);
   },
@@ -46,7 +49,7 @@ export const GeminiKeyManager = {
   getKeySource(config) {
     let raw = config?.apiKey || '';
     if (raw.trim()) return 'Config state (UI)';
-    if (localStorage.getItem('ocr_api_key')) return 'Local storage';
+    if (localStorage.getItem('vks_gemini_api_keys') || localStorage.getItem('apiKey') || localStorage.getItem('gemini_api_key') || localStorage.getItem('ocr_api_key')) return 'Local storage';
     return 'Chưa cấu hình';
   },
 
