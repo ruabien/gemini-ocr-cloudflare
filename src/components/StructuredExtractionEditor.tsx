@@ -633,6 +633,7 @@ export default function StructuredExtractionEditor({
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldValue, setNewFieldValue] = useState("");
   const [newFieldNote, setNewFieldNote] = useState("");
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
 
   // Trạng thái nâng cấp PRO
   const { user } = useAuth();
@@ -867,22 +868,24 @@ export default function StructuredExtractionEditor({
     <div id="structured-extraction-view" className="space-y-6 w-full">
       {/* A. HEADER */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-start space-x-3">
           <button
             onClick={onBack}
-            className="p-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-slate-600 transition-colors cursor-pointer"
+            className="p-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-slate-600 transition-colors cursor-pointer mt-1"
             title="Quay lại scanner để tải tài liệu khác"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-slate-800 tracking-tight flex items-center">
-              <FileSpreadsheet className="h-4.5 w-4.5 text-emerald-600 mr-2" />
-              <span>Dữ liệu cấu trúc: {document.name}</span>
-            </h2>
-            <p className="text-[10px] text-slate-500 font-medium">
-              Trích xuất dữ liệu cấu trúc từ hồ sơ • Free-First Strategy
-            </p>
+          <div className="flex items-start">
+            <FileSpreadsheet className="h-5 w-5 text-emerald-600 mr-2 mt-1 flex-shrink-0" />
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-800 tracking-tight uppercase">
+                KẾT QUẢ TRÍCH XUẤT
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                {document.name}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -900,28 +903,25 @@ export default function StructuredExtractionEditor({
           ) : (
             <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
           )}
-          <span>{membershipRole === "Pro" ? "Xuất bảng Excel (.CSV)" : "Xuất Excel PRO (.CSV)"}</span>
+          <span>{membershipRole === "Pro" ? "Xuất bảng Excel" : "Xuất Excel PRO"}</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* B. PANEL CẤU HÌNH & XEM VĂN BẢN (5/12) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wide flex items-center space-x-1.5 border-b border-slate-100 pb-2.5">
-              <span>Thiết lập biểu mẫu nghiệp vụ</span>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wide border-b border-slate-100 pb-2">
+              Thiết lập biểu mẫu nghiệp vụ
             </h3>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Chọn Loại án */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">
-                  Loại án/vụ việc
-                </label>
                 <select
                   value={caseType}
                   onChange={(e) => setCaseType(e.target.value as CaseType)}
-                  className="w-full bg-white border border-slate-300 rounded p-2 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                 >
                   <option value="dan_su">Dân sự</option>
                   <option value="hinh_su">Hình sự</option>
@@ -931,30 +931,29 @@ export default function StructuredExtractionEditor({
               </div>
 
               {/* Quản lý mẫu trường dữ liệu */}
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+              <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleSaveTemplate}
-                  className="bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded border border-slate-300 text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
+                  className="flex-1 bg-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-700 py-1.5 rounded text-xs font-medium flex items-center justify-center space-x-1.5 transition-colors cursor-pointer border border-transparent"
                   title="Lưu cấu trúc trường hiện tại làm mẫu"
                 >
-                  <Save className="h-3.5 w-3.5 text-slate-500" />
+                  <Save className="h-3.5 w-3.5" />
                   <span>Lưu mẫu</span>
                 </button>
                 <button
                   onClick={handleApplyTemplate}
                   disabled={!hasSavedTemplate}
-                  className="bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded border border-slate-300 text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 bg-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-700 py-1.5 rounded text-xs font-medium flex items-center justify-center space-x-1.5 transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed border border-transparent"
                   title={hasSavedTemplate ? "Áp dụng mẫu đã lưu" : "Chưa có mẫu nào được lưu"}
                 >
-                  <LayoutTemplate className="h-3.5 w-3.5 text-slate-500" />
+                  <LayoutTemplate className="h-3.5 w-3.5" />
                   <span>Áp dụng mẫu</span>
                 </button>
               </div>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-200/50 rounded-lg p-3 text-[11px] text-emerald-800 leading-relaxed font-semibold">
-```
-              Hệ thống tự động điều phối cấu trúc mẫu trường dữ liệu tương ứng với tài liệu thụ lý dân sự/hình sự/hành chính để cán bộ kiểm sát dễ dàng rà soát và kiểm duyệt nhanh.
+            <div className="bg-emerald-50 border border-emerald-200/50 rounded-lg p-2.5 text-[11px] text-emerald-800 leading-relaxed font-semibold">
+              AI sẽ tự động nhận diện biểu mẫu và trích xuất dữ liệu. Bạn chỉ cần kiểm tra lại trước khi xuất Excel.
             </div>
           </div>
 
@@ -974,10 +973,10 @@ export default function StructuredExtractionEditor({
         {/* C. KẾT QUẢ BẢNG (7/12) */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-md space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-150 pb-3">
               <div>
-                <h4 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center space-x-1.5">
-                  <span>Bảng dữ liệu trích xuất</span>
+                <h4 className="font-bold text-slate-800 text-sm flex items-center space-x-1.5 uppercase">
+                  <span>KẾT QUẢ TRÍCH XUẤT</span>
                 </h4>
                 <p className="text-slate-400 text-[10px] mt-0.5">
                   Rà soát thông tin được bóc tách bằng bộ lọc heuristic Việt Nam. Bạn có thể sửa trực tiếp.
@@ -986,7 +985,7 @@ export default function StructuredExtractionEditor({
 
               <button
                 onClick={handleReset}
-                className="bg-white hover:bg-slate-50 text-slate-600 px-2.5 py-1.5 rounded border border-slate-300 text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
+                className="bg-white hover:bg-slate-50 text-slate-650 px-2.5 py-1.5 rounded border border-slate-350 text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
                 title="Khôi phục các trường ban đầu"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
@@ -995,14 +994,14 @@ export default function StructuredExtractionEditor({
             </div>
 
             {/* Bảng Editable */}
-            <div className="border border-slate-150 rounded-lg overflow-hidden bg-white shadow-inner">
+            <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
               <table className="w-full text-left border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-150 text-[10px] uppercase text-slate-500 font-bold">
-                    <th className="py-2.5 px-3 w-4/12">Tên trường</th>
-                    <th className="py-2.5 px-2 w-6/12">Giá trị trích xuất</th>
-                    <th className="py-2.5 px-2 w-1.5/12 text-center">Thứ tự</th>
-                    <th className="py-2.5 px-2 w-0.5/12 text-center">Xóa</th>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase text-slate-500 font-bold">
+                    <th className="py-2 px-3 w-4/12">Tên trường</th>
+                    <th className="py-2 px-2 w-6/12">Giá trị trích xuất</th>
+                    <th className="py-2 px-1 w-1/12 text-center"></th>
+                    <th className="py-2 px-1 w-1/12 text-center"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
@@ -1014,29 +1013,29 @@ export default function StructuredExtractionEditor({
                     </tr>
                   ) : (
                     rows.map((row, index) => (
-                      <tr key={row.id} className="hover:bg-slate-50/60 transition-colors">
+                      <tr key={row.id} className="hover:bg-slate-50/40 transition-colors">
                         <td className="py-2 px-3 align-top">
                           <input
                             type="text"
                             value={row.name}
                             onChange={(e) => handleRowChange(row.id, "name", e.target.value)}
-                            className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded px-1.5 py-1 font-bold text-slate-700"
+                            className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded px-1.5 py-1 font-semibold text-slate-700"
                           />
                         </td>
                         <td className="py-2 px-2 align-top" style={{ verticalAlign: 'top' }}>
                           <AutoGrowingTextArea
                             value={row.value}
                             onChange={(e) => handleRowChange(row.id, "value", e.target.value)}
-                            className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded p-3 text-slate-600 font-medium leading-normal min-h-[100px] resize-y"
-                            style={{ lineHeight: '1.5', display: 'block', alignSelf: 'stretch' }}
+                            className="w-full bg-transparent border-0 focus:ring-1 focus:ring-emerald-500 focus:bg-white rounded px-1.5 py-1 text-slate-800 font-medium leading-relaxed resize-none overflow-hidden min-h-[32px]"
+                            style={{ display: 'block', alignSelf: 'stretch' }}
                           />
                         </td>
-                        <td className="py-2 px-2 text-center align-top">
-                          <div className="flex items-center justify-center space-x-1">
+                        <td className="py-2 px-1 text-center align-top">
+                          <div className="flex items-center justify-center space-x-1 mt-1">
                             <button
                               onClick={() => handleMoveUp(row.id)}
                               disabled={index === 0}
-                              className="p-1 text-slate-450 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-450 hover:bg-slate-100 rounded transition-all cursor-pointer disabled:cursor-not-allowed"
+                              className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-400 hover:bg-slate-100 rounded transition-all cursor-pointer disabled:cursor-not-allowed"
                               title="Di chuyển lên"
                             >
                               <ArrowUp className="h-3.5 w-3.5" />
@@ -1044,17 +1043,17 @@ export default function StructuredExtractionEditor({
                             <button
                               onClick={() => handleMoveDown(row.id)}
                               disabled={index === rows.length - 1}
-                              className="p-1 text-slate-450 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-450 hover:bg-slate-100 rounded transition-all cursor-pointer disabled:cursor-not-allowed"
+                              className="p-1 text-slate-400 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-400 hover:bg-slate-100 rounded transition-all cursor-pointer disabled:cursor-not-allowed"
                               title="Di chuyển xuống"
                             >
                               <ArrowDown className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </td>
-                        <td className="py-2 px-2 text-center align-top">
+                        <td className="py-2 px-1 text-center align-top">
                           <button
                             onClick={() => handleRemoveRow(row.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all cursor-pointer"
+                            className="p-1 mt-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all cursor-pointer"
                             title="Xóa dòng"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1068,46 +1067,58 @@ export default function StructuredExtractionEditor({
             </div>
 
             {/* Thêm trường thủ công */}
-            <div className="p-4 bg-slate-50 rounded-lg border border-slate-150 space-y-3">
-              <p className="text-[10px] font-bold text-slate-505 text-slate-500 uppercase tracking-wide">
-                Thêm trường dữ liệu bổ sung
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-650 text-slate-600 mb-1 uppercase">
-                    Tên trường
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Tình trạng sức khỏe..."
-                    value={newFieldName}
-                    onChange={(e) => setNewFieldName(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
-                  />
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setIsAddFormOpen(!isAddFormOpen)}
+                className="w-full flex items-center justify-between text-[11px] font-bold text-slate-650 text-slate-650 uppercase tracking-wide cursor-pointer hover:text-slate-800 transition-colors"
+              >
+                <div className="flex items-center space-x-1.5">
+                  <Plus className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Thêm trường dữ liệu bổ sung</span>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-650 text-slate-600 mb-1 uppercase">
-                    Giá trị
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Bình thường..."
-                    value={newFieldValue}
-                    onChange={(e) => setNewFieldValue(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
-                  />
+                {isAddFormOpen ? <ArrowUp className="h-3.5 w-3.5 text-slate-500" /> : <ArrowDown className="h-3.5 w-3.5 text-slate-500" />}
+              </button>
+              
+              {isAddFormOpen && (
+                <div className="mt-3 pt-3 border-t border-slate-200 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
+                        Tên trường
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ví dụ: Tình trạng sức khỏe..."
+                        value={newFieldName}
+                        onChange={(e) => setNewFieldName(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-750 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1 uppercase">
+                        Giá trị
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ví dụ: Bình thường..."
+                        value={newFieldValue}
+                        onChange={(e) => setNewFieldValue(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded p-1.5 text-xs text-slate-750 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleAddRow}
+                      disabled={!newFieldName.trim()}
+                      className="bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded text-[11px] font-bold flex items-center space-x-1 shadow-sm transition-all cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Xác nhận</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={handleAddRow}
-                  disabled={!newFieldName.trim()}
-                  className="bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3.5 py-1.5 rounded text-[11.5px] font-bold flex items-center space-x-1 border border-transparent shadow-sm transition-all cursor-pointer"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Xác nhận thêm trường</span>
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </div>
