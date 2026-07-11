@@ -50,8 +50,10 @@ export async function runTests() {
     let s = String(val).trim();
     if (!s) return "";
     s = s.replace(/\s+/g, ' ');
-    s = s.replace(/^["“”']+|["“”']+$/g, '');
+    // Loại bỏ dấu ":" hoặc ";" thừa ở đầu trước
     s = s.replace(/^[:;]\s*/, '');
+    // Rồi mới loại bỏ dấu ngoặc kép thừa ở đầu/cuối
+    s = s.replace(/^["“”']+|["“”']+$/g, '');
     return s.trim();
   };
 

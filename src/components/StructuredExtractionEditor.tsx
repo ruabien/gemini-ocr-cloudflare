@@ -584,10 +584,10 @@ async function runSchemaBasedExtraction(
     if (!s) return "";
     // Gộp nhiều khoảng trắng thành một, loại bỏ xuống dòng thừa
     s = s.replace(/\s+/g, ' ');
-    // Loại bỏ dấu ngoặc kép thừa ở đầu/cuối
-    s = s.replace(/^["“”']+|["“”']+$/g, '');
     // Loại bỏ dấu ":" hoặc ";" thừa ở đầu
     s = s.replace(/^[:;]\s*/, '');
+    // Loại bỏ dấu ngoặc kép thừa ở đầu/cuối
+    s = s.replace(/^["“”']+|["“”']+$/g, '');
     return s.trim();
   };
 
