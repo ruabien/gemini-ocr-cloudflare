@@ -146,6 +146,10 @@ export const PaymentSuccessEmail = ({
             <Button style={button} href="https://lexocr.com">
               Mở LexOCR
             </Button>
+            <Text style={{ fontSize: "12px", color: "#6B7280", textAlign: "center", marginTop: "16px", marginBottom: "0" }}>
+              Nếu có vấn đề về giao dịch hoặc cần xuất hóa đơn, vui lòng liên hệ: <br />
+              <a href="mailto:billing@lexocr.com" style={{ color: "#6B7280", textDecoration: "underline" }}>billing@lexocr.com</a>
+            </Text>
           </Section>
 
           <Hr style={hr} />

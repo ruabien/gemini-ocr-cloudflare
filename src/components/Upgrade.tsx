@@ -759,6 +759,16 @@ export default function UpgradeComponent({
         )}
       </div>
 
+      {/* Hỗ trợ thanh toán */}
+      <div className="mt-8 text-center text-xs text-slate-500">
+        <p>
+          Cần hỗ trợ thanh toán hoặc xuất hóa đơn?{" "}
+          <a href="mailto:billing@lexocr.com" className="text-slate-600 hover:text-slate-800 underline transition-colors">
+            billing@lexocr.com
+          </a>
+        </p>
+      </div>
+
       {/* MODAL HIỂN THỊ QR CHUYỂN KHOẢN PAYOS */}
       {showQRModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center z-150 p-4 animate-fade-in">

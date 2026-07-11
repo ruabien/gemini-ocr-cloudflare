@@ -486,7 +486,6 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-1 mb-2 text-slate-500">
             <span>Hỗ trợ kỹ thuật: <a href="mailto:support@lexocr.com" className="hover:text-slate-300 transition-colors">support@lexocr.com</a></span>
-            <span>Thanh toán & Gói PRO: <a href="mailto:billing@lexocr.com" className="hover:text-slate-300 transition-colors">billing@lexocr.com</a></span>
           </div>
           <p>© 2026 LexOCR</p>
         </div>
