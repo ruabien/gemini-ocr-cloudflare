@@ -15,9 +15,7 @@ import { GeminiKeyManager } from './geminiKeyManager.js';
 export const extractStructuredData = async (ocrText, template, config, options = {}) => {
   // Đồng bộ nguồn key: Ưu tiên config state, nếu rỗng thì fallback đọc trực tiếp localStorage theo yêu cầu 7
   let rawApiKey = config?.apiKey || '';
-  if (!rawApiKey.trim()) {
-    rawApiKey = localStorage.getItem('ocr_api_key') || '';
-  }
+  // No fallback to localStorage. If missing, extraction will throw an error.
 
   // Chuẩn hóa parser key bằng Regex để xử lý dấu phẩy, dấu chấm phẩy, xuống dòng và khoảng trắng
   const keysArray = GeminiKeyManager.parseGeminiKeys(rawApiKey);

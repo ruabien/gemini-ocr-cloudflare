@@ -1126,6 +1126,9 @@ while (true) {
     setProcessingFile(null);
     setProgress(0);
     isProcessingRef.current = false;
+  } finally {
+    setIsBatchProcessing(false);
+    isProcessingRef.current = false;
   }
 };
 

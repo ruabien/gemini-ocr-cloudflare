@@ -116,12 +116,13 @@ function AppContent() {
         {activeTab === "editor" && (
           <Suspense fallback={<PageLoader />}>
             {document?.outputMode === "structured" ? (
-              <StructuredExtractionEditor
-                document={document}
-                onBack={handleStart}
-                membershipRole={membershipRole}
-                setActiveTab={handleActiveTab}
-              />
+                <StructuredExtractionEditor
+                  document={document}
+                  onBack={handleStart}
+                  membershipRole={membershipRole}
+                  setActiveTab={handleActiveTab}
+                  userGeminiKey={userGeminiKey}
+                />
             ) : (
               <OcrEditor
                 document={document}

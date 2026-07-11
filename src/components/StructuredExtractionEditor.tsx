@@ -75,6 +75,7 @@ interface StructuredExtractionEditorProps {
   onBack: () => void;
   membershipRole: "Free" | "Pro";
   setActiveTab: (tab: string) => void;
+  userGeminiKey?: string;
 }
 
 interface AutoGrowingTextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -560,7 +561,8 @@ function extractValueForField(text: string, fieldName: string, lines: string[]):
 async function runSchemaBasedExtraction(
   text: string,
   schema: string[],
-  caseType: CaseType
+  caseType: CaseType,
+  userGeminiKey?: string
 ): Promise<ExtractionRow[]> {
   const cleanText = text || "";
   const lines = cleanText.split("\n");
@@ -638,7 +640,7 @@ SCHEMA BẮT BUỘC TRẢ VỀ:
 
       // Gọi API với cấu hình không truyền template mặc định
       // Cast result to any to avoid TypeScript strict property checks
-      const result:any = await extractStructuredData(cleanText, {} as any, {}, { customSystemText, customPromptText });
+const result:any = await extractStructuredData(cleanText, {} as any, { apiKey: userGeminiKey }, { customSystemText, customPromptText });
 
       if (result && typeof result === 'object') {
  // @ts-ignore
@@ -774,7 +776,7 @@ if (import.meta.env.DEV) {
           example: ""
         }))
       };
-      const result = await extractStructuredData(cleanText, template, {}, {});
+       const result = await extractStructuredData(cleanText, template, { apiKey: userGeminiKey }, {});
       if (result) {
         Object.entries(result).forEach(([key, value]) => {
           aiExtractedMap.set(key, normalizeData(value));
@@ -923,7 +925,8 @@ export default function StructuredExtractionEditor({
   document,
   onBack,
   membershipRole,
-  setActiveTab
+  setActiveTab,
+  userGeminiKey
 }: StructuredExtractionEditorProps) {
   if (!document) {
     return (
@@ -988,7 +991,7 @@ export default function StructuredExtractionEditor({
   // Chạy bóc tách dữ liệu sử dụng mặc định
 const handleExtract = async () => {
   const schema = defaultSchemas[caseType];
-  const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType);
+  const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType, userGeminiKey);
   setRows(extracted);
 };
 
@@ -1121,7 +1124,7 @@ const handleExtract = async () => {
 
       const templateFields: { label: string; key: string }[] = template.fields;
       const schema = templateFields.map((f: { label: string }) => f.label);
-      const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType);
+      const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType, userGeminiKey);
       
       setRows(extracted);
       alert("Đã áp dụng mẫu thành công!");
