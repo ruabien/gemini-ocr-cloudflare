@@ -21,6 +21,7 @@ import {
   LayoutTemplate
 } from "lucide-react";
 import { OcrDocument } from "../types";
+import { extractStructuredData } from "../utils/extractionService";
 import { useAuth } from "../contexts/AuthContext";
 import LoginPromptModal from "./LoginPromptModal";
 
@@ -556,14 +557,16 @@ function extractValueForField(text: string, fieldName: string, lines: string[]):
   return { value: "", confidence: "Thủ công", note: "Trường tùy chỉnh" };
 }
 
-function runSchemaBasedExtraction(
+async function runSchemaBasedExtraction(
   text: string,
-  schema: string[]
-): ExtractionRow[] {
+  schema: string[],
+  caseType: CaseType
+): Promise<ExtractionRow[]> {
   const cleanText = text || "";
   const lines = cleanText.split("\n");
 
-  return schema.map((fieldName, index) => {
+  // 1. Chạy heuristic extraction (cũ) làm baseline
+  const heuristicRows = schema.map((fieldName, index) => {
     const { value, confidence, note } = extractValueForField(cleanText, fieldName, lines);
     return {
       id: `field-${index}-${Date.now()}`,
@@ -573,6 +576,158 @@ function runSchemaBasedExtraction(
       note
     };
   });
+
+  // Helper chuẩn hóa hậu xử lý dữ liệu (yêu cầu 8)
+  const normalizeData = (val: any) => {
+    if (val === null || val === undefined) return "";
+    let s = String(val).trim();
+    if (!s) return "";
+    // Gộp nhiều khoảng trắng thành một, loại bỏ xuống dòng thừa
+    s = s.replace(/\s+/g, ' ');
+    // Loại bỏ dấu ngoặc kép thừa ở đầu/cuối
+    s = s.replace(/^["“”']+|["“”']+$/g, '');
+    // Loại bỏ dấu ":" hoặc ";" thừa ở đầu
+    s = s.replace(/^[:;]\s*/, '');
+    return s.trim();
+  };
+
+  try {
+    let aiExtractedMap = new Map<string, string>();
+    let multipleAccusedRows: ExtractionRow[] = []; // Để xử lý nhiều bị can
+
+    if (caseType === "hinh_su") {
+      // Prompt chuyên biệt cho Quyết định khởi tố bị can (yêu cầu 6)
+      const customPromptText = `Hãy trích xuất thông tin từ văn bản OCR Quyết định khởi tố bị can (hoặc các văn bản hình sự).
+VĂN BẢN OCR:
+"""
+${cleanText}
+"""`;
+      const customSystemText = `Bạn là trợ lý AI chuyên nghiệp phân tích văn bản tư pháp. Trích xuất thông tin từ OCR text thành JSON hợp lệ.
+
+QUY TẮC BẮT BUỘC:
+1. CHỈ trả về JSON thuần túy, KHÔNG bọc trong markdown (\`\`\`json), không giải thích.
+2. Không suy đoán. Nếu không có thông tin, trả về null hoặc chuỗi rỗng "".
+3. Hỗ trợ dữ liệu nhiều dòng: Nhãn có thể ở cuối dòng và giá trị ở dòng kế tiếp, hoặc địa chỉ kéo dài nhiều dòng.
+4. Đối với Bị can: Ưu tiên phần mô tả nhân thân bị can sau cụm "Khởi tố bị can đối với", "Quyết định khởi tố bị can đối với", "Bị can", "Họ tên". Tuyệt đối không lấy nhầm tên Điều tra viên, Thủ trưởng cơ quan, Kiểm sát viên, hoặc người ký quyết định.
+5. Nếu có nhiều bị can, đưa tất cả vào mảng "accused".
+
+SCHEMA BẮT BUỘC TRẢ VỀ:
+{
+  "documentNumber": "Số quyết định hoặc số văn bản",
+  "issueDate": "Ngày ban hành",
+  "issuingAuthority": "Cơ quan ban hành",
+  "accused": [
+    {
+      "fullName": "Họ và tên bị can",
+      "dateOfBirth": "Năm sinh hoặc ngày tháng năm sinh",
+      "gender": "Giới tính",
+      "residence": "Nơi cư trú hoặc địa chỉ (ghép đầy đủ các dòng)",
+      "occupation": "Nghề nghiệp",
+      "nationality": "Quốc tịch (nếu có)",
+      "ethnicity": "Dân tộc (nếu có)",
+      "religion": "Tôn giáo (nếu có)",
+      "identityNumber": "Số CCCD/CMND/Hộ chiếu (nếu có)",
+      "identityIssueDate": "Ngày cấp (nếu có)",
+      "identityIssuePlace": "Nơi cấp (nếu có)"
+    }
+  ],
+  "charge": "Tội danh",
+  "legalProvision": "Điều luật áp dụng (ví dụ: quy định tại khoản... Điều...)"
+}`;
+
+      // Gọi API với cấu hình không truyền template mặc định
+      // Cast result to any to avoid TypeScript strict property checks
+      const result:any = await extractStructuredData(cleanText, {} as any, {}, { customSystemText, customPromptText });
+
+      if (result && typeof result === 'object') {
+        // Map alias (yêu cầu 5)
+        aiExtractedMap.set("Số quyết định / số văn bản", normalizeData(result.documentNumber));
+        aiExtractedMap.set("Số quyết định", normalizeData(result.documentNumber));
+        aiExtractedMap.set("Số QĐ", normalizeData(result.documentNumber));
+        aiExtractedMap.set("Ngày ban hành", normalizeData(result.issueDate));
+        aiExtractedMap.set("Ngày ra quyết định", normalizeData(result.issueDate));
+        aiExtractedMap.set("Cơ quan ban hành", normalizeData(result.issuingAuthority));
+        aiExtractedMap.set("Tội danh", normalizeData(result.charge));
+        aiExtractedMap.set("Về tội", normalizeData(result.charge));
+        aiExtractedMap.set("Có hành vi phạm tội", normalizeData(result.charge));
+        aiExtractedMap.set("Điều luật áp dụng", normalizeData(result.legalProvision));
+        
+        const accusedList = Array.isArray(result.accused) ? result.accused : (result.accused ? [result.accused] : []);
+        
+        if (accusedList.length > 0) {
+          // Map người đầu tiên vào các trường mặc định
+          const first = accusedList[0];
+          aiExtractedMap.set("Bị can/Bị cáo 1", normalizeData(first.fullName));
+          aiExtractedMap.set("Bị can", normalizeData(first.fullName));
+          aiExtractedMap.set("Họ tên bị can", normalizeData(first.fullName));
+          aiExtractedMap.set("Năm sinh", normalizeData(first.dateOfBirth));
+          aiExtractedMap.set("Ngày sinh", normalizeData(first.dateOfBirth));
+          aiExtractedMap.set("Nơi cư trú", normalizeData(first.residence));
+          aiExtractedMap.set("Địa chỉ", normalizeData(first.residence));
+          aiExtractedMap.set("Nghề nghiệp", normalizeData(first.occupation));
+          aiExtractedMap.set("Số CCCD/CMND", normalizeData(first.identityNumber));
+          aiExtractedMap.set("CCCD", normalizeData(first.identityNumber));
+          
+          // Xử lý nhiều bị can (yêu cầu 3)
+          if (accusedList.length > 1) {
+            for (let i = 1; i < accusedList.length; i++) {
+              const p = accusedList[i];
+              const pIdx = i + 1;
+              if (p.fullName) {
+                multipleAccusedRows.push({ id: `field-multi-${Date.now()}-name-${pIdx}`, name: `Bị can/Bị cáo ${pIdx}`, value: normalizeData(p.fullName), confidence: "AI", note: "" });
+              }
+              if (p.dateOfBirth) {
+                multipleAccusedRows.push({ id: `field-multi-${Date.now()}-dob-${pIdx}`, name: `Năm sinh (${pIdx})`, value: normalizeData(p.dateOfBirth), confidence: "AI", note: "" });
+              }
+              if (p.residence) {
+                multipleAccusedRows.push({ id: `field-multi-${Date.now()}-res-${pIdx}`, name: `Nơi cư trú (${pIdx})`, value: normalizeData(p.residence), confidence: "AI", note: "" });
+              }
+            }
+          }
+        }
+      }
+    } else {
+      // Generic template fallback
+      const template = {
+        fields: schema.map((label, idx) => ({
+          id: label,
+          description: "",
+          dataType: "text",
+          required: false,
+          order: idx,
+          example: ""
+        }))
+      };
+      const result = await extractStructuredData(cleanText, template, {}, {});
+      if (result) {
+        Object.entries(result).forEach(([key, value]) => {
+          aiExtractedMap.set(key, normalizeData(value));
+        });
+      }
+    }
+
+    // 3. Merge AI result vào heuristic baseline (ưu tiên AI, không cho phép rỗng ghi đè - yêu cầu 9)
+    const finalRows = heuristicRows.map((row) => {
+      const aiVal = aiExtractedMap.get(row.name);
+      if (aiVal && aiVal !== "") {
+        return {
+          ...row,
+          value: aiVal,
+          confidence: "AI",
+          note: "Trích xuất bằng AI"
+        };
+      }
+      // Giữ nguyên baseline nếu AI trả rỗng
+      return row;
+    });
+
+    return [...finalRows, ...multipleAccusedRows];
+
+  } catch (e) {
+    console.error("AI extraction failed:", e);
+    // Nếu AI lỗi, fallback an toàn về heuristic
+    return heuristicRows;
+  }
 }
 
 export default function StructuredExtractionEditor({
@@ -642,11 +797,11 @@ export default function StructuredExtractionEditor({
   const [loginFeatureName, setLoginFeatureName] = useState("");
 
   // Chạy bóc tách dữ liệu sử dụng mặc định
-  const handleExtract = () => {
-    const schema = defaultSchemas[caseType];
-    const extracted = runSchemaBasedExtraction(rawContentText, schema);
-    setRows(extracted);
-  };
+const handleExtract = async () => {
+  const schema = defaultSchemas[caseType];
+  const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType);
+  setRows(extracted);
+};
 
   useEffect(() => {
     handleExtract();
@@ -766,7 +921,7 @@ export default function StructuredExtractionEditor({
   };
 
   // Áp dụng mẫu
-  const handleApplyTemplate = () => {
+  const handleApplyTemplate = async () => {
     try {
       const stored = localStorage.getItem("lexocr_structured_templates");
       if (!stored) return;
@@ -777,7 +932,7 @@ export default function StructuredExtractionEditor({
 
       const templateFields: { label: string; key: string }[] = template.fields;
       const schema = templateFields.map((f: { label: string }) => f.label);
-      const extracted = runSchemaBasedExtraction(rawContentText, schema);
+      const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType);
       
       setRows(extracted);
       alert("Đã áp dụng mẫu thành công!");

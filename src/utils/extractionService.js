@@ -1,4 +1,4 @@
-import { GeminiKeyManager } from './geminiKeyManager';
+import { GeminiKeyManager } from './geminiKeyManager.js';
 
 /**
  * Service trích xuất dữ liệu có cấu trúc từ văn bản OCR sử dụng Google Gemini API.
@@ -40,18 +40,22 @@ export const extractStructuredData = async (ocrText, template, config, options =
   }
 
   // Xây dựng mô tả chi tiết các trường để gửi cho AI
-  const fieldsPrompt = template.fields
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map(f => {
-      const typeStr = f.dataType || 'text';
-      const reqStr = f.required ? 'Bắt buộc' : 'Không bắt buộc';
-      const descStr = f.description ? `. Mô tả: ${f.description}` : '';
-      const exStr = f.example ? `. Ví dụ giá trị mong muốn: ${f.example}` : '';
-      return `- \`${f.id}\` (Kiểu dữ liệu: ${typeStr}, Yêu cầu: ${reqStr})${descStr}${exStr}`;
-    })
-    .join('\n');
+  let systemText = options.customSystemText;
+  if (!systemText) {
+    const fieldsPrompt = template?.fields
+      ? template.fields
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map(f => {
+            const typeStr = f.dataType || 'text';
+            const reqStr = f.required ? 'Bắt buộc' : 'Không bắt buộc';
+            const descStr = f.description ? `. Mô tả: ${f.description}` : '';
+            const exStr = f.example ? `. Ví dụ giá trị mong muốn: ${f.example}` : '';
+            return `- \`${f.id}\` (Kiểu dữ liệu: ${typeStr}, Yêu cầu: ${reqStr})${descStr}${exStr}`;
+          })
+          .join('\n')
+      : "";
 
-  const systemText = `Bạn là một trợ lý AI chuyên nghiệp phục vụ cho các cơ quan tư pháp (tòa án, viện kiểm sát, cơ quan điều tra, thi hành án). Nhiệm vụ duy nhất của bạn là trích xuất thông tin nghiệp vụ có cấu trúc từ văn bản pháp lý/tố tụng được cung cấp dưới dạng văn bản OCR.
+    systemText = `Bạn là một trợ lý AI chuyên nghiệp phục vụ cho các cơ quan tư pháp (tòa án, viện kiểm sát, cơ quan điều tra, thi hành án). Nhiệm vụ duy nhất của bạn là trích xuất thông tin nghiệp vụ có cấu trúc từ văn bản pháp lý/tố tụng được cung cấp dưới dạng văn bản OCR.
 
 Cấu trúc JSON cần trích xuất gồm các trường sau:
 ${fieldsPrompt}
@@ -62,10 +66,11 @@ QUY TẮC QUAN TRỌNG BẮT BUỘC TUÂN THỦ:
 3. Giữ nguyên họ tên (viết hoa, dấu), số hiệu văn bản tố tụng, số bản án/quyết định, địa chỉ y như trong văn bản.
 4. Với trường tiền tệ (currency), giữ nguyên cả số lượng và đơn vị tiền (ví dụ: "150.000.000 đồng" hoặc "50 triệu đồng").
 5. Với trường ngày tháng (date), giữ định dạng gốc có trong văn bản (ví dụ: "28/8/2024" hoặc "ngày 28 tháng 8 năm 2024").
-6. Trả về kết quả CHỈ là một JSON Object hợp lệ duy nhất chứa các key tương ứng với id các trường: ${template.fields.map(f => `"${f.id}"`).join(', ')}.
+6. Trả về kết quả CHỈ là một JSON Object hợp lệ duy nhất chứa các key tương ứng với id các trường: ${template?.fields?.map(f => `"${f.id}"`).join(', ') || ""}.
 7. Không thêm bất kỳ lời dẫn, giải thích hay markdown code block nào.`;
+  }
 
-  const promptText = `Hãy trích xuất thông tin từ văn bản OCR sau và trả về định dạng JSON object duy nhất.
+  const promptText = options.customPromptText || `Hãy trích xuất thông tin từ văn bản OCR sau và trả về định dạng JSON object duy nhất.
 
 VĂN BẢN OCR:
 """
@@ -199,27 +204,36 @@ status: failed - attempt ${attempt} error: ${friendlyError.message} (Key Index: 
  * @returns {object}
  */
 const parseStructuredResponse = (rawText) => {
+  if (!rawText) return {};
+  
   let cleaned = rawText.trim();
   
-  if (cleaned.startsWith("```")) {
-    const jsonMatch = cleaned.match(/```(?:json)?([\s\S]*?)```/);
-    if (jsonMatch && jsonMatch[1]) {
-      cleaned = jsonMatch[1].trim();
-    }
+  // Lọc bỏ markdown block an toàn (yêu cầu 7)
+  const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (jsonMatch && jsonMatch[1]) {
+    cleaned = jsonMatch[1].trim();
   }
 
   try {
     return JSON.parse(cleaned);
   } catch (parseError) {
-    console.warn("Lần parse JSON đầu tiên thất bại, thử trích xuất bằng RegExp...", parseError);
-    const braceMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (braceMatch) {
+    console.warn("Lần parse JSON đầu tiên thất bại, thử làm sạch thêm...", parseError);
+    
+    // Thử tìm JSON Object hợp lệ ngoài cùng mà không dùng regex quá rộng
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const potentialJson = cleaned.substring(firstBrace, lastBrace + 1);
       try {
-        return JSON.parse(braceMatch[0]);
+        return JSON.parse(potentialJson);
       } catch (e) {
-        throw new Error("Không thể phân tích cú pháp dữ liệu JSON từ phản hồi của AI. Vui lòng thử lại.", { cause: e });
+        // Fallback return object rỗng thay vì throw để không chết app (Yêu cầu 7)
+        console.error("Parse JSON thất bại hoàn toàn:", e);
+        return {};
       }
     }
-    throw new Error("Phản hồi của AI không chứa dữ liệu dạng JSON hợp lệ.", { cause: parseError });
+    
+    return {};
   }
 };
