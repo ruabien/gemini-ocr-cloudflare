@@ -491,7 +491,7 @@ useEffect(() => {
             <button
               onClick={handleToggleAnonymize}
               disabled={isRedacting}
-              className={`flex-1 sm:flex-none px-3 py-2 sm:py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all min-h-[40px] sm:min-h-0 ${
+              className={`flex-1 sm:flex-none sm:w-[115px] px-3 py-2 sm:py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all min-h-[40px] sm:min-h-0 ${
                 isAnonymized
                   ? "bg-yellow-500 text-white border-yellow-600"
                   : "bg-white hover:bg-slate-50 text-slate-700 border-slate-300"
@@ -509,7 +509,7 @@ useEffect(() => {
 
             <button
               onClick={handleCopyAll}
-              className="flex-1 sm:flex-none px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0 transition-all bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent"
+              className="flex-1 sm:flex-none sm:w-[115px] px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0 transition-all bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent"
             >
               {isCopied ? <Check className="h-4 w-4 flex-shrink-0" /> : <Copy className="h-4 w-4 flex-shrink-0" />}
               <span className="truncate">{isCopied ? "Đã copy" : "Copy"}</span>
@@ -518,37 +518,34 @@ useEffect(() => {
 
           <div className="hidden sm:block w-px h-5 bg-slate-300 mx-1"></div>
 
-          <div className="flex w-full sm:w-auto items-center gap-2 mt-1 sm:mt-0">
-            <span className="text-xs text-slate-500 font-medium whitespace-nowrap ml-1 sm:ml-0">Xuất file</span>
-            <div className="flex w-full sm:w-auto gap-2 flex-1">
-              <button
-                onClick={handleExportTxt}
-                className="flex-1 sm:flex-none bg-slate-900 hover:bg-slate-800 border border-transparent text-white px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0"
-                title="Xuất văn bản thô (.TXT)"
-              >
-                <Download className="h-4 w-4 text-slate-350 flex-shrink-0" />
-                <span>Text</span>
-              </button>
+          <div className="flex w-full sm:w-auto gap-2">
+            <button
+              onClick={handleExportTxt}
+              className="flex-1 sm:flex-none sm:w-[115px] bg-slate-900 hover:bg-slate-800 border border-transparent text-white px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0"
+              title="Xuất văn bản thô (.TXT)"
+            >
+              <Download className="h-4 w-4 text-slate-350 flex-shrink-0" />
+              <span className="truncate">Xuất Text</span>
+            </button>
 
-              <button
-                onClick={handleExportDocx}
-                disabled={isExportingDocx}
-                className={`flex-1 sm:flex-none font-bold px-3 py-2 sm:py-1.5 rounded-lg text-xs flex items-center justify-center space-x-1.5 shadow-md transition-all min-h-[40px] sm:min-h-0 ${
-                  membershipRole === "Pro"
-                    ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-rose-500/10"
-                    : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45"
-                }`}
-              >
-                {membershipRole === "Pro" ? (
-                  <FileText className="h-4 w-4 flex-shrink-0" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse flex-shrink-0" />
-                )}
-                <span className="truncate">
-                  {isExportingDocx ? "Đang xuất..." : "Word"}
-                </span>
-              </button>
-            </div>
+            <button
+              onClick={handleExportDocx}
+              disabled={isExportingDocx}
+              className={`flex-1 sm:flex-none sm:w-[115px] font-bold px-3 py-2 sm:py-1.5 rounded-lg text-xs flex items-center justify-center space-x-1.5 shadow-md transition-all min-h-[40px] sm:min-h-0 ${
+                membershipRole === "Pro"
+                  ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-rose-500/10"
+                  : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45"
+              }`}
+            >
+              {membershipRole === "Pro" ? (
+                <FileText className="h-4 w-4 flex-shrink-0" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse flex-shrink-0" />
+              )}
+              <span className="truncate">
+                {isExportingDocx ? "Đang xuất..." : "Xuất Word"}
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -619,18 +616,15 @@ useEffect(() => {
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-md paper-glow">
             {/* Toolbar */}
-            <div className="bg-slate-50 p-3 border-b border-slate-200 flex flex-wrap items-start sm:items-center justify-between gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <span className="text-[13px] sm:text-sm font-bold text-slate-800 uppercase tracking-wide">
+            <div className="bg-slate-50 p-3 sm:px-4 border-b border-slate-200 flex items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm sm:text-base font-extrabold text-slate-900 uppercase tracking-wider">
                   KẾT QUẢ OCR
                 </span>
-                <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded font-mono border border-slate-300 w-fit">
+                <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 sm:py-1 rounded font-mono border border-slate-300 w-fit">
                   Times New Roman • 14pt (Nghị định 30)
                 </span>
               </div>
-              <span className="text-[9px] text-slate-400 font-bold uppercase font-mono tracking-wider mt-1 sm:mt-0">
-                Sovereign Live Editor
-              </span>
             </div>
 
             {/* Editable area */}
