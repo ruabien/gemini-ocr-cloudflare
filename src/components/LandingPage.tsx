@@ -108,7 +108,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
             </button>
             
             <button
-              onClick={() => setActiveTab("settings")}
+onClick={() => { const el = document.getElementById('security-architecture'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
               className="w-full sm:w-auto px-6 py-4 bg-slate-800 hover:bg-slate-700/80 text-slate-200 hover:text-white font-bold text-sm rounded-lg border border-slate-700 flex items-center justify-center space-x-2 transition-all cursor-pointer"
             >
               <Shield className="h-4 w-4 text-yellow-400" />
@@ -341,7 +341,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* PHẦN 8 - BẢO MẬT & QUY TRÌNH STATELESS */}
-      <section className="bg-slate-50 py-16 px-6 sm:px-12 w-full border-t border-slate-200">
+<section id="security-architecture" className="bg-slate-50 py-16 px-6 sm:px-12 w-full border-t border-slate-200">
         <div className="max-w-7xl mx-auto">
           <h3 className="text-xl font-bold text-slate-900 mb-8 flex items-center">
             <Shield className="h-5 w-5 text-red-600 mr-2" />
