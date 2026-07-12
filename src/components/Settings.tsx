@@ -5,9 +5,7 @@
 
 import React, { useState } from "react";
 import { 
-  Settings, Key, ShieldCheck, Eye, EyeOff, Check, CreditCard, 
-  Sparkles, Award, Zap, AlertCircle, RefreshCw, X, Shield, Cloud, Trash2,
-  User, Calendar, LogOut
+  Settings, Key, ShieldCheck, Check, Award, Zap, AlertCircle, Trash2, User, Calendar, LogOut, Sparkles
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
@@ -42,7 +40,6 @@ export default function SettingsComponent({
     return userGeminiKey ? [userGeminiKey] : [];
   });
   const [apiKeyInput, setApiKeyInput] = useState("");
-  const [showKey, setShowKey] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [geminiModel, setGeminiModel] = useState<string>(() => {
     const stored = getUserStorageItem(user?.uid, 'ocr_model');
@@ -87,10 +84,10 @@ export default function SettingsComponent({
       <div className="border-b border-slate-200 pb-5">
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 flex items-center space-x-2">
           <Settings className="h-6 w-6 text-slate-700" />
-          <span>Cài đặt hệ thống & Gói thành viên</span>
+          <span>Cài đặt hệ thống</span>
         </h2>
         <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-          Quản lý tài khoản, cấu hình Khóa mật Gemini API cá nhân và tùy chọn cấp độ tài khoản nghiệp vụ.
+          Gemini API Key được lưu trên trình duyệt của bạn và dùng trực tiếp để OCR, không gửi qua máy chủ LexOCR.
         </p>
       </div>
 
@@ -104,10 +101,7 @@ export default function SettingsComponent({
               <span>Cấu hình Gemini API Key cá nhân</span>
             </h3>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Theo quy định quốc gia về an toàn thông tin nghiệp vụ tư pháp, Sovereign Lawtech hỗ trợ bóc tách tài liệu thông qua API cá nhân của người dùng nhằm đảm bảo tính độc lập tối đa và bảo vệ tuyệt đối bí mật công vụ.
-            </p>
-
+            {/* A. Thêm Gemini API Key */}
             <form onSubmit={handleSaveApiKey} className="space-y-4">
               <div>
                 <label className="block text-[11px] font-bold text-slate-650 text-slate-600 uppercase mb-1.5 tracking-wide">
@@ -118,7 +112,7 @@ export default function SettingsComponent({
                     rows={3}
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="Nhập các Gemini API Key, cách nhau bằng dấu phẩy hoặc dòng mới"
+                    placeholder="Dán một hoặc nhiều Gemini API Key vào đây.&#10;Mỗi key trên một dòng hoặc phân tách bằng dấu phẩy."
                     className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-3.5 pr-3.5 text-sm text-slate-800 font-mono focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all resize-y"
                   />
                 </div>
@@ -131,22 +125,23 @@ export default function SettingsComponent({
               </div>
 
               <div className="flex items-center justify-between pt-2">
+                {/* B. Trạng thái và danh sách key */}
                 {keysList.length > 0 ? (
-                  <span className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-2.5 py-1 rounded-md font-bold font-mono tracking-wider flex items-center space-x-1">
+                  <span className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-3 py-1.5 rounded-md font-semibold flex items-center space-x-1">
                     <Check className="h-3.5 w-3.5" />
-                    <span>ĐÃ NẠP {keysList.length} KEYS</span>
+                    <span>Đã cấu hình {keysList.length} Gemini API Key</span>
                   </span>
                 ) : (
-                  <span className="text-[11px] bg-amber-50 border border-amber-200 text-amber-600 px-2.5 py-1 rounded-md font-bold font-mono tracking-wider flex items-center space-x-1">
+                  <span className="text-[11px] bg-amber-50 border border-amber-200 text-amber-600 px-3 py-1.5 rounded-md font-semibold flex items-center space-x-1">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    <span>CHƯA CÓ KEY</span>
+                    <span>Bạn chưa cấu hình Gemini API Key</span>
                   </span>
                 )}
 
                 <button
                   type="submit"
                   disabled={!apiKeyInput.trim()}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform flex items-center space-x-1.5 cursor-pointer shadow-sm border ${
+                  className={`px-5 py-2 rounded-lg text-xs font-bold transition-all transform flex items-center space-x-1.5 cursor-pointer shadow-sm border ${
                     saveSuccess 
                       ? "bg-emerald-600 text-white border-emerald-500 scale-95" 
                       : "bg-slate-900 border-slate-850 hover:bg-slate-800 text-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -192,7 +187,7 @@ export default function SettingsComponent({
                       <button
                         type="button"
                         onClick={() => handleDeleteKey(index)}
-                        className="p-1 text-slate-450 hover:text-red-650 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-all cursor-pointer"
+                        className="p-1 text-slate-450 hover:text-rose-650 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
                         title="Xóa khóa này"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -203,7 +198,7 @@ export default function SettingsComponent({
               )}
             </div>
 
-            {/* CẤU HÌNH MODEL GEMINI */}
+            {/* C. Cấu hình model */}
             <div className="space-y-3 pt-3 border-t border-slate-100">
               <label className="block text-[11px] font-bold text-slate-650 text-slate-600 uppercase tracking-wide">
                 Gemini Model
@@ -218,16 +213,30 @@ export default function SettingsComponent({
               </select>
             </div>
 
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            {/* Khối hướng dẫn / lưu ý */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
               <h4 className="text-xs font-bold text-slate-750 text-slate-800 flex items-center space-x-1.5">
                 <AlertCircle className="h-4 w-4 text-red-500" />
                 <span>Lưu ý khi sử dụng:</span>
               </h4>
-              <ul className="list-disc pl-4 text-[10.5px] text-slate-500 space-y-1.5 leading-relaxed">
-                <li>Key được sử dụng trực tiếp để gửi truy vấn OCR/Phân tích tới mô hình <code className="font-mono text-slate-850 bg-slate-200 px-1 py-0.5 rounded">{geminiModel}</code>.</li>
-                <li>Bạn có thể lấy Gemini API Key hoàn toàn miễn phí từ <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="text-red-650 text-red-600 font-bold hover:underline">Google AI Studio</a>.</li>
-                <li>Nếu chưa cấu hình Key, hệ thống sẽ chỉ khả dụng cho các tệp hồ sơ mẫu pháp quy có sẵn.</li>
+              <ul className="list-disc pl-5 text-[10.5px] text-slate-500 space-y-1.5 leading-relaxed">
+                <li>Key được dùng trực tiếp để OCR và trích xuất dữ liệu.</li>
+                <li>Bạn có thể tạo Gemini API Key miễn phí tại Google AI Studio.</li>
+                <li>Nếu chưa có key, hệ thống chỉ khả dụng với các tính năng dự phòng hiện có.</li>
               </ul>
+            </div>
+
+            {/* Card nhỏ hướng dẫn tạo key */}
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+              <span className="text-xs font-medium text-amber-800">Bạn chưa có Gemini API Key?</span>
+              <a 
+                href="https://aistudio.google.com" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="bg-white hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold py-1.5 px-3 rounded-lg text-xs transition-all shadow-sm"
+              >
+                Mở Google AI Studio
+              </a>
             </div>
           </div>
         </div>
@@ -235,36 +244,36 @@ export default function SettingsComponent({
         {/* PANEL PHẢI: QUẢN LÝ GÓI THÀNH VIÊN - 5 CỘT */}
         <div className="md:col-span-5 space-y-6">
           {/* CARD TÀI KHOẢN */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <h3 className="font-bold text-sm sm:text-base text-slate-800 flex items-center space-x-2 border-b border-slate-100 pb-3">
               <User className="h-5 w-5 text-slate-700" />
               <span>TÀI KHOẢN</span>
             </h3>
 
             {user ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-4">
                   {user.photoURL ? (
                     <img 
                       src={user.photoURL} 
                       alt="Avatar" 
-                      className="h-16 w-16 rounded-full border border-slate-200 object-cover shadow-sm" 
+                      className="h-14 w-14 rounded-full border border-slate-200 object-cover shadow-sm" 
                     />
                   ) : (
-                    <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center text-xl font-bold text-yellow-400">
+                    <div className="h-14 w-14 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold text-yellow-400">
                       {(user.displayName || user.email || "A").charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className="overflow-hidden">
-                    <h4 className="font-bold text-sm text-slate-900 truncate">
+                    <h4 className="font-extrabold text-base text-slate-900 truncate">
                       {user.displayName || user.email?.split("@")[0] || "User"}
                     </h4>
                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                   </div>
                 </div>
 
-                <div className="pt-2 space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed text-xs">
+                <div className="pt-1 space-y-2">
+                  <div className="flex justify-between items-center py-1.5 border-b border-slate-50 border-dashed text-xs">
                     <span className="text-slate-600 font-medium">Gói hiện tại</span>
                     <span className={`px-2 py-0.5 rounded text-[10px] tracking-wider uppercase font-black ${
                       isPro 
@@ -277,7 +286,7 @@ export default function SettingsComponent({
 
                   {isPro && expiredAt && (
                     <>
-                      <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed text-xs">
+                      <div className="flex justify-between items-center py-1.5 border-b border-slate-50 border-dashed text-xs">
                         <span className="text-slate-600 font-medium flex items-center">
                           <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
                           Ngày hết hạn
@@ -293,7 +302,7 @@ export default function SettingsComponent({
                         </span>
                       </div>
 
-                      <div className="flex justify-between items-center py-2 border-b border-slate-50 border-dashed text-xs">
+                      <div className="flex justify-between items-center py-1.5 border-b border-slate-50 border-dashed text-xs">
                         <span className="text-slate-600 font-medium">Thời gian còn lại</span>
                         <span className={`font-bold ${
                           (() => {
@@ -313,10 +322,10 @@ export default function SettingsComponent({
 
                 <button
                   onClick={() => setActiveTab("upgrade")}
-                  className="w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
+                  className="w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
                 >
                   <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
-                  <span>Quản lý gói Pro</span>
+                  <span>Quản lý gói thành viên</span>
                 </button>
               </div>
             ) : (
@@ -324,15 +333,15 @@ export default function SettingsComponent({
             )}
           </div>
 
-          {/* CARD SO SÁNH QUYỀN LỢI */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          {/* CARD QUYỀN LỢI */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
             <h3 className="font-bold text-sm sm:text-base text-slate-800 flex items-center space-x-2 border-b border-slate-100 pb-3">
               <Award className="h-5 w-5 text-amber-500" />
-              <span>So sánh quyền lợi nghiệp vụ</span>
+              <span>{membershipRole === "Pro" ? "Quyền lợi gói hiện tại" : "So sánh quyền lợi nghiệp vụ"}</span>
             </h3>
 
             {/* LỰA CHỌN CẤP ĐỘ (TEST) */}
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-1">
               <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Test cấp độ giao diện:</p>
               
               <div className="grid grid-cols-2 gap-3">
@@ -362,42 +371,65 @@ export default function SettingsComponent({
               </div>
             </div>
 
-            {/* BẢNG SO SÁNH QUYỀN LỢI */}
-            <div className="space-y-3.5 border-t border-slate-100 pt-4 text-xs">
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-medium">Bóc tách tài liệu không giới hạn trang</span>
-                  <div className="flex space-x-4">
-                    <span className="text-slate-400 font-mono">15 trang</span>
-                    <span className="text-amber-600 font-bold font-mono">Vô hạn</span>
+            {/* BẢNG SO SÁNH / QUYỀN LỢI */}
+            {membershipRole === "Pro" ? (
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <ul className="space-y-2 text-xs text-slate-700">
+                  <li className="flex items-center space-x-2">
+                    <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                    <span>Bóc tách tài liệu không giới hạn trang</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                    <span>Xuất kết xuất thô (.TXT)</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                    <span>Xuất Word DOCX lề chuẩn Nghị định 30</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                    <span>Trích xuất bảng Excel theo mẫu trường tùy chỉnh</span>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <div className="space-y-3.5 border-t border-slate-100 pt-4 text-xs">
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500 font-medium">Bóc tách tài liệu không giới hạn trang</span>
+                    <div className="flex space-x-4">
+                      <span className="text-slate-400 font-mono">15 trang</span>
+                      <span className="text-amber-600 font-bold font-mono">Vô hạn</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-medium">Xuất kết xuất thô (.TXT)</span>
-                  <div className="flex space-x-4">
-                    <span className="text-emerald-600 font-bold">Free</span>
-                    <span className="text-emerald-600 font-bold">Pro</span>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500 font-medium">Xuất kết xuất thô (.TXT)</span>
+                    <div className="flex space-x-4">
+                      <span className="text-emerald-600 font-bold">Free</span>
+                      <span className="text-emerald-600 font-bold">Pro</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-medium">Xuất Word DOCX lề chuẩn Nghị định 30</span>
-                  <div className="flex space-x-4">
-                    <span className="text-slate-450 text-rose-500 font-medium">Khóa</span>
-                    <span className="text-amber-600 font-bold">Pro</span>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500 font-medium">Xuất Word DOCX lề chuẩn Nghị định 30</span>
+                    <div className="flex space-x-4">
+                      <span className="text-rose-500 font-medium">Khóa</span>
+                      <span className="text-amber-600 font-bold">Pro</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-medium">Trích xuất bảng Excel theo mẫu trường tùy chỉnh</span>
-                  <div className="flex space-x-4">
-                    <span className="text-slate-450 text-rose-500 font-medium">Khóa</span>
-                    <span className="text-amber-600 font-bold">Pro</span>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-500 font-medium">Trích xuất bảng Excel theo mẫu trường tùy chỉnh</span>
+                    <div className="flex space-x-4">
+                      <span className="text-rose-500 font-medium">Khóa</span>
+                      <span className="text-amber-600 font-bold">Pro</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* CTA để chuyển về Scanner trải nghiệm */}
             <button
@@ -405,13 +437,13 @@ export default function SettingsComponent({
               className="w-full bg-slate-900 border border-slate-850 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-lg text-xs flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer"
             >
               <Zap className="h-4 w-4 text-yellow-400" />
-              <span>Trải nghiệm bóc tách ngay</span>
+              <span>Quay lại bóc tách tài liệu</span>
             </button>
           </div>
 
           {/* NÚT ĐĂNG XUẤT */}
           {user && (
-            <div className="pt-2">
+            <div className="pt-1">
               <button
                 onClick={async () => {
                   await logout();
@@ -427,7 +459,6 @@ export default function SettingsComponent({
         </div>
 
       </div>
-
 
     </div>
   );
