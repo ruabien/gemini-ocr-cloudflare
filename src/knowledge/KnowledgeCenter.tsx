@@ -13,10 +13,10 @@ export default function KnowledgeCenter() {
       {/* Title & Description */}
       <div className="mb-10 text-left">
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl mb-3">
-          Knowledge Center
+          Hướng dẫn sử dụng LexOCR
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl">
-          Hướng dẫn sử dụng OCR, số hóa tài liệu và trích xuất dữ liệu phục vụ nghiên cứu hồ sơ.
+          Hướng dẫn OCR, số hóa tài liệu, xuất Word và trích xuất dữ liệu phục vụ nghiên cứu hồ sơ.
         </p>
       </div>
 

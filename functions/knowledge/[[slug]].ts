@@ -38,8 +38,8 @@ export async function onRequest(context: EventContext<Env, any, any>): Promise<R
   const originalHtml = await originalResponse.text();
 
   // Default metadata for the Knowledge Center
-  let title = 'Knowledge Center – LexOCR';
-  let description = 'Hướng dẫn sử dụng OCR, số hóa tài liệu và trích xuất dữ liệu phục vụ nghiên cứu hồ sơ.';
+  let title = 'Hướng dẫn sử dụng LexOCR';
+  let description = 'Hướng dẫn OCR, số hóa tài liệu, xuất Word và trích xuất dữ liệu phục vụ nghiên cứu hồ sơ.';
   let ogType = 'website';
   let ogImage = 'https://lexocr.com/knowledge/og-default.jpg';
   const canonical = `https://lexocr.com${url.pathname}`;
@@ -53,7 +53,7 @@ export async function onRequest(context: EventContext<Env, any, any>): Promise<R
       ogImage = article.ogImage;
     } else {
       // Not found – show a friendly not‑found title/description
-      title = 'Bài viết không tồn tại – Knowledge Center';
+      title = 'Bài viết không tồn tại';
       description = 'Không tìm thấy bài viết yêu cầu.';
     }
   }

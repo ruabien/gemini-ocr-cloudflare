@@ -86,7 +86,7 @@ export default function KnowledgeArticle({ slug }: Props) {
           <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Quay lại Knowledge Center
+          Quay lại Hướng dẫn
         </button>
       </div>
     );
@@ -111,7 +111,7 @@ export default function KnowledgeArticle({ slug }: Props) {
           onClick={navigateToKnowledgeCenter}
           className="hover:text-blue-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 transition duration-150"
         >
-          Knowledge Center
+          Hướng dẫn
         </button>
         <span className="text-slate-400 select-none">/</span>
         <span className="text-slate-600">{article.category}</span>

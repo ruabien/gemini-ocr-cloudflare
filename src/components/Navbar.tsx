@@ -119,7 +119,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
   }`}
 >
   <Sparkles className="h-4 w-4" />
-  <span>Kiến thức</span>
+  <span>Hướng dẫn</span>
 </button>
 
 <button
@@ -294,7 +294,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
   className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
 >
   <Sparkles className="h-5 w-5 text-yellow-400" />
-  <span>Kiến thức</span>
+  <span>Hướng dẫn</span>
 </button>
 
 <button
