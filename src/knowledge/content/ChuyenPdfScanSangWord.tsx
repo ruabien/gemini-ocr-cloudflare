@@ -51,7 +51,7 @@ export default function ChuyenPdfScanSangWord() {
           Bước 2: Bắt đầu OCR
         </h2>
         <p className="text-base text-slate-600 mb-4">
-          Sau khi tệp tin đã tải lên thành công, chọn ngôn ngữ tài liệu gốc (mặc định là Tiếng Việt). Bạn có thể tùy chọn thiết lập các thông số như bảo toàn bố cục để giữ nguyên cấu trúc dòng, cột của văn bản gốc. Nhấn nút <strong>Bóc tách</strong> để bắt đầu quá trình xử lý bằng AI.
+          Sau khi tệp tin đã tải lên thành công, chọn mục đích xử lý (xuất Word hoặc Excel). Bạn có thể tùy chọn thiết lập các thông số như bảo toàn bố cục để giữ nguyên cấu trúc dòng, cột của văn bản gốc. Nhấn nút <strong>Bóc tách</strong> để bắt đầu quá trình xử lý bằng AI.
         </p>
         <ArticleImage
           src="/knowledge/chuyen-pdf-scan-sang-word/step-2-ocr.webp"
@@ -108,11 +108,11 @@ export default function ChuyenPdfScanSangWord() {
           <ul className="list-none p-0 m-0 space-y-3">
             <li className="flex items-center text-sm sm:text-base text-slate-700">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-600 mr-2.5 shrink-0"></span>
-              Tối đa <strong>20 trang</strong> cho mỗi lần thực hiện bóc tách (20 trang/lần).
+              Tối đa <strong> 20 trang</strong> cho mỗi lần thực hiện bóc tách (20 trang/lần).
             </li>
             <li className="flex items-center text-sm sm:text-base text-slate-700">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-600 mr-2.5 shrink-0"></span>
-              Tối đa <strong>50 trang</strong> bóc tách trong mỗi ngày (50 trang/ngày).
+              Tối đa <strong> 50 trang</strong> bóc tách trong mỗi ngày (50 trang/ngày).
             </li>
           </ul>
         </div>
