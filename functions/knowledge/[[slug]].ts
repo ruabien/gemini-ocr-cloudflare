@@ -27,10 +27,32 @@ declare global {
 
 export async function onRequest(context: EventContext<Env, any, any>): Promise<Response> {
   const url = new URL(context.request.url);
-  const slug = url.pathname.split('/').filter(Boolean)[1] ?? '';
 
-  // Determine if we are on the list page or a specific article
-  const isListPage = url.pathname === '/knowledge' || url.pathname === '/knowledge/';
+  // 1. Bypass static assets
+  const STATIC_ASSET_PATTERN =
+    /\.(?:webp|png|jpe?g|gif|svg|ico|avif|css|m?js|map|json|xml|txt|woff2?|ttf|eot)$/i;
+
+  if (STATIC_ASSET_PATTERN.test(url.pathname)) {
+    return context.next();
+  }
+
+  // 2. Parse path segments
+  const segments = url.pathname.split('/').filter(Boolean);
+
+  const isListPage =
+    segments.length === 1 &&
+    segments[0] === 'knowledge';
+
+  const isArticlePage =
+    segments.length === 2 &&
+    segments[0] === 'knowledge';
+
+  // If path doesn't match list page or article page (e.g. segments.length > 2 or doesn't start with knowledge), pass through
+  if (!isListPage && !isArticlePage) {
+    return context.next();
+  }
+
+  const slug = isArticlePage ? segments[1] : '';
 
   // Fetch the original HTML (served by Cloudflare Pages)
   const indexUrl = new URL('/index.html', url.origin);
@@ -44,7 +66,7 @@ export async function onRequest(context: EventContext<Env, any, any>): Promise<R
   let ogImage = 'https://lexocr.com/knowledge/og-default.jpg';
   const canonical = `https://lexocr.com${url.pathname}`;
 
-  if (!isListPage && slug) {
+  if (isArticlePage && slug) {
     const article = getKnowledgeArticleBySlug(slug);
     if (article) {
       title = article.title;
