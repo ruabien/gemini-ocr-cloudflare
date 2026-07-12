@@ -20,13 +20,14 @@ export const knowledgeArticles: KnowledgeArticleMeta[] = [
     category: "Hướng dẫn OCR",
     publishedAt: "2026-07-12T00:00:00Z", // Can be adjusted upon real deploy
     readingTime: "5 phút đọc",
+    coverImage: "/knowledge/chuyen-pdf-scan-sang-word/hero.webp",
     keywords: [
       "chuyển PDF scan sang Word",
       "OCR PDF tiếng Việt",
       "PDF sang Word",
       "nhận dạng văn bản"
     ],
-    ogImage: "https://lexocr.com/knowledge/og-default.jpg",
+    ogImage: "https://lexocr.com/knowledge/chuyen-pdf-scan-sang-word/hero.webp",
     relatedSlugs: []
   }
 ];
