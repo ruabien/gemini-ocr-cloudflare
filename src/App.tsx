@@ -21,6 +21,9 @@ const PageLoader = () => (
 );
 import { getUserStorageItem } from "./utils/userStorage";
 
+const KnowledgeCenter = lazy(() => import("./knowledge/KnowledgeCenter"));
+const KnowledgeArticle = lazy(() => import("./knowledge/KnowledgeArticle"));
+
 function AppContent() {
   // State to hold OCR configuration, document data
   const [config, setConfig] = useState<any>(() => {
@@ -39,6 +42,7 @@ function AppContent() {
   });
   const [document, setDocument] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("landing");
+  const [articleSlug, setArticleSlug] = useState<string>("");
   const [userGeminiKey, setUserGeminiKey] = useState<string>("");
   const [showPaymentSuccessToast, setShowPaymentSuccessToast] = useState(false);
 
@@ -64,6 +68,26 @@ function AppContent() {
       return () => clearTimeout(timer);
     }
   }, [showPaymentSuccessToast]);
+
+  useEffect(() => {
+    const handleLocation = (event?: PopStateEvent) => {
+      const path = window.location.pathname;
+      if (path === "/knowledge") {
+        setActiveTab("knowledge");
+        setArticleSlug("");
+      } else if (path.startsWith("/knowledge/")) {
+        const slug = path.split("/")[2] || "";
+        setActiveTab("knowledge-article");
+        setArticleSlug(slug);
+      } else if (path === "/" || path === "") {
+        const targetTab = (event && event.state && event.state.activeTab) || "landing";
+        setActiveTab(targetTab);
+      }
+    };
+    handleLocation();
+    window.addEventListener("popstate", handleLocation as any);
+    return () => window.removeEventListener("popstate", handleLocation as any);
+  }, []);
 
   const membershipRole = isPro ? "Pro" : "Free";
   const setMembershipRole = (role: "Free" | "Pro") => {
@@ -91,6 +115,11 @@ function AppContent() {
   };
   const handleActiveTab = (tab: string) => {
     setActiveTab(tab);
+    if (tab !== "knowledge" && tab !== "knowledge-article") {
+      if (window.location.pathname.startsWith('/knowledge')) {
+        window.history.pushState({}, '', '/');
+      }
+    }
   };
 
   return (
@@ -158,6 +187,16 @@ function AppContent() {
         )}
         {activeTab === "terms" && (
           <TermsOfUse />
+        )}
+        {activeTab === "knowledge" && (
+          <Suspense fallback={<PageLoader />}>
+            <KnowledgeCenter />
+          </Suspense>
+        )}
+        {activeTab === "knowledge-article" && (
+          <Suspense fallback={<PageLoader />}>
+            <KnowledgeArticle slug={articleSlug} />
+          </Suspense>
         )}
       </AppLayout>
 

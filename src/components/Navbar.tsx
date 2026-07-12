@@ -106,6 +106,24 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
 
 <button
   onClick={() => {
+    // Navigate to Knowledge Center using History API
+    window.history.pushState({}, "", "/knowledge");
+    const ev = new PopStateEvent('popstate');
+    window.dispatchEvent(ev);
+    setActiveTab("knowledge");
+  }}
+  className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
+    activeTab === "knowledge"
+      ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
+      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+  }`}
+>
+  <Sparkles className="h-4 w-4" />
+  <span>Kiến thức</span>
+</button>
+
+<button
+  onClick={() => {
     setActiveTab("settings");
   }}
   className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
@@ -264,17 +282,32 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
               <span>Bóc tách tài liệu</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                console.info("[MOBILE NAV]", "settings");
-                navigateTo("settings");
-              }}
-              className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
-            >
-              <Settings className="h-5 w-5 text-yellow-400" />
-              <span>Cài đặt</span>
-            </button>
+<button
+  type="button"
+  onClick={() => {
+    // Mobile Knowledge Center navigation
+    window.history.pushState({}, "", "/knowledge");
+    const ev = new PopStateEvent('popstate');
+    window.dispatchEvent(ev);
+    setActiveTab("knowledge");
+  }}
+  className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
+>
+  <Sparkles className="h-5 w-5 text-yellow-400" />
+  <span>Kiến thức</span>
+</button>
+
+<button
+  type="button"
+  onClick={() => {
+    console.info("[MOBILE NAV]", "settings");
+    navigateTo("settings");
+  }}
+  className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
+>
+  <Settings className="h-5 w-5 text-yellow-400" />
+  <span>Cài đặt</span>
+</button>
 
             {/* Nút đăng xuất nếu user đã login */}
             {user && (
