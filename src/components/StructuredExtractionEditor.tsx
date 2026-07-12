@@ -905,7 +905,11 @@ if (import.meta.env.DEV && caseType === "hinh_su") {
     console.error("AI extraction failed:", e);
     // Yêu cầu 5: Không fallback âm thầm sang heuristic mà không thông báo
     if (e.message && e.message.includes("Chưa cấu hình Gemini API Key")) {
-      alert("Chưa tìm thấy Gemini API Key. Vui lòng kiểm tra phần Cài đặt.");
+      const gotoSettings = confirm("Chưa tìm thấy Gemini API Key. Bạn có muốn xem hướng dẫn tạo Gemini API Key không?");
+      if (gotoSettings) {
+        window.history.pushState({}, '', '/knowledge/huong-dan-tao-gemini-api-key');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
       // Trả về heuristic rows nhưng đánh dấu rõ đây là kết quả dự phòng
       return heuristicRows.map(r => ({
         ...r,

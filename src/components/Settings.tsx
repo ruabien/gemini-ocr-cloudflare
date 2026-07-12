@@ -232,21 +232,51 @@ export default function SettingsComponent({
 
             {/* Card nhỏ hướng dẫn tạo key */}
             {keysList.length === 0 ? (
-              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
-                <span className="text-xs font-medium text-amber-800">Bạn chưa có Gemini API Key?</span>
-                <a 
-                  href="https://aistudio.google.com" 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="bg-white hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold py-1.5 px-3 rounded-lg text-xs transition-all shadow-sm"
-                >
-                  Mở Google AI Studio
-                </a>
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex flex-col space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-amber-800">Bạn chưa có Gemini API Key?</span>
+                  <a 
+                    href="https://aistudio.google.com" 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="bg-white hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold py-1.5 px-3 rounded-lg text-xs transition-all shadow-sm"
+                  >
+                    Mở Google AI Studio
+                  </a>
+                </div>
+                <div className="text-xs text-slate-500 hover:text-slate-700">
+                  <a 
+                    href="/knowledge/huong-dan-tao-gemini-api-key"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.history.pushState({}, '', '/knowledge/huong-dan-tao-gemini-api-key');
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
+                    className="inline-flex items-center text-blue-650 hover:underline font-semibold"
+                  >
+                    📖 Xem hướng dẫn tạo Gemini API Key
+                  </a>
+                </div>
               </div>
             ) : (
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col space-y-1">
-                <span className="text-xs font-bold text-emerald-800">✓ Gemini API Key đã sẵn sàng</span>
-                <span className="text-[11px] text-emerald-600">Bạn có thể thêm hoặc thay thế API Key bất kỳ lúc nào.</span>
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col space-y-2">
+                <div className="flex flex-col space-y-1">
+                  <span className="text-xs font-bold text-emerald-800">✓ Gemini API Key đã sẵn sàng</span>
+                  <span className="text-[11px] text-emerald-600">Bạn có thể thêm hoặc thay thế API Key bất kỳ lúc nào.</span>
+                </div>
+                <div className="text-xs text-slate-500 hover:text-slate-700 pt-1 border-t border-emerald-200/40">
+                  <a 
+                    href="/knowledge/huong-dan-tao-gemini-api-key"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.history.pushState({}, '', '/knowledge/huong-dan-tao-gemini-api-key');
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
+                    className="inline-flex items-center text-blue-650 hover:underline font-semibold"
+                  >
+                    📖 Xem hướng dẫn tạo Gemini API Key
+                  </a>
+                </div>
               </div>
             )}
           </div>

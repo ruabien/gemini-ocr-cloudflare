@@ -2,6 +2,7 @@ import React from 'react';
 import { getKnowledgeArticleBySlug, knowledgeArticles } from '../../shared/knowledgeArticles';
 import { navigateToKnowledgeCenter, navigateToKnowledgeArticle } from './knowledgeNavigation';
 import ChuyenPdfScanSangWord from './content/ChuyenPdfScanSangWord';
+import HuongDanTaoGeminiApiKey from './content/HuongDanTaoGeminiApiKey';
 
 interface Props {
   slug: string;
@@ -95,6 +96,8 @@ export default function KnowledgeArticle({ slug }: Props) {
   let ContentComponent: React.FC = () => <div>Content not implemented</div>;
   if (slug === 'chuyen-pdf-scan-sang-word') {
     ContentComponent = ChuyenPdfScanSangWord;
+  } else if (slug === 'huong-dan-tao-gemini-api-key') {
+    ContentComponent = HuongDanTaoGeminiApiKey;
   }
 
   // Related articles mapping
@@ -167,53 +170,108 @@ export default function KnowledgeArticle({ slug }: Props) {
           Trong bài này
         </h2>
         <nav aria-labelledby="toc-heading">
-          <ul className="grid gap-2 sm:grid-cols-2 text-sm text-blue-600 font-medium">
-            <li>
-              <a href="#gioi-thieu" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Giới thiệu
-              </a>
-            </li>
-            <li>
-              <a href="#vi-sao-pdf-scan-khong-the-chinh-sua" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Vì sao PDF scan không thể chỉnh sửa
-              </a>
-            </li>
-            <li>
-              <a href="#buoc-1-tai-pdf-scan" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Bước 1: Tải PDF scan
-              </a>
-            </li>
-            <li>
-              <a href="#buoc-2-bat-dau-ocr" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Bước 2: Bắt đầu OCR
-              </a>
-            </li>
-            <li>
-              <a href="#buoc-3-xuat-word" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Bước 3: Xuất Word
-              </a>
-            </li>
-            <li>
-              <a href="#meo-tang-do-chinh-xac" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Mẹo tăng độ chính xác
-              </a>
-            </li>
-            <li>
-              <a href="#gioi-han-goi-free" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Giới hạn gói Free
-              </a>
-            </li>
-            <li>
-              <a href="#cau-hoi-thuong-gap" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Câu hỏi thường gặp
-              </a>
-            </li>
-            <li>
-              <a href="#ket-luan" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
-                Kết luận
-              </a>
-            </li>
-          </ul>
+          {slug === 'huong-dan-tao-gemini-api-key' ? (
+            <ul className="grid gap-2 sm:grid-cols-2 text-sm text-blue-600 font-medium">
+              <li>
+                <a href="#gioi-thieu" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Giới thiệu
+                </a>
+              </li>
+              <li>
+                <a href="#vi-sao-lexocr-can-gemini-api-key" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Vì sao LexOCR cần Gemini API Key
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-1-truy-cap-google-ai-studio" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 1: Truy cập Google AI Studio
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-2-tao-api-key" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 2: Tạo API Key
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-3-copy-api-key" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 3: Copy API Key
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-4-mo-trang-cai-dat-lexocr" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 4: Mở trang Cài đặt LexOCR
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-5-dan-api-key" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 5: Dán API Key
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-6-kiem-tra-cau-hinh-thanh-cong" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 6: Kiểm tra cấu hình thành công
+                </a>
+              </li>
+              <li>
+                <a href="#cau-hoi-thuong-gap" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Câu hỏi thường gặp
+                </a>
+              </li>
+              <li>
+                <a href="#ket-luan" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Kết luận
+                </a>
+              </li>
+            </ul>
+          ) : (
+            <ul className="grid gap-2 sm:grid-cols-2 text-sm text-blue-600 font-medium">
+              <li>
+                <a href="#gioi-thieu" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Giới thiệu
+                </a>
+              </li>
+              <li>
+                <a href="#vi-sao-pdf-scan-khong-the-chinh-sua" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Vì sao PDF scan không thể chỉnh sửa
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-1-tai-pdf-scan" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 1: Tải PDF scan
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-2-bat-dau-ocr" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 2: Bắt đầu OCR
+                </a>
+              </li>
+              <li>
+                <a href="#buoc-3-xuat-word" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Bước 3: Xuất Word
+                </a>
+              </li>
+              <li>
+                <a href="#meo-tang-do-chinh-xac" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Mẹo tăng độ chính xác
+                </a>
+              </li>
+              <li>
+                <a href="#gioi-han-goi-free" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Giới hạn gói Free
+                </a>
+              </li>
+              <li>
+                <a href="#cau-hoi-thuong-gap" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Câu hỏi thường gặp
+                </a>
+              </li>
+              <li>
+                <a href="#ket-luan" className="hover:underline hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-0.5 transition-colors">
+                  Kết luận
+                </a>
+              </li>
+            </ul>
+          )}
         </nav>
       </div>
 

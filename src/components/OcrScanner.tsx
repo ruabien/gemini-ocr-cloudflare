@@ -88,7 +88,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   const [softBanner, setSoftBanner] = useState<string | null>(null);
 
   const [fileErrors, setFileErrors] = useState<Record<number, string>>({});
-  const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
+  const [errorModalMsg, setErrorModalMsg] = useState<string | React.ReactNode | null>(null);
   const [pageErrorDetail, setPageErrorDetail] = useState<{ pageNum: number; error: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -448,7 +448,22 @@ const geminiKeyPool = Array.from(
   )
 );
 if (geminiKeyPool.length === 0) {
-  alert('Missing Gemini API Key. Please configure it in Settings.');
+  setErrorModalMsg(
+    <span>
+      Chưa có Gemini API Key?{" "}
+      <a
+        href="/knowledge/huong-dan-tao-gemini-api-key"
+        onClick={(e) => {
+          e.preventDefault();
+          window.history.pushState({}, '', '/knowledge/huong-dan-tao-gemini-api-key');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        className="text-blue-600 hover:underline font-semibold"
+      >
+        Xem hướng dẫn tạo trong 3 phút.
+      </a>
+    </span>
+  );
   setIsBatchProcessing(false);
   isProcessingRef.current = false;
   return;
@@ -1738,7 +1753,7 @@ while (true) {
               {errorModalMsg}
             </p>
             <div className="flex flex-col space-y-2">
-              {errorModalMsg.includes("hạn mức miễn phí") && (
+              {typeof errorModalMsg === "string" && errorModalMsg.includes("hạn mức miễn phí") && (
                 <button 
                   onClick={() => {
                     setErrorModalMsg(null);
