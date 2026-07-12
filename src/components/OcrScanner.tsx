@@ -1262,7 +1262,7 @@ while (true) {
                           onChange={() => setOutputMode("text")}
                           className="text-red-600 focus:ring-red-500 h-4 w-4 bg-slate-800 border-slate-600"
                         />
-                        <span className="text-xs font-bold">Văn bản dài → TXT/DOCX/Ẩn danh</span>
+                        <span className="text-xs font-bold">Chuyển File → Text/Word</span>
                       </div>
                       <p className="text-[10px] text-slate-400 mt-1 pl-6 leading-relaxed">
                         Dành cho Bản án, Cáo trạng, Kết luận điều tra, Biên bản ghi lời khai.
