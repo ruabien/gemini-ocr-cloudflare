@@ -71,6 +71,28 @@ export function ArticleImage({ src, alt, caption }: ArticleImageProps) {
 export default function KnowledgeArticle({ slug }: Props) {
   const article = getKnowledgeArticleBySlug(slug);
 
+  React.useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const id = decodeURIComponent(hash.substring(1));
+      requestAnimationFrame(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: "auto", block: "start" });
+        }
+      });
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto"
+      });
+    });
+  }, [slug]);
+
   const handleStartOcr = () => {
     window.history.pushState({ activeTab: 'scanner' }, '', '/');
     window.dispatchEvent(new PopStateEvent('popstate', { state: { activeTab: 'scanner' } }));
