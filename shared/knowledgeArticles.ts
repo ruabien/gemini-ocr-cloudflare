@@ -36,7 +36,7 @@ export const knowledgeArticles: KnowledgeArticleMeta[] = [
     title: "Chuyển PDF scan sang Word: Hướng dẫn đơn giản bằng OCR",
     description: "Hướng dẫn chuyển PDF scan sang Word bằng OCR tiếng Việt, giúp trích xuất nội dung để chỉnh sửa mà không cần nhập lại thủ công.",
     category: "Hướng dẫn OCR",
-    publishedAt: "2026-07-12T00:00:00Z", // Can be adjusted upon real deploy
+    publishedAt: "2026-07-12T00:00:00Z",
     readingTime: "5 phút đọc",
     coverImage: "/knowledge/chuyen-pdf-scan-sang-word/hero.webp",
     keywords: [
@@ -47,6 +47,26 @@ export const knowledgeArticles: KnowledgeArticleMeta[] = [
     ],
     ogImage: "https://lexocr.com/knowledge/chuyen-pdf-scan-sang-word/hero.webp",
     relatedSlugs: ["huong-dan-tao-gemini-api-key"]
+  },
+  {
+    slug: "ocr-pdf-scan-sang-word-mien-phi",
+    title: "OCR PDF Scan sang Word miễn phí bằng AI",
+    description: "Hướng dẫn OCR PDF Scan sang Word bằng AI miễn phí. Chuyển tài liệu PDF scan thành văn bản Word có thể chỉnh sửa, hỗ trợ tiếng Việt, không cần cài đặt phần mềm.",
+    category: "Hướng dẫn",
+    publishedAt: "2026-07-13T00:00:00Z",
+    readingTime: "6 phút đọc",
+    coverImage: "/knowledge/ocr-pdf-scan-sang-word-mien-phi/hero.webp",
+    keywords: [
+      "OCR PDF Scan sang Word",
+      "OCR PDF miễn phí",
+      "PDF scan sang Word",
+      "OCR tiếng Việt",
+      "AI OCR",
+      "Chuyển PDF scan thành Word",
+      "OCR tài liệu tiếng Việt"
+    ],
+    ogImage: "https://lexocr.com/knowledge/ocr-pdf-scan-sang-word-mien-phi/hero.webp",
+    relatedSlugs: ["chuyen-pdf-scan-sang-word", "huong-dan-tao-gemini-api-key"]
   }
 ];
 

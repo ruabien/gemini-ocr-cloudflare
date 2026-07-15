@@ -69,13 +69,13 @@ export async function onRequest(context: EventContext<Env, any, any>): Promise<R
   if (isArticlePage && slug) {
     const article = getKnowledgeArticleBySlug(slug);
     if (article) {
-      title = article.title;
+      title = `${article.title} | Hướng dẫn LexOCR`;
       description = article.description;
       ogType = 'article';
       ogImage = article.ogImage;
     } else {
       // Not found – show a friendly not‑found title/description
-      title = 'Bài viết không tồn tại';
+      title = 'Bài viết không tồn tại | Hướng dẫn LexOCR';
       description = 'Không tìm thấy bài viết yêu cầu.';
     }
   }
