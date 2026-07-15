@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
+import { autoResolveModel, MODEL_MODES, validateGeminiModel } from "../utils/geminiModelResolver";
 
 interface SettingsProps {
   userGeminiKey: string;
@@ -41,19 +42,83 @@ export default function SettingsComponent({
   });
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [geminiModelMode, setGeminiModelMode] = useState<string>(() => {
+    return getUserStorageItem(user?.uid, 'gemini_model_mode') || MODEL_MODES.AUTO;
+  });
   const [geminiModel, setGeminiModel] = useState<string>(() => {
-    const stored = getUserStorageItem(user?.uid, 'ocr_model');
-    return stored || "gemini-2.5-flash";
+    return getUserStorageItem(user?.uid, 'ocr_model') || "gemini-3.5-flash";
+  });
+  
+  const [modelStatusMsg, setModelStatusMsg] = useState<{ type: 'info' | 'success' | 'error', text: string } | null>(null);
+  const [resolvedModelDisplay, setResolvedModelDisplay] = useState<string>(() => {
+    return getUserStorageItem(user?.uid, 'gemini_resolved_model') || '';
   });
 
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const model = e.target.value;
-    setGeminiModel(model);
-    setUserStorageItem(user?.uid, 'ocr_model', model);
+  // Whenever user or key changes in auto mode, check cache/resolve
+  React.useEffect(() => {
+    if (geminiModelMode === MODEL_MODES.AUTO && keysList.length > 0) {
+      const activeKey = keysList[0];
+      const cached = getUserStorageItem(user?.uid, 'gemini_resolved_model');
+      if (cached) {
+        setResolvedModelDisplay(cached);
+        setModelStatusMsg({ type: 'success', text: `Đang sử dụng ${cached}` });
+      } else {
+        setModelStatusMsg({ type: 'info', text: "Model sẽ được xác định khi kiểm tra API Key." });
+      }
+    }
+  }, [geminiModelMode, keysList, user?.uid]);
+
+  const verifyAndResolveModel = async (keys: string[], mode: string, manualModel?: string) => {
+    if (keys.length === 0) return;
+    const activeKey = keys[0];
+    
+    if (mode === MODEL_MODES.AUTO) {
+      setModelStatusMsg({ type: 'info', text: "Đang kiểm tra model khả dụng…" });
+      try {
+        const resolved = await autoResolveModel(user?.uid, activeKey, true); // force re-check
+        setResolvedModelDisplay(resolved);
+        setModelStatusMsg({ type: 'success', text: `API Key hợp lệ — sử dụng ${resolved}` });
+      } catch (error: any) {
+        let errText = "Không thể kiểm tra model.";
+        if (error.message === "INVALID_KEY") errText = "Gemini API Key không hợp lệ.";
+        else if (error.message === "RATE_LIMIT") errText = "Gemini API Key hiện đã đạt giới hạn sử dụng. Vui lòng thử lại sau.";
+        else if (error.message === "NETWORK") errText = "Không thể kiểm tra danh sách model. Vui lòng kiểm tra kết nối mạng.";
+        else if (error.message === "NO_COMPATIBLE_MODEL") errText = "Không tìm thấy model Gemini phù hợp với API Key này.";
+        setModelStatusMsg({ type: 'error', text: errText });
+      }
+    } else if (mode === MODEL_MODES.MANUAL && manualModel) {
+      setModelStatusMsg({ type: 'info', text: "Đang kiểm tra model khả dụng…" });
+      try {
+        const isValid = await validateGeminiModel(activeKey, manualModel);
+        if (!isValid) {
+          setModelStatusMsg({ type: 'error', text: "Mô hình này không khả dụng với Gemini API Key hiện tại. Vui lòng chọn model khác hoặc chuyển sang chế độ Tự động." });
+        } else {
+          setModelStatusMsg({ type: 'success', text: `Mô hình ${manualModel} hợp lệ và sẵn sàng.` });
+        }
+      } catch (error) {
+        // Fallback error msg
+        setModelStatusMsg({ type: 'error', text: "Không thể xác minh mô hình với API Key này." });
+      }
+    }
+  };
+
+  const handleModelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === MODEL_MODES.AUTO) {
+      setGeminiModelMode(MODEL_MODES.AUTO);
+      setUserStorageItem(user?.uid, 'gemini_model_mode', MODEL_MODES.AUTO);
+      await verifyAndResolveModel(keysList, MODEL_MODES.AUTO);
+    } else {
+      setGeminiModelMode(MODEL_MODES.MANUAL);
+      setGeminiModel(val);
+      setUserStorageItem(user?.uid, 'gemini_model_mode', MODEL_MODES.MANUAL);
+      setUserStorageItem(user?.uid, 'ocr_model', val);
+      await verifyAndResolveModel(keysList, MODEL_MODES.MANUAL, val);
+    }
   };
 
   // Lưu khoá API
-  const handleSaveApiKey = (e: React.FormEvent) => {
+  const handleSaveApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
     const newKeys = apiKeyInput
       .split(/[\n,]+/)
@@ -68,6 +133,9 @@ export default function SettingsComponent({
     setApiKeyInput("");
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2500);
+
+    // Verify model with the new key
+    await verifyAndResolveModel(updatedKeys, geminiModelMode, geminiModel);
   };
 
   const handleDeleteKey = (index: number) => {
@@ -204,13 +272,33 @@ export default function SettingsComponent({
                 Gemini Model
               </label>
               <select
-                value={geminiModel}
+                value={geminiModelMode === MODEL_MODES.AUTO ? MODEL_MODES.AUTO : geminiModel}
                 onChange={handleModelChange}
                 className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-3.5 pr-3.5 text-sm text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all cursor-pointer"
               >
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Mặc định)</option>
-                <option value="gemini-3.5-flash">Gemini 3.5 Flash (Mới nhất)</option>
+                <option value="auto">Tự động chọn model phù hợp (Khuyến nghị)</option>
+                <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
+                <option value="gemini-flash-latest">Gemini Flash Latest</option>
               </select>
+              
+              {modelStatusMsg && (
+                <div className={`mt-2 text-[11px] font-medium p-2 rounded-lg border ${
+                  modelStatusMsg.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
+                  modelStatusMsg.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                  'bg-blue-50 text-blue-600 border-blue-200'
+                }`}>
+                  {modelStatusMsg.text}
+                  {modelStatusMsg.type === 'error' && geminiModelMode === MODEL_MODES.MANUAL && (
+                    <button 
+                      onClick={() => handleModelChange({ target: { value: MODEL_MODES.AUTO } } as any)}
+                      className="ml-2 underline font-bold"
+                    >
+                      Chuyển sang Tự động
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Khối hướng dẫn / lưu ý */}

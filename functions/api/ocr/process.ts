@@ -1,4 +1,5 @@
 /* ==== MOCK DATA ==== */
+import { requireResolvedGeminiModel } from '../../src/utils/geminiModelResolver';
 let ocrKeyRoundRobinIndex = 0;
 let ocrSpaceKeyRoundRobinIndex = 0;
 const MOCK_LEGAL_DOC_TEXT = `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
@@ -160,9 +161,24 @@ export const onRequestPost = async (context: { request: Request; env: any }) => 
     }
 
     const bodyData = await request.json() as any;
-    const { base64File, fileName, mimeType, isEncrypted, userGeminiKey, fromPage, toPage } = bodyData;
+const { base64File, fileName, mimeType, isEncrypted, userGeminiKey, fromPage, toPage, model } = bodyData;
 
-    if (!base64File) {
+if (!model) {
+  return new Response(JSON.stringify({ success: false, error: "Model not provided." }), {
+    status: 400,
+    headers: { "Content-Type": "application/json" }
+  });
+}
+let modelName;
+try {
+  modelName = requireResolvedGeminiModel(model);
+} catch (e: any) {
+  return new Response(JSON.stringify({ success: false, error: e.message }), {
+    status: 400,
+    headers: { "Content-Type": "application/json" }
+  });
+}
+if (!base64File) {
       return new Response(
         JSON.stringify({ success: false, error: "Không tìm thấy dữ liệu tệp tải lên." }),
         { status: 200, headers: { "Content-Type": "application/json" } }
@@ -272,7 +288,7 @@ if (env) {
                   text: "Hãy thực hiện OCR văn bản tiếng Việt này. YÊU CẦU BẮT BUỘC TRẢ VỀ CHUẨN JSON VỚI CẤU TRÚC SAU (chỉ trả về JSON, không chứa markdown hay text nào khác bên ngoài):\n{\n  \"text\": \"Văn bản sau khi đã OCR với đầy đủ định dạng dòng, Quốc hiệu...\",\n  \"warnings\": [\n    { \"line\": \"số dòng hoặc trang\", \"text\": \"chữ bị lỗi/nghi ngờ\", \"description\": \"mô tả lỗi (VD: mờ, nghi ngờ sai, thiếu ngày tháng)\" }\n  ]\n}",
                 };
 
-                const modelName = "gemini-2.5-flash";
+/* Model name resolved dynamically via GeminiModelResolver */
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
                 const apiResp = await fetch(url, {
                   method: "POST",

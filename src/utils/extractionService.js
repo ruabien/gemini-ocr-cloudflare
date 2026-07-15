@@ -1,4 +1,5 @@
 import { GeminiKeyManager } from './geminiKeyManager.js';
+import { requireResolvedGeminiModel } from './geminiModelResolver';
 
 /**
  * Service trích xuất dữ liệu có cấu trúc từ văn bản OCR sử dụng Google Gemini API.
@@ -19,18 +20,30 @@ export const extractStructuredData = async (ocrText, template, config, options =
 
   // Chuẩn hóa parser key bằng Regex để xử lý dấu phẩy, dấu chấm phẩy, xuống dòng và khoảng trắng
   const keysArray = GeminiKeyManager.parseGeminiKeys(rawApiKey);
-  const baseModelName = GeminiKeyManager.getModel(config);
+  let baseModelName = GeminiKeyManager.getModel(config);
+
+  // If a uid is available in options, we should use it to get the correct model
+  if (options.uid) {
+     baseModelName = GeminiKeyManager.getModel(config, options.uid);
+  }
 
   if (keysArray.length === 0) {
     throw new Error("Chưa cấu hình Gemini API Key.");
   }
 
-  let modelName = baseModelName;
-  // Chuẩn hóa tên mô hình tương tự ocrService
-  if (modelName === 'gemini-1.5-flash' || modelName === 'gemini-1.5-flash-latest') {
-    modelName = 'gemini-2.5-flash';
-  } else if (modelName === 'gemini-1.5-pro' || modelName === 'gemini-1.5-pro-latest') {
-    modelName = 'gemini-2.5-pro';
+  if (!baseModelName) {
+    const err = new Error("Chưa chọn được mô hình Gemini phù hợp (MODEL_NOT_RESOLVED).");
+    err.code = "MODEL_NOT_RESOLVED";
+    throw err;
+  }
+
+  let modelName;
+  try {
+    modelName = requireResolvedGeminiModel(baseModelName);
+  } catch (e) {
+    const err = new Error("Mô hình Gemini không hợp lệ hoặc chưa được xác định (MODEL_NOT_RESOLVED).");
+    err.code = "MODEL_NOT_RESOLVED";
+    throw err;
   }
 
 if (!ocrText || !ocrText.trim()) {

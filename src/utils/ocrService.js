@@ -1,3 +1,5 @@
+import { requireResolvedGeminiModel } from "./geminiModelResolver";
+
 /**
  * Helper to convert file to base64 string
  * @param {File} file 
@@ -27,12 +29,13 @@ const fileToBase64 = (file) => {
 export const processOCR = async (file, apiKey, modelName, options = {}) => {
   if (!apiKey) throw new Error("Vui lòng nhập API Key ở phía trên.");
   
-  let normalizedModel = modelName || 'gemini-2.5-flash';
-  if (normalizedModel === 'gemini-1.5-flash' || normalizedModel === 'gemini-1.5-flash-latest') {
-    normalizedModel = 'gemini-2.5-flash';
-  } else if (normalizedModel === 'gemini-1.5-pro' || normalizedModel === 'gemini-1.5-pro-latest') {
-    normalizedModel = 'gemini-2.5-pro';
+  if (!modelName) {
+    const err = new Error("Chưa xác định được mô hình Gemini (MODEL_NOT_RESOLVED).");
+    err.code = "MODEL_NOT_RESOLVED";
+    throw err;
   }
+
+  const normalizedModel = requireResolvedGeminiModel(modelName);
 
   const fileName = file.name || '';
   let fileType = file.type || '';

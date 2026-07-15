@@ -20,6 +20,7 @@ const PageLoader = () => (
   </div>
 );
 import { getUserStorageItem } from "./utils/userStorage";
+import { migrateOldStorage } from "./utils/geminiModelResolver";
 
 const KnowledgeCenter = lazy(() => import("./knowledge/KnowledgeCenter"));
 const KnowledgeArticle = lazy(() => import("./knowledge/KnowledgeArticle"));
@@ -95,6 +96,9 @@ function AppContent() {
   };
 
   useEffect(() => {
+    // Migrate old model storage to auto mode
+    migrateOldStorage(user?.uid);
+
     try {
       const saved = getUserStorageItem(user?.uid, 'gemini_keys');
       if (saved) {

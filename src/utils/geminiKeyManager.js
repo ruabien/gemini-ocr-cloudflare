@@ -37,8 +37,14 @@ export const GeminiKeyManager = {
    * @param {object} config - Đối tượng cấu hình từ state
    * @returns {string} Tên mô hình AI
    */
-  getModel(config) {
-    return config?.model || localStorage.getItem('ocr_model') || 'gemini-2.5-flash';
+  getModel(config, uid = null) {
+    // If we have local storage user ID context or config
+    const modelMode = config?.gemini_model_mode || localStorage.getItem(uid ? `lexocr:${uid}:gemini_model_mode` : 'gemini_model_mode') || 'auto';
+    if (modelMode === 'auto') {
+      const resolved = config?.gemini_resolved_model || localStorage.getItem(uid ? `lexocr:${uid}:gemini_resolved_model` : 'gemini_resolved_model');
+      return resolved || '';
+    }
+    return config?.model || localStorage.getItem(uid ? `lexocr:${uid}:ocr_model` : 'ocr_model') || '';
   },
 
   /**

@@ -12,6 +12,7 @@ import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
  // @ts-ignore
 import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
 import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
+import { getActiveModel, autoResolveModel, MODEL_MODES } from "../utils/geminiModelResolver";
 import { optimizeImageForOcr } from "../utils/imageOptimizer";
 
 interface OcrScannerProps {
@@ -471,7 +472,6 @@ if (geminiKeyPool.length === 0) {
 }
 let activeKeyIndex = 0;
 
-    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
 
     const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
       const pageNum = pageNumParam; // or dynamic page index variable
@@ -674,7 +674,7 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
           // @ts-ignore
           if (import.meta.env.DEV) {
             console.info("[OCR ENGINE] Gemini");
-            const model = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
+            const model = getActiveModel(user?.uid);
             console.info("[GEMINI CONFIG] Key index:", activeKeyIndex);
             console.info("[GEMINI CONFIG] Key suffix:", `${activeKey.slice(-4)}`);
             console.info("[GEMINI CONFIG] Model:", model);
@@ -684,7 +684,7 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
           if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
           setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
           const xhr = new XMLHttpRequest();
-          const selectedModel = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
+            const selectedModel = getActiveModel(user?.uid);
           let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
           const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
           xhr.open("POST", googleUrl, true);
@@ -846,16 +846,57 @@ if (xhr.status === 429) {
       };
 
 /* Try each Gemini key in order – only fall back to OCR.space when content is blocked */
+let hasRetriedAuto404 = false;
 while (true) {
   const currentKey = geminiKeyPool[activeKeyIndex];
   if (!currentKey) {
     // No more keys – cannot fallback to OCR.space unless content blocked
     throw new Error("Không còn Gemini API Key hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.");
   }
+
+  // Resolve model if auto mode and not resolved yet
+  const modelMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
+  if (modelMode === 'auto') {
+    const resolved = getUserStorageItem(user?.uid, 'gemini_resolved_model');
+    if (!resolved) {
+      try {
+        setBatchProgressText(`Đang tự động chọn model cho Trang ${pageNum}...`);
+        await autoResolveModel(user?.uid, currentKey, false);
+      } catch (resErr: any) {
+        let errText = "Không tìm thấy model Gemini phù hợp với API Key này.";
+        if (resErr.message === "INVALID_KEY") errText = "Gemini API Key không hợp lệ.";
+        else if (resErr.message === "RATE_LIMIT") errText = "Gemini API Key hiện đã đạt giới hạn sử dụng. Vui lòng thử lại sau.";
+        else if (resErr.message === "NETWORK") errText = "Không thể kiểm tra danh sách model. Vui lòng kiểm tra kết nối mạng.";
+        throw new Error(errText);
+      }
+    }
+  }
+
   try {
     const text = await makeRequest(currentKey);
     return text; // successful response
   } catch (e: any) {
+    // Model not found / no longer available (404)
+    if (e?.status === 404) {
+      const currentMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
+      if (currentMode === 'auto' && !hasRetriedAuto404) {
+        hasRetriedAuto404 = true;
+        try {
+          setBatchProgressText(`Model không khả dụng, đang dò tìm model mới cho Trang ${pageNum}...`);
+          // 1. Invalidate cache & 2. Call models.list again / resolve best model (force=true)
+          await autoResolveModel(user?.uid, currentKey, true);
+          // 4. Retry once
+          continue;
+        } catch (resErr: any) {
+          throw new Error("Mô hình không khả dụng và không thể tự động tìm thấy mô hình thay thế.");
+        }
+      }
+      if (currentMode === 'manual') {
+        throw new Error("Mô hình này không khả dụng với Gemini API Key hiện tại. Vui lòng chọn model khác hoặc chuyển sang chế độ Tự động.");
+      }
+      throw e;
+    }
+
     // Content blocked – attempt OCR.space fallback with robust error handling
     if (e?.type === "CONTENT_BLOCKED") {
       // @ts-ignore

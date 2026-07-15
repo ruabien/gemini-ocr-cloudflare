@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { onRequest } from '../functions/api/ocr.ts';
+import { onRequest } from '../../functions/api/ocr.ts';
 
 /**
  * Test the OCR configuration endpoint.

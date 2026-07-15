@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { requireResolvedGeminiModel } from '../../src/utils/geminiModelResolver.js';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*", // Hoặc điền chính xác tên miền https://text24.pages.dev của bạn
@@ -30,7 +31,22 @@ export default {
       const formData = await request.formData();
       const file = formData.get('file');
       const apiKey = formData.get('apiKey');
-      const model = formData.get('model') || 'gemini-2.5-flash';
+const modelRaw = formData.get('model');
+if (!modelRaw) {
+  return new Response(JSON.stringify({ error: 'Model not provided.' }), {
+    status: 400,
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
+}
+let model;
+try {
+  model = requireResolvedGeminiModel(modelRaw);
+} catch (e) {
+  return new Response(JSON.stringify({ error: e.message }), {
+    status: 400,
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
+}
 
       if (!file || !apiKey) {
         return new Response(JSON.stringify({ error: 'Thiếu file hoặc API Key.' }), {
