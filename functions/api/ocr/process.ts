@@ -62,7 +62,9 @@ function encryptText(text: string): { iv: string; encryptedData: string } {
 
 async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: string, ocrSpaceKeys: string[]) {
   if (ocrSpaceKeys.length === 0) {
-    ocrSpaceKeys.push("YOUR_FALLBACK_KEY");
+    // No OCR.space API keys configured. Caller should handle this case.
+    // Throw an error that will be caught by the fallback handling in the caller.
+    throw new Error("OCR_SPACE_NOT_CONFIGURED");
   }
 
   let fullText = "";

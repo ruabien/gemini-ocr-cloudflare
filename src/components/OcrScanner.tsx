@@ -9,8 +9,9 @@ import { auth } from "../lib/firebase";
 import { OcrConfig } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
-// @ts-ignore
+ // @ts-ignore
 import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
+import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
 import { optimizeImageForOcr } from "../utils/imageOptimizer";
 
 interface OcrScannerProps {
@@ -538,8 +539,8 @@ if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.t
               
               // Remove any premature blocking check that throws a string alert
               if (ocrKeys.length === 0) {
-// Development info removed for production
-                ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
+                rejectFallback(new Error("OCR.space API Key không được cấu hình."));
+                return;
               }
               
               // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
@@ -578,7 +579,7 @@ if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.t
                   }
 
                   const diagnosticFormData = new FormData();
-diagnosticFormData.append('apikey', 'helloworld'); // Explicitly bypass our restricted environment tokens
+diagnosticFormData.append('apikey', ocrKeys[0]); // Use configured key instead of public fallback
 diagnosticFormData.append('language', 'auto');
 diagnosticFormData.append('isOverlayRequired', 'false');
 diagnosticFormData.append('OcrEngine', '2');
@@ -592,6 +593,15 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
                   .then(async res => {
                     const txt = await res.text();
                     if (!res.ok) {
+                      if (res.status === 429) {
+                        const retryAfter = res.headers.get("retry-after") || "3600";
+                        const minutes = Math.ceil(parseInt(retryAfter, 10) / 60);
+                        const msg = `Công cụ OCR dự phòng đang tạm thời đạt giới hạn sử dụng. Vui lòng thử lại sau khoảng ${minutes} phút.`;
+                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
+                        rejectFallback(new Error(msg));
+                        return;
+                      }
                       // Show raw error text in UI for debugging
                       setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
                       editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
@@ -660,11 +670,21 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
       // Helper to perform a Gemini request with a specific key
       const makeRequest = (activeKey: string, isRetry: boolean = false): Promise<string> => {
         return new Promise<string>((resolve, reject) => {
-// @ts-ignore
-if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
+          // Structured diagnostics start
+          // @ts-ignore
+          if (import.meta.env.DEV) {
+            console.info("[OCR ENGINE] Gemini");
+            const model = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
+            console.info("[GEMINI CONFIG] Key index:", activeKeyIndex);
+            console.info("[GEMINI CONFIG] Key suffix:", `${activeKey.slice(-4)}`);
+            console.info("[GEMINI CONFIG] Model:", model);
+          }
+          // Log request start
+          // @ts-ignore
+          if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
           setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
           const xhr = new XMLHttpRequest();
-const selectedModel = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
+          const selectedModel = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
           let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
           const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
           xhr.open("POST", googleUrl, true);
@@ -711,8 +731,12 @@ if (xhr.status === 429) {
                 const rawText = xhr.responseText;
                 const cleanJson = JSON.parse(rawText);
                 
-                const finishReason = cleanJson.candidates?.[0]?.finishReason;
-                const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
+                const blockReason = cleanJson.promptFeedback?.blockReason;
+                const candidate = cleanJson.candidates?.[0];
+                const finishReason = candidate?.finishReason;
+                const safetyRatings = candidate?.safetyRatings || [];
+
+                const geminiText = candidate?.content?.parts?.[0]?.text;
                 const actualText = geminiText || cleanJson.text || "";
                 
                 let lines = actualText.split('\n');
@@ -725,25 +749,48 @@ if (xhr.status === 429) {
                 }
                 const sanitizedText = lines.join('\n').trim();
                 
-                if (finishReason === "RECITATION" || !sanitizedText) {
-                  shouldFallback = true;
-                } else {
-// @ts-ignore
-if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
+                // Bổ sung yêu cầu:
+                // - response có text hợp lệ; safety rating blocked=true hoặc probability=HIGH.
+                // -> vẫn trả text; không gọi OCR.space.
+                // Do đó, nếu có text hợp lệ (sanitizedText không trống), ta ưu tiên trả về text trước và kết thúc thành công,
+                // không quan tâm safety Ratings có blocked=true hay probability=HIGH.
+                if (sanitizedText) {
+                  // @ts-ignore
+                  if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
                   setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
                   editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
                   resolve(sanitizedText);
                   return;
                 }
+
+                // Determine Gemini failure category since text is empty
+                const failureCategory = classifyGeminiResponse(cleanJson);
+
+                if (failureCategory) {
+                  if (failureCategory === "CONTENT_BLOCKED") {
+                    // Development log with sanitized metadata for fallback decision
+                    // @ts-ignore
+                    if (import.meta.env.DEV) {
+                      const blockedFlags = safetyRatings
+                        .filter((r: any) => r.blocked === true)
+                        .map((r: any) => r.category);
+
+                      console.info(`\n[GEMINI RESPONSE META]\nHTTP status: ${xhr.status}\nPrompt block reason: ${blockReason || "None"}\nCandidate count: ${cleanJson.candidates?.length || 0}\nFinish reason: ${finishReason || "None"}\nSafety blocked flags: ${JSON.stringify(blockedFlags)}\nHas text: false\nClassified as: CONTENT_BLOCKED\n\n[FALLBACK DECISION]\nAllowed: true\nReason: CONTENT_BLOCKED\n`);
+                    }
+                  }
+                  reject({ type: failureCategory, message: `Gemini failure: ${failureCategory}` });
+                  return;
+                }
+
+                reject({ type: "EMPTY_RESPONSE", message: "Gemini returned empty response" });
+                return;
               } catch (e) {
-                shouldFallback = true;
+                reject({ type: "PARSE_ERROR", message: "Gemini response parse error" });
+                return;
               }
             } else {
-              shouldFallback = true;
-            }
-
-            if (shouldFallback) {
-              runOcrSpaceFallback().then(resolve).catch(reject);
+              reject({ status: xhr.status, message: `Gemini HTTP ${xhr.status}` });
+              return;
             }
           };
           
@@ -755,7 +802,7 @@ if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? 
                 makeRequest(activeKey, true).then(resolve).catch(reject);
               }, 2500);
             } else {
-              runOcrSpaceFallback().then(resolve).catch(reject);
+              reject({ type: "NETWORK", message: "Network error during Gemini request" });
             }
           };
           
@@ -798,28 +845,38 @@ if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? 
         });
       };
 
-/* Try each Gemini key in order – only fall back to OCR.space when all keys are exhausted */
+/* Try each Gemini key in order – only fall back to OCR.space when content is blocked */
 while (true) {
   const currentKey = geminiKeyPool[activeKeyIndex];
   if (!currentKey) {
-    // No more keys – use OCR.space fallback
-    // @ts-ignore
-    if (import.meta.env.DEV) console.info('All Gemini keys exhausted, falling back to OCR.space');
-    setBatchProgressText(`Tất cả Gemini key quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
-    return await runOcrSpaceFallback();
+    // No more keys – cannot fallback to OCR.space unless content blocked
+    throw new Error("Không còn Gemini API Key hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.");
   }
   try {
     const text = await makeRequest(currentKey);
     return text; // successful response
   } catch (e: any) {
-    // If the request was rejected because of quota (429) or auth error (401/403),
-    // move to the next key and try again.
+    // Content blocked – attempt OCR.space fallback with robust error handling
+    if (e?.type === "CONTENT_BLOCKED") {
+      // @ts-ignore
+      if (import.meta.env.DEV) console.info('Gemini blocked content, falling back to OCR.space');
+      setBatchProgressText(`Gemini chặn nội dung, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+      try {
+        const fallbackText = await runOcrSpaceFallback();
+        return fallbackText;
+      } catch (fallbackErr: any) {
+        // Fallback error, throw it so outer try-catch handles it cleanly
+        throw fallbackErr;
+      }
+    }
+
+    // Quota or auth errors – try next key
     if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
       activeKeyIndex++;
-      continue; // try next key
+      continue;
     }
-    // Other errors (network, server) are handled inside makeRequest
-    // and will either retry once or fall back as appropriate.
+
+    // Other errors – rethrow to be caught by outer handler
     throw e;
   }
 }

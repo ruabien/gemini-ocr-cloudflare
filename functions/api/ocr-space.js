@@ -173,13 +173,12 @@ export async function onRequestPost(context) {
 
     const ocrSpaceKeys = [env.OCR_SPACE_API_KEY, env.OCR_SPACE_API_KEY_1].filter(Boolean);
 
-
     if (ocrSpaceKeys.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: false,
           errorCode: 'OCR_SPACE_NOT_CONFIGURED', 
-          message: 'OCR.space chưa được cấu hình. Vui lòng thiết lập OCR_SPACE_API_KEY và OCR_SPACE_API_KEY_1 trong biến môi trường.' 
+          message: 'Gemini không thể xử lý tài liệu này và công cụ OCR dự phòng hiện chưa khả dụng. Vui lòng thử lại sau hoặc sử dụng tài liệu khác.' 
         }), 
         {
           status: 400,
