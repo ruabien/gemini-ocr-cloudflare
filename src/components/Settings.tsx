@@ -54,6 +54,28 @@ export default function SettingsComponent({
     return getUserStorageItem(user?.uid, 'gemini_resolved_model') || '';
   });
 
+  const cachedModelsList = React.useMemo<string[] | null>(() => {
+    const cachedObj = getUserStorageItem(user?.uid, 'gemini_model_cache');
+    if (cachedObj) {
+      try {
+        const cache = JSON.parse(cachedObj);
+        if (Array.isArray(cache.availableModels)) {
+          return cache.availableModels;
+        }
+      } catch (e) {}
+    }
+    return null;
+  }, [user?.uid, modelStatusMsg]);
+
+  const visibleManualModels = React.useMemo(() => {
+    if (!cachedModelsList) return [];
+    return [
+      { value: "gemini-3.5-flash", label: "Gemini 3.5 Flash" },
+      { value: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite" },
+      { value: "gemini-flash-latest", label: "Gemini Flash Latest" }
+    ].filter(m => cachedModelsList.some(c => c === m.value || c === `models/${m.value}`));
+  }, [cachedModelsList]);
+
   // Whenever user or key changes in auto mode, check cache/resolve
   React.useEffect(() => {
     if (geminiModelMode === MODEL_MODES.AUTO && keysList.length > 0) {
@@ -271,15 +293,15 @@ export default function SettingsComponent({
               <label className="block text-[11px] font-bold text-slate-650 text-slate-600 uppercase tracking-wide">
                 Gemini Model
               </label>
-              <select
-                value={geminiModelMode === MODEL_MODES.AUTO ? MODEL_MODES.AUTO : geminiModel}
+              <select 
+                value={geminiModelMode === MODEL_MODES.AUTO ? "auto" : geminiModel}
                 onChange={handleModelChange}
-                className="w-full bg-slate-50 focus:bg-white border border-slate-300 rounded-lg py-2.5 pl-3.5 pr-3.5 text-sm text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-red-500/50 focus:border-red-500 transition-all cursor-pointer"
+                className="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-300"
               >
                 <option value="auto">Tự động chọn model phù hợp (Khuyến nghị)</option>
-                <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
-                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
-                <option value="gemini-flash-latest">Gemini Flash Latest</option>
+                {visibleManualModels.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
               </select>
               
               {modelStatusMsg?.type === 'error' && (

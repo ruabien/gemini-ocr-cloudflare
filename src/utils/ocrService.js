@@ -127,7 +127,7 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
       },
       generationConfig: {
         candidateCount: 1,
-        temperature: options.isRetry ? 1.0 : 0.0
+        temperature: 0
       },
       safetySettings: [
         {
@@ -189,17 +189,37 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
     throw err;
   }
 
-  const data = await response.json();
+const data = await response.json();
 
-  if (data.candidates?.[0]?.finishReason === 'RECITATION') {
-    const err = new Error('Không thể trích xuất văn bản do bộ lọc trích dẫn (Recitation Filter) của Google Gemini chặn tài liệu này.');
+const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+// Prioritize usable text regardless of finishReason
+if (textResult && textResult.trim().length > 0) {
+  return textResult;
+}
+
+// No usable text – handle RECITATION with a single retry
+const finishReason = data.candidates?.[0]?.finishReason;
+
+if (finishReason === 'RECITATION') {
+  // If this call is already a retry, propagate a specific error for fallback
+  if (options.isRetry || options.recitationRetryAttempted) {
+    const err = new Error('RECITATION_BLOCKED_AFTER_RETRY');
     err.finishReason = 'RECITATION';
-    err.code = 'RECITATION';
+    err.code = 'RECITATION_BLOCKED_AFTER_RETRY';
     err.status = 400;
     throw err;
   }
 
-  const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  // Perform a single retry with the same model/key and retry‑specific prompt
+  return await processOCR(file, apiKey, modelName, {
+    ...options,
+    isRetry: true,
+    recitationRetryAttempted: true
+  });
+}
+
+// Existing handling for other missing text cases remains unchanged
   
   if (textResult === undefined || textResult === null) {
 

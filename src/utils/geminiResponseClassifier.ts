@@ -1,24 +1,37 @@
-export function classifyGeminiResponse(cleanJson: any): string | null {
-  const blockReason = cleanJson.promptFeedback?.blockReason;
-  const candidate = cleanJson.candidates?.[0];
-  const finishReason = candidate?.finishReason;
-  const safetyRatings = candidate?.safetyRatings || [];
+export const classifyGeminiResponse = (response: any): string | null => {
+  if (!response) return null;
 
-  const hasExplicitSafetyBlock = safetyRatings.some(
-    (rating: any) => rating.blocked === true
-  );
+  const errorCode = response?.error?.code;
 
-  if (blockReason) {
-    return "CONTENT_BLOCKED";
-  } else if (finishReason === "SAFETY") {
-    return "CONTENT_BLOCKED";
-  } else if (hasExplicitSafetyBlock) {
-    return "CONTENT_BLOCKED";
-  } else if (finishReason === "RECITATION") {
-    return "RECITATION_BLOCKED";
-  } else if (finishReason === "OTHER") {
-    return "OTHER_FINISH_REASON";
+  if (!errorCode) {
+    // No explicit error code; attempt to infer from response structure if needed
+    return null;
   }
 
-  return null;
-}
+  // Direct mapping of known Gemini failure categories
+  switch (errorCode) {
+    case "RECITATION_BLOCKED":
+      return "RECITATION_BLOCKED";
+    case "RECITATION_BLOCKED_AFTER_RETRY":
+      return "RECITATION_BLOCKED_AFTER_RETRY";
+    case "CONTENT_BLOCKED":
+      return "CONTENT_BLOCKED";
+    case "SAFETY":
+      return "SAFETY";
+    case "MODEL_NOT_RESOLVED":
+      return "MODEL_NOT_RESOLVED";
+    case "INVALID_KEY":
+      return "INVALID_KEY";
+    case "QUOTA_EXCEEDED":
+      return "QUOTA_EXCEEDED";
+    case "BLOCKED_REQUEST":
+      return "BLOCKED_REQUEST";
+    case "MALFORMED_REQUEST":
+      return "MALFORMED_REQUEST";
+    case "NO_TEXT":
+      return "NO_TEXT";
+    default:
+      // Unknown error code – return as is for downstream handling
+      return errorCode;
+  }
+};

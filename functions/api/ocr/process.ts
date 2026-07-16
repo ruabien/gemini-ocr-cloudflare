@@ -313,10 +313,34 @@ if (env) {
                 }
 
                 const responseData = await apiResp.json() as any;
-                const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+                const candidate = responseData.candidates?.[0];
+                const finishReason = candidate?.finishReason;
+                const generatedText = candidate?.content?.parts?.[0]?.text;
+                const hasUsableText = Boolean(generatedText && generatedText.trim());
+
+                // Development log for each request
+                // @ts-ignore
+                if (import.meta && import.meta.env && import.meta.env.DEV) {
+                  console.info("[OCR MODEL]");
+                  console.info("Mode: auto"); // Assuming auto mode for backend processing
+                  console.info(`Resolved model: ${modelName}`);
+                  console.info(`Key suffix: ${activeKey.slice(-4)}`);
+                  console.info("[GEMINI RESULT]");
+                  console.info(`HTTP status: ${apiResp.status}`);
+                  console.info(`Has usable text: ${hasUsableText}`);
+                  console.info(`Finish reason: ${finishReason || "None"}`);
+                  const failureCategory = (() => {
+                    if (!hasUsableText && finishReason === "RECITATION") return "RECITATION_BLOCKED";
+                    if (candidate?.promptFeedback?.blockReason) return "CONTENT_BLOCKED";
+                    if (finishReason === "SAFETY") return "CONTENT_BLOCKED";
+                    if (candidate?.safetyRatings?.some((r: any) => r.blocked === true)) return "CONTENT_BLOCKED";
+                    return "None";
+                  })();
+                  console.info(`Failure category: ${failureCategory}`);
+                }
 
                 console.log("[OCR END]", `Page_${pageIndex}`, Date.now());
-                if (generatedText) {
+                if (hasUsableText) {
                   try {
                     const cleanText = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
                     const parsed = JSON.parse(cleanText);
@@ -327,9 +351,14 @@ if (env) {
                     success = true;
                   }
                 } else {
-                  throw new Error(
-                    `Không nhận được phản hồi văn bản từ dịch vụ Gemini ở trang thứ ${pageIndex}.`
-                  );
+                  // No usable text; handle according to finishReason
+                  if (finishReason === "RECITATION") {
+                    throw new Error("RECITATION_BLOCKED");
+                  } else {
+                    throw new Error(
+                      `Không nhận được phản hồi văn bản từ dịch vụ Gemini ở trang thứ ${pageIndex}.`
+                    );
+                  }
                 }
               } catch (err: any) {
                 const errMsg = err.message || String(err);

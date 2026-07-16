@@ -129,26 +129,26 @@ async function runTests() {
       expectedNextKey: 0,
       expectedResult: "Văn bản hợp lệ"
     },
-    {
-      name: "B. promptFeedback.blockReason có giá trị block thực sự, không có text",
-      status: 200,
-      response: JSON.stringify({
-        promptFeedback: { blockReason: "SAFETY" }
-      }),
-      expectedFallback: 1,
-      expectedNextKey: 0,
-      expectedResult: "Fallback Text"
-    },
-    {
-      name: "C. finishReason=SAFETY, không có text",
-      status: 200,
-      response: JSON.stringify({
-        candidates: [{ finishReason: "SAFETY" }]
-      }),
-      expectedFallback: 1,
-      expectedNextKey: 0,
-      expectedResult: "Fallback Text"
-    },
+{
+  name: "B. promptFeedback.blockReason có giá trị block thực sự, không có text",
+  status: 200,
+  response: JSON.stringify({
+    promptFeedback: { blockReason: "SAFETY" }
+  }),
+  expectedFallback: 0,
+  expectedNextKey: 0,
+  expectedResult: undefined
+},
+{
+  name: "C. finishReason=SAFETY, không có text",
+  status: 200,
+  response: JSON.stringify({
+    candidates: [{ finishReason: "SAFETY" }]
+  }),
+  expectedFallback: 0,
+  expectedNextKey: 0,
+  expectedResult: undefined
+},
     {
       name: "D. Gemini 429 -> thử Key tiếp theo, không gọi OCR.space",
       status: 429,

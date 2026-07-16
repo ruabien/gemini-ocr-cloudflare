@@ -748,13 +748,46 @@ if (xhr.status === 429) {
                   }
                 }
                 const sanitizedText = lines.join('\n').trim();
-                
-                // Bổ sung yêu cầu:
-                // - response có text hợp lệ; safety rating blocked=true hoặc probability=HIGH.
-                // -> vẫn trả text; không gọi OCR.space.
-                // Do đó, nếu có text hợp lệ (sanitizedText không trống), ta ưu tiên trả về text trước và kết thúc thành công,
-                // không quan tâm safety Ratings có blocked=true hay probability=HIGH.
-                if (sanitizedText) {
+                const hasUsableText = Boolean(sanitizedText);
+
+                // Determine Gemini failure category
+                const failureCategory = (() => {
+                  if (!hasUsableText && finishReason === "RECITATION") return "RECITATION_BLOCKED";
+                  return classifyGeminiResponse(cleanJson);
+                })();
+
+                // Log details per request to console for debugging
+                // @ts-ignore
+                if (import.meta.env.DEV) {
+                  const savedSelectedModel = localStorage.getItem("selected_gemini_model") || "auto";
+                  const modeLog = savedSelectedModel === "auto" ? "auto" : "manual";
+                  const resolvedModelLog = cleanJson.modelName || selectedModel || "unknown";
+                  // Retrieve current active key (mask the details except last 4 chars)
+                  const keysStr = localStorage.getItem("gemini_api_keys");
+                  let activeKeySuffix = "unknown";
+                  if (keysStr) {
+                    try {
+                      const keys = JSON.parse(keysStr);
+                      if (Array.isArray(keys) && keys.length > 0) {
+                        const activeKey = keys[activeKeyIndex % keys.length];
+                        if (activeKey) activeKeySuffix = activeKey.slice(-4);
+                      }
+                    } catch (e) {}
+                  }
+
+                  console.info("[OCR MODEL]");
+                  console.info(`Mode: ${modeLog}`);
+                  console.info(`Resolved model: ${resolvedModelLog}`);
+                  console.info(`Key suffix: ****${activeKeySuffix}`);
+                  console.info("\n[GEMINI RESULT]");
+                  console.info(`HTTP status: ${xhr.status}`);
+                  console.info(`Has usable text: ${hasUsableText}`);
+                  console.info(`Finish reason: ${finishReason || "None"}`);
+                  console.info(`Failure category: ${failureCategory || "None"}`);
+                }
+
+                // Response ordering: Check text before finishReason
+                if (hasUsableText) {
                   // @ts-ignore
                   if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
                   setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
@@ -763,21 +796,7 @@ if (xhr.status === 429) {
                   return;
                 }
 
-                // Determine Gemini failure category since text is empty
-                const failureCategory = classifyGeminiResponse(cleanJson);
-
                 if (failureCategory) {
-                  if (failureCategory === "CONTENT_BLOCKED") {
-                    // Development log with sanitized metadata for fallback decision
-                    // @ts-ignore
-                    if (import.meta.env.DEV) {
-                      const blockedFlags = safetyRatings
-                        .filter((r: any) => r.blocked === true)
-                        .map((r: any) => r.category);
-
-                      console.info(`\n[GEMINI RESPONSE META]\nHTTP status: ${xhr.status}\nPrompt block reason: ${blockReason || "None"}\nCandidate count: ${cleanJson.candidates?.length || 0}\nFinish reason: ${finishReason || "None"}\nSafety blocked flags: ${JSON.stringify(blockedFlags)}\nHas text: false\nClassified as: CONTENT_BLOCKED\n\n[FALLBACK DECISION]\nAllowed: true\nReason: CONTENT_BLOCKED\n`);
-                    }
-                  }
                   reject({ type: failureCategory, message: `Gemini failure: ${failureCategory}` });
                   return;
                 }
@@ -897,11 +916,12 @@ while (true) {
       throw e;
     }
 
-    // Content blocked – attempt OCR.space fallback with robust error handling
-    if (e?.type === "CONTENT_BLOCKED") {
+    // Content blocked or RECITATION after retry – attempt OCR.space fallback with robust error handling
+    if (e?.type === "CONTENT_BLOCKED" || e?.type === "RECITATION_BLOCKED_AFTER_RETRY") {
       // @ts-ignore
-      if (import.meta.env.DEV) console.info('Gemini blocked content, falling back to OCR.space');
-      setBatchProgressText(`Gemini chặn nội dung, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+      if (import.meta.env.DEV) console.info(`Gemini blocked content (${e?.type}), falling back to OCR.space`);
+      const fallbackReasonStr = e?.type === "RECITATION_BLOCKED_AFTER_RETRY" ? "chép nguyên văn" : "chặn nội dung";
+      setBatchProgressText(`Gemini không thể ${fallbackReasonStr} trang này. Hệ thống đang thử công cụ OCR dự phòng - Trang ${pageNum}...`);
       try {
         const fallbackText = await runOcrSpaceFallback();
         return fallbackText;

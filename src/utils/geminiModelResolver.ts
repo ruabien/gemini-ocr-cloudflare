@@ -13,7 +13,7 @@ export const MODEL_MODES = {
   MANUAL: "manual",
 };
 
-// Priority list for auto mode
+ // Priority list for auto mode
 const PREFERRED_MODELS = [
   "gemini-3.5-flash",
   "gemini-3.1-flash",
@@ -57,11 +57,11 @@ export const listAvailableGeminiModels = async (apiKey: string): Promise<ModelCo
 export const filterOcrCapableModels = (models: ModelConfig[]): ModelConfig[] => {
   return models.filter(model => {
     const name = model.name.toLowerCase();
-    
+
     // Loại bỏ embeddings, tts, image gen, vv.
     if (
-      name.includes('embedding') || 
-      name.includes('tts') || 
+      name.includes('embedding') ||
+      name.includes('tts') ||
       name.includes('imagen') ||
       name.includes('vision') || // Older vision specific
       name.includes('aqa') ||
@@ -86,7 +86,7 @@ export const filterOcrCapableModels = (models: ModelConfig[]): ModelConfig[] => 
 
 export const resolveBestGeminiModel = (models: ModelConfig[]): string | null => {
   const ocrCapable = filterOcrCapableModels(models);
-  
+
   // Create a map for quick lookup (models API returns names prefixed with "models/")
   const modelNames = new Set(ocrCapable.map(m => m.name.replace('models/', '')));
 
@@ -118,9 +118,9 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
   if (!apiKey) {
     throw new Error("No API Key provided.");
   }
-  
+
   const keyHash = hashKey(apiKey);
-  
+
   // Check cache
   if (!force) {
     const cachedObj = getUserStorageItem(uid, 'gemini_model_cache');
@@ -140,17 +140,20 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
 
   // Call API
   const models = await listAvailableGeminiModels(apiKey);
+  // Determine OCR‑capable models for caching
+  const ocrCapable = filterOcrCapableModels(models);
   const bestModel = resolveBestGeminiModel(models);
 
   if (!bestModel) {
     throw new Error("NO_COMPATIBLE_MODEL");
   }
 
-  // Save cache
+  // Save cache (include list of OCR‑capable model IDs)
   setUserStorageItem(uid, 'gemini_resolved_model', bestModel);
   setUserStorageItem(uid, 'gemini_model_cache', JSON.stringify({
     keyHash,
     resolvedModel: bestModel,
+    availableModels: ocrCapable.map(m => m.name.replace('models/', '')),
     timestamp: Date.now()
   }));
 
@@ -162,7 +165,7 @@ export const requireResolvedGeminiModel = sharedRequireResolvedGeminiModel;
 
 export const getActiveModel = (uid: string | null | undefined): string => {
   const modelMode = getUserStorageItem(uid, 'gemini_model_mode') || 'auto';
-  
+
   if (modelMode === 'auto') {
     const resolved = getUserStorageItem(uid, 'gemini_resolved_model');
     if (!resolved) {
