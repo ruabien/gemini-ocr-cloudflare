@@ -282,20 +282,73 @@ export default function SettingsComponent({
                 <option value="gemini-flash-latest">Gemini Flash Latest</option>
               </select>
               
-              {modelStatusMsg && (
-                <div className={`mt-2 text-[11px] font-medium p-2 rounded-lg border ${
-                  modelStatusMsg.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' :
-                  modelStatusMsg.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                  'bg-blue-50 text-blue-600 border-blue-200'
-                }`}>
+              {modelStatusMsg?.type === 'error' && (
+                <div className="mt-2 text-[11px] font-medium p-2 rounded-lg border bg-red-50 text-red-600 border-red-200">
                   {modelStatusMsg.text}
-                  {modelStatusMsg.type === 'error' && geminiModelMode === MODEL_MODES.MANUAL && (
+                  {geminiModelMode === MODEL_MODES.MANUAL && (
                     <button 
                       onClick={() => handleModelChange({ target: { value: MODEL_MODES.AUTO } } as any)}
                       className="ml-2 underline font-bold"
                     >
                       Chuyển sang Tự động
                     </button>
+                  )}
+                </div>
+              )}
+              {modelStatusMsg?.type === 'info' && modelStatusMsg.text === "Đang kiểm tra model khả dụng…" && (
+                <div className="mt-2 text-[11px] font-medium p-2 rounded-lg border bg-blue-50 text-blue-600 border-blue-200">
+                  {modelStatusMsg.text}
+                </div>
+              )}
+              {modelStatusMsg?.type !== 'error' && modelStatusMsg?.text !== "Đang kiểm tra model khả dụng…" && (
+                <div className={`mt-2 p-3 rounded-lg border ${
+                  (geminiModelMode === MODEL_MODES.AUTO && resolvedModelDisplay) 
+                    ? 'bg-emerald-50 border-emerald-200' 
+                    : (!geminiModelMode || (geminiModelMode === MODEL_MODES.MANUAL && !geminiModel))
+                    ? 'bg-slate-50 border-slate-200'
+                    : 'bg-blue-50 border-blue-200'
+                }`}>
+                  {geminiModelMode === MODEL_MODES.AUTO ? (
+                    resolvedModelDisplay ? (
+                      <>
+                        <div className="text-[12px] font-bold text-emerald-700 flex items-center mb-1">
+                          <span className="mr-1.5">🟢</span> Model đang sử dụng
+                        </div>
+                        <div className="text-[14px] font-black text-emerald-800 mb-1">
+                          {resolvedModelDisplay.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        </div>
+                        <div className="text-[10px] text-emerald-600 leading-snug">
+                          Model này được LexOCR tự động lựa chọn dựa trên API Key của bạn.
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[12px] font-bold text-blue-700 mb-1">
+                          Model sẽ tự động được xác định khi bạn sử dụng API Key lần đầu.
+                        </div>
+                        <div className="text-[10px] text-blue-600 leading-snug">
+                          Sau khi xác định, LexOCR sẽ ghi nhớ model phù hợp cho API Key này và tự động sử dụng trong các lần OCR tiếp theo.
+                        </div>
+                      </>
+                    )
+                  ) : geminiModelMode === MODEL_MODES.MANUAL && geminiModel ? (
+                    <>
+                      <div className="text-[12px] font-bold text-blue-700 mb-1">
+                        Bạn đang sử dụng model do mình lựa chọn.
+                      </div>
+                      <div className="text-[14px] font-black text-blue-800 mb-1">
+                        {geminiModel.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[12px] font-bold text-slate-700 mb-1">
+                        Chưa xác định được model Gemini.
+                      </div>
+                      <div className="text-[10px] text-slate-500 leading-snug">
+                        Hệ thống sẽ tự động xác định khi bạn bắt đầu OCR.
+                      </div>
+                    </>
                   )}
                 </div>
               )}
