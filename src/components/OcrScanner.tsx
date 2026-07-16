@@ -57,6 +57,19 @@ const formatSize = (bytes: number) => {
   return `${Math.round(bytes / 1024)} KB`;
 };
 
+const sanitizeError = (message: string): string => {
+  if (!message) return "";
+  return message
+    .replace(/key=[a-zA-Z0-9_\-]+/g, (match) => {
+      const parts = match.split('=');
+      const val = parts[1] || '';
+      return `key=****${val.slice(-4)}`;
+    })
+    .replace(/AIzaSy[a-zA-Z0-9_\-]+/g, (match) => {
+      return `****${match.slice(-4)}`;
+    });
+};
+
 export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveTab }: OcrScannerProps) {
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
@@ -70,6 +83,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   const [batchProgressText, setBatchProgressText] = useState("");
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const cancelOcrRef = useRef<AbortController | null>(null);
 
   const [editorContent, setEditorContent] = useState("");
   const editorContentRef = useRef("");
@@ -305,6 +319,10 @@ const startOcrProcess = async () => {
   // LOCK THE RUNTIME PROCESSING FUNCTION WITH A DEFENSIVE LOADING GUARD
   if (isProcessingRef.current || isBatchProcessing || isSlicing) return;
 
+  const controller = new AbortController();
+  cancelOcrRef.current = controller;
+  const signal = controller.signal;
+
   // ---- Pre‑flight usage checks for FREE users ----
   let isPro = false;
   let currentUsage = 0;
@@ -475,472 +493,505 @@ let activeKeyIndex = 0;
 
     const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
       const pageNum = pageNumParam; // or dynamic page index variable
-if (pageProcessingLockRef.current[pageNum]) {
-    // Development info removed for production
-    return "";
-}
+      if (pageProcessingLockRef.current[pageNum]) {
+        return "";
+      }
       pageProcessingLockRef.current[pageNum] = true;
 
-// @ts-ignore
-if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}` } ---`);
+      // @ts-ignore
+      if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} ---`);
       try {
         let fileType = file.type || '';
-      if (!fileType) {
-        if (file.name.toLowerCase().endsWith('.pdf')) {
-          fileType = 'application/pdf';
-        } else if (file.name.toLowerCase().endsWith('.png')) {
-          fileType = 'image/png';
-        } else {
-          fileType = 'image/jpeg';
+        if (!fileType) {
+          if (file.name.toLowerCase().endsWith('.pdf')) {
+            fileType = 'application/pdf';
+          } else if (file.name.toLowerCase().endsWith('.png')) {
+            fileType = 'image/png';
+          } else {
+            fileType = 'image/jpeg';
+          }
         }
-      }
 
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          const rawBase64 = result.includes(',') ? result.split(',')[1] : result;
-          const cleanBase64 = rawBase64.replace(/^data:image\/[a-z]+;base64,/, '');
-          resolve(cleanBase64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            const rawBase64 = result.includes(',') ? result.split(',')[1] : result;
+            const cleanBase64 = rawBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+            resolve(cleanBase64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
-      const runOcrSpaceFallback = (): Promise<string> => {
-        return new Promise<string>((resolveFallback, rejectFallback) => {
-          // Update progress text with the fallback status
-          setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
-          
-          // 1. Fetch backend keys from the lightweight secure token gateway
-          fetch("/api/ocr")
-            .then(res => {
-              if (!res.ok) {
-                throw new Error("Failed to retrieve OCR.space credentials from API gateway");
-              }
-              return res.json();
-            })
-            .then((data: any) => {
-              // Ensure it correctly logs and checks data.primary and data.backup
-              
-              const fetchedKeys = data || {};
-              const cleanKey = (key: any) => {
-                if (!key) return "";
-                const s = String(key).trim();
-                if (s === "undefined" || s === "null" || s === "") return "";
-                return s;
-              };
+        const runOcrSpaceFallback = (): Promise<string> => {
+          return new Promise<string>((resolveFallback, rejectFallback) => {
+            setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+            
+            fetch("/api/ocr")
+              .then(res => {
+                if (!res.ok) {
+                  throw new Error("Failed to retrieve OCR.space credentials from API gateway");
+                }
+                return res.json();
+              })
+              .then((data: any) => {
+                const fetchedKeys = data || {};
+                const cleanKey = (key: any) => {
+                  if (!key) return "";
+                  const s = String(key).trim();
+                  if (s === "undefined" || s === "null" || s === "") return "";
+                  return s;
+                };
 
-              const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
-              const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
-              const ocrKeys: string[] = [];
-              if (primaryKey) ocrKeys.push(primaryKey);
-              if (secondaryKey) ocrKeys.push(secondaryKey);
-              
-              // Remove any premature blocking check that throws a string alert
-              if (ocrKeys.length === 0) {
-                rejectFallback(new Error("OCR.space API Key không được cấu hình."));
-                return;
-              }
-              
-              // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
-              const img = new Image();
-              img.onload = () => {
-                URL.revokeObjectURL(img.src);
-                let width = img.width;
-                let height = img.height;
-                const maxDimension = 1200;
+                const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
+                const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
+                const ocrKeys: string[] = [];
+                if (primaryKey) ocrKeys.push(primaryKey);
+                if (secondaryKey) ocrKeys.push(secondaryKey);
                 
-                if (width > maxDimension || height > maxDimension) {
-                  if (width > height) {
-                    height = Math.round((height * maxDimension) / width);
-                    width = maxDimension;
-                  } else {
-                    width = Math.round((width * maxDimension) / height);
-                    height = maxDimension;
-                  }
+                if (ocrKeys.length === 0) {
+                  rejectFallback(new Error("OCR.space API Key không được cấu hình."));
+                  return;
                 }
                 
-                const downscaledCanvas = document.createElement("canvas");
-                downscaledCanvas.width = width;
-                downscaledCanvas.height = height;
-                
-                const ctx = downscaledCanvas.getContext("2d");
-                if (ctx) {
-                  ctx.drawImage(img, 0, 0, width, height);
-                }
-                
-                // 3. Use standard canvas.toBlob to avoid corrupted manual Base64 manipulation
-                downscaledCanvas.toBlob((blob) => {
-                  if (!blob) {
-                    console.error("Canvas toBlob failed - asset is empty!");
-                    rejectFallback(new Error("Canvas toBlob failed - asset is empty!"));
-                    return;
-                  }
-
-                  const diagnosticFormData = new FormData();
-diagnosticFormData.append('apikey', ocrKeys[0]); // Use configured key instead of public fallback
-diagnosticFormData.append('language', 'auto');
-diagnosticFormData.append('isOverlayRequired', 'false');
-diagnosticFormData.append('OcrEngine', '2');
-diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
-// Log request params before OCR.space fallback
+                const img = new Image();
+                img.onload = () => {
+                  URL.revokeObjectURL(img.src);
+                  let width = img.width;
+                  let height = img.height;
+                  const maxDimension = 1200;
                   
-                  fetch("https://api.ocr.space/parse/image", {
-                    method: "POST",
-                    body: diagnosticFormData
-                  })
-                  .then(async res => {
-                    const txt = await res.text();
-                    if (!res.ok) {
-                      if (res.status === 429) {
-                        const retryAfter = res.headers.get("retry-after") || "3600";
-                        const minutes = Math.ceil(parseInt(retryAfter, 10) / 60);
-                        const msg = `Công cụ OCR dự phòng đang tạm thời đạt giới hạn sử dụng. Vui lòng thử lại sau khoảng ${minutes} phút.`;
+                  if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                      height = Math.round((height * maxDimension) / width);
+                      width = maxDimension;
+                    } else {
+                      width = Math.round((width * maxDimension) / height);
+                      height = maxDimension;
+                    }
+                  }
+                  
+                  const downscaledCanvas = document.createElement("canvas");
+                  downscaledCanvas.width = width;
+                  downscaledCanvas.height = height;
+                  
+                  const ctx = downscaledCanvas.getContext("2d");
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                  }
+                  
+                  downscaledCanvas.toBlob((blob) => {
+                    if (!blob) {
+                      rejectFallback(new Error("Canvas toBlob failed - asset is empty!"));
+                      return;
+                    }
+
+                    const diagnosticFormData = new FormData();
+                    diagnosticFormData.append('apikey', ocrKeys[0]);
+                    diagnosticFormData.append('language', 'auto');
+                    diagnosticFormData.append('isOverlayRequired', 'false');
+                    diagnosticFormData.append('OcrEngine', '2');
+                    diagnosticFormData.append('file', blob, 'page6.jpg');
+                    
+                    fetch("https://api.ocr.space/parse/image", {
+                      method: "POST",
+                      body: diagnosticFormData
+                    })
+                    .then(async res => {
+                      const txt = await res.text();
+                      if (!res.ok) {
+                        if (res.status === 429) {
+                          const retryAfter = res.headers.get("retry-after") || "3600";
+                          const minutes = Math.ceil(parseInt(retryAfter, 10) / 60);
+                          const msg = `Công cụ OCR dự phòng đang tạm thời đạt giới hạn sử dụng. Vui lòng thử lại sau khoảng ${minutes} phút.`;
+                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
+                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
+                          rejectFallback(new Error(msg));
+                          return;
+                        }
+                        const sanitizedTxt = sanitizeError(txt);
+                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${sanitizedTxt}`);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${sanitizedTxt}`;
+                        rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
+                        return;
+                      }
+                      let data;
+                      try {
+                        data = JSON.parse(txt);
+                      } catch {
+                        const finalText = txt.trim();
+                        const sanitizedFinalText = sanitizeError(finalText);
+                        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
+                        resolveFallback(sanitizedFinalText);
+                        return;
+                      }
+                      if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
+                        const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
+                        const errorInfo = sanitizeError(errMsgs || "OCR.space processing error");
+                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
+                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
+                        rejectFallback(new Error(errorInfo));
+                        return;
+                      }
+                      let extractedText = "";
+                      if (data.ParsedResults?.[0]?.ParsedText) {
+                        extractedText = data.ParsedResults[0].ParsedText;
+                      } else if (data.text) {
+                        extractedText = data.text;
+                      } else {
+                        const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
                         setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
                         editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
                         rejectFallback(new Error(msg));
                         return;
                       }
-                      // Show raw error text in UI for debugging
-                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
-                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
-                      rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
-                      return;
-                    }
-                    // Parse JSON safely
-                    let data;
-                    try {
-                      data = JSON.parse(txt);
-                    } catch {
-                      // If not JSON, just return raw text
-                      const finalText = txt.trim();
-                      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-                      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-                      resolveFallback(finalText);
-                      return;
-                    }
-                    // Handle potential error fields
-                    if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
-                      const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
-                      const errorInfo = errMsgs || "OCR.space processing error";
-                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
-                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
-                      rejectFallback(new Error(errorInfo));
-                      return;
-                    }
-                    // Extract text
-                    let extractedText = "";
-                    if (data.ParsedResults?.[0]?.ParsedText) {
-                      extractedText = data.ParsedResults[0].ParsedText;
-                    } else if (data.text) {
-                      extractedText = data.text;
-                    } else {
-                      const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
-                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
-                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
-                      rejectFallback(new Error(msg));
-                      return;
-                    }
-                    const finalText = extractedText.trim();
-                    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText);
-                    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + finalText;
-                    resolveFallback(finalText);
-                  })
-                  .catch(err => {
-                    // Network or unexpected error
-                    const errorMsg = err?.message || "Unknown fetch error";
-                    setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
-                    editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
-                    rejectFallback(err);
-                  });
-                }, 'image/jpeg', 0.85);
-              };
-              img.onerror = () => {
-                rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
-              };
-              img.src = URL.createObjectURL(file);
-            })
-            .catch(err => {
-              rejectFallback(err);
-            });
-        });
-      };
+                      const finalText = extractedText.trim();
+                      const sanitizedFinalText = sanitizeError(finalText);
+                      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
+                      resolveFallback(sanitizedFinalText);
+                    })
+                    .catch(err => {
+                      const errorMsg = sanitizeError(err?.message || "Unknown fetch error");
+                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
+                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
+                      rejectFallback(new Error(errorMsg));
+                    });
+                  }, 'image/jpeg', 0.85);
+                };
+                img.onerror = () => {
+                  rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
+                };
+                img.src = URL.createObjectURL(file);
+              })
+              .catch(err => {
+                rejectFallback(new Error(sanitizeError(err?.message || "Unknown error during OCR.space fallback")));
+              });
+          });
+        };
 
-      // Helper to perform a Gemini request with a specific key
-      const makeRequest = (activeKey: string, isRetry: boolean = false): Promise<string> => {
-        return new Promise<string>((resolve, reject) => {
-          // Structured diagnostics start
-          // @ts-ignore
-          if (import.meta.env.DEV) {
-            console.info("[OCR ENGINE] Gemini");
-const model = getActiveModel(user?.uid, activeKey);
-            console.info("[GEMINI CONFIG] Key index:", activeKeyIndex);
-            console.info("[GEMINI CONFIG] Key suffix:", `${activeKey.slice(-4)}`);
-            console.info("[GEMINI CONFIG] Model:", model);
-          }
-          // Log request start
-          // @ts-ignore
-          if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
-          setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
-          const xhr = new XMLHttpRequest();
-const selectedModel = getActiveModel(user?.uid, activeKey);
-          let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
-          const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
-          xhr.open("POST", googleUrl, true);
-          xhr.setRequestHeader("Content-Type", "application/json");
-          
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              const percentComplete = Math.round((e.loaded / e.total) * 100);
-              setProgress(percentComplete);
-            }
-          };
-          
-          xhr.onload = () => {
-            let shouldFallback = false;
-            const isTransientError = xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
-            
-if (xhr.status === 429) {
-  // Gemini quota exceeded – move to next key
-  // @ts-ignore
-  if (import.meta.env.DEV) console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received 429, switching key`);
-  setBatchProgressText(`Gemini key ${activeKeyIndex + 1} quá tải, thử key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
-  reject({ status: 429 });
-  return;
-} else if (xhr.status === 401 || xhr.status === 403) {
-  // Auth error – skip this key
-  // @ts-ignore
-  if (import.meta.env.DEV) console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received ${xhr.status}, skipping`);
-  setBatchProgressText(`Gemini key ${activeKeyIndex + 1} không hợp lệ (${xhr.status}), thử key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
-  reject({ status: xhr.status });
-  return;
-} else if (isTransientError) {
-              if (!isRetry) {
-                console.warn(`[OCR WARN] Transient error HTTP ${xhr.status} at page ${pageNum}. Retrying once in 2.5s...`);
-                setBatchProgressText(`Gemini gặp lỗi tạm thời (${xhr.status}), đang thử lại - Trang ${pageNum}...`);
-                setTimeout(() => {
-                  makeRequest(activeKey, true).then(resolve).catch(reject);
-                }, 2500);
-                return;
-              } else {
-                shouldFallback = true;
-              }
-            } else if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                const rawText = xhr.responseText;
-                const cleanJson = JSON.parse(rawText);
-                
-                const blockReason = cleanJson.promptFeedback?.blockReason;
-                const candidate = cleanJson.candidates?.[0];
-                const finishReason = candidate?.finishReason;
-                const safetyRatings = candidate?.safetyRatings || [];
-
-                const geminiText = candidate?.content?.parts?.[0]?.text;
-                const actualText = geminiText || cleanJson.text || "";
-                
-                let lines = actualText.split('\n');
-                if (lines.length > 0) {
-                  const firstLine = lines[0].trim();
-                  const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
-                  if (isAiIntro) {
-                    lines.shift();
-                  }
-                }
-                const sanitizedText = lines.join('\n').trim();
-                const hasUsableText = Boolean(sanitizedText);
-
-                // Determine Gemini failure category
-                const failureCategory = (() => {
-                  if (!hasUsableText && finishReason === "RECITATION") return "RECITATION_BLOCKED";
-                  return classifyGeminiResponse(cleanJson);
-                })();
-
-                // Log details per request to console for debugging
-                // @ts-ignore
-                if (import.meta.env.DEV) {
-                  const savedSelectedModel = localStorage.getItem("selected_gemini_model") || "auto";
-                  const modeLog = savedSelectedModel === "auto" ? "auto" : "manual";
-                  const resolvedModelLog = cleanJson.modelName || selectedModel || "unknown";
-                  // Retrieve current active key (mask the details except last 4 chars)
-                  const keysStr = localStorage.getItem("gemini_api_keys");
-                  let activeKeySuffix = "unknown";
-                  if (keysStr) {
-                    try {
-                      const keys = JSON.parse(keysStr);
-                      if (Array.isArray(keys) && keys.length > 0) {
-                        const activeKey = keys[activeKeyIndex % keys.length];
-                        if (activeKey) activeKeySuffix = activeKey.slice(-4);
-                      }
-                    } catch (e) {}
-                  }
-
-                  console.info("[OCR MODEL]");
-                  console.info(`Mode: ${modeLog}`);
-                  console.info(`Resolved model: ${resolvedModelLog}`);
-                  console.info(`Key suffix: ****${activeKeySuffix}`);
-                  console.info("\n[GEMINI RESULT]");
-                  console.info(`HTTP status: ${xhr.status}`);
-                  console.info(`Has usable text: ${hasUsableText}`);
-                  console.info(`Finish reason: ${finishReason || "None"}`);
-                  console.info(`Failure category: ${failureCategory || "None"}`);
-                }
-
-                // Response ordering: Check text before finishReason
-                if (hasUsableText) {
-                  // @ts-ignore
-                  if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
-                  setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText);
-                  editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedText;
-                  resolve(sanitizedText);
-                  return;
-                }
-
-                if (failureCategory) {
-                  reject({ type: failureCategory, message: `Gemini failure: ${failureCategory}` });
-                  return;
-                }
-
-                reject({ type: "EMPTY_RESPONSE", message: "Gemini returned empty response" });
-                return;
-              } catch (e) {
-                reject({ type: "PARSE_ERROR", message: "Gemini response parse error" });
-                return;
-              }
-            } else {
-              reject({ status: xhr.status, message: `Gemini HTTP ${xhr.status}` });
+        const makeRequest = (activeKey: string, retryAttempt: number = 0): Promise<string> => {
+          return new Promise<string>((resolve, reject) => {
+            if (signal?.aborted) {
+              reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
               return;
             }
-          };
-          
-          xhr.onerror = () => {
-            if (!isRetry) {
-              console.warn(`[OCR WARN] Network error at page ${pageNum}. Retrying once in 2.5s...`);
-              setBatchProgressText(`Lỗi kết nối mạng, đang thử lại - Trang ${pageNum}...`);
-              setTimeout(() => {
-                makeRequest(activeKey, true).then(resolve).catch(reject);
-              }, 2500);
-            } else {
-              reject({ type: "NETWORK", message: "Network error during Gemini request" });
+
+            // @ts-ignore
+            if (import.meta.env.DEV) {
+              console.info("[OCR ENGINE] Gemini");
+              const model = getActiveModel(user?.uid, activeKey);
+              console.info("[GEMINI CONFIG] Key index:", activeKeyIndex);
+              console.info("[GEMINI CONFIG] Key suffix:", `${activeKey.slice(-4)}`);
+              console.info("[GEMINI CONFIG] Model:", model);
             }
-          };
-          
-          const payload = {
-            "contents": [{
-              "parts": [
-                {"text": "Trích xuất chính xác 100% toàn bộ nội dung văn bản có trong hình ảnh này sang tiếng Việt. Giữ nguyên định dạng, không thêm bớt bất kỳ từ ngữ hay lời giải thích nào."},
-                {"inlineData": {
-                  "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
-                  "data": base64Data
-                }}
-              ]
-            }],
-            "generationConfig": {
-              "temperature": 0.0,
-              "topP": 0.95,
-              "candidateCount": 1
-            },
-            "safetySettings": [
-              {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_NONE"
-              },
-              {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_NONE"
-              },
-              {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_NONE"
-              },
-              {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_NONE"
+            // @ts-ignore
+            if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
+            
+            if (retryAttempt > 0) {
+              setBatchProgressText(`Gemini đang tạm thời quá tải. Hệ thống sẽ tự động thử lại... (Lần thử ${retryAttempt}/3)`);
+            } else {
+              setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
+            }
+
+            const xhr = new XMLHttpRequest();
+            const selectedModel = getActiveModel(user?.uid, activeKey);
+            let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
+            const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
+            xhr.open("POST", googleUrl, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            
+            const onAbort = () => {
+              try {
+                xhr.abort();
+              } catch (e) {}
+              reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
+            };
+            signal?.addEventListener('abort', onAbort);
+
+            const cleanup = () => {
+              signal?.removeEventListener('abort', onAbort);
+            };
+
+            xhr.upload.onprogress = (e) => {
+              if (e.lengthComputable) {
+                const percentComplete = Math.round((e.loaded / e.total) * 100);
+                setProgress(percentComplete);
               }
-            ]
-          };
-          
-          xhr.send(JSON.stringify(payload));
-        });
-      };
+            };
+            
+            xhr.onload = () => {
+              cleanup();
+              if (signal?.aborted) return;
 
-/* Try each Gemini key in order – only fall back to OCR.space when content is blocked */
-let hasRetriedAuto404 = false;
-while (true) {
-  const currentKey = geminiKeyPool[activeKeyIndex];
-  if (!currentKey) {
-    // No more keys – cannot fallback to OCR.space unless content blocked
-    throw new Error("Không còn Gemini API Key hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.");
-  }
+              let shouldFallback = false;
+              const isTransientError = xhr.status === 408 || xhr.status === 429 || xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
+              
+              if (xhr.status === 401 || xhr.status === 403 || xhr.status === 404 || xhr.status === 400) {
+                reject({ status: xhr.status, type: "CLIENT_ERROR" });
+                return;
+              } else if (isTransientError || xhr.status === 0) { // status 0 can be network error/timeout
+                const maxRetries = xhr.status === 503 ? 3 : 1;
+                if (retryAttempt < maxRetries) {
+                  let delay = 2500;
+                  if (xhr.status === 503) {
+                    delay = retryAttempt === 0 ? 2500 : retryAttempt === 1 ? 5000 : 10000;
+                  }
+                  delay += Math.floor(Math.random() * 1000); // jitter 0 to 1000 ms
+                  
+                  const nextAttempt = retryAttempt + 1;
+                  const errorName = xhr.status === 503 ? "Gemini đang tạm thời quá tải" : (xhr.status === 0 ? "Lỗi kết nối mạng" : `Gemini gặp lỗi tạm thời (${xhr.status})`);
+                  
+                  if (xhr.status === 503) {
+                    setBatchProgressText(`Gemini đang tạm thời quá tải. Hệ thống sẽ tự động thử lại... (Lần thử ${nextAttempt}/3)`);
+                  } else {
+                    setBatchProgressText(`${errorName}, đang thử lại - Trang ${pageNum}...`);
+                  }
 
-  // Resolve model if auto mode and not resolved yet
-  const modelMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
-  if (modelMode === 'auto') {
-    const resolved = getUserStorageItem(user?.uid, 'gemini_resolved_model');
-    if (!resolved) {
-      try {
-        setBatchProgressText(`Đang tự động chọn model cho Trang ${pageNum}...`);
-        await autoResolveModel(user?.uid, currentKey, false);
-      } catch (resErr: any) {
-        let errText = "Không tìm thấy model Gemini phù hợp với API Key này.";
-        if (resErr.message === "INVALID_KEY") errText = "Gemini API Key không hợp lệ.";
-        else if (resErr.message === "RATE_LIMIT") errText = "Gemini API Key hiện đã đạt giới hạn sử dụng. Vui lòng thử lại sau.";
-        else if (resErr.message === "NETWORK") errText = "Không thể kiểm tra danh sách model. Vui lòng kiểm tra kết nối mạng.";
-        throw new Error(errText);
-      }
-    }
-  }
+                  setTimeout(() => {
+                    if (signal?.aborted) {
+                      reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
+                      return;
+                    }
+                    makeRequest(activeKey, nextAttempt).then(resolve).catch(reject);
+                  }, delay);
+                  return;
+                } else {
+                  if (xhr.status === 503 || xhr.status === 0 || xhr.status === 429) {
+                    reject({ 
+                      type: xhr.status === 503 ? "503_EXHAUSTED" : "TRANSIENT_EXHAUSTED", 
+                      message: xhr.status === 503 
+                        ? "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại." 
+                        : "Lỗi kết nối mạng hoặc dịch vụ quá tải. Vui lòng thử lại sau."
+                    });
+                    return;
+                  }
+                  shouldFallback = true;
+                }
+              }
 
-  try {
-    const text = await makeRequest(currentKey);
-    return text; // successful response
-  } catch (e: any) {
-    // Model not found / no longer available (404)
-    if (e?.status === 404) {
-      const currentMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
-      if (currentMode === 'auto' && !hasRetriedAuto404) {
-        hasRetriedAuto404 = true;
-        try {
-          setBatchProgressText(`Model không khả dụng, đang dò tìm model mới cho Trang ${pageNum}...`);
-          // 1. Invalidate cache & 2. Call models.list again / resolve best model (force=true)
-          await autoResolveModel(user?.uid, currentKey, true);
-          // 4. Retry once
-          continue;
-        } catch (resErr: any) {
-          throw new Error("Mô hình không khả dụng và không thể tự động tìm thấy mô hình thay thế.");
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const rawText = xhr.responseText;
+                  const cleanJson = JSON.parse(rawText);
+                  
+                  const blockReason = cleanJson.promptFeedback?.blockReason;
+                  const candidate = cleanJson.candidates?.[0];
+                  const finishReason = candidate?.finishReason;
+                  const safetyRatings = candidate?.safetyRatings || [];
+
+                  const geminiText = candidate?.content?.parts?.[0]?.text;
+                  const actualText = geminiText || cleanJson.text || "";
+                  
+                  let lines = actualText.split('\n');
+                  if (lines.length > 0) {
+                    const firstLine = lines[0].trim();
+                    const isAiIntro = /^(Dưới đây là|Văn bản đã được|Kết quả|Đây là văn bản)/i.test(firstLine) && firstLine.endsWith(':');
+                    if (isAiIntro) {
+                      lines.shift();
+                    }
+                  }
+                  const sanitizedText = lines.join('\n').trim();
+                  const hasUsableText = Boolean(sanitizedText);
+
+                  const failureCategory = (() => {
+                    if (!hasUsableText && finishReason === "RECITATION") return "RECITATION_BLOCKED";
+                    return classifyGeminiResponse(cleanJson);
+                  })();
+
+                  // @ts-ignore
+                  if (import.meta.env.DEV) {
+                    const savedSelectedModel = localStorage.getItem("selected_gemini_model") || "auto";
+                    const modeLog = savedSelectedModel === "auto" ? "auto" : "manual";
+                    const resolvedModelLog = cleanJson.modelName || selectedModel || "unknown";
+                    const keysStr = localStorage.getItem("gemini_api_keys");
+                    let activeKeySuffix = "unknown";
+                    if (keysStr) {
+                      try {
+                        const keys = JSON.parse(keysStr);
+                        if (Array.isArray(keys) && keys.length > 0) {
+                          const activeKey = keys[activeKeyIndex % keys.length];
+                          if (activeKey) activeKeySuffix = activeKey.slice(-4);
+                        }
+                      } catch (e) {}
+                    }
+
+                    console.info("[OCR MODEL]");
+                    console.info(`Mode: ${modeLog}`);
+                    console.info(`Resolved model: ${resolvedModelLog}`);
+                    console.info(`Key suffix: ****${activeKeySuffix}`);
+                    console.info("\n[GEMINI RESULT]");
+                    console.info(`HTTP status: ${xhr.status}`);
+                    console.info(`Has usable text: ${hasUsableText}`);
+                    console.info(`Finish reason: ${finishReason || "None"}`);
+                    console.info(`Failure category: ${failureCategory || "None"}`);
+                  }
+
+                  if (hasUsableText) {
+                    // @ts-ignore
+                    if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
+                    const sanitizedFinalText = sanitizeError(sanitizedText);
+                    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
+                    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
+                    resolve(sanitizedFinalText);
+                    return;
+                  }
+
+                  if (failureCategory) {
+                    reject({ type: failureCategory, message: `Gemini failure: ${failureCategory}` });
+                    return;
+                  }
+
+                  reject({ type: "EMPTY_RESPONSE", message: "Gemini returned empty response" });
+                  return;
+                } catch (e) {
+                  reject({ type: "PARSE_ERROR", message: "Gemini response parse error" });
+                  return;
+                }
+              } else {
+                if (shouldFallback) {
+                  reject({ type: "TRANSIENT_FAILED", message: `Gemini HTTP ${xhr.status} (Transient error failed after retries)` });
+                } else {
+                  reject({ status: xhr.status, message: `Gemini HTTP ${xhr.status}` });
+                }
+                return;
+              }
+            };
+            
+            xhr.onerror = () => {
+              cleanup();
+              if (signal?.aborted) return;
+
+              const maxRetries = 1;
+              if (retryAttempt < maxRetries) {
+                const delay = 2500 + Math.floor(Math.random() * 1000);
+                setBatchProgressText(`Lỗi kết nối mạng, đang thử lại - Trang ${pageNum}...`);
+                setTimeout(() => {
+                  if (signal?.aborted) {
+                    reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
+                    return;
+                  }
+                  makeRequest(activeKey, retryAttempt + 1).then(resolve).catch(reject);
+                }, delay);
+              } else {
+                reject({ type: "NETWORK", message: "Lỗi kết nối mạng khi gửi yêu cầu tới Gemini." });
+              }
+            };
+            
+            const payload = {
+              "contents": [{
+                "parts": [
+                  {"text": "Trích xuất chính xác 100% toàn bộ nội dung văn bản có trong hình ảnh này sang tiếng Việt. Giữ nguyên định dạng, không thêm bớt bất kỳ từ ngữ hay lời giải thích nào."},
+                  {"inlineData": {
+                    "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
+                    "data": base64Data
+                  }}
+                ]
+              }],
+              "generationConfig": {
+                "temperature": 0.0,
+                "topP": 0.95,
+                "candidateCount": 1
+              },
+              "safetySettings": [
+                {
+                  "category": "HARM_CATEGORY_HARASSMENT",
+                  "threshold": "BLOCK_NONE"
+                },
+                {
+                  "category": "HARM_CATEGORY_HATE_SPEECH",
+                  "threshold": "BLOCK_NONE"
+                },
+                {
+                  "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                  "threshold": "BLOCK_NONE"
+                },
+                {
+                  "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                  "threshold": "BLOCK_NONE"
+                }
+              ]
+            };
+            
+            xhr.send(JSON.stringify(payload));
+          });
+        };
+
+        let hasRetriedAuto404 = false;
+        while (true) {
+          if (signal?.aborted) {
+            throw { type: "ABORTED", message: "Đã hủy quá trình bóc tách." };
+          }
+          const currentKey = geminiKeyPool[activeKeyIndex];
+          if (!currentKey) {
+            throw new Error("Không còn Gemini API Key hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.");
+          }
+
+          const modelMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
+          if (modelMode === 'auto') {
+            const resolved = getUserStorageItem(user?.uid, 'gemini_resolved_model');
+            if (!resolved) {
+              try {
+                setBatchProgressText(`Đang tự động chọn model cho Trang ${pageNum}...`);
+                await autoResolveModel(user?.uid, currentKey, false);
+              } catch (resErr: any) {
+                let errText = "Không tìm thấy model Gemini phù hợp với API Key này.";
+                if (resErr.message === "INVALID_KEY") errText = "Gemini API Key không hợp lệ.";
+                else if (resErr.message === "RATE_LIMIT") errText = "Gemini API Key hiện đã đạt giới hạn sử dụng. Vui lòng thử lại sau.";
+                else if (resErr.message === "NETWORK") errText = "Không thể kiểm tra danh sách model. Vui lòng kiểm tra kết nối mạng.";
+                throw new Error(errText);
+              }
+            }
+          }
+
+          try {
+            const text = await makeRequest(currentKey);
+            return text;
+          } catch (e: any) {
+            if (e?.type === "ABORTED" || e?.type === "503_EXHAUSTED") {
+              throw e;
+            }
+            if (e?.status === 404) {
+              const currentMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
+              if (currentMode === 'auto' && !hasRetriedAuto404) {
+                hasRetriedAuto404 = true;
+                try {
+                  setBatchProgressText(`Model không khả dụng, đang dò tìm model mới cho Trang ${pageNum}...`);
+                  await autoResolveModel(user?.uid, currentKey, true);
+                  continue;
+                } catch (resErr: any) {
+                  throw new Error("Mô hình không khả dụng và không thể tự động tìm thấy mô hình thay thế.");
+                }
+              }
+              if (currentMode === 'manual') {
+                throw new Error("Mô hình này không khả dụng với Gemini API Key hiện tại. Vui lòng chọn model khác hoặc chuyển sang chế độ Tự động.");
+              }
+              throw e;
+            }
+
+            if (e?.type === "CONTENT_BLOCKED" || e?.type === "RECITATION_BLOCKED_AFTER_RETRY") {
+              // @ts-ignore
+              if (import.meta.env.DEV) console.info(`Gemini blocked content (${e?.type}), falling back to OCR.space`);
+              const fallbackReasonStr = e?.type === "RECITATION_BLOCKED_AFTER_RETRY" ? "chép nguyên văn" : "chặn nội dung";
+              setBatchProgressText(`Gemini không thể ${fallbackReasonStr} trang này. Hệ thống đang thử công cụ OCR dự phòng - Trang ${pageNum}...`);
+              try {
+                const fallbackText = await runOcrSpaceFallback();
+                return fallbackText;
+              } catch (fallbackErr: any) {
+                throw fallbackErr;
+              }
+            }
+
+            if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
+              activeKeyIndex++;
+              continue;
+            }
+
+            throw e;
+          }
         }
-      }
-      if (currentMode === 'manual') {
-        throw new Error("Mô hình này không khả dụng với Gemini API Key hiện tại. Vui lòng chọn model khác hoặc chuyển sang chế độ Tự động.");
-      }
-      throw e;
-    }
-
-    // Content blocked or RECITATION after retry – attempt OCR.space fallback with robust error handling
-    if (e?.type === "CONTENT_BLOCKED" || e?.type === "RECITATION_BLOCKED_AFTER_RETRY") {
-      // @ts-ignore
-      if (import.meta.env.DEV) console.info(`Gemini blocked content (${e?.type}), falling back to OCR.space`);
-      const fallbackReasonStr = e?.type === "RECITATION_BLOCKED_AFTER_RETRY" ? "chép nguyên văn" : "chặn nội dung";
-      setBatchProgressText(`Gemini không thể ${fallbackReasonStr} trang này. Hệ thống đang thử công cụ OCR dự phòng - Trang ${pageNum}...`);
-      try {
-        const fallbackText = await runOcrSpaceFallback();
-        return fallbackText;
-      } catch (fallbackErr: any) {
-        // Fallback error, throw it so outer try-catch handles it cleanly
-        throw fallbackErr;
-      }
-    }
-
-    // Quota or auth errors – try next key
-    if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
-      activeKeyIndex++;
-      continue;
-    }
-
-    // Other errors – rethrow to be caught by outer handler
-    throw e;
-  }
-}
       } finally {
         pageProcessingLockRef.current[pageNum] = false;
       }
@@ -982,7 +1033,6 @@ while (true) {
                 jpegQuality: imageOptimizationLevel === "fast" ? 0.8 : 0.85,
               });
               fileToSend = optResult.wasOptimized ? optResult.optimizedFile : pageFile;
-              // Save optimization info on the queued file
               setQueuedFiles(prev => prev.map(f => 
                 f.id === qFile.id ? {
                   ...f,
@@ -1027,12 +1077,13 @@ while (true) {
           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
         } catch (err: any) {
           const errorMsgObj = typeof err === 'object' && err?.message ? err.message : String(err);
-          updatePageStatus(qFile.id, pageIdx, 'error', undefined, errorMsgObj);
-          const errorMsg = `[Lỗi bóc tách Trang ${pageIdx}]: ${errorMsgObj}`;
+          const sanitizedMsg = sanitizeError(errorMsgObj);
+          updatePageStatus(qFile.id, pageIdx, 'error', undefined, sanitizedMsg);
+          const errorMsg = `[Lỗi bóc tách Trang ${pageIdx}]: ${sanitizedMsg}`;
           setEditorContent((prev) => prev + (prev ? "\n\n" + errorMsg : errorMsg));
           editorContentRef.current += (editorContentRef.current ? "\n\n" + errorMsg : errorMsg);
+          throw err;
         } finally {
-          // Free resource from memory
           const key = `${qFile.id}-${pageIdx}`;
           const url = revocationRefs.current.get(key);
           if (url) {
@@ -1047,7 +1098,6 @@ while (true) {
       };
 
       if (isPdf) {
-        // Split PDF into images (all pages) if not already split
         let pageFiles: File[] = qFile.pageFilesArray || [];
         if (pageFiles.length === 0) {
           try {
@@ -1082,16 +1132,14 @@ while (true) {
           } catch (err: any) {
             setFileErrors(prev => ({ ...prev, [i]: "[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này." }));
             updateFileStatus(i, "error");
-            continue; // Skip to next file
+            continue;
           }
         }
 
-        // Resolve page range values
         let startPage = 1;
         let endPage = pageFiles.length;
 
         if (filesToProcess.length === 1) {
-          // Only respect user inputs when a single file is queued
           if (fromPage) {
             const parsedFrom = parseInt(fromPage, 10);
             if (!isNaN(parsedFrom) && parsedFrom >= 1) {
@@ -1106,7 +1154,6 @@ while (true) {
           }
         }
 
-        // Reset target pages to idle state
         setQueuedFiles(prev => prev.map(f => {
           if (f.id === qFile.id) {
             const updatedStates = { ...(f.pageStates || {}) };
@@ -1118,22 +1165,34 @@ while (true) {
           return f;
         }));
 
-        // Process each page within the selected range
         for (let p = startPage; p <= endPage; p++) {
-          const pageFile = pageFiles[p - 1]; // zero‑based index
+          if (signal?.aborted) {
+            throw { type: "ABORTED", message: "Đã hủy quá trình bóc tách." };
+          }
+          const pageFile = pageFiles[p - 1];
           setBatchProgressText(`Đang bóc tách ${file.name} - Trang ${p}/${endPage}...`);
-          await processSinglePage(pageFile, p, endPage);
-          // Throttle between pages
-          await new Promise((res) => setTimeout(res, 2500));
+          try {
+            await processSinglePage(pageFile, p, endPage);
+          } catch (e: any) {
+            if (e?.type === "503_EXHAUSTED" || e?.type === "ABORTED") {
+              updateFileStatus(i, "error");
+              setFileErrors(prev => ({
+                ...prev,
+                [i]: sanitizeError(e.message || "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.")
+              }));
+              throw e;
+            }
+            throw e;
+          }
+          if (p < endPage) {
+            await new Promise((res) => setTimeout(res, 2500));
+          }
         }
 
-        // Mark as completed if no fatal error occurred
         updateFileStatus(i, "completed");
       } else {
-        // Non‑PDF file: process normally with a single request
         try {
           await processSinglePage(file, 1, 1);
-          // Check if page state indicates error after processing
           setQueuedFiles(prev => {
             const currentFile = prev.find(f => f.id === qFile.id);
             if (currentFile?.pageStates?.[1]?.status === 'error') {
@@ -1148,15 +1207,23 @@ while (true) {
             return prev;
           });
         } catch (err: any) {
+          if (err?.type === "503_EXHAUSTED" || err?.type === "ABORTED") {
+            updateFileStatus(i, "error");
+            setFileErrors(prev => ({
+              ...prev,
+              [i]: sanitizeError(err.message || "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.")
+            }));
+            throw err;
+          }
           setFileErrors(prevErrs => ({
             ...prevErrs,
             [i]: "[Lỗi bóc tách]: Vui lòng kiểm tra lại chất lượng tệp tin hoặc cấu hình Key của trang này."
           }));
           updateFileStatus(i, "error");
+          throw err;
         }
       }
 
-      // Explicit safety throttle delay of 2500 ms to prevent Gemini Rate Limit
       if (i < filesToProcess.length - 1) {
         await new Promise((res) => setTimeout(res, 2500));
       }
@@ -1253,8 +1320,15 @@ while (true) {
         });
       }
     }, 1000);
-  } catch (error) {
+  } catch (error: any) {
     console.error("OCR process error:", error);
+    if (error?.type === "503_EXHAUSTED") {
+      setErrorModalMsg("Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.");
+    } else if (error?.type === "ABORTED") {
+      setErrorModalMsg("Đã hủy quá trình bóc tách.");
+    } else {
+      setErrorModalMsg(sanitizeError(error?.message || "Đã xảy ra lỗi trong quá trình xử lý."));
+    }
     setIsBatchProcessing(false);
     setProcessingFile(null);
     setProgress(0);
@@ -1343,7 +1417,7 @@ while (true) {
             </div>
 
             {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
-            <div className="flex justify-center w-full">
+            <div className="flex flex-col items-center justify-center w-full space-y-4">
               <button
                 onClick={startOcrProcess}
                 disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
@@ -1362,6 +1436,22 @@ while (true) {
                       : "Bắt đầu bóc tách hồ sơ"}
                 </span>
               </button>
+
+              {isBatchProcessing && (
+                <div className="w-full sm:w-[320px] p-3.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 flex flex-col items-center space-y-2.5 shadow-md">
+                  <div className="flex items-center space-x-2.5 text-xs font-semibold text-center">
+                    <Activity className="h-3.5 w-3.5 text-red-500 animate-spin flex-shrink-0" />
+                    <span className="leading-tight">{batchProgressText}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => cancelOcrRef.current?.abort()}
+                    className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-[11px] font-bold uppercase rounded border border-slate-700 transition-colors shadow-inner"
+                  >
+                    Hủy bóc tách
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

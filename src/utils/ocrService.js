@@ -103,154 +103,236 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
       "  + Thêm tag `<!-- font: Times New Roman -->` ở dòng đầu tiên.";
   }
 
-  // Gọi trực tiếp đến Google Gemini API
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal: options.signal,
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: systemText },
-          {
-            inlineData: {
-              mimeType: fileType,
-              data: base64Data
-            }
-          }
-        ]
-      }],
-      systemInstruction: {
-        parts: [
-          { text: systemText }
-        ]
-      },
-      generationConfig: {
-        candidateCount: 1,
-        temperature: 0
-      },
-      safetySettings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-          threshold: "BLOCK_NONE"
-        },
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_NONE"
-        }
-      ]
-    })
-  });
-
-  if (!response.ok) {
-    let errorMsg = `HTTP ${response.status}`;
-    let isKeyInvalid = false;
-    try {
-      const errData = await response.json();
-      errorMsg = errData?.error?.message || errorMsg;
-      if (errorMsg.includes("API key not valid") || errorMsg.includes("key is invalid")) {
-        isKeyInvalid = true;
+  const wait = (ms, signal) => {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        const err = new Error("The operation was aborted");
+        err.name = "AbortError";
+        return reject(err);
       }
-    } catch {
-      // ignore
+      const onAbort = () => {
+        clearTimeout(timer);
+        const err = new Error("The operation was aborted");
+        err.name = "AbortError";
+        reject(err);
+      };
+      const timer = setTimeout(() => {
+        if (signal) {
+          signal.removeEventListener('abort', onAbort);
+        }
+        resolve();
+      }, ms);
+      if (signal) {
+        signal.addEventListener('abort', onAbort);
+      }
+    });
+  };
+
+  const keySuffix = apiKey ? apiKey.slice(-4) : "";
+  const maskedKey = `****${keySuffix}`;
+
+  let attempt = 0;
+
+  while (true) {
+    if (options.signal?.aborted) {
+      const err = new Error("The operation was aborted");
+      err.name = "AbortError";
+      throw err;
     }
-    
-    let friendlyMessage = errorMsg;
-    let code = "UNKNOWN";
-    
-    if (response.status === 400 && isKeyInvalid) {
-      friendlyMessage = "API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại cấu hình API Key của bạn.";
-      code = "INVALID_KEY";
-    } else if (response.status === 429) {
-      friendlyMessage = "Hạn mức API Key của bạn đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng đợi 1 phút hoặc đổi sang Key khác.";
-      code = "QUOTA_EXCEEDED";
-    } else if (response.status === 403) {
-      friendlyMessage = "Truy cập bị từ chối. API Key không có quyền sử dụng mô hình này hoặc kết nối bị chặn.";
-      code = "BLOCKED_REQUEST";
-    } else if (response.status === 413) {
-      friendlyMessage = "Tài liệu quá lớn so với giới hạn xử lý cho phép của API.";
-      code = "MALFORMED_REQUEST";
-    } else if (response.status === 400) {
-      friendlyMessage = `Yêu cầu không hợp lệ (Malformed Request): ${errorMsg}`;
-      code = "MALFORMED_REQUEST";
+
+    console.log(`Endpoint path: /v1/models/${normalizedModel}:generateContent`);
+    console.log(`Key suffix: ${maskedKey}`);
+
+    let response;
+    let fetchError = null;
+
+    try {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${normalizedModel}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: options.signal,
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: systemText },
+              {
+                inlineData: {
+                  mimeType: fileType,
+                  data: base64Data
+                }
+              }
+            ]
+          }],
+          systemInstruction: {
+            parts: [
+              { text: systemText }
+            ]
+          },
+          generationConfig: {
+            candidateCount: 1,
+            temperature: 0
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_NONE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_NONE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_NONE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_NONE"
+            }
+          ]
+        })
+      });
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        throw e;
+      }
+      fetchError = e;
     }
-    
-    const err = new Error(friendlyMessage);
-    err.status = response.status;
-    err.code = code;
-    throw err;
-  }
 
-const data = await response.json();
+    if (fetchError) {
+      const maxRetries = 1;
+      if (attempt < maxRetries) {
+        attempt++;
+        const baseDelay = 2500;
+        const jitter = Math.random() * 1000;
+        const delay = baseDelay + jitter;
+        console.warn(`Gemini network error. Retry ${attempt}/${maxRetries} after ${Math.round(delay)}ms`);
+        await wait(delay, options.signal);
+        continue;
+      } else {
+        const sanitizedMsg = String(fetchError.message || fetchError).replace(apiKey, maskedKey);
+        throw new Error(sanitizedMsg);
+      }
+    }
 
-const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!response.ok) {
+      const status = response.status;
+      let errorMsg = `HTTP ${status}`;
+      let isKeyInvalid = false;
+      try {
+        const errData = await response.json();
+        errorMsg = errData?.error?.message || errorMsg;
+        if (errorMsg.includes("API key not valid") || errorMsg.includes("key is invalid")) {
+          isKeyInvalid = true;
+        }
+      } catch {
+        // ignore
+      }
 
-// Prioritize usable text regardless of finishReason
-if (textResult && textResult.trim().length > 0) {
-  return textResult;
-}
+      errorMsg = errorMsg.replace(apiKey, maskedKey);
 
-// No usable text – handle RECITATION with a single retry
-const finishReason = data.candidates?.[0]?.finishReason;
+      const isTransient = [408, 429, 500, 502, 503, 504].includes(status);
+      const maxRetries = status === 503 ? 3 : (isTransient ? 1 : 0);
 
-if (finishReason === 'RECITATION') {
-  // If this call is already a retry, propagate a specific error for fallback
-  if (options.isRetry || options.recitationRetryAttempted) {
-    const err = new Error('RECITATION_BLOCKED_AFTER_RETRY');
-    err.finishReason = 'RECITATION';
-    err.code = 'RECITATION_BLOCKED_AFTER_RETRY';
-    err.status = 400;
-    throw err;
-  }
+      if (isTransient && attempt < maxRetries) {
+        attempt++;
+        let baseDelay = 2500;
+        if (status === 503) {
+          if (attempt === 1) baseDelay = 2500;
+          else if (attempt === 2) baseDelay = 5000;
+          else if (attempt === 3) baseDelay = 10000;
+        }
+        const jitter = Math.random() * 1000;
+        const delay = baseDelay + jitter;
+        console.warn(`Gemini temporary error (HTTP ${status}). Retry ${attempt}/${maxRetries} after ${Math.round(delay)}ms`);
+        await wait(delay, options.signal);
+        continue;
+      }
 
-  // Perform a single retry with the same model/key and retry‑specific prompt
-  return await processOCR(file, apiKey, modelName, {
-    ...options,
-    isRetry: true,
-    recitationRetryAttempted: true
-  });
-}
+      let friendlyMessage = errorMsg;
+      let code = "UNKNOWN";
 
-// Existing handling for other missing text cases remains unchanged
-  
-  if (textResult === undefined || textResult === null) {
+      if (status === 503) {
+        friendlyMessage = "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.";
+        code = "SERVICE_UNAVAILABLE";
+      } else if (status === 400 && isKeyInvalid) {
+        friendlyMessage = "API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại cấu hình API Key của bạn.";
+        code = "INVALID_KEY";
+      } else if (status === 429) {
+        friendlyMessage = "Hạn mức API Key của bạn đã bị quá tải (Rate Limit / Quota Exceeded). Vui lòng đợi 1 phút hoặc đổi sang Key khác.";
+        code = "QUOTA_EXCEEDED";
+      } else if (status === 403) {
+        friendlyMessage = "Truy cập bị từ chối. API Key không có quyền sử dụng mô hình này hoặc kết nối bị chặn.";
+        code = "BLOCKED_REQUEST";
+      } else if (status === 413) {
+        friendlyMessage = "Tài liệu quá lớn so với giới hạn xử lý cho phép của API.";
+        code = "MALFORMED_REQUEST";
+      } else if (status === 400) {
+        friendlyMessage = `Yêu cầu không hợp lệ (Malformed Request): ${errorMsg}`;
+        code = "MALFORMED_REQUEST";
+      }
+
+      const err = new Error(friendlyMessage);
+      err.status = status;
+      err.code = code;
+      throw err;
+    }
+
+    const data = await response.json();
+    const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (textResult && textResult.trim().length > 0) {
+      return textResult;
+    }
 
     const finishReason = data.candidates?.[0]?.finishReason;
-    const blockReason = data.promptFeedback?.blockReason;
-    const safetyRatings = data.candidates?.[0]?.safetyRatings;
-    
-    let detailedError = 'Google API không trả về kết quả văn bản.';
-    let code = "NO_TEXT";
-    
-    if (finishReason) {
-      detailedError += ` (FinishReason: ${finishReason})`;
-      if (finishReason === 'SAFETY' || finishReason === 'RECITATION') {
-        code = finishReason;
-      }
-    }
-    if (blockReason) {
-      detailedError += ` (BlockReason: ${blockReason})`;
-      code = "BLOCKED_REQUEST";
-    }
-    if (safetyRatings) {
-      const blockedRatings = safetyRatings.filter(r => r.probability && r.probability !== 'NEGLIGIBLE');
-      if (blockedRatings.length > 0) {
-        detailedError += ` (SafetyRatings: ${blockedRatings.map(r => `${r.category}:${r.probability}`).join(', ')})`;
-      }
-    }
-    const err = new Error(detailedError);
-    err.status = 400;
-    err.code = code;
-    throw err;
-  }
 
-  return textResult;
+    if (finishReason === 'RECITATION') {
+      if (options.isRetry || options.recitationRetryAttempted) {
+        const err = new Error('RECITATION_BLOCKED_AFTER_RETRY');
+        err.finishReason = 'RECITATION';
+        err.code = 'RECITATION_BLOCKED_AFTER_RETRY';
+        err.status = 400;
+        throw err;
+      }
+
+      return await processOCR(file, apiKey, modelName, {
+        ...options,
+        isRetry: true,
+        recitationRetryAttempted: true
+      });
+    }
+
+    if (textResult === undefined || textResult === null) {
+      const finishReason = data.candidates?.[0]?.finishReason;
+      const blockReason = data.promptFeedback?.blockReason;
+      const safetyRatings = data.candidates?.[0]?.safetyRatings;
+      
+      let detailedError = 'Google API không trả về kết quả văn bản.';
+      let code = "NO_TEXT";
+      
+      if (finishReason) {
+        detailedError += ` (FinishReason: ${finishReason})`;
+        if (finishReason === 'SAFETY' || finishReason === 'RECITATION') {
+          code = finishReason;
+        }
+      }
+      if (blockReason) {
+        detailedError += ` (BlockReason: ${blockReason})`;
+        code = "BLOCKED_REQUEST";
+      }
+      if (safetyRatings) {
+        const blockedRatings = safetyRatings.filter(r => r.probability && r.probability !== 'NEGLIGIBLE');
+        if (blockedRatings.length > 0) {
+          detailedError += ` (SafetyRatings: ${blockedRatings.map(r => `${r.category}:${r.probability}`).join(', ')})`;
+        }
+      }
+      const err = new Error(detailedError);
+      err.status = 400;
+      err.code = code;
+      throw err;
+    }
+
+    return textResult;
+  }
 };
