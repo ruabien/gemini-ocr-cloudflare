@@ -8,8 +8,8 @@ import {
   Settings, Key, ShieldCheck, Check, Award, Zap, AlertCircle, Trash2, User, Calendar, LogOut, Sparkles
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
-import { autoResolveModel, MODEL_MODES, validateGeminiModel } from "../utils/geminiModelResolver";
+import { getUserStorageItem, setUserStorageItem, removeUserStorageItem } from "../utils/userStorage";
+import { autoResolveModel, MODEL_MODES, validateGeminiModel, migrateOldStorage } from "../utils/geminiModelResolver";
 
 interface SettingsProps {
   userGeminiKey: string;
@@ -45,9 +45,19 @@ export default function SettingsComponent({
   const [geminiModelMode, setGeminiModelMode] = useState<string>(() => {
     return getUserStorageItem(user?.uid, 'gemini_model_mode') || MODEL_MODES.AUTO;
   });
-  const [geminiModel, setGeminiModel] = useState<string>(() => {
-    return getUserStorageItem(user?.uid, 'ocr_model') || "gemini-3.5-flash";
-  });
+   const [geminiModel, setGeminiModel] = useState<string>(() => {
+     return getUserStorageItem(user?.uid, 'ocr_model') || "gemini-3.5-flash";
+   });
+
+   // Migrate any legacy storage keys and sync state
+   React.useEffect(() => {
+     if (!user?.uid) return;
+     migrateOldStorage(user.uid);
+     const mode = getUserStorageItem(user.uid, 'gemini_model_mode') || MODEL_MODES.AUTO;
+     const manual = getUserStorageItem(user.uid, 'ocr_model') || "gemini-3.5-flash";
+     setGeminiModelMode(mode);
+     setGeminiModel(manual);
+   }, [user?.uid]);
   
   const [modelStatusMsg, setModelStatusMsg] = useState<{ type: 'info' | 'success' | 'error', text: string } | null>(null);
   const [resolvedModelDisplay, setResolvedModelDisplay] = useState<string>(() => {
@@ -89,6 +99,39 @@ export default function SettingsComponent({
       }
     }
   }, [geminiModelMode, keysList, user?.uid]);
+
+  // Migrate manual mode to auto if selected manual model is no longer available
+  React.useEffect(() => {
+    let shouldMigrateToAuto = false;
+    let reason = '';
+
+    if (geminiModelMode === MODEL_MODES.MANUAL) {
+      // If the selected manual model is not in the list of available manual models, fallback to auto
+      const manualAvailable = visibleManualModels.some(m => m.value === geminiModel);
+      if (!manualAvailable) {
+        shouldMigrateToAuto = true;
+        reason = 'Model thủ công không khả dụng, chuyển sang Auto.';
+      }
+    }
+    
+    // If no manual models are available at all, enforce auto mode
+    if (visibleManualModels.length === 0 && geminiModelMode !== MODEL_MODES.AUTO) {
+      shouldMigrateToAuto = true;
+      reason = 'Không có model thủ công khả dụng, chuyển sang Auto.';
+    }
+
+    if (shouldMigrateToAuto) {
+      setGeminiModelMode(MODEL_MODES.AUTO);
+      setUserStorageItem(user?.uid, 'gemini_model_mode', MODEL_MODES.AUTO);
+      removeUserStorageItem(user?.uid, 'ocr_model');
+      setModelStatusMsg({ type: 'info', text: reason });
+      
+      // Also automatically verify/resolve model for Auto mode
+      if (keysList.length > 0) {
+        verifyAndResolveModel(keysList, MODEL_MODES.AUTO);
+      }
+    }
+  }, [geminiModelMode, visibleManualModels, geminiModel, user?.uid, keysList]);
 
   const verifyAndResolveModel = async (keys: string[], mode: string, manualModel?: string) => {
     if (keys.length === 0) return;

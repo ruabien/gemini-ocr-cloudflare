@@ -163,10 +163,21 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
 import { requireResolvedGeminiModel as sharedRequireResolvedGeminiModel } from "../../shared/geminiModelResolver";
 export const requireResolvedGeminiModel = sharedRequireResolvedGeminiModel;
 
-export const getActiveModel = (uid: string | null | undefined): string => {
+export const getActiveModel = (uid: string | null | undefined, apiKey?: string): string => {
   const modelMode = getUserStorageItem(uid, 'gemini_model_mode') || 'auto';
 
   if (modelMode === 'auto') {
+    if (apiKey) {
+      const cachedObj = getUserStorageItem(uid, 'gemini_model_cache');
+      if (cachedObj) {
+        try {
+          const cache = JSON.parse(cachedObj);
+          if (cache.keyHash === hashKey(apiKey) && cache.resolvedModel) {
+            return requireResolvedGeminiModel(cache.resolvedModel);
+          }
+        } catch (e) {}
+      }
+    }
     const resolved = getUserStorageItem(uid, 'gemini_resolved_model');
     if (!resolved) {
       throw new Error("MODEL_NOT_RESOLVED");
@@ -182,6 +193,19 @@ export const getActiveModel = (uid: string | null | undefined): string => {
 };
 
 export const migrateOldStorage = (uid: string | null | undefined) => {
+  // Migrate non-scoped legacy keys if they exist
+  const legacyKeys = ['gemini_model_mode', 'ocr_model', 'gemini_resolved_model', 'gemini_model_cache'];
+  
+  for (const key of legacyKeys) {
+    const legacyValue = localStorage.getItem(key);
+    if (legacyValue !== null) {
+      if (!getUserStorageItem(uid, key)) {
+        setUserStorageItem(uid, key, legacyValue);
+      }
+      localStorage.removeItem(key);
+    }
+  }
+
   const ocrModel = getUserStorageItem(uid, 'ocr_model');
   const mode = getUserStorageItem(uid, 'gemini_model_mode');
 

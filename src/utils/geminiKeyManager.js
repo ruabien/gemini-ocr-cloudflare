@@ -1,6 +1,7 @@
 /**
  * GeminiKeyManager - Quản lý API Key và Mô hình dùng chung cho toàn bộ ứng dụng (OCR và Trích xuất cấu trúc).
  */
+import { getUserStorageItem } from './userStorage';
 
 export const GeminiKeyManager = {
   /**
@@ -39,12 +40,13 @@ export const GeminiKeyManager = {
    */
   getModel(config, uid = null) {
     // If we have local storage user ID context or config
-    const modelMode = config?.gemini_model_mode || localStorage.getItem(uid ? `lexocr:${uid}:gemini_model_mode` : 'gemini_model_mode') || 'auto';
+    const modelMode = config?.gemini_model_mode || getUserStorageItem(uid, 'gemini_model_mode') || 'auto';
     if (modelMode === 'auto') {
-      const resolved = config?.gemini_resolved_model || localStorage.getItem(uid ? `lexocr:${uid}:gemini_resolved_model` : 'gemini_resolved_model');
+      const resolved = getUserStorageItem(uid, 'gemini_resolved_model');
       return resolved || '';
     }
-    return config?.model || localStorage.getItem(uid ? `lexocr:${uid}:ocr_model` : 'ocr_model') || '';
+    const manual = getUserStorageItem(uid, 'ocr_model');
+    return manual || '';
   },
 
   /**

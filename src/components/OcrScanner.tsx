@@ -674,7 +674,7 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
           // @ts-ignore
           if (import.meta.env.DEV) {
             console.info("[OCR ENGINE] Gemini");
-            const model = getActiveModel(user?.uid);
+const model = getActiveModel(user?.uid, activeKey);
             console.info("[GEMINI CONFIG] Key index:", activeKeyIndex);
             console.info("[GEMINI CONFIG] Key suffix:", `${activeKey.slice(-4)}`);
             console.info("[GEMINI CONFIG] Model:", model);
@@ -684,7 +684,7 @@ diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-ge
           if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
           setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
           const xhr = new XMLHttpRequest();
-            const selectedModel = getActiveModel(user?.uid);
+const selectedModel = getActiveModel(user?.uid, activeKey);
           let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
           const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
           xhr.open("POST", googleUrl, true);
