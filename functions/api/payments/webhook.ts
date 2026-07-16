@@ -1,6 +1,6 @@
 import { getPaymentRecord, getUserProfile, updateUserProfile, updatePaymentOnSuccess } from "../utils/firebaseAdmin";
 import { verifyWebhookData } from "../utils/payos";
-import { calculateNewExpiry } from "../../../src/utils/payment";
+import { calculateNewExpiry } from "../../../shared/payment";
 import { sendPaymentSuccessEmail } from "../utils/email";
 
 export const onRequestPost = async (context: { request: Request; env: any }) => {

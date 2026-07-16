@@ -1,7 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
-import { clean as docClean } from "../../../../src/docFormatter";
-import { isHeading } from "../../../../src/docFormatter/heading";
-import { getParagraphConfig } from "../../../../src/docFormatter/docxStyles";
+import { clean as docClean } from "../../../../shared/docFormatter";
+import { isHeading } from "../../../../shared/docFormatter/heading";
+import { getParagraphConfig } from "../../../../shared/docFormatter/docxStyles";
 import {
   normalizeTextForDocx,
   isQuocHieuTieuNgu,
@@ -12,7 +12,7 @@ import {
   isKyTen,
   flattenTextForManualLineBreak,
   removePageBreakMarkers
-} from "../../../../src/utils/docxTextNormalizer";
+} from "../../../../shared/docxTextNormalizer";
 
 export async function onRequestPost({ request }: { request: any }) {
   try {

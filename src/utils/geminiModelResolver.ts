@@ -157,30 +157,8 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
   return bestModel;
 };
 
-export const requireResolvedGeminiModel = (model: string | null | undefined): string => {
-  if (!model) {
-    throw new Error("MODEL_NOT_RESOLVED");
-  }
-  let cleanModel = model.trim();
-  if (!cleanModel) {
-    throw new Error("MODEL_NOT_RESOLVED");
-  }
-  
-  if (cleanModel.startsWith("models/")) {
-    cleanModel = cleanModel.substring("models/".length);
-  }
-  
-  if (cleanModel.endsWith(":generateContent")) {
-    cleanModel = cleanModel.substring(0, cleanModel.length - ":generateContent".length);
-  }
-
-  // Reject display labels with spaces or suffixes
-  if (cleanModel.includes(" ") || cleanModel.includes("Mặc định") || cleanModel.includes("Mới nhất")) {
-    throw new Error("MODEL_NOT_RESOLVED");
-  }
-
-  return cleanModel;
-};
+import { requireResolvedGeminiModel as sharedRequireResolvedGeminiModel } from "../../shared/geminiModelResolver";
+export const requireResolvedGeminiModel = sharedRequireResolvedGeminiModel;
 
 export const getActiveModel = (uid: string | null | undefined): string => {
   const modelMode = getUserStorageItem(uid, 'gemini_model_mode') || 'auto';

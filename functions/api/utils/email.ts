@@ -1,7 +1,5 @@
-import React from "react";
-import { render } from "@react-email/render";
 import { Resend } from "resend";
-import { PaymentSuccessEmail } from "../../../src/emails/PaymentSuccessEmail";
+import { generatePaymentSuccessEmailHtml } from "../../../shared/paymentEmailTemplate";
 
 interface SendPaymentSuccessEmailParams {
   email: string;
@@ -35,19 +33,17 @@ export async function sendPaymentSuccessEmail({
   }
 
   try {
-    const htmlContent = await render(
-      React.createElement(PaymentSuccessEmail, {
-        displayName,
-        planType,
-        amount,
-        orderCode,
-        paidAt: new Date(),
-        expiredAt,
-        transactionType,
-        testPayment,
-        email,
-      })
-    );
+    const htmlContent = generatePaymentSuccessEmailHtml({
+      displayName,
+      planType,
+      amount,
+      orderCode,
+      paidAt: new Date(),
+      expiredAt,
+      transactionType,
+      testPayment,
+      email,
+    });
 
     const resend = new Resend(resendApiKey);
 

@@ -1,5 +1,5 @@
 /* ==== MOCK DATA ==== */
-import { requireResolvedGeminiModel } from '../../src/utils/geminiModelResolver';
+import { requireResolvedGeminiModel } from '../../shared/geminiModelResolver';
 let ocrKeyRoundRobinIndex = 0;
 let ocrSpaceKeyRoundRobinIndex = 0;
 const MOCK_LEGAL_DOC_TEXT = `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
