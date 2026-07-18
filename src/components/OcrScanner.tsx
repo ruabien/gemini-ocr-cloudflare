@@ -526,14 +526,31 @@ let activeKeyIndex = 0;
 
         const runOcrSpaceFallback = (): Promise<string> => {
           return new Promise<string>((resolveFallback, rejectFallback) => {
+            const logSuccess = (val: string) => {
+              console.log("[FALLBACK] Result: success");
+              resolveFallback(val);
+            };
+            const logFailure = (err: Error) => {
+              console.log("[FALLBACK] Result: failed", err.message);
+              rejectFallback(err);
+            };
+
             setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
             
+            console.log("[LOG] Bắt đầu gọi /api/ocr để lấy OCR.space API key");
             fetch("/api/ocr")
               .then(res => {
+                console.log("[LOG] Status của /api/ocr:", res.status);
                 if (!res.ok) {
                   throw new Error("Failed to retrieve OCR.space credentials from API gateway");
                 }
-                return res.json();
+                return res.json().then((data: any) => {
+                  const redacted = { ...data };
+                  if (redacted.primary) redacted.primary = "***";
+                  if (redacted.backup) redacted.backup = "***";
+                  console.log("[LOG] Response body của /api/ocr:", JSON.stringify(redacted));
+                  return data;
+                });
               })
               .then((data: any) => {
                 const fetchedKeys = data || {};
@@ -551,7 +568,7 @@ let activeKeyIndex = 0;
                 if (secondaryKey) ocrKeys.push(secondaryKey);
                 
                 if (ocrKeys.length === 0) {
-                  rejectFallback(new Error("OCR.space API Key không được cấu hình."));
+                  logFailure(new Error("OCR.space API Key không được cấu hình."));
                   return;
                 }
                 
@@ -583,7 +600,7 @@ let activeKeyIndex = 0;
                   
                   downscaledCanvas.toBlob((blob) => {
                     if (!blob) {
-                      rejectFallback(new Error("Canvas toBlob failed - asset is empty!"));
+                      logFailure(new Error("Canvas toBlob failed - asset is empty!"));
                       return;
                     }
 
@@ -594,11 +611,13 @@ let activeKeyIndex = 0;
                     diagnosticFormData.append('OcrEngine', '2');
                     diagnosticFormData.append('file', blob, 'page6.jpg');
                     
+                    console.log("[LOG] Bắt đầu gửi request tới OCR.space");
                     fetch("https://api.ocr.space/parse/image", {
                       method: "POST",
                       body: diagnosticFormData
                     })
                     .then(async res => {
+                      console.log("[LOG] HTTP status của OCR.space:", res.status);
                       const txt = await res.text();
                       if (!res.ok) {
                         if (res.status === 429) {
@@ -607,24 +626,31 @@ let activeKeyIndex = 0;
                           const msg = `Công cụ OCR dự phòng đang tạm thời đạt giới hạn sử dụng. Vui lòng thử lại sau khoảng ${minutes} phút.`;
                           setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
                           editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
-                          rejectFallback(new Error(msg));
+                          logFailure(new Error(msg));
                           return;
                         }
                         const sanitizedTxt = sanitizeError(txt);
                         setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${sanitizedTxt}`);
                         editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${sanitizedTxt}`;
-                        rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
+                        logFailure(new Error(`OCR.space HTTP error ${res.status}`));
                         return;
                       }
                       let data;
                       try {
                         data = JSON.parse(txt);
+                        console.log("[LOG] Các trường của OCR.space:", {
+                          IsErroredOnProcessing: data.IsErroredOnProcessing,
+                          ErrorMessage: data.ErrorMessage,
+                          ErrorDetails: data.ErrorDetails,
+                          "ParsedResults.length": data.ParsedResults?.length,
+                          "ParsedText length": data.ParsedResults?.[0]?.ParsedText?.length
+                        });
                       } catch {
                         const finalText = txt.trim();
                         const sanitizedFinalText = sanitizeError(finalText);
                         setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
                         editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
-                        resolveFallback(sanitizedFinalText);
+                        logSuccess(sanitizedFinalText);
                         return;
                       }
                       if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
@@ -632,7 +658,7 @@ let activeKeyIndex = 0;
                         const errorInfo = sanitizeError(errMsgs || "OCR.space processing error");
                         setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
                         editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
-                        rejectFallback(new Error(errorInfo));
+                        logFailure(new Error(errorInfo));
                         return;
                       }
                       let extractedText = "";
@@ -644,30 +670,30 @@ let activeKeyIndex = 0;
                         const msg = "Không nhận dạng được văn bản nào từ phản hồi của OCR.space.";
                         setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
                         editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
-                        rejectFallback(new Error(msg));
+                        logFailure(new Error(msg));
                         return;
                       }
                       const finalText = extractedText.trim();
                       const sanitizedFinalText = sanitizeError(finalText);
                       setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
                       editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
-                      resolveFallback(sanitizedFinalText);
+                      logSuccess(sanitizedFinalText);
                     })
                     .catch(err => {
                       const errorMsg = sanitizeError(err?.message || "Unknown fetch error");
                       setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
                       editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
-                      rejectFallback(new Error(errorMsg));
+                      logFailure(new Error(errorMsg));
                     });
                   }, 'image/jpeg', 0.85);
                 };
                 img.onerror = () => {
-                  rejectFallback(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
+                  logFailure(new Error("Không thể tải ảnh cấu hình canvas để nén cho OCR.space."));
                 };
                 img.src = URL.createObjectURL(file);
               })
               .catch(err => {
-                rejectFallback(new Error(sanitizeError(err?.message || "Unknown error during OCR.space fallback")));
+                logFailure(new Error(sanitizeError(err?.message || "Unknown error during OCR.space fallback")));
               });
           });
         };
