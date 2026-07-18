@@ -672,7 +672,7 @@ let activeKeyIndex = 0;
           });
         };
 
-        const makeRequest = (activeKey: string, retryAttempt: number = 0): Promise<string> => {
+        const makeRequest = (activeKey: string, retryAttempt: number = 0, isRecitationRetry: boolean = false): Promise<string> => {
           return new Promise<string>((resolve, reject) => {
             if (signal?.aborted) {
               reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
@@ -755,7 +755,7 @@ let activeKeyIndex = 0;
                       reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
                       return;
                     }
-                    makeRequest(activeKey, nextAttempt).then(resolve).catch(reject);
+                    makeRequest(activeKey, nextAttempt, isRecitationRetry).then(resolve).catch(reject);
                   }, delay);
                   return;
                 } else {
@@ -796,8 +796,18 @@ let activeKeyIndex = 0;
                   const sanitizedText = lines.join('\n').trim();
                   const hasUsableText = Boolean(sanitizedText);
 
+                  if (hasUsableText) {
+                    // @ts-ignore
+                    if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
+                    const sanitizedFinalText = sanitizeError(sanitizedText);
+                    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
+                    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
+                    resolve(sanitizedFinalText);
+                    return;
+                  }
+
                   const failureCategory = (() => {
-                    if (!hasUsableText && finishReason === "RECITATION") return "RECITATION_BLOCKED";
+                    if (finishReason === "RECITATION") return "RECITATION_BLOCKED";
                     return classifyGeminiResponse(cleanJson);
                   })();
 
@@ -829,22 +839,17 @@ let activeKeyIndex = 0;
                     console.info(`Failure category: ${failureCategory || "None"}`);
                   }
 
-                  if (hasUsableText) {
-                    // @ts-ignore
-                    if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
-                    const sanitizedFinalText = sanitizeError(sanitizedText);
-                    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
-                    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
-                    resolve(sanitizedFinalText);
-                    return;
-                  }
-
                   if (failureCategory) {
-                    reject({ type: failureCategory, message: `Gemini failure: ${failureCategory}` });
+                    let friendlyMsg = "Lỗi xử lý hình ảnh từ AI.";
+                    if (failureCategory === "RECITATION_BLOCKED") friendlyMsg = "Lỗi sao chép văn bản (RECITATION).";
+                    else if (failureCategory === "CONTENT_BLOCKED") friendlyMsg = "Nội dung bị chặn do vi phạm chính sách.";
+                    else if (failureCategory === "SAFETY_BLOCKED") friendlyMsg = "Nội dung bị chặn vì lý do an toàn.";
+                    else if (failureCategory === "PROMPT_BLOCKED") friendlyMsg = "Yêu cầu bị chặn (Prompt blocked).";
+                    reject({ type: failureCategory, message: friendlyMsg });
                     return;
                   }
 
-                  reject({ type: "EMPTY_RESPONSE", message: "Gemini returned empty response" });
+                  reject({ type: "EMPTY_RESPONSE", message: "Không tìm thấy nội dung văn bản trong ảnh." });
                   return;
                 } catch (e) {
                   reject({ type: "PARSE_ERROR", message: "Gemini response parse error" });
@@ -860,30 +865,37 @@ let activeKeyIndex = 0;
               }
             };
             
-            xhr.onerror = () => {
-              cleanup();
-              if (signal?.aborted) return;
+              xhr.onerror = () => {
+                cleanup();
+                if (signal?.aborted) return;
 
-              const maxRetries = 1;
-              if (retryAttempt < maxRetries) {
-                const delay = 2500 + Math.floor(Math.random() * 1000);
-                setBatchProgressText(`Lỗi kết nối mạng, đang thử lại - Trang ${pageNum}...`);
-                setTimeout(() => {
-                  if (signal?.aborted) {
-                    reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
-                    return;
-                  }
-                  makeRequest(activeKey, retryAttempt + 1).then(resolve).catch(reject);
-                }, delay);
-              } else {
-                reject({ type: "NETWORK", message: "Lỗi kết nối mạng khi gửi yêu cầu tới Gemini." });
-              }
-            };
+                const maxRetries = 1;
+                if (retryAttempt < maxRetries) {
+                  const delay = 2500 + Math.floor(Math.random() * 1000);
+                  setBatchProgressText(`Lỗi kết nối mạng, đang thử lại - Trang ${pageNum}...`);
+                  setTimeout(() => {
+                    if (signal?.aborted) {
+                      reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
+                      return;
+                    }
+                    makeRequest(activeKey, retryAttempt + 1, isRecitationRetry).then(resolve).catch(reject);
+                  }, delay);
+                } else {
+                  reject({ type: "NETWORK", message: "Lỗi kết nối mạng khi gửi yêu cầu tới Gemini." });
+                }
+              };
             
+            let promptText = "Trích xuất chính xác 100% toàn bộ nội dung văn bản có trong hình ảnh này sang tiếng Việt. Giữ nguyên định dạng, không thêm bớt bất kỳ từ ngữ hay lời giải thích nào.";
+            if (isRecitationRetry) {
+              promptText = "Chỉ trích xuất văn bản nhìn thấy trong hình ảnh/tài liệu. Không bổ sung, không suy luận, không tái tạo nội dung ngoài ảnh. Nếu không chắc, giữ nguyên ký tự quan sát được.\n" +
+                "Only extract visible text from the provided image/document. Do not add, infer, or reproduce any content outside the image. If unsure, keep the observed characters exactly as they are.\n" +
+                promptText;
+            }
+
             const payload = {
               "contents": [{
                 "parts": [
-                  {"text": "Trích xuất chính xác 100% toàn bộ nội dung văn bản có trong hình ảnh này sang tiếng Việt. Giữ nguyên định dạng, không thêm bớt bất kỳ từ ngữ hay lời giải thích nào."},
+                  {"text": promptText},
                   {"inlineData": {
                     "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
                     "data": base64Data
@@ -971,16 +983,46 @@ let activeKeyIndex = 0;
               throw e;
             }
 
-            if (e?.type === "CONTENT_BLOCKED" || e?.type === "RECITATION_BLOCKED_AFTER_RETRY") {
-              // @ts-ignore
-              if (import.meta.env.DEV) console.info(`Gemini blocked content (${e?.type}), falling back to OCR.space`);
-              const fallbackReasonStr = e?.type === "RECITATION_BLOCKED_AFTER_RETRY" ? "chép nguyên văn" : "chặn nội dung";
-              setBatchProgressText(`Gemini không thể ${fallbackReasonStr} trang này. Hệ thống đang thử công cụ OCR dự phòng - Trang ${pageNum}...`);
+            if (e?.type === "RECITATION_BLOCKED") {
+              console.log("[OCR PATH]\nHandler: startOcrProcess\nRequest function: makeRequest");
+              console.log("[RECITATION]\nInitial: blocked\nRetry attempted: true");
+              try {
+                setBatchProgressText(`Phát hiện lỗi sao chép văn bản (RECITATION), đang thử lại với cấu hình nghiêm ngặt...`);
+                const retryText = await makeRequest(currentKey, 0, true);
+                console.log("[RECITATION]\nRetry result: success");
+                console.log("[FALLBACK]\nCalled: false\nReason: none");
+                return retryText;
+              } catch (retryErr: any) {
+                if (retryErr?.type === "RECITATION_BLOCKED") {
+                  console.log("[RECITATION]\nRetry result: blocked");
+                  console.log("[FALLBACK]\nCalled: true\nReason: RECITATION_BLOCKED_AFTER_RETRY");
+                  setBatchProgressText(`Gemini không thể chép nguyên văn trang này. Hệ thống đang thử công cụ OCR dự phòng...`);
+                  try {
+                    const fallbackText = await runOcrSpaceFallback();
+                    return fallbackText;
+                  } catch (fallbackErr: any) {
+                    throw { 
+                      type: "RECITATION_FALLBACK_FAILED", 
+                      message: fallbackErr.message || "Gemini không thể chép nguyên văn trang này và công cụ OCR dự phòng hiện chưa khả dụng." 
+                    };
+                  }
+                }
+                throw retryErr;
+              }
+            }
+
+            if (e?.type === "CONTENT_BLOCKED" || e?.type === "SAFETY_BLOCKED" || e?.type === "PROMPT_BLOCKED") {
+              console.log("[OCR PATH]\nHandler: startOcrProcess\nRequest function: makeRequest");
+              console.log(`[FALLBACK]\nCalled: true\nReason: ${e.type}`);
+              setBatchProgressText(`Nội dung bị chặn (${e.type}). Hệ thống đang thử công cụ OCR dự phòng...`);
               try {
                 const fallbackText = await runOcrSpaceFallback();
                 return fallbackText;
               } catch (fallbackErr: any) {
-                throw fallbackErr;
+                throw {
+                  type: "FALLBACK_FAILED",
+                  message: `Nội dung bị chặn và OCR dự phòng thất bại: ${fallbackErr.message || "Lỗi OCR.space"}`
+                };
               }
             }
 

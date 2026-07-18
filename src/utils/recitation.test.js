@@ -246,13 +246,19 @@ async function runTests() {
   // R7
   try {
     reset();
-    fetchMockBehavior.push({
-      status: 429,
-      json: { error: { message: "Quota exceeded" } }
-    });
+    fetchMockBehavior.push(
+      {
+        status: 429,
+        json: { error: { message: "Quota exceeded" } }
+      },
+      {
+        status: 429,
+        json: { error: { message: "Quota exceeded" } }
+      }
+    );
     
     const { geminiCalls, ocrSpaceCalls, error } = await simulateScannerPageProcessing([{}]);
-    assert.equal(geminiCalls, 1);
+    assert.equal(geminiCalls, 2);
     assert.equal(ocrSpaceCalls, 0);
     assert.equal(error.code, "QUOTA_EXCEEDED");
     console.log("✅ R7. Gemini RATE_LIMIT -> does not use RECITATION retry, does not call OCR.space.");
