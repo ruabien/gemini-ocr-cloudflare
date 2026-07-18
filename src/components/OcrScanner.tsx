@@ -537,20 +537,12 @@ let activeKeyIndex = 0;
 
             setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
             
-            console.log("[LOG] Bắt đầu gọi /api/ocr để lấy OCR.space API key");
             fetch("/api/ocr")
               .then(res => {
-                console.log("[LOG] Status của /api/ocr:", res.status);
                 if (!res.ok) {
                   throw new Error("Failed to retrieve OCR.space credentials from API gateway");
                 }
-                return res.json().then((data: any) => {
-                  const redacted = { ...data };
-                  if (redacted.primary) redacted.primary = "***";
-                  if (redacted.backup) redacted.backup = "***";
-                  console.log("[LOG] Response body của /api/ocr:", JSON.stringify(redacted));
-                  return data;
-                });
+                return res.json();
               })
               .then((data: any) => {
                 const fetchedKeys = data || {};
@@ -611,13 +603,11 @@ let activeKeyIndex = 0;
                     diagnosticFormData.append('OcrEngine', '2');
                     diagnosticFormData.append('file', blob, 'page6.jpg');
                     
-                    console.log("[LOG] Bắt đầu gửi request tới OCR.space");
                     fetch("https://api.ocr.space/parse/image", {
                       method: "POST",
                       body: diagnosticFormData
                     })
                     .then(async res => {
-                      console.log("[LOG] HTTP status của OCR.space:", res.status);
                       const txt = await res.text();
                       if (!res.ok) {
                         if (res.status === 429) {
@@ -638,13 +628,6 @@ let activeKeyIndex = 0;
                       let data;
                       try {
                         data = JSON.parse(txt);
-                        console.log("[LOG] Các trường của OCR.space:", {
-                          IsErroredOnProcessing: data.IsErroredOnProcessing,
-                          ErrorMessage: data.ErrorMessage,
-                          ErrorDetails: data.ErrorDetails,
-                          "ParsedResults.length": data.ParsedResults?.length,
-                          "ParsedText length": data.ParsedResults?.[0]?.ParsedText?.length
-                        });
                       } catch {
                         const finalText = txt.trim();
                         const sanitizedFinalText = sanitizeError(finalText);
