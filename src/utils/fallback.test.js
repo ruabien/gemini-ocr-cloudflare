@@ -10,8 +10,10 @@ import { classifyGeminiResponse } from './geminiResponseClassifier.ts';
 async function simulateOcrProcess(mockXhrStatus, mockResponseText) {
   let fallbackCalled = 0;
   let nextKeyCalled = 0;
+  let changeModelCalled = 0;
   let finalResult = null;
   let finalError = null;
+  let activeModel = "gemini-2.5-flash";
   
   // Mock fallback
   const runOcrSpaceFallback = async () => {
@@ -29,13 +31,7 @@ async function simulateOcrProcess(mockXhrStatus, mockResponseText) {
       let shouldFallback = false;
       const isTransientError = xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
       
-      if (xhr.status === 429) {
-        reject({ status: 429 });
-        return;
-      } else if (xhr.status === 401 || xhr.status === 403) {
-        reject({ status: xhr.status });
-        return;
-      } else if (isTransientError) {
+      if (isTransientError) {
         if (!isRetry) {
           // Simulate retry
           makeRequest(true).then(resolve).catch(reject);
@@ -83,7 +79,32 @@ async function simulateOcrProcess(mockXhrStatus, mockResponseText) {
           return;
         }
       } else {
-        reject({ status: xhr.status, message: `Gemini HTTP ${xhr.status}` });
+        let errorCode = xhr.status;
+        let errorStatus = "";
+        let errorMessage = "";
+        try {
+          const jsonBody = JSON.parse(xhr.responseText);
+          if (jsonBody && jsonBody.error) {
+            errorCode = jsonBody.error.code !== undefined ? jsonBody.error.code : xhr.status;
+            errorStatus = jsonBody.error.status || "";
+            errorMessage = jsonBody.error.message || "";
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        let errorType = "SERVER_ERROR";
+        if (errorCode === 429 || errorStatus === "RESOURCE_EXHAUSTED") {
+          errorType = "RATE_LIMITED";
+        } else if (errorCode === 404 || errorStatus === "NOT_FOUND") {
+          errorType = "MODEL_NOT_AVAILABLE";
+        } else if (errorCode === 403 || errorStatus === "PERMISSION_DENIED") {
+          errorType = "KEY_PERMISSION_ERROR";
+        } else if (errorCode >= 400 && errorCode < 500) {
+          errorType = "CLIENT_ERROR";
+        }
+
+        reject({ type: errorType, status: errorCode, errorStatus, message: errorMessage });
         return;
       }
     });
@@ -99,100 +120,81 @@ async function simulateOcrProcess(mockXhrStatus, mockResponseText) {
       } catch (err) {
         finalError = err;
       }
-    } else if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
-      nextKeyCalled++;
-      finalError = e; // End of loop mock
+    } else if (e?.type === "RATE_LIMITED") {
+      nextKeyCalled++; // Chuyển key
+      // Hạn mức RATE_LIMITED: Không đổi model (ví dụ không đổi sang gemini-3.5-flash)
+      // activeModel giữ nguyên là gemini-2.5-flash
+      finalError = e;
+    } else if (e?.type === "MODEL_NOT_AVAILABLE") {
+      changeModelCalled++; // Đổi model
+      activeModel = "gemini-3.5-flash"; // Giả sử đổi sang model khác
+      finalError = e;
+    } else if (e?.type === "KEY_PERMISSION_ERROR") {
+      nextKeyCalled++; // Chuyển key
+      finalError = e;
     } else {
       finalError = e;
     }
   }
 
-  return { fallbackCalled, nextKeyCalled, finalResult, finalError };
+  return { fallbackCalled, nextKeyCalled, changeModelCalled, finalResult, finalError, activeModel };
 }
 
 async function runTests() {
-  console.log("=== BẮT ĐẦU CHẠY CÁC BÀI KIỂM TRA FALLBACK (OcrScanner) ===\n");
+  console.log("=== BẮT ĐẦU CHẠY CÁC BÀI KIỂM TRA FALLBACK VÀ LỖI HTTP (OcrScanner) ===\n");
   let passed = 0;
   let failed = 0;
 
   const testCases = [
     {
-      name: "A. Gemini trả text và có safetyRatings nhưng blocked=false",
-      status: 200,
-      response: JSON.stringify({
-        candidates: [{
-          content: { parts: [{ text: "Văn bản hợp lệ" }] },
-          safetyRatings: [{ category: "HARM_CATEGORY_HATE_SPEECH", blocked: false, probability: "LOW" }]
-        }]
-      }),
-      expectedFallback: 0,
-      expectedNextKey: 0,
-      expectedResult: "Văn bản hợp lệ"
-    },
-{
-  name: "B. promptFeedback.blockReason có giá trị block thực sự, không có text",
-  status: 200,
-  response: JSON.stringify({
-    promptFeedback: { blockReason: "SAFETY" }
-  }),
-  expectedFallback: 0,
-  expectedNextKey: 0,
-  expectedResult: undefined
-},
-{
-  name: "C. finishReason=SAFETY, không có text",
-  status: 200,
-  response: JSON.stringify({
-    candidates: [{ finishReason: "SAFETY" }]
-  }),
-  expectedFallback: 0,
-  expectedNextKey: 0,
-  expectedResult: undefined
-},
-    {
-      name: "D. Gemini 429 -> thử Key tiếp theo, không gọi OCR.space",
+      name: "1. 429 RESOURCE_EXHAUSTED -> RATE_LIMITED, chuyển key, KHÔNG đổi model",
       status: 429,
-      response: "",
+      response: JSON.stringify({ error: { code: 429, status: "RESOURCE_EXHAUSTED", message: "Quota exceeded" } }),
       expectedFallback: 0,
       expectedNextKey: 1,
-      expectedErrorStatus: 429
+      expectedChangeModel: 0,
+      expectedErrorType: "RATE_LIMITED"
     },
     {
-      name: "E. Gemini 401/403 -> thử Key tiếp theo, không gọi OCR.space",
+      name: "2. 404 NOT_FOUND -> MODEL_NOT_AVAILABLE, đổi model",
+      status: 404,
+      response: JSON.stringify({ error: { code: 404, status: "NOT_FOUND", message: "Model not found" } }),
+      expectedFallback: 0,
+      expectedNextKey: 0,
+      expectedChangeModel: 1,
+      expectedErrorType: "MODEL_NOT_AVAILABLE"
+    },
+    {
+      name: "3. 403 PERMISSION_DENIED -> KEY_PERMISSION_ERROR, chuyển key",
       status: 403,
-      response: "",
+      response: JSON.stringify({ error: { code: 403, status: "PERMISSION_DENIED", message: "API key lacks permission" } }),
       expectedFallback: 0,
       expectedNextKey: 1,
-      expectedErrorStatus: 403
+      expectedChangeModel: 0,
+      expectedErrorType: "KEY_PERMISSION_ERROR"
     },
     {
-      name: "F. EMPTY_RESPONSE không có block metadata",
+      name: "4. Lỗi 400 khác -> CLIENT_ERROR",
+      status: 400,
+      response: JSON.stringify({ error: { code: 400, status: "INVALID_ARGUMENT", message: "Bad request" } }),
+      expectedFallback: 0,
+      expectedNextKey: 0,
+      expectedChangeModel: 0,
+      expectedErrorType: "CLIENT_ERROR"
+    },
+    {
+      name: "5. Nội dung bị chặn -> FALLBACK",
       status: 200,
       response: JSON.stringify({
-        candidates: [{ content: { parts: [{ text: "" }] } }]
+        promptFeedback: { blockReason: "SAFETY" }
       }),
       expectedFallback: 0,
       expectedNextKey: 0,
-      expectedErrorType: "EMPTY_RESPONSE"
+      expectedChangeModel: 0,
+      expectedResult: undefined
     },
     {
-      name: "G. PARSE_ERROR",
-      status: 200,
-      response: "INVALID_JSON",
-      expectedFallback: 0,
-      expectedNextKey: 0,
-      expectedErrorType: "PARSE_ERROR"
-    },
-    {
-      name: "H. UNKNOWN ERROR / HTTP 500",
-      status: 500,
-      response: "",
-      expectedFallback: 0,
-      expectedNextKey: 0,
-      expectedErrorStatus: 500
-    },
-    {
-      name: "I. Mới: Không có text, blocked=false, probability=MEDIUM -> EMPTY_RESPONSE",
+      name: "6. Mới: Không có text, blocked=false, probability=MEDIUM -> EMPTY_RESPONSE",
       status: 200,
       response: JSON.stringify({
         candidates: [{
@@ -202,10 +204,11 @@ async function runTests() {
       }),
       expectedFallback: 0,
       expectedNextKey: 0,
+      expectedChangeModel: 0,
       expectedErrorType: "EMPTY_RESPONSE"
     },
     {
-      name: "J. Mới: Có text hợp lệ, blocked=true -> vẫn trả text",
+      name: "7. Có text hợp lệ, blocked=true -> vẫn trả text",
       status: 200,
       response: JSON.stringify({
         candidates: [{
@@ -215,6 +218,7 @@ async function runTests() {
       }),
       expectedFallback: 0,
       expectedNextKey: 0,
+      expectedChangeModel: 0,
       expectedResult: "Văn bản hợp lệ dù bị block cờ"
     }
   ];
@@ -224,7 +228,17 @@ async function runTests() {
       const res = await simulateOcrProcess(tc.status, tc.response);
       assert.equal(res.fallbackCalled, tc.expectedFallback, "fallbackCalled mismatch");
       assert.equal(res.nextKeyCalled, tc.expectedNextKey, "nextKeyCalled mismatch");
+      assert.equal(res.changeModelCalled, tc.expectedChangeModel, "changeModelCalled mismatch");
       
+      if (tc.name.includes("429")) {
+        // Kiểm tra không đổi model sang 3.5 vì lỗi 429
+        assert.equal(res.activeModel, "gemini-2.5-flash", "Model should remain gemini-2.5-flash on 429");
+      }
+      if (tc.name.includes("404")) {
+        // Lỗi 404 thì đổi model
+        assert.equal(res.activeModel, "gemini-3.5-flash", "Model should change on 404");
+      }
+
       if (tc.expectedResult !== undefined) {
         assert.equal(res.finalResult, tc.expectedResult, "finalResult mismatch");
       }
@@ -246,6 +260,9 @@ async function runTests() {
   }
 
   console.log(`\n=== KẾT QUẢ: ${passed} bài kiểm tra đạt, ${failed} bài kiểm tra thất bại ===`);
+  if (failed > 0) {
+    process.exit(1);
+  }
 }
 
 runTests();

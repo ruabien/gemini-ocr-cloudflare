@@ -489,6 +489,8 @@ if (geminiKeyPool.length === 0) {
   return;
 }
 let activeKeyIndex = 0;
+const rateLimitedProjects = new Set<string>();
+const keyToProjectMap = new Map<string, string>();
 
 
     const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
@@ -736,10 +738,56 @@ let activeKeyIndex = 0;
               if (signal?.aborted) return;
 
               let shouldFallback = false;
-              const isTransientError = xhr.status === 408 || xhr.status === 429 || xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
-              
-              if (xhr.status === 401 || xhr.status === 403 || xhr.status === 404 || xhr.status === 400) {
-                reject({ status: xhr.status, type: "CLIENT_ERROR" });
+              let errorCode = xhr.status;
+              let errorStatus = "";
+              let errorMessage = "";
+
+              if (xhr.status < 200 || xhr.status >= 300) {
+                try {
+                  const jsonBody = JSON.parse(xhr.responseText);
+                  if (jsonBody && jsonBody.error) {
+                    errorCode = jsonBody.error.code !== undefined ? jsonBody.error.code : xhr.status;
+                    errorStatus = jsonBody.error.status || "";
+                    errorMessage = jsonBody.error.message || "";
+                  } else {
+                    errorMessage = xhr.responseText || xhr.statusText || "";
+                  }
+                } catch (e) {
+                  errorMessage = xhr.responseText || xhr.statusText || "";
+                }
+
+                // @ts-ignore
+                if (import.meta.env.DEV) {
+                  console.error("[GEMINI ERROR]", {
+                    httpStatus: errorCode,
+                    apiStatus: errorStatus,
+                    message: errorMessage,
+                    selectedModel: selectedModel
+                  });
+                }
+              }
+
+              let errorType = "SERVER_ERROR";
+              if (errorCode === 429 || errorStatus === "RESOURCE_EXHAUSTED") {
+                errorType = "RATE_LIMITED";
+              } else if (errorCode === 404 || errorStatus === "NOT_FOUND") {
+                errorType = "MODEL_NOT_AVAILABLE";
+              } else if (errorCode === 403 || errorStatus === "PERMISSION_DENIED") {
+                errorType = "KEY_PERMISSION_ERROR";
+              } else if (errorCode >= 400 && errorCode < 500) {
+                errorType = "CLIENT_ERROR";
+              }
+
+              const isTransientError = xhr.status === 408 || xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
+
+              if (errorType === "RATE_LIMITED" || errorType === "MODEL_NOT_AVAILABLE" || errorType === "KEY_PERMISSION_ERROR" || errorType === "CLIENT_ERROR" || xhr.status === 401) {
+                reject({
+                  status: errorCode,
+                  type: errorType,
+                  code: errorCode,
+                  apiStatus: errorStatus,
+                  message: errorMessage
+                });
                 return;
               } else if (isTransientError || xhr.status === 0) { // status 0 can be network error/timeout
                 const maxRetries = xhr.status === 503 ? 3 : 1;
@@ -768,7 +816,7 @@ let activeKeyIndex = 0;
                   }, delay);
                   return;
                 } else {
-                  if (xhr.status === 503 || xhr.status === 0 || xhr.status === 429) {
+                  if (xhr.status === 503 || xhr.status === 0) {
                     reject({ 
                       type: xhr.status === 503 ? "503_EXHAUSTED" : "TRANSIENT_EXHAUSTED", 
                       message: xhr.status === 503 
@@ -945,9 +993,18 @@ let activeKeyIndex = 0;
           if (signal?.aborted) {
             throw { type: "ABORTED", message: "Đã hủy quá trình bóc tách." };
           }
-          const currentKey = geminiKeyPool[activeKeyIndex];
+          let currentKey = geminiKeyPool[activeKeyIndex];
+          while (currentKey) {
+            const pid = keyToProjectMap.get(currentKey);
+            if (pid && rateLimitedProjects.has(pid)) {
+              activeKeyIndex++;
+              currentKey = geminiKeyPool[activeKeyIndex];
+            } else {
+              break;
+            }
+          }
           if (!currentKey) {
-            throw new Error("Không còn Gemini API Key hợp lệ. Vui lòng kiểm tra lại Key trong Cài đặt.");
+            throw new Error("API key đã chạm hạn mức Gemini của project. Hãy chờ hạn mức được làm mới hoặc bật thanh toán trong Google AI Studio.");
           }
 
           const modelMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
@@ -974,7 +1031,7 @@ let activeKeyIndex = 0;
             if (e?.type === "ABORTED" || e?.type === "503_EXHAUSTED") {
               throw e;
             }
-            if (e?.status === 404) {
+            if (e?.type === "MODEL_NOT_AVAILABLE") {
               const currentMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
               if (currentMode === 'auto' && !hasRetriedAuto404) {
                 hasRetriedAuto404 = true;
@@ -989,7 +1046,22 @@ let activeKeyIndex = 0;
               if (currentMode === 'manual') {
                 throw new Error("Mô hình này không khả dụng với Gemini API Key hiện tại. Vui lòng chọn model khác hoặc chuyển sang chế độ Tự động.");
               }
-              throw e;
+              throw new Error(e?.message || "Mô hình không khả dụng.");
+            }
+
+            if (e?.type === "RATE_LIMITED") {
+              const match = e?.message?.match(/for\s+project\s+['"]?([a-zA-Z0-9_-]+)/i);
+              if (match && match[1]) {
+                const projectId = match[1];
+                rateLimitedProjects.add(projectId);
+                keyToProjectMap.set(currentKey, projectId);
+              } else {
+                const dummyProj = `unknown_proj_${activeKeyIndex}`;
+                rateLimitedProjects.add(dummyProj);
+                keyToProjectMap.set(currentKey, dummyProj);
+              }
+              activeKeyIndex++;
+              continue;
             }
 
             if (e?.type === "RECITATION_BLOCKED") {
@@ -1035,9 +1107,13 @@ let activeKeyIndex = 0;
               }
             }
 
-            if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
+            if (e?.type === "KEY_PERMISSION_ERROR" || e?.status === 401) {
               activeKeyIndex++;
               continue;
+            }
+
+            if (e?.type === "CLIENT_ERROR") {
+              throw new Error(e?.message || "Đã xảy ra lỗi từ Gemini API.");
             }
 
             throw e;
