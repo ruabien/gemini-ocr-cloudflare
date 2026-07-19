@@ -97,7 +97,11 @@ async function simulateOcrProcess(mockXhrStatus, mockResponseText) {
         if (errorCode === 429 || errorStatus === "RESOURCE_EXHAUSTED") {
           errorType = "RATE_LIMITED";
         } else if (errorCode === 404 || errorStatus === "NOT_FOUND") {
-          errorType = "MODEL_NOT_AVAILABLE";
+          if (errorMessage && errorMessage.includes("no longer available to new users")) {
+            errorType = "MODEL_DEPRECATED_FOR_KEY";
+          } else {
+            errorType = "MODEL_NOT_AVAILABLE";
+          }
         } else if (errorCode === 403 || errorStatus === "PERMISSION_DENIED") {
           errorType = "KEY_PERMISSION_ERROR";
         } else if (errorCode >= 400 && errorCode < 500) {
@@ -124,6 +128,9 @@ async function simulateOcrProcess(mockXhrStatus, mockResponseText) {
       nextKeyCalled++; // Chuyển key
       // Hạn mức RATE_LIMITED: Không đổi model (ví dụ không đổi sang gemini-3.5-flash)
       // activeModel giữ nguyên là gemini-2.5-flash
+      finalError = e;
+    } else if (e?.type === "MODEL_DEPRECATED_FOR_KEY") {
+      // KHÔNG tự động chuyển model, KHÔNG retry bằng model khác, KHÔNG next key
       finalError = e;
     } else if (e?.type === "MODEL_NOT_AVAILABLE") {
       changeModelCalled++; // Đổi model
@@ -220,6 +227,24 @@ async function runTests() {
       expectedNextKey: 0,
       expectedChangeModel: 0,
       expectedResult: "Văn bản hợp lệ dù bị block cờ"
+    },
+    {
+      name: "8. 404 + no longer available to new users -> MODEL_DEPRECATED_FOR_KEY",
+      status: 404,
+      response: JSON.stringify({ error: { code: 404, status: "NOT_FOUND", message: "This model models/gemini-2.5-flash is no longer available to new users." } }),
+      expectedFallback: 0,
+      expectedNextKey: 0,
+      expectedChangeModel: 0,
+      expectedErrorType: "MODEL_DEPRECATED_FOR_KEY"
+    },
+    {
+      name: "9. 404 model thật sự không tồn tại -> MODEL_NOT_AVAILABLE",
+      status: 404,
+      response: JSON.stringify({ error: { code: 404, status: "NOT_FOUND", message: "Model not found" } }),
+      expectedFallback: 0,
+      expectedNextKey: 0,
+      expectedChangeModel: 1,
+      expectedErrorType: "MODEL_NOT_AVAILABLE"
     }
   ];
 
@@ -234,7 +259,7 @@ async function runTests() {
         // Kiểm tra không đổi model sang 3.5 vì lỗi 429
         assert.equal(res.activeModel, "gemini-2.5-flash", "Model should remain gemini-2.5-flash on 429");
       }
-      if (tc.name.includes("404")) {
+      if (tc.name.includes("404") && !tc.name.includes("no longer available")) {
         // Lỗi 404 thì đổi model
         assert.equal(res.activeModel, "gemini-3.5-flash", "Model should change on 404");
       }

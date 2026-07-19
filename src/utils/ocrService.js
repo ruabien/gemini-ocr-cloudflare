@@ -270,6 +270,14 @@ export const processOCR = async (file, apiKey, modelName, options = {}) => {
       } else if (status === 400) {
         friendlyMessage = `Yêu cầu không hợp lệ (Malformed Request): ${errorMsg}`;
         code = "MALFORMED_REQUEST";
+      } else if (status === 404) {
+        if (errorMsg && errorMsg.includes("no longer available to new users")) {
+          friendlyMessage = "API key này không được Google cấp quyền sử dụng Gemini 2.5 Flash.\n\nNếu đây là API key mới tạo thì đây là giới hạn của Google.\n\nBạn có thể:\n• dùng API key cũ còn hỗ trợ Gemini 2.5 Flash\nhoặc\n• chọn Gemini 3.5 Flash (Experimental) trong Settings.";
+          code = "MODEL_DEPRECATED_FOR_KEY";
+        } else {
+          code = "MODEL_NOT_AVAILABLE";
+          friendlyMessage = `Mô hình không tồn tại (404): ${errorMsg}`;
+        }
       }
 
       const err = new Error(friendlyMessage);

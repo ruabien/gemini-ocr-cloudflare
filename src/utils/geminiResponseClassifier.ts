@@ -2,6 +2,15 @@ export const classifyGeminiResponse = (response: any): string | null => {
   if (!response) return null;
 
   const errorCode = response?.error?.code;
+  const errorStatus = response?.error?.status || "";
+  const errorMessage = response?.error?.message || "";
+
+  if (errorCode === 404 || errorStatus === "NOT_FOUND" || errorCode === "NOT_FOUND") {
+    if (errorMessage.includes("no longer available to new users")) {
+      return "MODEL_DEPRECATED_FOR_KEY";
+    }
+    return "MODEL_NOT_AVAILABLE";
+  }
 
   if (!errorCode) {
     // No explicit error code; attempt to infer from response structure if needed
