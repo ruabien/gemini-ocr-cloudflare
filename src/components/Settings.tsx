@@ -46,7 +46,7 @@ export default function SettingsComponent({
     return getUserStorageItem(user?.uid, 'gemini_model_mode') || MODEL_MODES.AUTO;
   });
    const [geminiModel, setGeminiModel] = useState<string>(() => {
-     return getUserStorageItem(user?.uid, 'ocr_model') || "gemini-3.5-flash";
+     return getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
    });
 
    // Migrate any legacy storage keys and sync state
@@ -54,7 +54,7 @@ export default function SettingsComponent({
      if (!user?.uid) return;
      migrateOldStorage(user.uid);
      const mode = getUserStorageItem(user.uid, 'gemini_model_mode') || MODEL_MODES.AUTO;
-     const manual = getUserStorageItem(user.uid, 'ocr_model') || "gemini-3.5-flash";
+     const manual = getUserStorageItem(user.uid, 'ocr_model') || "gemini-2.5-flash";
      setGeminiModelMode(mode);
      setGeminiModel(manual);
    }, [user?.uid]);
@@ -80,9 +80,9 @@ export default function SettingsComponent({
   const visibleManualModels = React.useMemo(() => {
     if (!cachedModelsList) return [];
     return [
-      { value: "gemini-3.5-flash", label: "Gemini 3.5 Flash" },
-      { value: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite" },
-      { value: "gemini-flash-latest", label: "Gemini Flash Latest" }
+      { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Khuyến nghị)" },
+      { value: "gemini-3.5-flash", label: "Gemini 3.5 Flash (Thử nghiệm)" },
+      { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Cũ)" }
     ].filter(m => cachedModelsList.some(c => c === m.value || c === `models/${m.value}`));
   }, [cachedModelsList]);
 
@@ -404,6 +404,11 @@ export default function SettingsComponent({
                       <div className="text-[14px] font-black text-blue-800 mb-1">
                         {geminiModel.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                       </div>
+                      {geminiModel === "gemini-3.5-flash" && (
+                        <div className="mt-2 text-[10px] text-amber-600 bg-amber-50 border border-amber-200 p-2 rounded leading-normal">
+                          ⚠️ Model này chưa được LexOCR xác nhận ổn định cho OCR tài liệu dài.
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>

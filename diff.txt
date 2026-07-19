@@ -1,0 +1,1107 @@
+﻿diff --git a/src/components/OcrScanner.tsx b/src/components/OcrScanner.tsx
+index 7449bff..fa34807 100644
+--- a/src/components/OcrScanner.tsx
++++ b/src/components/OcrScanner.tsx
+@@ -9,8 +9,10 @@ import { auth } from "../lib/firebase";
+ import { OcrConfig } from "../types";
+ import { useAuth } from "../contexts/AuthContext";
+ import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
+-// @ts-ignore
++ // @ts-ignore
+ import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
++import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
++import { getActiveModel, autoResolveModel, MODEL_MODES } from "../utils/geminiModelResolver";
+ import { optimizeImageForOcr } from "../utils/imageOptimizer";
+ 
+ interface OcrScannerProps {
+@@ -55,6 +57,19 @@ const formatSize = (bytes: number) => {
+   return `${Math.round(bytes / 1024)} KB`;
+ };
+ 
++const sanitizeError = (message: string): string => {
++  if (!message) return "";
++  return message
++    .replace(/key=[a-zA-Z0-9_\-]+/g, (match) => {
++      const parts = match.split('=');
++      const val = parts[1] || '';
++      return `key=****${val.slice(-4)}`;
++    })
++    .replace(/AIzaSy[a-zA-Z0-9_\-]+/g, (match) => {
++      return `****${match.slice(-4)}`;
++    });
++};
++
+ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveTab }: OcrScannerProps) {
+   const { user } = useAuth();
+   const [dragActive, setDragActive] = useState(false);
+@@ -68,6 +83,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
+   const [batchProgressText, setBatchProgressText] = useState("");
+   const [processingFile, setProcessingFile] = useState<string | null>(null);
+   const [progress, setProgress] = useState(0);
++  const cancelOcrRef = useRef<AbortController | null>(null);
+ 
+   const [editorContent, setEditorContent] = useState("");
+   const editorContentRef = useRef("");
+@@ -303,6 +319,10 @@ const startOcrProcess = async () => {
+   // LOCK THE RUNTIME PROCESSING FUNCTION WITH A DEFENSIVE LOADING GUARD
+   if (isProcessingRef.current || isBatchProcessing || isSlicing) return;
+ 
++  const controller = new AbortController();
++  cancelOcrRef.current = controller;
++  const signal = controller.signal;
++
+   // ---- PreΓÇæflight usage checks for FREE users ----
+   let isPro = false;
+   let currentUsage = 0;
+@@ -470,359 +490,559 @@ if (geminiKeyPool.length === 0) {
+ }
+ let activeKeyIndex = 0;
+ 
+-    const model = (config as any)?.model || localStorage.getItem('ocr_model') || 'gemini-1.5-flash';
+ 
+     const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
+       const pageNum = pageNumParam; // or dynamic page index variable
+-if (pageProcessingLockRef.current[pageNum]) {
+-    // Development info removed for production
+-    return "";
+-}
++      if (pageProcessingLockRef.current[pageNum]) {
++        return "";
++      }
+       pageProcessingLockRef.current[pageNum] = true;
+ 
+-// @ts-ignore
+-if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}` } ---`);
++      // @ts-ignore
++      if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} ---`);
+       try {
+         let fileType = file.type || '';
+-      if (!fileType) {
+-        if (file.name.toLowerCase().endsWith('.pdf')) {
+-          fileType = 'application/pdf';
+-        } else if (file.name.toLowerCase().endsWith('.png')) {
+-          fileType = 'image/png';
+-        } else {
+-          fileType = 'image/jpeg';
++        if (!fileType) {
++          if (file.name.toLowerCase().endsWith('.pdf')) {
++            fileType = 'application/pdf';
++          } else if (file.name.toLowerCase().endsWith('.png')) {
++            fileType = 'image/png';
++          } else {
++            fileType = 'image/jpeg';
++          }
+         }
+-      }
+ 
+-      const base64Data = await new Promise<string>((resolve, reject) => {
+-        const reader = new FileReader();
+-        reader.onload = () => {
+-          const result = reader.result as string;
+-          const rawBase64 = result.includes(',') ? result.split(',')[1] : result;
+-          const cleanBase64 = rawBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+-          resolve(cleanBase64);
+-        };
+-        reader.onerror = reject;
+-        reader.readAsDataURL(file);
+-      });
++        const base64Data = await new Promise<string>((resolve, reject) => {
++          const reader = new FileReader();
++          reader.onload = () => {
++            const result = reader.result as string;
++            const rawBase64 = result.includes(',') ? result.split(',')[1] : result;
++            const cleanBase64 = rawBase64.replace(/^data:image\/[a-z]+;base64,/, '');
++            resolve(cleanBase64);
++          };
++          reader.onerror = reject;
++          reader.readAsDataURL(file);
++        });
+ 
+-      const runOcrSpaceFallback = (): Promise<string> => {
+-        return new Promise<string>((resolveFallback, rejectFallback) => {
+-          // Update progress text with the fallback status
+-          setBatchProgressText(`Gemini qu├í tß║úi, chuyß╗ân sang OCR dß╗▒ ph├▓ng - Trang ${pageNum}...`);
+-          
+-          // 1. Fetch backend keys from the lightweight secure token gateway
+-          fetch("/api/ocr")
+-            .then(res => {
+-              if (!res.ok) {
+-                throw new Error("Failed to retrieve OCR.space credentials from API gateway");
+-              }
+-              return res.json();
+-            })
+-            .then((data: any) => {
+-              // Ensure it correctly logs and checks data.primary and data.backup
+-              
+-              const fetchedKeys = data || {};
+-              const cleanKey = (key: any) => {
+-                if (!key) return "";
+-                const s = String(key).trim();
+-                if (s === "undefined" || s === "null" || s === "") return "";
+-                return s;
+-              };
++        const runOcrSpaceFallback = (): Promise<string> => {
++          return new Promise<string>((resolveFallback, rejectFallback) => {
++            const logSuccess = (val: string) => {
++              console.log("[FALLBACK] Result: success");
++              resolveFallback(val);
++            };
++            const logFailure = (err: Error) => {
++              console.log("[FALLBACK] Result: failed", err.message);
++              rejectFallback(err);
++            };
+ 
+-              const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
+-              const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
+-              const ocrKeys: string[] = [];
+-              if (primaryKey) ocrKeys.push(primaryKey);
+-              if (secondaryKey) ocrKeys.push(secondaryKey);
+-              
+-              // Remove any premature blocking check that throws a string alert
+-              if (ocrKeys.length === 0) {
+-// Development info removed for production
+-                ocrKeys.push("helloworld"); // fallback to public test key instead of breaking
+-              }
+-              
+-              // 2. Compress/downscale using canvas to ensure efficient base64 ingestion on the frontend client
+-              const img = new Image();
+-              img.onload = () => {
+-                URL.revokeObjectURL(img.src);
+-                let width = img.width;
+-                let height = img.height;
+-                const maxDimension = 1200;
+-                
+-                if (width > maxDimension || height > maxDimension) {
+-                  if (width > height) {
+-                    height = Math.round((height * maxDimension) / width);
+-                    width = maxDimension;
+-                  } else {
+-                    width = Math.round((width * maxDimension) / height);
+-                    height = maxDimension;
+-                  }
++            setBatchProgressText(`Gemini qu├í tß║úi, chuyß╗ân sang OCR dß╗▒ ph├▓ng - Trang ${pageNum}...`);
++            
++            fetch("/api/ocr")
++              .then(res => {
++                if (!res.ok) {
++                  throw new Error("Failed to retrieve OCR.space credentials from API gateway");
+                 }
++                return res.json();
++              })
++              .then((data: any) => {
++                const fetchedKeys = data || {};
++                const cleanKey = (key: any) => {
++                  if (!key) return "";
++                  const s = String(key).trim();
++                  if (s === "undefined" || s === "null" || s === "") return "";
++                  return s;
++                };
++
++                const primaryKey = cleanKey((data?.primary && data.primary !== "true" && data.primary !== true) ? data.primary : (localStorage.getItem("ocr_space_api_key") || ""));
++                const secondaryKey = cleanKey((data?.backup && data.backup !== "true" && data.backup !== true) ? data.backup : (localStorage.getItem("ocr_space_api_key_1") || ""));
++                const ocrKeys: string[] = [];
++                if (primaryKey) ocrKeys.push(primaryKey);
++                if (secondaryKey) ocrKeys.push(secondaryKey);
+                 
+-                const downscaledCanvas = document.createElement("canvas");
+-                downscaledCanvas.width = width;
+-                downscaledCanvas.height = height;
+-                
+-                const ctx = downscaledCanvas.getContext("2d");
+-                if (ctx) {
+-                  ctx.drawImage(img, 0, 0, width, height);
++                if (ocrKeys.length === 0) {
++                  logFailure(new Error("OCR.space API Key kh├┤ng ─æ╞░ß╗úc cß║Ñu h├¼nh."));
++                  return;
+                 }
+                 
+-                // 3. Use standard canvas.toBlob to avoid corrupted manual Base64 manipulation
+-                downscaledCanvas.toBlob((blob) => {
+-                  if (!blob) {
+-                    console.error("Canvas toBlob failed - asset is empty!");
+-                    rejectFallback(new Error("Canvas toBlob failed - asset is empty!"));
+-                    return;
++                const img = new Image();
++                img.onload = () => {
++                  URL.revokeObjectURL(img.src);
++                  let width = img.width;
++                  let height = img.height;
++                  const maxDimension = 1200;
++                  
++                  if (width > maxDimension || height > maxDimension) {
++                    if (width > height) {
++                      height = Math.round((height * maxDimension) / width);
++                      width = maxDimension;
++                    } else {
++                      width = Math.round((width * maxDimension) / height);
++                      height = maxDimension;
++                    }
++                  }
++                  
++                  const downscaledCanvas = document.createElement("canvas");
++                  downscaledCanvas.width = width;
++                  downscaledCanvas.height = height;
++                  
++                  const ctx = downscaledCanvas.getContext("2d");
++                  if (ctx) {
++                    ctx.drawImage(img, 0, 0, width, height);
+                   }
+-
+-                  const diagnosticFormData = new FormData();
+-diagnosticFormData.append('apikey', 'helloworld'); // Explicitly bypass our restricted environment tokens
+-diagnosticFormData.append('language', 'auto');
+-diagnosticFormData.append('isOverlayRequired', 'false');
+-diagnosticFormData.append('OcrEngine', '2');
+-diagnosticFormData.append('file', blob, 'page6.jpg'); // Valid native browser-generated binary asset
+-// Log request params before OCR.space fallback
+                   
+-                  fetch("https://api.ocr.space/parse/image", {
+-                    method: "POST",
+-                    body: diagnosticFormData
+-                  })
+-                  .then(async res => {
+-                    const txt = await res.text();
+-                    if (!res.ok) {
+-                      // Show raw error text in UI for debugging
+-                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`);
+-                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${txt}`;
+-                      rejectFallback(new Error(`OCR.space HTTP error ${res.status}`));
++                  downscaledCanvas.toBlob((blob) => {
++                    if (!blob) {
++                      logFailure(new Error("Canvas toBlob failed - asset is empty!"));
+                       return;
+                     }
+-                    // Parse JSON safely
+-                    let data;
+-                    try {
+-                      data = JSON.parse(txt);
+-                    } catch {
+-                      // If not JSON, just return raw text
+-                      const finalText = txt.trim();
+-                      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + finalText);
+-                      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + finalText;
+-                      resolveFallback(finalText);
++
++                    const diagnosticFormData = new FormData();
++                    diagnosticFormData.append('apikey', ocrKeys[0]);
++                    diagnosticFormData.append('language', 'auto');
++                    diagnosticFormData.append('isOverlayRequired', 'false');
++                    diagnosticFormData.append('OcrEngine', '2');
++                    diagnosticFormData.append('file', blob, 'page6.jpg');
++                    
++                    fetch("https://api.ocr.space/parse/image", {
++                      method: "POST",
++                      body: diagnosticFormData
++                    })
++                    .then(async res => {
++                      const txt = await res.text();
++                      if (!res.ok) {
++                        if (res.status === 429) {
++                          const retryAfter = res.headers.get("retry-after") || "3600";
++                          const minutes = Math.ceil(parseInt(retryAfter, 10) / 60);
++                          const msg = `C├┤ng cß╗Ñ OCR dß╗▒ ph├▓ng ─æang tß║ím thß╗¥i ─æß║ít giß╗¢i hß║ín sß╗¡ dß╗Ñng. Vui l├▓ng thß╗¡ lß║íi sau khoß║úng ${minutes} ph├║t.`;
++                          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
++                          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
++                          logFailure(new Error(msg));
++                          return;
++                        }
++                        const sanitizedTxt = sanitizeError(txt);
++                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Error ${res.status}: ${sanitizedTxt}`);
++                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Error ${res.status}: ${sanitizedTxt}`;
++                        logFailure(new Error(`OCR.space HTTP error ${res.status}`));
++                        return;
++                      }
++                      let data;
++                      try {
++                        data = JSON.parse(txt);
++                      } catch {
++                        const finalText = txt.trim();
++                        const sanitizedFinalText = sanitizeError(finalText);
++                        setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedFinalText);
++                        editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedFinalText;
++                        logSuccess(sanitizedFinalText);
++                        return;
++                      }
++                      if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
++                        const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
++                        const errorInfo = sanitizeError(errMsgs || "OCR.space processing error");
++                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
++                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
++                        logFailure(new Error(errorInfo));
++                        return;
++                      }
++                      let extractedText = "";
++                      if (data.ParsedResults?.[0]?.ParsedText) {
++                        extractedText = data.ParsedResults[0].ParsedText;
++                      } else if (data.text) {
++                        extractedText = data.text;
++                      } else {
++                        const msg = "Kh├┤ng nhß║¡n dß║íng ─æ╞░ß╗úc v─ân bß║ún n├áo tß╗½ phß║ún hß╗ôi cß╗ºa OCR.space.";
++                        setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
++                        editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
++                        logFailure(new Error(msg));
++                        return;
++                      }
++                      const finalText = extractedText.trim();
++                      const sanitizedFinalText = sanitizeError(finalText);
++                      setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedFinalText);
++                      editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedFinalText;
++                      logSuccess(sanitizedFinalText);
++                    })
++                    .catch(err => {
++                      const errorMsg = sanitizeError(err?.message || "Unknown fetch error");
++                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
++                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
++                      logFailure(new Error(errorMsg));
++                    });
++                  }, 'image/jpeg', 0.85);
++                };
++                img.onerror = () => {
++                  logFailure(new Error("Kh├┤ng thß╗â tß║úi ß║únh cß║Ñu h├¼nh canvas ─æß╗â n├⌐n cho OCR.space."));
++                };
++                img.src = URL.createObjectURL(file);
++              })
++              .catch(err => {
++                logFailure(new Error(sanitizeError(err?.message || "Unknown error during OCR.space fallback")));
++              });
++          });
++        };
++
++        const makeRequest = (activeKey: string, retryAttempt: number = 0, isRecitationRetry: boolean = false): Promise<string> => {
++          return new Promise<string>((resolve, reject) => {
++            if (signal?.aborted) {
++              reject({ type: "ABORTED", message: "─É├ú hß╗ºy qu├í tr├¼nh b├│c t├ích." });
++              return;
++            }
++
++            // @ts-ignore
++            if (import.meta.env.DEV) {
++              console.info("[OCR ENGINE] Gemini");
++              const model = getActiveModel(user?.uid, activeKey);
++              console.info("[GEMINI CONFIG] Key index:", activeKeyIndex);
++              console.info("[GEMINI CONFIG] Key suffix:", `${activeKey.slice(-4)}`);
++              console.info("[GEMINI CONFIG] Model:", model);
++            }
++            // @ts-ignore
++            if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
++            
++            if (retryAttempt > 0) {
++              setBatchProgressText(`Gemini ─æang tß║ím thß╗¥i qu├í tß║úi. Hß╗ç thß╗æng sß║╜ tß╗▒ ─æß╗Öng thß╗¡ lß║íi... (Lß║ºn thß╗¡ ${retryAttempt}/3)`);
++            } else {
++              setBatchProgressText(`─Éang thß╗¡ Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
++            }
++
++            const xhr = new XMLHttpRequest();
++            const selectedModel = getActiveModel(user?.uid, activeKey);
++            let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
++            const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
++            xhr.open("POST", googleUrl, true);
++            xhr.setRequestHeader("Content-Type", "application/json");
++            
++            const onAbort = () => {
++              try {
++                xhr.abort();
++              } catch (e) {}
++              reject({ type: "ABORTED", message: "─É├ú hß╗ºy qu├í tr├¼nh b├│c t├ích." });
++            };
++            signal?.addEventListener('abort', onAbort);
++
++            const cleanup = () => {
++              signal?.removeEventListener('abort', onAbort);
++            };
++
++            xhr.upload.onprogress = (e) => {
++              if (e.lengthComputable) {
++                const percentComplete = Math.round((e.loaded / e.total) * 100);
++                setProgress(percentComplete);
++              }
++            };
++            
++            xhr.onload = () => {
++              cleanup();
++              if (signal?.aborted) return;
++
++              let shouldFallback = false;
++              const isTransientError = xhr.status === 408 || xhr.status === 429 || xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
++              
++              if (xhr.status === 401 || xhr.status === 403 || xhr.status === 404 || xhr.status === 400) {
++                reject({ status: xhr.status, type: "CLIENT_ERROR" });
++                return;
++              } else if (isTransientError || xhr.status === 0) { // status 0 can be network error/timeout
++                const maxRetries = xhr.status === 503 ? 3 : 1;
++                if (retryAttempt < maxRetries) {
++                  let delay = 2500;
++                  if (xhr.status === 503) {
++                    delay = retryAttempt === 0 ? 2500 : retryAttempt === 1 ? 5000 : 10000;
++                  }
++                  delay += Math.floor(Math.random() * 1000); // jitter 0 to 1000 ms
++                  
++                  const nextAttempt = retryAttempt + 1;
++                  const errorName = xhr.status === 503 ? "Gemini ─æang tß║ím thß╗¥i qu├í tß║úi" : (xhr.status === 0 ? "Lß╗ùi kß║┐t nß╗æi mß║íng" : `Gemini gß║╖p lß╗ùi tß║ím thß╗¥i (${xhr.status})`);
++                  
++                  if (xhr.status === 503) {
++                    setBatchProgressText(`Gemini ─æang tß║ím thß╗¥i qu├í tß║úi. Hß╗ç thß╗æng sß║╜ tß╗▒ ─æß╗Öng thß╗¡ lß║íi... (Lß║ºn thß╗¡ ${nextAttempt}/3)`);
++                  } else {
++                    setBatchProgressText(`${errorName}, ─æang thß╗¡ lß║íi - Trang ${pageNum}...`);
++                  }
++
++                  setTimeout(() => {
++                    if (signal?.aborted) {
++                      reject({ type: "ABORTED", message: "─É├ú hß╗ºy qu├í tr├¼nh b├│c t├ích." });
+                       return;
+                     }
+-                    // Handle potential error fields
+-                    if (data.IsErroredOnProcessing || data.OCRExitCode > 1) {
+-                      const errMsgs = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(', ') : (data.ErrorMessage || '');
+-                      const errorInfo = errMsgs || "OCR.space processing error";
+-                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`);
+-                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `OCR.space Processing Error: ${errorInfo}`;
+-                      rejectFallback(new Error(errorInfo));
+-                      return;
++                    makeRequest(activeKey, nextAttempt, isRecitationRetry).then(resolve).catch(reject);
++                  }, delay);
++                  return;
++                } else {
++                  if (xhr.status === 503 || xhr.status === 0 || xhr.status === 429) {
++                    reject({ 
++                      type: xhr.status === 503 ? "503_EXHAUSTED" : "TRANSIENT_EXHAUSTED", 
++                      message: xhr.status === 503 
++                        ? "Gemini ─æang tß║ím thß╗¥i qu├í tß║úi. Vui l├▓ng chß╗¥ mß╗Öt l├ít rß╗ôi thß╗¡ lß║íi." 
++                        : "Lß╗ùi kß║┐t nß╗æi mß║íng hoß║╖c dß╗ïch vß╗Ñ qu├í tß║úi. Vui l├▓ng thß╗¡ lß║íi sau."
++                    });
++                    return;
++                  }
++                  shouldFallback = true;
++                }
++              }
++
++              if (xhr.status >= 200 && xhr.status < 300) {
++                try {
++                  const rawText = xhr.responseText;
++                  const cleanJson = JSON.parse(rawText);
++                  
++                  const blockReason = cleanJson.promptFeedback?.blockReason;
++                  const candidate = cleanJson.candidates?.[0];
++                  const finishReason = candidate?.finishReason;
++                  const safetyRatings = candidate?.safetyRatings || [];
++
++                  const geminiText = candidate?.content?.parts?.[0]?.text;
++                  const actualText = geminiText || cleanJson.text || "";
++                  
++                  let lines = actualText.split('\n');
++                  if (lines.length > 0) {
++                    const firstLine = lines[0].trim();
++                    const isAiIntro = /^(D╞░ß╗¢i ─æ├óy l├á|V─ân bß║ún ─æ├ú ─æ╞░ß╗úc|Kß║┐t quß║ú|─É├óy l├á v─ân bß║ún)/i.test(firstLine) && firstLine.endsWith(':');
++                    if (isAiIntro) {
++                      lines.shift();
+                     }
+-                    // Extract text
+-                    let extractedText = "";
+-                    if (data.ParsedResults?.[0]?.ParsedText) {
+-                      extractedText = data.ParsedResults[0].ParsedText;
+-                    } else if (data.text) {
+-                      extractedText = data.text;
+-                    } else {
+-                      const msg = "Kh├┤ng nhß║¡n dß║íng ─æ╞░ß╗úc v─ân bß║ún n├áo tß╗½ phß║ún hß╗ôi cß╗ºa OCR.space.";
+-                      setEditorContent((prev) => prev + (prev ? "\n\n" : "") + msg);
+-                      editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + msg;
+-                      rejectFallback(new Error(msg));
++                  }
++                  const sanitizedText = lines.join('\n').trim();
++                  const hasUsableText = Boolean(sanitizedText);
++
++                  if (hasUsableText) {
++                    // @ts-ignore
++                    if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
++                    const sanitizedFinalText = sanitizeError(sanitizedText);
++                    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedFinalText);
++                    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedFinalText;
++                    resolve(sanitizedFinalText);
++                    return;
++                  }
++
++                  const failureCategory = (() => {
++                    if (finishReason === "RECITATION") return "RECITATION_BLOCKED";
++                    return classifyGeminiResponse(cleanJson);
++                  })();
++
++                  // @ts-ignore
++                  if (import.meta.env.DEV) {
++                    const savedSelectedModel = localStorage.getItem("selected_gemini_model") || "auto";
++                    const modeLog = savedSelectedModel === "auto" ? "auto" : "manual";
++                    const resolvedModelLog = cleanJson.modelName || selectedModel || "unknown";
++                    const keysStr = localStorage.getItem("gemini_api_keys");
++                    let activeKeySuffix = "unknown";
++                    if (keysStr) {
++                      try {
++                        const keys = JSON.parse(keysStr);
++                        if (Array.isArray(keys) && keys.length > 0) {
++                          const activeKey = keys[activeKeyIndex % keys.length];
++                          if (activeKey) activeKeySuffix = activeKey.slice(-4);
++                        }
++                      } catch (e) {}
++                    }
++
++                    console.info("[OCR MODEL]");
++                    console.info(`Mode: ${modeLog}`);
++                    console.info(`Resolved model: ${resolvedModelLog}`);
++                    console.info(`Key suffix: ****${activeKeySuffix}`);
++                    console.info("\n[GEMINI RESULT]");
++                    console.info(`HTTP status: ${xhr.status}`);
++                    console.info(`Has usable text: ${hasUsableText}`);
++                    console.info(`Finish reason: ${finishReason || "None"}`);
++                    console.info(`Failure category: ${failureCategory || "None"}`);
++                  }
++
++                  if (failureCategory) {
++                    let friendlyMsg = "Lß╗ùi xß╗¡ l├╜ h├¼nh ß║únh tß╗½ AI.";
++                    if (failureCategory === "RECITATION_BLOCKED") friendlyMsg = "Lß╗ùi sao ch├⌐p v─ân bß║ún (RECITATION).";
++                    else if (failureCategory === "CONTENT_BLOCKED") friendlyMsg = "Nß╗Öi dung bß╗ï chß║╖n do vi phß║ím ch├¡nh s├ích.";
++                    else if (failureCategory === "SAFETY_BLOCKED") friendlyMsg = "Nß╗Öi dung bß╗ï chß║╖n v├¼ l├╜ do an to├án.";
++                    else if (failureCategory === "PROMPT_BLOCKED") friendlyMsg = "Y├¬u cß║ºu bß╗ï chß║╖n (Prompt blocked).";
++                    reject({ type: failureCategory, message: friendlyMsg });
++                    return;
++                  }
++
++                  reject({ type: "EMPTY_RESPONSE", message: "Kh├┤ng t├¼m thß║Ñy nß╗Öi dung v─ân bß║ún trong ß║únh." });
++                  return;
++                } catch (e) {
++                  reject({ type: "PARSE_ERROR", message: "Gemini response parse error" });
++                  return;
++                }
++              } else {
++                if (shouldFallback) {
++                  reject({ type: "TRANSIENT_FAILED", message: `Gemini HTTP ${xhr.status} (Transient error failed after retries)` });
++                } else {
++                  reject({ status: xhr.status, message: `Gemini HTTP ${xhr.status}` });
++                }
++                return;
++              }
++            };
++            
++              xhr.onerror = () => {
++                cleanup();
++                if (signal?.aborted) return;
++
++                const maxRetries = 1;
++                if (retryAttempt < maxRetries) {
++                  const delay = 2500 + Math.floor(Math.random() * 1000);
++                  setBatchProgressText(`Lß╗ùi kß║┐t nß╗æi mß║íng, ─æang thß╗¡ lß║íi - Trang ${pageNum}...`);
++                  setTimeout(() => {
++                    if (signal?.aborted) {
++                      reject({ type: "ABORTED", message: "─É├ú hß╗ºy qu├í tr├¼nh b├│c t├ích." });
+                       return;
+                     }
+-                    const finalText = extractedText.trim();
+-                    setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + finalText);
+-                    editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + finalText;
+-                    resolveFallback(finalText);
+-                  })
+-                  .catch(err => {
+-                    // Network or unexpected error
+-                    const errorMsg = err?.message || "Unknown fetch error";
+-                    setEditorContent((prev) => prev + (prev ? "\n\n" : "") + `Fetch error: ${errorMsg}`);
+-                    editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + `Fetch error: ${errorMsg}`;
+-                    rejectFallback(err);
+-                  });
+-                }, 'image/jpeg', 0.85);
+-              };
+-              img.onerror = () => {
+-                rejectFallback(new Error("Kh├┤ng thß╗â tß║úi ß║únh cß║Ñu h├¼nh canvas ─æß╗â n├⌐n cho OCR.space."));
++                    makeRequest(activeKey, retryAttempt + 1, isRecitationRetry).then(resolve).catch(reject);
++                  }, delay);
++                } else {
++                  reject({ type: "NETWORK", message: "Lß╗ùi kß║┐t nß╗æi mß║íng khi gß╗¡i y├¬u cß║ºu tß╗¢i Gemini." });
++                }
+               };
+-              img.src = URL.createObjectURL(file);
+-            })
+-            .catch(err => {
+-              rejectFallback(err);
+-            });
+-        });
+-      };
+-
+-      // Helper to perform a Gemini request with a specific key
+-      const makeRequest = (activeKey: string, isRetry: boolean = false): Promise<string> => {
+-        return new Promise<string>((resolve, reject) => {
+-// @ts-ignore
+-if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
+-          setBatchProgressText(`─Éang thß╗¡ Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
+-          const xhr = new XMLHttpRequest();
+-const selectedModel = getUserStorageItem(user?.uid, 'ocr_model') || "gemini-2.5-flash";
+-          let finalCleanKey = activeKey.replace(/[\[\]"']/g, '').trim();
+-          const googleUrl = `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${finalCleanKey}`;
+-          xhr.open("POST", googleUrl, true);
+-          xhr.setRequestHeader("Content-Type", "application/json");
+-          
+-          xhr.upload.onprogress = (e) => {
+-            if (e.lengthComputable) {
+-              const percentComplete = Math.round((e.loaded / e.total) * 100);
+-              setProgress(percentComplete);
++            
++            let promptText = "Tr├¡ch xuß║Ñt ch├¡nh x├íc 100% to├án bß╗Ö nß╗Öi dung v─ân bß║ún c├│ trong h├¼nh ß║únh n├áy sang tiß║┐ng Viß╗çt. Giß╗» nguy├¬n ─æß╗ïnh dß║íng, kh├┤ng th├¬m bß╗¢t bß║Ñt kß╗│ tß╗½ ngß╗» hay lß╗¥i giß║úi th├¡ch n├áo.";
++            if (isRecitationRetry) {
++              promptText = "Chß╗ë tr├¡ch xuß║Ñt v─ân bß║ún nh├¼n thß║Ñy trong h├¼nh ß║únh/t├ái liß╗çu. Kh├┤ng bß╗ò sung, kh├┤ng suy luß║¡n, kh├┤ng t├íi tß║ío nß╗Öi dung ngo├ái ß║únh. Nß║┐u kh├┤ng chß║»c, giß╗» nguy├¬n k├╜ tß╗▒ quan s├ít ─æ╞░ß╗úc.\n" +
++                "Only extract visible text from the provided image/document. Do not add, infer, or reproduce any content outside the image. If unsure, keep the observed characters exactly as they are.\n" +
++                promptText;
+             }
+-          };
+-          
+-          xhr.onload = () => {
+-            let shouldFallback = false;
+-            const isTransientError = xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
++
++            const payload = {
++              "contents": [{
++                "parts": [
++                  {"text": promptText},
++                  {"inlineData": {
++                    "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
++                    "data": base64Data
++                  }}
++                ]
++              }],
++              "generationConfig": {
++                "temperature": 0.0,
++                "topP": 0.95,
++                "candidateCount": 1
++              },
++              "safetySettings": [
++                {
++                  "category": "HARM_CATEGORY_HARASSMENT",
++                  "threshold": "BLOCK_NONE"
++                },
++                {
++                  "category": "HARM_CATEGORY_HATE_SPEECH",
++                  "threshold": "BLOCK_NONE"
++                },
++                {
++                  "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
++                  "threshold": "BLOCK_NONE"
++                },
++                {
++                  "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
++                  "threshold": "BLOCK_NONE"
++                }
++              ]
++            };
+             
+-if (xhr.status === 429) {
+-  // Gemini quota exceeded ΓÇô move to next key
+-  // @ts-ignore
+-  if (import.meta.env.DEV) console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received 429, switching key`);
+-  setBatchProgressText(`Gemini key ${activeKeyIndex + 1} qu├í tß║úi, thß╗¡ key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
+-  reject({ status: 429 });
+-  return;
+-} else if (xhr.status === 401 || xhr.status === 403) {
+-  // Auth error ΓÇô skip this key
+-  // @ts-ignore
+-  if (import.meta.env.DEV) console.info(`Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} received ${xhr.status}, skipping`);
+-  setBatchProgressText(`Gemini key ${activeKeyIndex + 1} kh├┤ng hß╗úp lß╗ç (${xhr.status}), thß╗¡ key ${activeKeyIndex + 2}/${geminiKeyPool.length} - Trang ${pageNum}...`);
+-  reject({ status: xhr.status });
+-  return;
+-} else if (isTransientError) {
+-              if (!isRetry) {
+-                console.warn(`[OCR WARN] Transient error HTTP ${xhr.status} at page ${pageNum}. Retrying once in 2.5s...`);
+-                setBatchProgressText(`Gemini gß║╖p lß╗ùi tß║ím thß╗¥i (${xhr.status}), ─æang thß╗¡ lß║íi - Trang ${pageNum}...`);
+-                setTimeout(() => {
+-                  makeRequest(activeKey, true).then(resolve).catch(reject);
+-                }, 2500);
+-                return;
+-              } else {
+-                shouldFallback = true;
++            xhr.send(JSON.stringify(payload));
++          });
++        };
++
++        let hasRetriedAuto404 = false;
++        while (true) {
++          if (signal?.aborted) {
++            throw { type: "ABORTED", message: "─É├ú hß╗ºy qu├í tr├¼nh b├│c t├ích." };
++          }
++          const currentKey = geminiKeyPool[activeKeyIndex];
++          if (!currentKey) {
++            throw new Error("Kh├┤ng c├▓n Gemini API Key hß╗úp lß╗ç. Vui l├▓ng kiß╗âm tra lß║íi Key trong C├ái ─æß║╖t.");
++          }
++
++          const modelMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
++          if (modelMode === 'auto') {
++            const resolved = getUserStorageItem(user?.uid, 'gemini_resolved_model');
++            if (!resolved) {
++              try {
++                setBatchProgressText(`─Éang tß╗▒ ─æß╗Öng chß╗ìn model cho Trang ${pageNum}...`);
++                await autoResolveModel(user?.uid, currentKey, false);
++              } catch (resErr: any) {
++                let errText = "Kh├┤ng t├¼m thß║Ñy model Gemini ph├╣ hß╗úp vß╗¢i API Key n├áy.";
++                if (resErr.message === "INVALID_KEY") errText = "Gemini API Key kh├┤ng hß╗úp lß╗ç.";
++                else if (resErr.message === "RATE_LIMIT") errText = "Gemini API Key hiß╗çn ─æ├ú ─æß║ít giß╗¢i hß║ín sß╗¡ dß╗Ñng. Vui l├▓ng thß╗¡ lß║íi sau.";
++                else if (resErr.message === "NETWORK") errText = "Kh├┤ng thß╗â kiß╗âm tra danh s├ích model. Vui l├▓ng kiß╗âm tra kß║┐t nß╗æi mß║íng.";
++                throw new Error(errText);
+               }
+-            } else if (xhr.status >= 200 && xhr.status < 300) {
++            }
++          }
++
++          try {
++            const text = await makeRequest(currentKey);
++            return text;
++          } catch (e: any) {
++            if (e?.type === "ABORTED" || e?.type === "503_EXHAUSTED") {
++              throw e;
++            }
++            if (e?.status === 404) {
++              const currentMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
++              if (currentMode === 'auto' && !hasRetriedAuto404) {
++                hasRetriedAuto404 = true;
++                try {
++                  setBatchProgressText(`Model kh├┤ng khß║ú dß╗Ñng, ─æang d├▓ t├¼m model mß╗¢i cho Trang ${pageNum}...`);
++                  await autoResolveModel(user?.uid, currentKey, true);
++                  continue;
++                } catch (resErr: any) {
++                  throw new Error("M├┤ h├¼nh kh├┤ng khß║ú dß╗Ñng v├á kh├┤ng thß╗â tß╗▒ ─æß╗Öng t├¼m thß║Ñy m├┤ h├¼nh thay thß║┐.");
++                }
++              }
++              if (currentMode === 'manual') {
++                throw new Error("M├┤ h├¼nh n├áy kh├┤ng khß║ú dß╗Ñng vß╗¢i Gemini API Key hiß╗çn tß║íi. Vui l├▓ng chß╗ìn model kh├íc hoß║╖c chuyß╗ân sang chß║┐ ─æß╗Ö Tß╗▒ ─æß╗Öng.");
++              }
++              throw e;
++            }
++
++            if (e?.type === "RECITATION_BLOCKED") {
++              console.log("[OCR PATH]\nHandler: startOcrProcess\nRequest function: makeRequest");
++              console.log("[RECITATION]\nInitial: blocked\nRetry attempted: true");
+               try {
+-                const rawText = xhr.responseText;
+-                const cleanJson = JSON.parse(rawText);
+-                
+-                const finishReason = cleanJson.candidates?.[0]?.finishReason;
+-                const geminiText = cleanJson.candidates?.[0]?.content?.parts?.[0]?.text;
+-                const actualText = geminiText || cleanJson.text || "";
+-                
+-                let lines = actualText.split('\n');
+-                if (lines.length > 0) {
+-                  const firstLine = lines[0].trim();
+-                  const isAiIntro = /^(D╞░ß╗¢i ─æ├óy l├á|V─ân bß║ún ─æ├ú ─æ╞░ß╗úc|Kß║┐t quß║ú|─É├óy l├á v─ân bß║ún)/i.test(firstLine) && firstLine.endsWith(':');
+-                  if (isAiIntro) {
+-                    lines.shift();
++                setBatchProgressText(`Ph├ít hiß╗çn lß╗ùi sao ch├⌐p v─ân bß║ún (RECITATION), ─æang thß╗¡ lß║íi vß╗¢i cß║Ñu h├¼nh nghi├¬m ngß║╖t...`);
++                const retryText = await makeRequest(currentKey, 0, true);
++                console.log("[RECITATION]\nRetry result: success");
++                console.log("[FALLBACK]\nCalled: false\nReason: none");
++                return retryText;
++              } catch (retryErr: any) {
++                if (retryErr?.type === "RECITATION_BLOCKED") {
++                  console.log("[RECITATION]\nRetry result: blocked");
++                  console.log("[FALLBACK]\nCalled: true\nReason: RECITATION_BLOCKED_AFTER_RETRY");
++                  setBatchProgressText(`Gemini kh├┤ng thß╗â ch├⌐p nguy├¬n v─ân trang n├áy. Hß╗ç thß╗æng ─æang thß╗¡ c├┤ng cß╗Ñ OCR dß╗▒ ph├▓ng...`);
++                  try {
++                    const fallbackText = await runOcrSpaceFallback();
++                    return fallbackText;
++                  } catch (fallbackErr: any) {
++                    throw { 
++                      type: "RECITATION_FALLBACK_FAILED", 
++                      message: fallbackErr.message || "Gemini kh├┤ng thß╗â ch├⌐p nguy├¬n v─ân trang n├áy v├á c├┤ng cß╗Ñ OCR dß╗▒ ph├▓ng hiß╗çn ch╞░a khß║ú dß╗Ñng." 
++                    };
+                   }
+                 }
+-                const sanitizedText = lines.join('\n').trim();
+-                
+-                if (finishReason === "RECITATION" || !sanitizedText) {
+-                  shouldFallback = true;
+-                } else {
+-// @ts-ignore
+-if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
+-                  setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedText);
+-                  editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG Kß║╛ TIß║╛P] ---\n\n" : "") + sanitizedText;
+-                  resolve(sanitizedText);
+-                  return;
+-                }
+-              } catch (e) {
+-                shouldFallback = true;
++                throw retryErr;
+               }
+-            } else {
+-              shouldFallback = true;
+             }
+ 
+-            if (shouldFallback) {
+-              runOcrSpaceFallback().then(resolve).catch(reject);
++            if (e?.type === "CONTENT_BLOCKED" || e?.type === "SAFETY_BLOCKED" || e?.type === "PROMPT_BLOCKED") {
++              console.log("[OCR PATH]\nHandler: startOcrProcess\nRequest function: makeRequest");
++              console.log(`[FALLBACK]\nCalled: true\nReason: ${e.type}`);
++              setBatchProgressText(`Nß╗Öi dung bß╗ï chß║╖n (${e.type}). Hß╗ç thß╗æng ─æang thß╗¡ c├┤ng cß╗Ñ OCR dß╗▒ ph├▓ng...`);
++              try {
++                const fallbackText = await runOcrSpaceFallback();
++                return fallbackText;
++              } catch (fallbackErr: any) {
++                throw {
++                  type: "FALLBACK_FAILED",
++                  message: `Nß╗Öi dung bß╗ï chß║╖n v├á OCR dß╗▒ ph├▓ng thß║Ñt bß║íi: ${fallbackErr.message || "Lß╗ùi OCR.space"}`
++                };
++              }
+             }
+-          };
+-          
+-          xhr.onerror = () => {
+-            if (!isRetry) {
+-              console.warn(`[OCR WARN] Network error at page ${pageNum}. Retrying once in 2.5s...`);
+-              setBatchProgressText(`Lß╗ùi kß║┐t nß╗æi mß║íng, ─æang thß╗¡ lß║íi - Trang ${pageNum}...`);
+-              setTimeout(() => {
+-                makeRequest(activeKey, true).then(resolve).catch(reject);
+-              }, 2500);
+-            } else {
+-              runOcrSpaceFallback().then(resolve).catch(reject);
++
++            if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
++              activeKeyIndex++;
++              continue;
+             }
+-          };
+-          
+-          const payload = {
+-            "contents": [{
+-              "parts": [
+-                {"text": "Tr├¡ch xuß║Ñt ch├¡nh x├íc 100% to├án bß╗Ö nß╗Öi dung v─ân bß║ún c├│ trong h├¼nh ß║únh n├áy sang tiß║┐ng Viß╗çt. Giß╗» nguy├¬n ─æß╗ïnh dß║íng, kh├┤ng th├¬m bß╗¢t bß║Ñt kß╗│ tß╗½ ngß╗» hay lß╗¥i giß║úi th├¡ch n├áo."},
+-                {"inlineData": {
+-                  "mimeType": fileType.startsWith("image/") ? fileType : "image/jpeg",
+-                  "data": base64Data
+-                }}
+-              ]
+-            }],
+-            "generationConfig": {
+-              "temperature": 0.0,
+-              "topP": 0.95,
+-              "candidateCount": 1
+-            },
+-            "safetySettings": [
+-              {
+-                "category": "HARM_CATEGORY_HARASSMENT",
+-                "threshold": "BLOCK_NONE"
+-              },
+-              {
+-                "category": "HARM_CATEGORY_HATE_SPEECH",
+-                "threshold": "BLOCK_NONE"
+-              },
+-              {
+-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+-                "threshold": "BLOCK_NONE"
+-              },
+-              {
+-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+-                "threshold": "BLOCK_NONE"
+-              }
+-            ]
+-          };
+-          
+-          xhr.send(JSON.stringify(payload));
+-        });
+-      };
+ 
+-/* Try each Gemini key in order ΓÇô only fall back to OCR.space when all keys are exhausted */
+-while (true) {
+-  const currentKey = geminiKeyPool[activeKeyIndex];
+-  if (!currentKey) {
+-    // No more keys ΓÇô use OCR.space fallback
+-    // @ts-ignore
+-    if (import.meta.env.DEV) console.info('All Gemini keys exhausted, falling back to OCR.space');
+-    setBatchProgressText(`Tß║Ñt cß║ú Gemini key qu├í tß║úi, chuyß╗ân sang OCR dß╗▒ ph├▓ng - Trang ${pageNum}...`);
+-    return await runOcrSpaceFallback();
+-  }
+-  try {
+-    const text = await makeRequest(currentKey);
+-    return text; // successful response
+-  } catch (e: any) {
+-    // If the request was rejected because of quota (429) or auth error (401/403),
+-    // move to the next key and try again.
+-    if (e?.status === 429 || e?.status === 401 || e?.status === 403) {
+-      activeKeyIndex++;
+-      continue; // try next key
+-    }
+-    // Other errors (network, server) are handled inside makeRequest
+-    // and will either retry once or fall back as appropriate.
+-    throw e;
+-  }
+-}
++            throw e;
++          }
++        }
+       } finally {
+         pageProcessingLockRef.current[pageNum] = false;
+       }
+@@ -864,7 +1084,6 @@ while (true) {
+                 jpegQuality: imageOptimizationLevel === "fast" ? 0.8 : 0.85,
+               });
+               fileToSend = optResult.wasOptimized ? optResult.optimizedFile : pageFile;
+-              // Save optimization info on the queued file
+               setQueuedFiles(prev => prev.map(f => 
+                 f.id === qFile.id ? {
+                   ...f,
+@@ -909,12 +1128,13 @@ while (true) {
+           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
+         } catch (err: any) {
+           const errorMsgObj = typeof err === 'object' && err?.message ? err.message : String(err);
+-          updatePageStatus(qFile.id, pageIdx, 'error', undefined, errorMsgObj);
+-          const errorMsg = `[Lß╗ùi b├│c t├ích Trang ${pageIdx}]: ${errorMsgObj}`;
++          const sanitizedMsg = sanitizeError(errorMsgObj);
++          updatePageStatus(qFile.id, pageIdx, 'error', undefined, sanitizedMsg);
++          const errorMsg = `[Lß╗ùi b├│c t├ích Trang ${pageIdx}]: ${sanitizedMsg}`;
+           setEditorContent((prev) => prev + (prev ? "\n\n" + errorMsg : errorMsg));
+           editorContentRef.current += (editorContentRef.current ? "\n\n" + errorMsg : errorMsg);
++          throw err;
+         } finally {
+-          // Free resource from memory
+           const key = `${qFile.id}-${pageIdx}`;
+           const url = revocationRefs.current.get(key);
+           if (url) {
+@@ -929,7 +1149,6 @@ while (true) {
+       };
+ 
+       if (isPdf) {
+-        // Split PDF into images (all pages) if not already split
+         let pageFiles: File[] = qFile.pageFilesArray || [];
+         if (pageFiles.length === 0) {
+           try {
+@@ -964,16 +1183,14 @@ while (true) {
+           } catch (err: any) {
+             setFileErrors(prev => ({ ...prev, [i]: "[Lß╗ùi b├│c t├ích]: Vui l├▓ng kiß╗âm tra lß║íi chß║Ñt l╞░ß╗úng tß╗çp tin hoß║╖c cß║Ñu h├¼nh Key cß╗ºa trang n├áy." }));
+             updateFileStatus(i, "error");
+-            continue; // Skip to next file
++            continue;
+           }
+         }
+ 
+-        // Resolve page range values
+         let startPage = 1;
+         let endPage = pageFiles.length;
+ 
+         if (filesToProcess.length === 1) {
+-          // Only respect user inputs when a single file is queued
+           if (fromPage) {
+             const parsedFrom = parseInt(fromPage, 10);
+             if (!isNaN(parsedFrom) && parsedFrom >= 1) {
+@@ -988,7 +1205,6 @@ while (true) {
+           }
+         }
+ 
+-        // Reset target pages to idle state
+         setQueuedFiles(prev => prev.map(f => {
+           if (f.id === qFile.id) {
+             const updatedStates = { ...(f.pageStates || {}) };
+@@ -1000,22 +1216,34 @@ while (true) {
+           return f;
+         }));
+ 
+-        // Process each page within the selected range
+         for (let p = startPage; p <= endPage; p++) {
+-          const pageFile = pageFiles[p - 1]; // zeroΓÇæbased index
++          if (signal?.aborted) {
++            throw { type: "ABORTED", message: "─É├ú hß╗ºy qu├í tr├¼nh b├│c t├ích." };
++          }
++          const pageFile = pageFiles[p - 1];
+           setBatchProgressText(`─Éang b├│c t├ích ${file.name} - Trang ${p}/${endPage}...`);
+-          await processSinglePage(pageFile, p, endPage);
+-          // Throttle between pages
+-          await new Promise((res) => setTimeout(res, 2500));
++          try {
++            await processSinglePage(pageFile, p, endPage);
++          } catch (e: any) {
++            if (e?.type === "503_EXHAUSTED" || e?.type === "ABORTED") {
++              updateFileStatus(i, "error");
++              setFileErrors(prev => ({
++                ...prev,
++                [i]: sanitizeError(e.message || "Gemini ─æang tß║ím thß╗¥i qu├í tß║úi. Vui l├▓ng chß╗¥ mß╗Öt l├ít rß╗ôi thß╗¡ lß║íi.")
++              }));
++              throw e;
++            }
++            throw e;
++          }
++          if (p < endPage) {
++            await new Promise((res) => setTimeout(res, 2500));
++          }
+         }
+ 
+-        // Mark as completed if no fatal error occurred
+         updateFileStatus(i, "completed");
+       } else {
+-        // NonΓÇæPDF file: process normally with a single request
+         try {
+           await processSinglePage(file, 1, 1);
+-          // Check if page state indicates error after processing
+           setQueuedFiles(prev => {
+             const currentFile = prev.find(f => f.id === qFile.id);
+             if (currentFile?.pageStates?.[1]?.status === 'error') {
+@@ -1030,15 +1258,23 @@ while (true) {
+             return prev;
+           });
+         } catch (err: any) {
++          if (err?.type === "503_EXHAUSTED" || err?.type === "ABORTED") {
++            updateFileStatus(i, "error");
++            setFileErrors(prev => ({
++              ...prev,
++              [i]: sanitizeError(err.message || "Gemini ─æang tß║ím thß╗¥i qu├í tß║úi. Vui l├▓ng chß╗¥ mß╗Öt l├ít rß╗ôi thß╗¡ lß║íi.")
++            }));
++            throw err;
++          }
+           setFileErrors(prevErrs => ({
+             ...prevErrs,
+             [i]: "[Lß╗ùi b├│c t├ích]: Vui l├▓ng kiß╗âm tra lß║íi chß║Ñt l╞░ß╗úng tß╗çp tin hoß║╖c cß║Ñu h├¼nh Key cß╗ºa trang n├áy."
+           }));
+           updateFileStatus(i, "error");
++          throw err;
+         }
+       }
+ 
+-      // Explicit safety throttle delay of 2500 ms to prevent Gemini Rate Limit
+       if (i < filesToProcess.length - 1) {
+         await new Promise((res) => setTimeout(res, 2500));
+       }
+@@ -1135,8 +1371,15 @@ while (true) {
+         });
+       }
+     }, 1000);
+-  } catch (error) {
++  } catch (error: any) {
+     console.error("OCR process error:", error);
++    if (error?.type === "503_EXHAUSTED") {
++      setErrorModalMsg("Gemini ─æang tß║ím thß╗¥i qu├í tß║úi. Vui l├▓ng chß╗¥ mß╗Öt l├ít rß╗ôi thß╗¡ lß║íi.");
++    } else if (error?.type === "ABORTED") {
++      setErrorModalMsg("─É├ú hß╗ºy qu├í tr├¼nh b├│c t├ích.");
++    } else {
++      setErrorModalMsg(sanitizeError(error?.message || "─É├ú xß║úy ra lß╗ùi trong qu├í tr├¼nh xß╗¡ l├╜."));
++    }
+     setIsBatchProcessing(false);
+     setProcessingFile(null);
+     setProgress(0);
+@@ -1225,7 +1468,7 @@ while (true) {
+             </div>
+ 
+             {/* N├ÜT Bß║«T ─Éß║ªU TR├ìCH XUß║ñT OCR */}
+-            <div className="flex justify-center w-full">
++            <div className="flex flex-col items-center justify-center w-full space-y-4">
+               <button
+                 onClick={startOcrProcess}
+                 disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
+@@ -1244,6 +1487,22 @@ while (true) {
+                       : "Bß║»t ─æß║ºu b├│c t├ích hß╗ô s╞í"}
+                 </span>
+               </button>
++
++              {isBatchProcessing && (
++                <div className="w-full sm:w-[320px] p-3.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 flex flex-col items-center space-y-2.5 shadow-md">
++                  <div className="flex items-center space-x-2.5 text-xs font-semibold text-center">
++                    <Activity className="h-3.5 w-3.5 text-red-500 animate-spin flex-shrink-0" />
++                    <span className="leading-tight">{batchProgressText}</span>
++                  </div>
++                  <button
++                    type="button"
++                    onClick={() => cancelOcrRef.current?.abort()}
++                    className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-[11px] font-bold uppercase rounded border border-slate-700 transition-colors shadow-inner"
++                  >
++                    Hß╗ºy b├│c t├ích
++                  </button>
++                </div>
++              )}
+             </div>
+ 
+           </div>

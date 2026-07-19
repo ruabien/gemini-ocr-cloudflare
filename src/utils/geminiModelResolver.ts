@@ -13,12 +13,11 @@ export const MODEL_MODES = {
   MANUAL: "manual",
 };
 
+export const POLICY_VERSION = 2; // Incrementing invalidates old model caches
+
  // Priority list for auto mode
-const PREFERRED_MODELS = [
-  "gemini-3.5-flash",
-  "gemini-3.1-flash",
-  "gemini-3-flash",
-  "gemini-flash-latest"
+const OCR_MODEL_PRIORITY = [
+  "gemini-2.5-flash"
 ];
 
 export interface ModelConfig {
@@ -90,17 +89,14 @@ export const resolveBestGeminiModel = (models: ModelConfig[]): string | null => 
   // Create a map for quick lookup (models API returns names prefixed with "models/")
   const modelNames = new Set(ocrCapable.map(m => m.name.replace('models/', '')));
 
-  for (const preferred of PREFERRED_MODELS) {
+  for (const preferred of OCR_MODEL_PRIORITY) {
     if (modelNames.has(preferred)) {
       return preferred;
     }
   }
 
-  // If no preferred model found, fall back to the first available flash model (if any)
-  if (ocrCapable.length > 0) {
-    return ocrCapable[0].name.replace('models/', '');
-  }
-
+  // Auto mode should not fallback to newer models without explicit check.
+  // We only return preferred model (gemini-2.5-flash).
   return null;
 };
 
@@ -127,7 +123,7 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
     if (cachedObj) {
       try {
         const cache = JSON.parse(cachedObj);
-        if (cache.keyHash === keyHash && cache.timestamp > Date.now() - CACHE_TTL_MS) {
+        if (cache.policyVersion === POLICY_VERSION && cache.keyHash === keyHash && cache.timestamp > Date.now() - CACHE_TTL_MS) {
           if (cache.resolvedModel) {
             return cache.resolvedModel;
           }
@@ -151,6 +147,7 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
   // Save cache (include list of OCR‑capable model IDs)
   setUserStorageItem(uid, 'gemini_resolved_model', bestModel);
   setUserStorageItem(uid, 'gemini_model_cache', JSON.stringify({
+    policyVersion: POLICY_VERSION,
     keyHash,
     resolvedModel: bestModel,
     availableModels: ocrCapable.map(m => m.name.replace('models/', '')),
@@ -209,10 +206,12 @@ export const migrateOldStorage = (uid: string | null | undefined) => {
   const ocrModel = getUserStorageItem(uid, 'ocr_model');
   const mode = getUserStorageItem(uid, 'gemini_model_mode');
 
-  if (ocrModel === 'gemini-2.5-flash') {
-    // Migrate 2.5-flash to auto mode
-    setUserStorageItem(uid, 'gemini_model_mode', 'auto');
-  } else if (!mode) {
+  if (!ocrModel || ocrModel === 'gemini-3.5-flash' || ocrModel === 'gemini-1.5-flash') {
+    // Reset to verified model by default, but let user change manually if desired
+    setUserStorageItem(uid, 'ocr_model', 'gemini-2.5-flash');
+  }
+
+  if (!mode) {
     // Default cho người dùng mới
     setUserStorageItem(uid, 'gemini_model_mode', 'auto');
   }

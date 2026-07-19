@@ -27,28 +27,30 @@ const uid = 'testuser';
 async function runTests() {
   console.log('=== GEMINI MODEL RESOLVER TESTS ===\n');
 
-  // Test A & B: resolveBestGeminiModel priority selection
-  console.log('Test A & B: Prioritize 3.5-flash, fallback to next available');
+  // Test A & B: Auto chọn gemini-2.5-flash khi model này khả dụng.
+  console.log('Test A: Auto chọn gemini-2.5-flash khi model này khả dụng');
   const mockModelsList1 = [
-    { name: 'models/gemini-1.5-pro', supportedGenerationMethods: ['generateContent'] }, // no flash
-    { name: 'models/gemini-3.1-flash', supportedGenerationMethods: ['generateContent'] }, // priority 2
-    { name: 'models/gemini-3.5-flash', supportedGenerationMethods: ['generateContent'] }, // priority 1
+    { name: 'models/gemini-2.5-flash', supportedGenerationMethods: ['generateContent'] },
+    { name: 'models/gemini-3.5-flash', supportedGenerationMethods: ['generateContent'] },
   ];
-  assert.strictEqual(resolveBestGeminiModel(mockModelsList1), 'gemini-3.5-flash');
+  assert.strictEqual(resolveBestGeminiModel(mockModelsList1), 'gemini-2.5-flash');
 
+  // Auto không chọn gemini-3.5-flash khi 2.5 không khả dụng.
+  // Auto trả NO_COMPATIBLE_MODEL nếu không có gemini-2.5-flash.
+  console.log('Test B: Auto không chọn gemini-3.5-flash và trả NO_COMPATIBLE_MODEL');
   const mockModelsList2 = [
-    { name: 'models/gemini-1.5-pro', supportedGenerationMethods: ['generateContent'] },
-    { name: 'models/gemini-3-flash', supportedGenerationMethods: ['generateContent'] }, // priority 3
+    { name: 'models/gemini-3.5-flash', supportedGenerationMethods: ['generateContent'] },
+    { name: 'models/gemini-1.5-flash', supportedGenerationMethods: ['generateContent'] },
   ];
-  assert.strictEqual(resolveBestGeminiModel(mockModelsList2), 'gemini-3-flash');
-  console.log('[PASS] Model priority selection correctly handled.');
+  assert.strictEqual(resolveBestGeminiModel(mockModelsList2), null);
+  console.log('[PASS] Model priority correctly limits selection to gemini-2.5-flash.');
 
   // Test C & D: filter capability filtering
   console.log('Test C & D: Filter out non-OCR models');
   const mockModelsList3 = [
-    { name: 'models/gemini-3.5-flash-embedding', supportedGenerationMethods: ['generateContent'] }, // embedding
-    { name: 'models/gemini-3.5-flash-vision', supportedGenerationMethods: ['generateContent'] }, // older vision
-    { name: 'models/gemini-3.5-flash', supportedGenerationMethods: ['embedContent'] }, // no generateContent
+    { name: 'models/gemini-2.5-flash-embedding', supportedGenerationMethods: ['generateContent'] }, // embedding
+    { name: 'models/gemini-2.5-flash-vision', supportedGenerationMethods: ['generateContent'] }, // older vision
+    { name: 'models/gemini-2.5-flash', supportedGenerationMethods: ['embedContent'] }, // no generateContent
     { name: 'models/gemini-imagen', supportedGenerationMethods: ['generateContent'] },
   ];
   assert.deepEqual(filterOcrCapableModels(mockModelsList3), []);
@@ -58,10 +60,11 @@ async function runTests() {
   // Test E: Migrate old storage
   console.log('Test E: LocalStorage migration');
   store.clear();
-  global.localStorage.setItem(`lexocr:${uid}:ocr_model`, 'gemini-2.5-flash');
+  global.localStorage.setItem(`lexocr:${uid}:ocr_model`, 'gemini-1.5-flash');
   migrateOldStorage(uid);
   assert.strictEqual(global.localStorage.getItem(`lexocr:${uid}:gemini_model_mode`), 'auto');
-  console.log('[PASS] Old 2.5-flash migration sets model mode to auto.');
+  assert.strictEqual(global.localStorage.getItem(`lexocr:${uid}:ocr_model`), 'gemini-2.5-flash');
+  console.log('[PASS] Storage migration correctly updates default to gemini-2.5-flash.');
 
   console.log('Test: Auto mode cache behaviors');
   store.clear();
@@ -70,7 +73,7 @@ async function runTests() {
   fetchResponses = {
     'key_valid': () => {
       modelsListCallCount++;
-      return { ok: true, json: async () => ({ models: [{ name: 'models/gemini-3.5-flash', supportedGenerationMethods: ['generateContent'] }] }) };
+      return { ok: true, json: async () => ({ models: [{ name: 'models/gemini-2.5-flash', supportedGenerationMethods: ['generateContent'] }] }) };
     },
     'key_error': () => {
       modelsListCallCount++;
@@ -81,7 +84,7 @@ async function runTests() {
   // B. Auto mode, chưa có cache, có key hợp lệ
   console.log('Test B: Auto mode, no cache, valid key');
   const m1 = await autoResolveModel(uid, 'key_valid', false);
-  assert.strictEqual(m1, 'gemini-3.5-flash');
+  assert.strictEqual(m1, 'gemini-2.5-flash');
   assert.strictEqual(modelsListCallCount, 1, "Should call models.list exactly once");
   console.log('[PASS] Resolved model and cached it.');
 
@@ -89,7 +92,7 @@ async function runTests() {
   console.log('Test A: Auto mode, cache available');
   modelsListCallCount = 0; // Reset counter
   const m1_cached = await autoResolveModel(uid, 'key_valid', false);
-  assert.strictEqual(m1_cached, 'gemini-3.5-flash', "Should use cached value");
+  assert.strictEqual(m1_cached, 'gemini-2.5-flash', "Should use cached value");
   assert.strictEqual(modelsListCallCount, 0, "Should not call models.list if cache exists");
   console.log('[PASS] Cache used, models.list not called.');
   
@@ -113,13 +116,22 @@ async function runTests() {
   // Test G: Manual model validation
   console.log('Test G: Manual model validation');
   fetchResponses = {
-    'key3': () => ({ ok: true, json: async () => ({ models: [{ name: 'models/gemini-3.1-flash', supportedGenerationMethods: ['generateContent'] }] }) }),
+    'key3': () => ({ ok: true, json: async () => ({ models: [{ name: 'models/gemini-2.5-flash', supportedGenerationMethods: ['generateContent'] }] }) }),
   };
-  const isValid1 = await validateGeminiModel('key3', 'gemini-3.1-flash');
+  const isValid1 = await validateGeminiModel('key3', 'gemini-2.5-flash');
   const isValid2 = await validateGeminiModel('key3', 'gemini-3.5-flash');
   assert.strictEqual(isValid1, true);
   assert.strictEqual(isValid2, false);
   console.log('[PASS] Manual model validation correctly checks models API list.');
+
+  // Test H: Manual vẫn giữ nguyên model đã chọn
+  console.log('Test H: Manual mode keeps selected model');
+  store.clear();
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_mode`, 'manual');
+  global.localStorage.setItem(`lexocr:${uid}:ocr_model`, 'gemini-3.5-flash');
+  const activeModel = getActiveModel(uid);
+  assert.strictEqual(activeModel, 'gemini-3.5-flash');
+  console.log('[PASS] Manual mode preserves user-selected model.');
 
   console.log('\nAll Gemini Model Resolver tests passed successfully!');
 }
