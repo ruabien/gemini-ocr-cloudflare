@@ -80,7 +80,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   const [isSlicing, setIsSlicing] = useState(false);
   const [slicingMessage, setSlicingMessage] = useState("");
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
-  const [batchProgressText, setBatchProgressText] = useState("");
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const cancelOcrRef = useRef<AbortController | null>(null);
@@ -307,7 +306,6 @@ const handleSelectedFiles = async (files: File[]) => {
     editorContentRef.current = "";
     setProgress(0);
     setFileErrors({});
-    setBatchProgressText("");
     setProcessingFile(null);
     
     if (fileInputRef.current) {
@@ -586,7 +584,7 @@ const keyToProjectMap = new Map<string, string>();
               rejectFallback(err);
             };
 
-            setBatchProgressText(`Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+            console.log(`[OCR] Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
             
             fetch("/api/ocr")
               .then(res => {
@@ -751,9 +749,9 @@ const keyToProjectMap = new Map<string, string>();
             if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} START] ${Date.now()}`);
             
             if (retryAttempt > 0) {
-              setBatchProgressText(`Gemini đang tạm thời quá tải. Hệ thống sẽ tự động thử lại... (Lần thử ${retryAttempt}/3)`);
+              console.log(`[OCR] Gemini đang tạm thời quá tải. Hệ thống sẽ tự động thử lại... (Lần thử ${retryAttempt}/3)`);
             } else {
-              setBatchProgressText(`Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
+              console.log(`[OCR] Đang thử Gemini key ${activeKeyIndex + 1}/${geminiKeyPool.length} - Trang ${pageNum}...`);
             }
 
             const xhr = new XMLHttpRequest();
@@ -851,9 +849,9 @@ const keyToProjectMap = new Map<string, string>();
                   const errorName = xhr.status === 503 ? "Gemini đang tạm thời quá tải" : (xhr.status === 0 ? "Lỗi kết nối mạng" : `Gemini gặp lỗi tạm thời (${xhr.status})`);
                   
                   if (xhr.status === 503) {
-                    setBatchProgressText(`Gemini đang tạm thời quá tải. Hệ thống sẽ tự động thử lại... (Lần thử ${nextAttempt}/3)`);
+                    console.log(`[OCR] Gemini đang tạm thời quá tải. Hệ thống sẽ tự động thử lại... (Lần thử ${nextAttempt}/3)`);
                   } else {
-                    setBatchProgressText(`${errorName}, đang thử lại - Trang ${pageNum}...`);
+                    console.log(`[OCR] ${errorName}, đang thử lại - Trang ${pageNum}...`);
                   }
 
                   setTimeout(() => {
@@ -978,7 +976,7 @@ const keyToProjectMap = new Map<string, string>();
                 const maxRetries = 1;
                 if (retryAttempt < maxRetries) {
                   const delay = 2500 + Math.floor(Math.random() * 1000);
-                  setBatchProgressText(`Lỗi kết nối mạng, đang thử lại - Trang ${pageNum}...`);
+                  console.log(`[OCR] Lỗi kết nối mạng, đang thử lại - Trang ${pageNum}...`);
                   setTimeout(() => {
                     if (signal?.aborted) {
                       reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
@@ -1061,7 +1059,7 @@ const keyToProjectMap = new Map<string, string>();
             const resolved = getUserStorageItem(user?.uid, 'gemini_resolved_model');
             if (!resolved) {
               try {
-                setBatchProgressText(`Đang tự động chọn model cho Trang ${pageNum}...`);
+                console.log(`[OCR] Đang tự động chọn model cho Trang ${pageNum}...`);
                 await autoResolveModel(user?.uid, currentKey, false);
               } catch (resErr: any) {
                 let errText = "Không tìm thấy model Gemini phù hợp với API Key này.";
@@ -1085,7 +1083,7 @@ const keyToProjectMap = new Map<string, string>();
               if (currentMode === 'auto' && !hasRetriedAuto404) {
                 hasRetriedAuto404 = true;
                 try {
-                  setBatchProgressText(`Model không khả dụng, đang dò tìm model mới cho Trang ${pageNum}...`);
+                  console.log(`[OCR] Model không khả dụng, đang dò tìm model mới cho Trang ${pageNum}...`);
                   await autoResolveModel(user?.uid, currentKey, true);
                   continue;
                 } catch (resErr: any) {
@@ -1117,7 +1115,7 @@ const keyToProjectMap = new Map<string, string>();
               console.log("[OCR PATH]\nHandler: startOcrProcess\nRequest function: makeRequest");
               console.log("[RECITATION]\nInitial: blocked\nRetry attempted: true");
               try {
-                setBatchProgressText(`Phát hiện lỗi sao chép văn bản (RECITATION), đang thử lại với cấu hình nghiêm ngặt...`);
+                console.log(`[OCR] Phát hiện lỗi sao chép văn bản (RECITATION), đang thử lại với cấu hình nghiêm ngặt...`);
                 const retryText = await makeRequest(currentKey, 0, true);
                 console.log("[RECITATION]\nRetry result: success");
                 console.log("[FALLBACK]\nCalled: false\nReason: none");
@@ -1126,7 +1124,7 @@ const keyToProjectMap = new Map<string, string>();
                 if (retryErr?.type === "RECITATION_BLOCKED") {
                   console.log("[RECITATION]\nRetry result: blocked");
                   console.log("[FALLBACK]\nCalled: true\nReason: RECITATION_BLOCKED_AFTER_RETRY");
-                  setBatchProgressText(`Gemini không thể chép nguyên văn trang này. Hệ thống đang thử công cụ OCR dự phòng...`);
+                  console.log(`[OCR] Gemini không thể chép nguyên văn trang này. Hệ thống đang thử công cụ OCR dự phòng...`);
                   try {
                     const fallbackText = await runOcrSpaceFallback();
                     return fallbackText;
@@ -1144,7 +1142,7 @@ const keyToProjectMap = new Map<string, string>();
             if (e?.type === "CONTENT_BLOCKED" || e?.type === "SAFETY_BLOCKED" || e?.type === "PROMPT_BLOCKED") {
               console.log("[OCR PATH]\nHandler: startOcrProcess\nRequest function: makeRequest");
               console.log(`[FALLBACK]\nCalled: true\nReason: ${e.type}`);
-              setBatchProgressText(`Nội dung bị chặn (${e.type}). Hệ thống đang thử công cụ OCR dự phòng...`);
+              console.log(`[OCR] Nội dung bị chặn (${e.type}). Hệ thống đang thử công cụ OCR dự phòng...`);
               try {
                 const fallbackText = await runOcrSpaceFallback();
                 return fallbackText;
@@ -1346,7 +1344,7 @@ const keyToProjectMap = new Map<string, string>();
             throw { type: "ABORTED", message: "Đã hủy quá trình bóc tách." };
           }
           const pageFile = pageFiles[p - 1];
-          setBatchProgressText(`Đang bóc tách ${file.name} - Trang ${p}/${endPage}...`);
+          console.log(`[OCR] Đang bóc tách ${file.name} - Trang ${p}/${endPage}...`);
           try {
             await processSinglePage(pageFile, p, endPage);
           } catch (e: any) {
@@ -1613,21 +1611,15 @@ const keyToProjectMap = new Map<string, string>();
                 </span>
               </button>
 
-              {isBatchProcessing && (
-                <div className="w-full sm:w-[320px] p-3.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 flex flex-col items-center space-y-2.5 shadow-md">
-                  <div className="flex items-center space-x-2.5 text-xs font-semibold text-center">
-                    <Activity className="h-3.5 w-3.5 text-red-500 animate-spin flex-shrink-0" />
-                    <span className="leading-tight">{batchProgressText}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => cancelOcrRef.current?.abort()}
-                    className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-[11px] font-bold uppercase rounded border border-slate-700 transition-colors shadow-inner"
-                  >
-                    Hủy bóc tách
-                  </button>
-                </div>
-              )}
+{isBatchProcessing && (
+  <button
+    type="button"
+    onClick={() => cancelOcrRef.current?.abort()}
+    className="mt-2 px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-[11px] font-bold uppercase rounded border border-slate-700 transition-colors shadow-inner"
+  >
+    Hủy bóc tách
+  </button>
+)}
             </div>
 
           </div>
