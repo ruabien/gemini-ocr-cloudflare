@@ -1629,34 +1629,17 @@ const keyToProjectMap = new Map<string, string>();
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          
-          {/* CẤU HÌNH OCR VÀ DROPZONE CHÍNH (Chiếm 2 cột trên màn hình Desktop) */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className={`transition-all duration-200 ease-in-out overflow-hidden ${
+          (isBatchProcessing || isSlicing) 
+            ? "max-h-0 opacity-0 pointer-events-none !mt-0 !mb-0" 
+            : "max-h-[2000px] opacity-100 mt-4 mb-4"
+        }`}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             
-            {/* DROPZONE */}
-            {(isBatchProcessing || isSlicing) ? (
-              <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-500">
-                    <UploadCloud className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-700 text-sm">
-                      Đã tải lên {queuedFiles.length} tệp
-                    </h3>
-                    <p className="text-xs text-slate-500">Hệ thống đang bóc tách nội dung</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  disabled
-                  className="px-4 py-2 bg-slate-100 text-slate-400 text-sm font-semibold rounded-lg cursor-not-allowed border border-slate-200"
-                >
-                  Thêm tài liệu
-                </button>
-              </div>
-            ) : (
+            {/* CẤU HÌNH OCR VÀ DROPZONE CHÍNH (Chiếm 2 cột trên màn hình Desktop) */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* DROPZONE */}
               <div 
                 onDragEnter={handleDrag}
                 onDragOver={handleDrag}
@@ -1692,8 +1675,7 @@ const keyToProjectMap = new Map<string, string>();
                   <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
           <div className="space-y-6">
@@ -1864,10 +1846,17 @@ const keyToProjectMap = new Map<string, string>();
           </div>
 
         </div>
+      </div>
 
         {/* KHU VỰC TRẠNG THÁI OCR VÀ BẮT ĐẦU */}
-        <div ref={progressCardRef} className={`mt-4 flex flex-col items-center justify-center w-full ${(isBatchProcessing || isSlicing) ? 'sticky top-4 z-30' : ''}`}>
+        <div 
+          ref={progressCardRef} 
+          className={`flex flex-col items-center justify-center w-full transition-all duration-200 ${
+            (isBatchProcessing || isSlicing) ? 'sticky top-4 z-30' : 'mt-4'
+          }`}
+        >
           {(() => {
+            const isOcrActive = isBatchProcessing || isSlicing;
             if (isBatchProcessing || isSlicing) {
               const totalPagesAll = queuedFiles.reduce((acc, f) => acc + (f.totalPages || 1), 0);
               const completedPagesAll = queuedFiles.reduce((acc, f) => {
@@ -1902,15 +1891,15 @@ const keyToProjectMap = new Map<string, string>();
               const estimatedText = estimatedSeconds > 0 ? `Còn khoảng ${estimatedSeconds} giây` : null;
 
               return (
-                <div className="w-full bg-white border border-slate-200 rounded-xl shadow-sm p-5 flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                <div className={`w-full bg-white border border-slate-200 rounded-xl shadow-sm p-5 flex flex-col md:flex-row items-center justify-between gap-4 ${isOcrActive ? 'mb-0' : 'mb-8'}`}>
                   <div className="flex-1 w-full flex flex-col space-y-2">
                     <div className="flex justify-between items-end">
                       <div>
-                        <h4 className="text-base font-bold text-slate-800">Đang bóc tách hồ sơ</h4>
+                        <h4 className="text-base font-bold text-slate-850">Đang bóc tách hồ sơ</h4>
                         <p className="text-xs text-slate-500 font-medium">Trang {currentPageNum} / {totalPagesAll}</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-bold text-red-600">{overallProgress}%</span>
+                        <span className="text-sm font-bold text-red-650">{overallProgress}%</span>
                         {estimatedText && <p className="text-[10px] text-slate-400 mt-0.5">{estimatedText}</p>}
                       </div>
                     </div>
@@ -1936,7 +1925,7 @@ const keyToProjectMap = new Map<string, string>();
 
             if (ocrStatus === "success") {
               return (
-                <div className="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between mb-8">
+                <div className={`w-full bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between ${isOcrActive ? 'mb-0' : 'mb-8'}`}>
                   <div className="flex items-center space-x-3">
                     <div className="h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
                       <CheckCircle2 className="h-5 w-5" />
@@ -1958,7 +1947,7 @@ const keyToProjectMap = new Map<string, string>();
 
             if (ocrStatus === "error") {
               return (
-                <div className="w-full bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-center justify-between mb-8">
+                <div className={`w-full bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-center justify-between ${isOcrActive ? 'mb-0' : 'mb-8'}`}>
                   <div className="flex items-center space-x-3">
                     <div className="h-10 w-10 bg-rose-100 rounded-full flex items-center justify-center text-rose-600">
                       <AlertTriangle className="h-5 w-5" />
@@ -2046,44 +2035,54 @@ const keyToProjectMap = new Map<string, string>();
             }
           });
 
-          return (
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-4">
-                <h5 className="font-bold text-slate-850 text-sm sm:text-base flex flex-wrap items-center gap-2">
-                  <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>                  
-                </h5>
-                <button
-                  type="button"
-                  onClick={resetAll}
-                  disabled={isBatchProcessing}
-                  className="mt-2 sm:mt-0 inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-slate-650 hover:text-red-650 hover:bg-red-50 bg-slate-100 rounded-lg transition-colors border border-slate-200 hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={isBatchProcessing ? "Không thể xóa khi đang OCR" : "Làm lại"}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Xóa tất cả</span>
-                </button>
-              </div>
+          const isOcrActive = isBatchProcessing || isSlicing;
 
-              {/* OVERALL DOCUMENT STATISTICS SUMMARY */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 text-xs sm:text-sm font-semibold text-slate-700">
-                <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-                  <span className="text-slate-800">📄 {totalPages} trang</span>
-                  <span className="text-slate-300 hidden sm:inline">|</span>
-                  <span className="text-slate-800">💾 {formatSize(totalOriginalBytes)}</span>
-                  {useImageOptimization && hasOptimizedPages && (
-                    <>
-                      <span className="text-slate-300 hidden sm:inline">|</span>
-                      <span className="text-emerald-600">📉 Tiết kiệm: {Math.max(0, 100 - Math.round((totalOptimizedBytes / totalOriginalBytes) * 100))}%</span>
-                    </>
-                  )}
-                </div>
-                {isBatchProcessing && (
-                  <div className="flex items-center space-x-1.5 text-blue-600 font-bold bg-blue-50/50 px-2.5 py-1 rounded border border-blue-150 text-xs self-start sm:self-auto">
-                    <Activity className="h-3.5 w-3.5 animate-spin" />
-                    <span>⚡ Ước tính OCR: ~{Math.ceil((totalPages - allPageItems.filter(p => p.state.status === 'success' || p.state.status === 'error').length) * 3)} giây</span>
+          return (
+            <div className={`transition-all duration-200 ${
+              isOcrActive 
+                ? "!mt-6 bg-transparent p-0 border-none shadow-none" 
+                : "bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-4"
+            }`}>
+              {!isOcrActive && (
+                <>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 mb-4">
+                    <h5 className="font-bold text-slate-850 text-sm sm:text-base flex flex-wrap items-center gap-2">
+                      <span>Trang tài liệu rời rạc đã phân tách & tự động nén ({totalPages} trang)</span>                  
+                    </h5>
+                    <button
+                      type="button"
+                      onClick={resetAll}
+                      disabled={isBatchProcessing}
+                      className="mt-2 sm:mt-0 inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-slate-650 hover:text-red-650 hover:bg-red-50 bg-slate-100 rounded-lg transition-colors border border-slate-200 hover:border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={isBatchProcessing ? "Không thể xóa khi đang OCR" : "Làm lại"}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Xóa tất cả</span>
+                    </button>
                   </div>
-                )}
-              </div>
+
+                  {/* OVERALL DOCUMENT STATISTICS SUMMARY */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 text-xs sm:text-sm font-semibold text-slate-700">
+                    <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
+                      <span className="text-slate-800">📄 {totalPages} trang</span>
+                      <span className="text-slate-300 hidden sm:inline">|</span>
+                      <span className="text-slate-800">💾 {formatSize(totalOriginalBytes)}</span>
+                      {useImageOptimization && hasOptimizedPages && (
+                        <>
+                          <span className="text-slate-300 hidden sm:inline">|</span>
+                          <span className="text-emerald-600">📉 Tiết kiệm: {Math.max(0, 100 - Math.round((totalOptimizedBytes / totalOriginalBytes) * 100))}%</span>
+                        </>
+                      )}
+                    </div>
+                    {isBatchProcessing && (
+                      <div className="flex items-center space-x-1.5 text-blue-600 font-bold bg-blue-50/50 px-2.5 py-1 rounded border border-blue-150 text-xs self-start sm:self-auto">
+                        <Activity className="h-3.5 w-3.5 animate-spin" />
+                        <span>⚡ Ước tính OCR: ~{Math.ceil((totalPages - allPageItems.filter(p => p.state.status === 'success' || p.state.status === 'error').length) * 3)} giây</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div ref={pageGridRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
                 {allPageItems.map(({ fileId, fileName, totalPages, pageNum, state, slicedPage, q }) => {
