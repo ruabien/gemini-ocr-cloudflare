@@ -155,6 +155,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isProcessingRef = useRef(false);
+  const isFirstPageRef = useRef(true);
   const pageProcessingLockRef = useRef<{ [key: number]: boolean }>({});
   const revocationRefs = useRef<Map<string, string>>(new Map());
 
@@ -482,13 +483,19 @@ const startOcrProcess = async () => {
     setIsCancelling(false);
 
     setIsBatchProcessing(true);
+    isFirstPageRef.current = true;
     setEditorContent("");
     editorContentRef.current = "";
     setFileErrors({});
 
-    // Smooth scroll to Progress Card
+    // Scroll viewport to top when OCR starts
     setTimeout(() => {
-      progressCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      requestAnimationFrame(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+      });
     }, 100);
 
     const selectedFiles = filesToProcess.map(q => q.file);
@@ -1262,13 +1269,8 @@ const keyToProjectMap = new Map<string, string>();
       const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
         updatePageStatus(qFile.id, pageIdx, 'processing');
 
-        // Scroll the page card into view smoothly (nearest to prevent continuous/jumpy scrolls)
-        setTimeout(() => {
-          const cardEl = document.querySelector(`[data-page-id="${qFile.id}-page-${pageIdx}"]`);
-          if (cardEl) {
-            cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          }
-        }, 100);
+        // Đã tắt auto-scroll từng trang để giữ Progress Card ổn định trên màn hình
+        isFirstPageRef.current = false;
 
         try {
           let fileToSend = pageFile;
@@ -1637,43 +1639,58 @@ const keyToProjectMap = new Map<string, string>();
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             
             {/* CẤU HÌNH OCR VÀ DROPZONE CHÍNH (Chiếm 2 cột trên màn hình Desktop) */}
-            <div className="lg:col-span-2 space-y-6">
-              
-              {/* DROPZONE */}
-              <div 
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                onClick={onButtonClick}
-                className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[145px] transition-all duration-200 ${
-                  dragActive 
-                    ? "border-red-600 bg-red-50/40" 
-                    : "border-slate-300 bg-white hover:border-red-500/50 hover:bg-slate-50/50"
-                }`}
-              >
-                <input 
-                  ref={fileInputRef}
-                  type="file" 
-                  multiple={true}
-                  className="hidden" 
-                  accept=".pdf,.png,.jpg,.jpeg" 
-                  onChange={handleFileInput}
-                />
-                <div className="h-10 w-10 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2 border border-red-100">
-                  <UploadCloud className="h-5 w-5" />
+            <div className="lg:col-span-2">
+              <div className="flex flex-col space-y-4">
+                {/* DROPZONE */}
+                <div 
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={onButtonClick}
+                  className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[145px] transition-all duration-200 ${
+                    dragActive 
+                      ? "border-red-600 bg-red-50/40" 
+                      : "border-slate-300 bg-white hover:border-red-500/50 hover:bg-slate-50/50"
+                  }`}
+                >
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    multiple={true}
+                    className="hidden" 
+                    accept=".pdf,.png,.jpg,.jpeg" 
+                    onChange={handleFileInput}
+                  />
+                  <div className="h-10 w-10 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2 border border-red-100">
+                    <UploadCloud className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-sm">
+                    Kéo thả nhiều tài liệu vào đây hoặc click để duyệt từ máy tính
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 max-w-xl">
+                    Hỗ trợ chọn nhiều tệp tin cùng lúc. Bản quét sẽ được tự động phân lớp, đưa vào hàng đợi và bóc tách nội dung tuần tự.
+                  </p>
+                  
+                  <div className="mt-2.5 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-0.5">
+                    <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
+                  </div>
                 </div>
-                <h3 className="font-bold text-slate-800 text-sm">
-                  Kéo thả nhiều tài liệu vào đây hoặc click để duyệt từ máy tính
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1 max-w-xl">
-                  Hỗ trợ chọn nhiều tệp tin cùng lúc. Bản quét sẽ được tự động phân lớp, đưa vào hàng đợi và bóc tách nội dung tuần tự.
-                </p>
-                
-                <div className="mt-2.5 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-0.5">
-                  <Shield className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
-                </div>
+
+                {/* START BUTTON */}
+                {!isBatchProcessing && !isSlicing && ocrStatus !== "success" && ocrStatus !== "error" && (
+                  <div className="w-full flex justify-center">
+                    <button
+                      onClick={startOcrProcess}
+                      disabled={(queuedFiles || []).length === 0}
+                      className="start-ocr-btn-selector w-full sm:w-[320px] h-[50px] bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:shadow-red-500/20 transition-all flex items-center justify-center space-x-2 text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                    >
+                      <ScanLine className="h-5 w-5" />
+                      <span>Bắt đầu bóc tách hồ sơ</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1852,7 +1869,7 @@ const keyToProjectMap = new Map<string, string>();
         <div 
           ref={progressCardRef} 
           className={`flex flex-col items-center justify-center w-full transition-all duration-200 ${
-            (isBatchProcessing || isSlicing) ? 'sticky top-4 z-30' : 'mt-4'
+            (isBatchProcessing || isSlicing) ? 'sticky top-[80px] z-30' : 'mt-4'
           }`}
         >
           {(() => {
@@ -1975,18 +1992,7 @@ const keyToProjectMap = new Map<string, string>();
               );
             }
 
-            return (
-              <div className="w-full flex justify-center mb-8">
-                <button
-                  onClick={startOcrProcess}
-                  disabled={(queuedFiles || []).length === 0}
-                  className="start-ocr-btn-selector w-full sm:w-[320px] h-[50px] bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:shadow-red-500/20 transition-all flex items-center justify-center space-x-2 text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                >
-                  <ScanLine className="h-5 w-5" />
-                  <span>Bắt đầu bóc tách hồ sơ</span>
-                </button>
-              </div>
-            );
+            return null;
           })()}
         </div>
 
