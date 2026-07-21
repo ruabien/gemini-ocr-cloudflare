@@ -65,9 +65,43 @@ const sanitizeError = (message: string): string => {
       const val = parts[1] || '';
       return `key=****${val.slice(-4)}`;
     })
-    .replace(/AIzaSy[a-zA-Z0-9_\-]+/g, (match) => {
+    .replace(/AIzaSy[a-zA-Z5-9_\-]+/g, (match) => {
       return `****${match.slice(-4)}`;
     });
+};
+
+const renderStatusBadge = (status: 'idle' | 'processing' | 'success' | 'error') => {
+  switch (status) {
+    case 'idle':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1" />
+          Chờ xử lý
+        </span>
+      );
+    case 'processing':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200 animate-gentle-pulse">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1" />
+          Đang xử lý
+        </span>
+      );
+    case 'success':
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-250 animate-fade-in-quick">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+          Hoàn thành
+        </span>
+      );
+    case 'error':
+    default:
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1" />
+          Lỗi
+        </span>
+      );
+  }
 };
 
 export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveTab }: OcrScannerProps) {
@@ -76,6 +110,9 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [autoMerge, setAutoMerge] = useState(false);
   const [outputMode, setOutputMode] = useState<"text" | "structured">("text");
+  
+  const progressCardRef = useRef<HTMLDivElement>(null);
+  const pageGridRef = useRef<HTMLDivElement>(null);
   
   const [isSlicing, setIsSlicing] = useState(false);
   const [slicingMessage, setSlicingMessage] = useState("");
@@ -448,6 +485,11 @@ const startOcrProcess = async () => {
     setEditorContent("");
     editorContentRef.current = "";
     setFileErrors({});
+
+    // Smooth scroll to Progress Card
+    setTimeout(() => {
+      progressCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
 
     const selectedFiles = filesToProcess.map(q => q.file);
 
@@ -1219,6 +1261,15 @@ const keyToProjectMap = new Map<string, string>();
       // Helper to send a single image/file and handle errors per page
       const processSinglePage = async (pageFile: File, pageIdx: number, totalPages: number) => {
         updatePageStatus(qFile.id, pageIdx, 'processing');
+
+        // Scroll the page card into view smoothly (nearest to prevent continuous/jumpy scrolls)
+        setTimeout(() => {
+          const cardEl = document.querySelector(`[data-page-id="${qFile.id}-page-${pageIdx}"]`);
+          if (cardEl) {
+            cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }, 100);
+
         try {
           let fileToSend = pageFile;
           if (!isPdf) {
@@ -1584,193 +1635,83 @@ const keyToProjectMap = new Map<string, string>();
           <div className="lg:col-span-2 space-y-6">
             
             {/* DROPZONE */}
-            <div 
-              onDragEnter={handleDrag}
-              onDragOver={handleDrag}
-              onDragLeave={handleDrag}
-              onDrop={handleDrop}
-              onClick={onButtonClick}
-              className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[145px] transition-all duration-200 ${
-                dragActive 
-                  ? "border-red-600 bg-red-50/40" 
-                  : "border-slate-300 bg-white hover:border-red-500/50 hover:bg-slate-50/50"
-              }`}
-            >
-              <input 
-                ref={fileInputRef}
-                type="file" 
-                multiple={true}
-                className="hidden" 
-                accept=".pdf,.png,.jpg,.jpeg" 
-                onChange={handleFileInput}
-              />
-              <div className="h-10 w-10 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2 border border-red-100">
-                <UploadCloud className="h-5 w-5" />
+            {(isBatchProcessing || isSlicing) ? (
+              <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                    <UploadCloud className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-700 text-sm">
+                      Đã tải lên {queuedFiles.length} tệp
+                    </h3>
+                    <p className="text-xs text-slate-500">Hệ thống đang bóc tách nội dung</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  className="px-4 py-2 bg-slate-100 text-slate-400 text-sm font-semibold rounded-lg cursor-not-allowed border border-slate-200"
+                >
+                  Thêm tài liệu
+                </button>
               </div>
-              <h3 className="font-bold text-slate-800 text-sm">
-                Kéo thả nhiều tài liệu vào đây hoặc click để duyệt từ máy tính
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-xl">
-                Hỗ trợ chọn nhiều tệp tin cùng lúc. Bản quét sẽ được tự động phân lớp, đưa vào hàng đợi và bóc tách nội dung tuần tự.
-              </p>
-              
-              <div className="mt-2.5 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-0.5">
-                <Shield className="h-3.5 w-3.5 text-emerald-500" />
-                <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
+            ) : (
+              <div 
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                onClick={onButtonClick}
+                className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[145px] transition-all duration-200 ${
+                  dragActive 
+                    ? "border-red-600 bg-red-50/40" 
+                    : "border-slate-300 bg-white hover:border-red-500/50 hover:bg-slate-50/50"
+                }`}
+              >
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  multiple={true}
+                  className="hidden" 
+                  accept=".pdf,.png,.jpg,.jpeg" 
+                  onChange={handleFileInput}
+                />
+                <div className="h-10 w-10 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2 border border-red-100">
+                  <UploadCloud className="h-5 w-5" />
+                </div>
+                <h3 className="font-bold text-slate-800 text-sm">
+                  Kéo thả nhiều tài liệu vào đây hoặc click để duyệt từ máy tính
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-1 max-w-xl">
+                  Hỗ trợ chọn nhiều tệp tin cùng lúc. Bản quét sẽ được tự động phân lớp, đưa vào hàng đợi và bóc tách nội dung tuần tự.
+                </p>
+                
+                <div className="mt-2.5 flex items-center justify-center space-x-2 text-[10px] text-slate-400 font-semibold font-mono bg-slate-50 border border-slate-150 rounded px-2.5 py-0.5">
+                  <Shield className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>MẬT MÃ HOÁ TRÊN THIẾT BỊ ĐẦU CUỐI</span>
+                </div>
               </div>
-            </div>
-
-            {/* KHU VỰC TRẠNG THÁI OCR THIẾT KẾ MỚI */}
-            <div className="flex flex-col items-center justify-center w-full mt-4">
-              {(() => {
-                if (isBatchProcessing || isSlicing) {
-                  // 2. TRẠNG THÁI ĐANG OCR
-                  // Compute stats
-                  const totalPagesAll = queuedFiles.reduce((acc, f) => acc + (f.totalPages || 1), 0);
-                  const completedPagesAll = queuedFiles.reduce((acc, f) => {
-                    if (f.pageStates) {
-                      return acc + Object.values(f.pageStates).filter(s => s.status === "success" || s.status === "error").length;
-                    }
-                    return acc + (f.status === "done" ? 1 : 0);
-                  }, 0);
-                  const overallProgress = totalPagesAll > 0 
-                    ? Math.round((completedPagesAll / totalPagesAll) * 100) 
-                    : 0;
-
-                  const activeFileIndex = queuedFiles.findIndex(f => f.status === "processing" || f.status === "slicing");
-                  const displayFileIndex = activeFileIndex !== -1 ? activeFileIndex + 1 : 1;
-                  const currentFile = queuedFiles[activeFileIndex !== -1 ? activeFileIndex : 0];
-
-                  let currentPageNum = 1;
-                  if (currentFile?.pageStates) {
-                    const activePage = Object.entries(currentFile.pageStates).find(([_, state]) => state.status === "processing");
-                    if (activePage) {
-                      currentPageNum = Number(activePage[0]);
-                    } else {
-                      const donePages = Object.entries(currentFile.pageStates).filter(([_, state]) => state.status === "success" || state.status === "error");
-                      currentPageNum = Math.min(donePages.length + 1, currentFile.totalPages || 1);
-                    }
-                  }
-
-                  const progressText = queuedFiles.length > 1
-                    ? `Tệp ${displayFileIndex} / ${queuedFiles.length} · Trang ${currentPageNum} / ${currentFile?.totalPages || 1}`
-                    : `Trang ${currentPageNum} / ${totalPagesAll}`;
-
-                  return (
-                    <div className="w-full max-w-[480px] bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
-                      <h4 className="text-lg font-bold text-slate-800">Đang bóc tách hồ sơ</h4>
-                      
-                      <div className="w-full space-y-1.5">
-                        <div className="flex justify-between items-center text-xs font-semibold text-slate-650">
-                          <span>{progressText}</span>
-                          <span>{overallProgress}%</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                          <div 
-                            className="bg-red-600 h-full rounded-full transition-all duration-300"
-                            style={{ width: `${overallProgress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-500 font-medium">
-                        {isSlicing 
-                          ? "Đang phân tách tệp PDF..." 
-                          : isCancelling 
-                            ? "Đang hủy quá trình bóc tách..." 
-                            : "Đang nhận dạng nội dung văn bản..."}
-                      </p>
-
-                      <div className="pt-2">
-                        <button
-                          type="button"
-                          disabled={isCancelling}
-                          onClick={handleCancelOcr}
-                          className="w-[195px] h-[45px] bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg hover:bg-red-50 hover:border-red-500 hover:text-red-650 transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-200 disabled:hover:text-slate-700"
-                        >
-                          <XCircle className="h-4 w-4" />
-                          <span>{isCancelling ? "Đang hủy..." : "✕ Hủy bóc tách"}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }
-
-                if (ocrStatus === "success") {
-                  // 4. TRẠNG THÁI HOÀN TẤT
-                  return (
-                    <div className="w-full max-w-[480px] bg-white border border-emerald-250 rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
-                      <div className="h-12 w-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-100">
-                        <CheckCircle2 className="h-6 w-6" />
-                      </div>
-                      <h4 className="text-lg font-bold text-slate-800">✓ Bóc tách hoàn tất</h4>
-                      <p className="text-sm text-slate-650 font-medium">
-                        Đã xử lý thành công {processedPagesCount} trang tài liệu.
-                      </p>
-                      <button
-                        onClick={() => setOcrStatus("idle")}
-                        className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition-colors border border-slate-200"
-                      >
-                        Quay lại
-                      </button>
-                    </div>
-                  );
-                }
-
-                if (ocrStatus === "error") {
-                  // 5. TRẠNG THÁI LỖI
-                  return (
-                    <div className="w-full max-w-[480px] bg-white border border-rose-250 rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
-                      <div className="h-12 w-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 border border-rose-100">
-                        <AlertTriangle className="h-6 w-6" />
-                      </div>
-                      <h4 className="text-lg font-bold text-slate-800">Không thể hoàn tất bóc tách</h4>
-                      <p className="text-sm text-slate-650 max-w-sm font-medium">
-                        {ocrError || "Đã xảy ra lỗi không xác định. Vui lòng kiểm tra lại cấu hình hoặc chất lượng tệp tin."}
-                      </p>
-                      <div className="flex space-x-3 pt-2">
-                        <button
-                          onClick={() => setOcrStatus("idle")}
-                          className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition-colors border border-slate-200"
-                        >
-                          Quay lại
-                        </button>
-                        <button
-                          onClick={startOcrProcess}
-                          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow-md transition-colors"
-                        >
-                          Thử lại
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // 1. TRẠNG THÁI CHƯA OCR
-                return (
-                  <button
-                    onClick={startOcrProcess}
-                    disabled={(queuedFiles || []).length === 0}
-                    className="start-ocr-btn-selector w-full sm:w-[300px] h-[54px] bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-lg shadow-red-500/30 transition-all flex items-center justify-center space-x-2.5 text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                  >
-                    <ScanLine className="h-5 w-5" />
-                    <span>Bắt đầu bóc tách hồ sơ</span>
-                  </button>
-                );
-              })()}
-            </div>
-
+            )}
           </div>
 
           {/* CẤU HÌNH HỆ THỐNG (Cột bên phải Desktop) */}
           <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl text-slate-100 relative overflow-hidden">
+            <div className={`bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl text-slate-100 relative overflow-hidden transition-opacity duration-300 ${
+              isBatchProcessing || isSlicing ? "opacity-60 pointer-events-none" : ""
+            }`}>
               <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]" />
               
               <h4 className="font-bold text-xs uppercase tracking-widest text-slate-100 flex items-center mb-4 relative z-10">
                 <Settings className="h-4 w-4 mr-1.5 text-slate-100 animate-pulse" />
                 <span>⚙️ CẤU HÌNH HỆ THỐNG</span>
               </h4>
+
+              {(isBatchProcessing || isSlicing) && (
+                <div className="relative z-10 mb-4 bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
+                  <p className="text-xs text-amber-400 font-medium">Cấu hình bị khóa trong khi OCR đang chạy.</p>
+                </div>
+              )}
 
               <div className="relative z-10 space-y-4">
                 {/* CHỌN MỤC ĐÍCH XỬ LÝ */}
@@ -1924,6 +1865,142 @@ const keyToProjectMap = new Map<string, string>();
 
         </div>
 
+        {/* KHU VỰC TRẠNG THÁI OCR VÀ BẮT ĐẦU */}
+        <div ref={progressCardRef} className={`mt-6 flex flex-col items-center justify-center w-full ${(isBatchProcessing || isSlicing) ? 'sticky top-4 z-30' : ''}`}>
+          {(() => {
+            if (isBatchProcessing || isSlicing) {
+              const totalPagesAll = queuedFiles.reduce((acc, f) => acc + (f.totalPages || 1), 0);
+              const completedPagesAll = queuedFiles.reduce((acc, f) => {
+                if (f.pageStates) {
+                  return acc + Object.values(f.pageStates).filter(s => s.status === "success" || s.status === "error").length;
+                }
+                return acc + (f.status === "done" ? 1 : 0);
+              }, 0);
+              const overallProgress = totalPagesAll > 0 
+                ? Math.round((completedPagesAll / totalPagesAll) * 100) 
+                : 0;
+
+              let currentPageNum = 1;
+              const activeFileIndex = queuedFiles.findIndex(f => f.status === "processing" || f.status === "slicing");
+              const currentFile = queuedFiles[activeFileIndex !== -1 ? activeFileIndex : 0];
+              if (currentFile?.pageStates) {
+                const activePage = Object.entries(currentFile.pageStates).find(([_, state]) => state.status === "processing");
+                if (activePage) {
+                  currentPageNum = Number(activePage[0]);
+                } else {
+                  const donePages = Object.entries(currentFile.pageStates).filter(([_, state]) => state.status === "success" || state.status === "error");
+                  currentPageNum = Math.min(donePages.length + 1, currentFile.totalPages || 1);
+                }
+              }
+
+              const allPageItems = queuedFiles.flatMap(q => {
+                if (!q.pageStates) return [];
+                return Object.entries(q.pageStates).map(([pageNumStr, state]) => state);
+              });
+              const remainingPages = totalPagesAll - allPageItems.filter(p => p.status === 'success' || p.status === 'error').length;
+              const estimatedSeconds = remainingPages > 0 ? Math.ceil(remainingPages * 3) : 0;
+              const estimatedText = estimatedSeconds > 0 ? `Còn khoảng ${estimatedSeconds} giây` : null;
+
+              return (
+                <div className="w-full bg-white border border-slate-200 rounded-xl shadow-sm p-5 flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                  <div className="flex-1 w-full flex flex-col space-y-2">
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <h4 className="text-base font-bold text-slate-800">Đang bóc tách hồ sơ</h4>
+                        <p className="text-xs text-slate-500 font-medium">Trang {currentPageNum} / {totalPagesAll}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-red-600">{overallProgress}%</span>
+                        {estimatedText && <p className="text-[10px] text-slate-400 mt-0.5">{estimatedText}</p>}
+                      </div>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                      <div 
+                        className="bg-red-600 h-full rounded-full transition-all duration-300"
+                        style={{ width: `${overallProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isCancelling}
+                    onClick={handleCancelOcr}
+                    className="shrink-0 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg hover:bg-red-50 hover:border-red-500 hover:text-red-650 transition-all flex items-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    <span>{isCancelling ? "Đang hủy..." : "Hủy"}</span>
+                  </button>
+                </div>
+              );
+            }
+
+            if (ocrStatus === "success") {
+              return (
+                <div className="w-full bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between mb-8">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-emerald-800">Bóc tách hoàn tất</h4>
+                      <p className="text-sm text-emerald-650">Đã xử lý thành công {processedPagesCount} trang tài liệu.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setOcrStatus("idle")}
+                    className="px-5 py-2 bg-white text-emerald-700 text-sm font-semibold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                  >
+                    Đóng
+                  </button>
+                </div>
+              );
+            }
+
+            if (ocrStatus === "error") {
+              return (
+                <div className="w-full bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-center justify-between mb-8">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 bg-rose-100 rounded-full flex items-center justify-center text-rose-600">
+                      <AlertTriangle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-rose-800">Không thể hoàn tất</h4>
+                      <p className="text-sm text-rose-650">{ocrError || "Đã xảy ra lỗi không xác định."}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setOcrStatus("idle")}
+                      className="px-4 py-2 bg-white text-slate-700 text-sm font-semibold rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+                    >
+                      Bỏ qua
+                    </button>
+                    <button
+                      onClick={startOcrProcess}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
+                    >
+                      Thử lại
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="w-full flex justify-center mb-8">
+                <button
+                  onClick={startOcrProcess}
+                  disabled={(queuedFiles || []).length === 0}
+                  className="start-ocr-btn-selector w-full sm:w-[320px] h-[50px] bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:shadow-red-500/20 transition-all flex items-center justify-center space-x-2 text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                >
+                  <ScanLine className="h-5 w-5" />
+                  <span>Bắt đầu bóc tách hồ sơ</span>
+                </button>
+              </div>
+            );
+          })()}
+        </div>
+
         {/* PAGE GRID VIEW - Full Width Responsive Grid for Page Cards */}
         {queuedFiles.some(f => f.pageStates) && (() => {
           const totalPages = queuedFiles.filter(f => f.pageStates).reduce((acc, curr) => acc + (curr.totalPages || 0), 0);
@@ -2008,22 +2085,12 @@ const keyToProjectMap = new Map<string, string>();
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
+              <div ref={pageGridRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
                 {allPageItems.map(({ fileId, fileName, totalPages, pageNum, state, slicedPage, q }) => {
                   const { status, text, error } = state;
                   const bgClass = status === 'processing' ? 'bg-red-50/30 border-red-200' :
                                   status === 'error' ? 'bg-rose-50/30 border-rose-200' :
                                   'bg-white border-slate-200';
-
-                  const badgeClass = status === 'idle' ? 'bg-slate-100 text-slate-600 border-slate-200' :
-                                     status === 'processing' ? 'bg-red-100 text-red-700 border-red-200' :
-                                     status === 'success' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                                     'bg-rose-100 text-rose-700 border-rose-200';
-
-                  const badgeText = status === 'idle' ? 'Chờ xử lý' :
-                                    status === 'processing' ? 'Đang xử lý' :
-                                    status === 'success' ? 'Hoàn thành' :
-                                    'Lỗi';
 
                   const pageImgUrl = slicedPage?.dataUrl;
                   const pageSizeInfo = q.pageSizes?.[pageNum];
@@ -2032,6 +2099,7 @@ const keyToProjectMap = new Map<string, string>();
                   return (
                     <div 
                       key={`${fileId}-page-${pageNum}`} 
+                      data-page-id={`${fileId}-page-${pageNum}`}
                       className={`relative border rounded-lg overflow-hidden flex flex-col group hover:shadow-md transition-all duration-200 h-full ${bgClass}`}
                     >
                       {/* Header Label: top-left black ribbon badge showing page numbers context */}
@@ -2067,19 +2135,14 @@ const keyToProjectMap = new Map<string, string>();
                       </div>
 
                       {/* Info Container with reduced padding */}
-                      <div className="p-2 flex-grow flex flex-col justify-between">
-                        {/* File Name inside the Card */}
+                      <div className="p-2 bg-white flex flex-col space-y-1.5 border-t border-slate-100">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-slate-700 truncate" title={fileName}>
+                          <p className="text-[10px] font-bold text-slate-600 truncate" title={fileName}>
                             {fileName}
                           </p>
                         </div>
-
-                        {/* Status badge & File Size */}
-                        <div className="flex items-center justify-between mt-2">
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${badgeClass}`}>
-                            {badgeText}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          {renderStatusBadge(status)}
                           {fileSizeText && (
                             <span className="text-[10px] text-slate-400 font-mono">
                               {fileSizeText}
