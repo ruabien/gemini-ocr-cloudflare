@@ -82,9 +82,19 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrStatus, setOcrStatus] = useState<"idle" | "slicing" | "processing" | "success" | "error">("idle");
+  const [processedPagesCount, setProcessedPagesCount] = useState(0);
   const cancelOcrRef = useRef<AbortController | null>(null);
 
   const [editorContent, setEditorContent] = useState("");
+
+  const handleCancelOcr = () => {
+    if (isCancelling) return;
+    setIsCancelling(true);
+    cancelOcrRef.current?.abort();
+  };
   const editorContentRef = useRef("");
 
   const [useImageOptimization, setUseImageOptimization] = useState(true);
@@ -140,6 +150,10 @@ const handleSelectedFiles = async (files: File[]) => {
     alert("Hệ thống chỉ hỗ trợ xử lý mỗi lần 1 tệp PDF. Vui lòng tải lên từng tệp một để đảm bảo hiệu năng.");
     return;
   }
+
+  // Set ocrStatus back to idle when new files are uploaded
+  setOcrStatus("idle");
+  setOcrError(null);
 
   const newQueued: QueuedFile[] = files.map(f => {
     const isPdf = f.name.toLowerCase().endsWith('.pdf');
@@ -307,6 +321,8 @@ const handleSelectedFiles = async (files: File[]) => {
     setProgress(0);
     setFileErrors({});
     setProcessingFile(null);
+    setOcrStatus("idle");
+    setOcrError(null);
     
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -424,6 +440,9 @@ const startOcrProcess = async () => {
   isProcessingRef.current = true;
 
   try {
+    setOcrStatus("processing");
+    setOcrError(null);
+    setIsCancelling(false);
 
     setIsBatchProcessing(true);
     setEditorContent("");
@@ -484,6 +503,7 @@ if (geminiKeyPool.length === 0) {
   );
   setIsBatchProcessing(false);
   isProcessingRef.current = false;
+  setOcrStatus("idle");
   return;
 }
 // --- PRE-FLIGHT MODEL CHECK ---
@@ -531,6 +551,7 @@ try {
     );
     setIsBatchProcessing(false);
     isProcessingRef.current = false;
+    setOcrStatus("idle");
     return;
   }
 }
@@ -1409,6 +1430,10 @@ const keyToProjectMap = new Map<string, string>();
       setProgress(0);
       isProcessingRef.current = false;
 
+      const totalPagesAll = queuedFiles.reduce((acc, f) => acc + (f.totalPages || 1), 0);
+      setProcessedPagesCount(totalPagesAll);
+      setOcrStatus("success");
+
       // -------------------------------------------------
       // Record successful page usage (FREE users only)
       // -------------------------------------------------
@@ -1496,13 +1521,18 @@ const keyToProjectMap = new Map<string, string>();
     }, 1000);
   } catch (error: any) {
     console.error("OCR process error:", error);
+    let friendlyError = "Đã xảy ra lỗi trong quá trình xử lý.";
     if (error?.type === "503_EXHAUSTED") {
-      setErrorModalMsg("Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.");
+      friendlyError = "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.";
     } else if (error?.type === "ABORTED") {
-      setErrorModalMsg("Đã hủy quá trình bóc tách.");
+      friendlyError = "Đã hủy quá trình bóc tách.";
     } else {
-      setErrorModalMsg(sanitizeError(error?.message || "Đã xảy ra lỗi trong quá trình xử lý."));
+      friendlyError = sanitizeError(error?.message || "Đã xảy ra lỗi trong quá trình xử lý.");
     }
+
+    setOcrError(friendlyError);
+    setOcrStatus(error?.type === "ABORTED" ? "idle" : "error");
+
     setIsBatchProcessing(false);
     setProcessingFile(null);
     setProgress(0);
@@ -1590,36 +1620,144 @@ const keyToProjectMap = new Map<string, string>();
               </div>
             </div>
 
-            {/* NÚT BẮT ĐẦU TRÍCH XUẤT OCR */}
-            <div className="flex flex-col items-center justify-center w-full space-y-4">
-              <button
-                onClick={startOcrProcess}
-                disabled={(queuedFiles || []).length === 0 || isBatchProcessing || isSlicing}
-                className="start-ocr-btn-selector w-full sm:w-[320px] bg-red-600 hover:bg-red-700 text-white font-extrabold py-4 px-8 rounded-lg shadow-lg shadow-red-500/30 transform transition hover:scale-102 flex items-center justify-center space-x-2.5 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-red-600"
-              >
-                {isBatchProcessing || isSlicing ? (
-                  <Activity className="h-6 w-6 animate-spin" />
-                ) : (
-                  <ScanLine className="h-6 w-6" />
-                )}
-                <span>
-                  {isBatchProcessing 
-                    ? "Đang bóc tách hồ sơ..." 
-                    : isSlicing 
-                      ? "Đang phân tách PDF..." 
-                      : "Bắt đầu bóc tách hồ sơ"}
-                </span>
-              </button>
+            {/* KHU VỰC TRẠNG THÁI OCR THIẾT KẾ MỚI */}
+            <div className="flex flex-col items-center justify-center w-full mt-4">
+              {(() => {
+                if (isBatchProcessing || isSlicing) {
+                  // 2. TRẠNG THÁI ĐANG OCR
+                  // Compute stats
+                  const totalPagesAll = queuedFiles.reduce((acc, f) => acc + (f.totalPages || 1), 0);
+                  const completedPagesAll = queuedFiles.reduce((acc, f) => {
+                    if (f.pageStates) {
+                      return acc + Object.values(f.pageStates).filter(s => s.status === "success" || s.status === "error").length;
+                    }
+                    return acc + (f.status === "done" ? 1 : 0);
+                  }, 0);
+                  const overallProgress = totalPagesAll > 0 
+                    ? Math.round((completedPagesAll / totalPagesAll) * 100) 
+                    : 0;
 
-{isBatchProcessing && (
-  <button
-    type="button"
-    onClick={() => cancelOcrRef.current?.abort()}
-    className="mt-2 px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-[11px] font-bold uppercase rounded border border-slate-700 transition-colors shadow-inner"
-  >
-    Hủy bóc tách
-  </button>
-)}
+                  const activeFileIndex = queuedFiles.findIndex(f => f.status === "processing" || f.status === "slicing");
+                  const displayFileIndex = activeFileIndex !== -1 ? activeFileIndex + 1 : 1;
+                  const currentFile = queuedFiles[activeFileIndex !== -1 ? activeFileIndex : 0];
+
+                  let currentPageNum = 1;
+                  if (currentFile?.pageStates) {
+                    const activePage = Object.entries(currentFile.pageStates).find(([_, state]) => state.status === "processing");
+                    if (activePage) {
+                      currentPageNum = Number(activePage[0]);
+                    } else {
+                      const donePages = Object.entries(currentFile.pageStates).filter(([_, state]) => state.status === "success" || state.status === "error");
+                      currentPageNum = Math.min(donePages.length + 1, currentFile.totalPages || 1);
+                    }
+                  }
+
+                  const progressText = queuedFiles.length > 1
+                    ? `Tệp ${displayFileIndex} / ${queuedFiles.length} · Trang ${currentPageNum} / ${currentFile?.totalPages || 1}`
+                    : `Trang ${currentPageNum} / ${totalPagesAll}`;
+
+                  return (
+                    <div className="w-full max-w-[480px] bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
+                      <h4 className="text-lg font-bold text-slate-800">Đang bóc tách hồ sơ</h4>
+                      
+                      <div className="w-full space-y-1.5">
+                        <div className="flex justify-between items-center text-xs font-semibold text-slate-650">
+                          <span>{progressText}</span>
+                          <span>{overallProgress}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                          <div 
+                            className="bg-red-600 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${overallProgress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-slate-500 font-medium">
+                        {isSlicing 
+                          ? "Đang phân tách tệp PDF..." 
+                          : isCancelling 
+                            ? "Đang hủy quá trình bóc tách..." 
+                            : "Đang nhận dạng nội dung văn bản..."}
+                      </p>
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          disabled={isCancelling}
+                          onClick={handleCancelOcr}
+                          className="w-[195px] h-[45px] bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg hover:bg-red-50 hover:border-red-500 hover:text-red-650 transition-all flex items-center justify-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-slate-200 disabled:hover:text-slate-700"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          <span>{isCancelling ? "Đang hủy..." : "✕ Hủy bóc tách"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (ocrStatus === "success") {
+                  // 4. TRẠNG THÁI HOÀN TẤT
+                  return (
+                    <div className="w-full max-w-[480px] bg-white border border-emerald-250 rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
+                      <div className="h-12 w-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-100">
+                        <CheckCircle2 className="h-6 w-6" />
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-800">✓ Bóc tách hoàn tất</h4>
+                      <p className="text-sm text-slate-650 font-medium">
+                        Đã xử lý thành công {processedPagesCount} trang tài liệu.
+                      </p>
+                      <button
+                        onClick={() => setOcrStatus("idle")}
+                        className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition-colors border border-slate-200"
+                      >
+                        Quay lại
+                      </button>
+                    </div>
+                  );
+                }
+
+                if (ocrStatus === "error") {
+                  // 5. TRẠNG THÁI LỖI
+                  return (
+                    <div className="w-full max-w-[480px] bg-white border border-rose-250 rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center space-y-4">
+                      <div className="h-12 w-12 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 border border-rose-100">
+                        <AlertTriangle className="h-6 w-6" />
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-800">Không thể hoàn tất bóc tách</h4>
+                      <p className="text-sm text-slate-650 max-w-sm font-medium">
+                        {ocrError || "Đã xảy ra lỗi không xác định. Vui lòng kiểm tra lại cấu hình hoặc chất lượng tệp tin."}
+                      </p>
+                      <div className="flex space-x-3 pt-2">
+                        <button
+                          onClick={() => setOcrStatus("idle")}
+                          className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition-colors border border-slate-200"
+                        >
+                          Quay lại
+                        </button>
+                        <button
+                          onClick={startOcrProcess}
+                          className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow-md transition-colors"
+                        >
+                          Thử lại
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // 1. TRẠNG THÁI CHƯA OCR
+                return (
+                  <button
+                    onClick={startOcrProcess}
+                    disabled={(queuedFiles || []).length === 0}
+                    className="start-ocr-btn-selector w-full sm:w-[300px] h-[54px] bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-lg shadow-red-500/30 transition-all flex items-center justify-center space-x-2.5 text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                  >
+                    <ScanLine className="h-5 w-5" />
+                    <span>Bắt đầu bóc tách hồ sơ</span>
+                  </button>
+                );
+              })()}
             </div>
 
           </div>
