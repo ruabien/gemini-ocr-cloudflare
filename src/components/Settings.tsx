@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserStorageItem, setUserStorageItem, removeUserStorageItem } from "../utils/userStorage";
-import { autoResolveModel, MODEL_MODES, validateGeminiModel, migrateOldStorage } from "../utils/geminiModelResolver";
+import { autoResolveModel, MODEL_MODES, validateGeminiModel, migrateOldStorage, checkAndSaveKeyMetadata } from "../utils/geminiModelResolver";
 
 interface SettingsProps {
   userGeminiKey: string;
@@ -64,6 +64,43 @@ export default function SettingsComponent({
     return getUserStorageItem(user?.uid, 'gemini_resolved_model') || '';
   });
 
+  const [metadataTrigger, setMetadataTrigger] = useState(0);
+  const [checkingKeys, setCheckingKeys] = useState<Record<string, boolean>>({});
+
+  const getKeyMetadata = React.useCallback((key: string) => {
+    const metaStr = getUserStorageItem(user?.uid, `gemini_key_metadata_${key}`);
+    if (!metaStr) return null;
+    try {
+      const parsed = JSON.parse(metaStr);
+      let migrated = false;
+      if (parsed && Array.isArray(parsed.availableModels) && parsed.availableModels.length > 0 && typeof parsed.availableModels[0] === 'string') {
+        parsed.availableModels = parsed.availableModels.map((m: string) => ({
+          name: m,
+          supportsGenerateContent: true
+        }));
+        migrated = true;
+      }
+      if (migrated) {
+        setUserStorageItem(user?.uid, `gemini_key_metadata_${key}`, JSON.stringify(parsed));
+      }
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }, [user?.uid, metadataTrigger]);
+
+  const formatTime = (timestamp: number) => {
+    if (!timestamp) return "";
+    const dateObj = new Date(timestamp);
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const yyyy = dateObj.getFullYear();
+    const hh = String(dateObj.getHours()).padStart(2, '0');
+    const min = String(dateObj.getMinutes()).padStart(2, '0');
+    const ss = String(dateObj.getSeconds()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+  };
+
   const cachedModelsList = React.useMemo<string[] | null>(() => {
     const cachedObj = getUserStorageItem(user?.uid, 'gemini_model_cache');
     if (cachedObj) {
@@ -100,38 +137,17 @@ export default function SettingsComponent({
     }
   }, [geminiModelMode, keysList, user?.uid]);
 
-  // Migrate manual mode to auto if selected manual model is no longer available
+  // Show warning if selected manual model is no longer available
   React.useEffect(() => {
-    let shouldMigrateToAuto = false;
-    let reason = '';
-
     if (geminiModelMode === MODEL_MODES.MANUAL) {
-      // If the selected manual model is not in the list of available manual models, fallback to auto
       const manualAvailable = visibleManualModels.some(m => m.value === geminiModel);
-      if (!manualAvailable) {
-        shouldMigrateToAuto = true;
-        reason = 'Model thủ công không khả dụng, chuyển sang Auto.';
+      if (!manualAvailable || visibleManualModels.length === 0) {
+        setModelStatusMsg({ type: 'error', text: 'Model đang chọn không còn được API key này hỗ trợ.' });
+      } else {
+        setModelStatusMsg({ type: 'success', text: `Mô hình ${geminiModel} hợp lệ và sẵn sàng.` });
       }
     }
-    
-    // If no manual models are available at all, enforce auto mode
-    if (visibleManualModels.length === 0 && geminiModelMode !== MODEL_MODES.AUTO) {
-      shouldMigrateToAuto = true;
-      reason = 'Không có model thủ công khả dụng, chuyển sang Auto.';
-    }
-
-    if (shouldMigrateToAuto) {
-      setGeminiModelMode(MODEL_MODES.AUTO);
-      setUserStorageItem(user?.uid, 'gemini_model_mode', MODEL_MODES.AUTO);
-      removeUserStorageItem(user?.uid, 'ocr_model');
-      setModelStatusMsg({ type: 'info', text: reason });
-      
-      // Also automatically verify/resolve model for Auto mode
-      if (keysList.length > 0) {
-        verifyAndResolveModel(keysList, MODEL_MODES.AUTO);
-      }
-    }
-  }, [geminiModelMode, visibleManualModels, geminiModel, user?.uid, keysList]);
+  }, [geminiModelMode, visibleManualModels, geminiModel, user?.uid]);
 
   const verifyAndResolveModel = async (keys: string[], mode: string, manualModel?: string) => {
     if (keys.length === 0) return;
@@ -185,22 +201,41 @@ export default function SettingsComponent({
   // Lưu khoá API
   const handleSaveApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newKeys = apiKeyInput
+    const inputKeys = apiKeyInput
       .split(/[\n,]+/)
       .map(k => k.trim())
-      .filter(k => k && !keysList.includes(k));
-    if (newKeys.length === 0) return;
+      .filter(Boolean);
 
-    const updatedKeys = [...keysList, ...newKeys];
-    setKeysList(updatedKeys);
-    setUserStorageItem(user?.uid, 'gemini_keys', JSON.stringify(updatedKeys));
-    setUserGeminiKey(updatedKeys[0] || '');
-    setApiKeyInput("");
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
+    if (inputKeys.length === 0) return;
 
-    // Verify model with the new key
-    await verifyAndResolveModel(updatedKeys, geminiModelMode, geminiModel);
+    // Check and save metadata for each inputted key
+    for (const key of inputKeys) {
+      try {
+        await checkAndSaveKeyMetadata(key, user?.uid);
+      } catch (err) {
+        console.error("Failed to check metadata for key", err);
+      }
+    }
+
+    const newKeys = inputKeys.filter(k => !keysList.includes(k));
+
+    if (newKeys.length > 0) {
+      const updatedKeys = [...keysList, ...newKeys];
+      setKeysList(updatedKeys);
+      setUserStorageItem(user?.uid, 'gemini_keys', JSON.stringify(updatedKeys));
+      setUserGeminiKey(updatedKeys[0] || '');
+      setApiKeyInput("");
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+
+      // Verify model with the new key
+      await verifyAndResolveModel(updatedKeys, geminiModelMode, geminiModel);
+    } else {
+      setApiKeyInput("");
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+      await verifyAndResolveModel(keysList, geminiModelMode, geminiModel);
+    }
   };
 
   const handleDeleteKey = (index: number) => {

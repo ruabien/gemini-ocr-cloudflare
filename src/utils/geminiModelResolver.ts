@@ -95,8 +95,12 @@ export const resolveBestGeminiModel = (models: ModelConfig[]): string | null => 
     }
   }
 
-  // Auto mode should not fallback to newer models without explicit check.
-  // We only return preferred model (gemini-2.5-flash).
+  // Ưu tiên availableModels của API key
+  // Không chọn model không nằm trong availableModels
+  if (ocrCapable.length > 0) {
+    return ocrCapable[0].name.replace('models/', '');
+  }
+
   return null;
 };
 
@@ -118,14 +122,20 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
   const keyHash = hashKey(apiKey);
 
   // Check cache
+  let staleCache: any = null;
   if (!force) {
     const cachedObj = getUserStorageItem(uid, 'gemini_model_cache');
     if (cachedObj) {
       try {
         const cache = JSON.parse(cachedObj);
-        if (cache.policyVersion === POLICY_VERSION && cache.keyHash === keyHash && cache.timestamp > Date.now() - CACHE_TTL_MS) {
-          if (cache.resolvedModel) {
-            return cache.resolvedModel;
+        if (cache.policyVersion === POLICY_VERSION && cache.keyHash === keyHash) {
+          if (cache.timestamp > Date.now() - CACHE_TTL_MS) {
+            if (cache.resolvedModel) {
+              return cache.resolvedModel;
+            }
+          } else {
+            // Đánh dấu stale
+            staleCache = cache;
           }
         }
       } catch (e) {
@@ -135,26 +145,35 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
   }
 
   // Call API
-  const models = await listAvailableGeminiModels(apiKey);
-  // Determine OCR‑capable models for caching
-  const ocrCapable = filterOcrCapableModels(models);
-  const bestModel = resolveBestGeminiModel(models);
+  try {
+    const models = await listAvailableGeminiModels(apiKey);
+    // Determine OCR‑capable models for caching
+    const ocrCapable = filterOcrCapableModels(models);
+    const bestModel = resolveBestGeminiModel(models);
 
-  if (!bestModel) {
-    throw new Error("NO_COMPATIBLE_MODEL");
+    if (!bestModel) {
+      throw new Error("NO_COMPATIBLE_MODEL");
+    }
+
+    // Save cache (include list of OCR‑capable model IDs)
+    setUserStorageItem(uid, 'gemini_resolved_model', bestModel);
+    setUserStorageItem(uid, 'gemini_model_cache', JSON.stringify({
+      policyVersion: POLICY_VERSION,
+      keyHash,
+      resolvedModel: bestModel,
+      availableModels: ocrCapable.map(m => m.name.replace('models/', '')),
+      timestamp: Date.now()
+    }));
+
+    return bestModel;
+  } catch (err: any) {
+    // Nếu stale: cho phép kiểm tra lại trước OCR
+    // Nếu không kiểm tra được: có thể dùng cache cũ
+    if (staleCache && staleCache.resolvedModel) {
+      return staleCache.resolvedModel;
+    }
+    throw err;
   }
-
-  // Save cache (include list of OCR‑capable model IDs)
-  setUserStorageItem(uid, 'gemini_resolved_model', bestModel);
-  setUserStorageItem(uid, 'gemini_model_cache', JSON.stringify({
-    policyVersion: POLICY_VERSION,
-    keyHash,
-    resolvedModel: bestModel,
-    availableModels: ocrCapable.map(m => m.name.replace('models/', '')),
-    timestamp: Date.now()
-  }));
-
-  return bestModel;
 };
 
 import { requireResolvedGeminiModel as sharedRequireResolvedGeminiModel } from "../../shared/geminiModelResolver";
@@ -162,6 +181,32 @@ export const requireResolvedGeminiModel = sharedRequireResolvedGeminiModel;
 
 export const getActiveModel = (uid: string | null | undefined, apiKey?: string): string => {
   const modelMode = getUserStorageItem(uid, 'gemini_model_mode') || 'auto';
+  
+  let keyAvailableModels: string[] | null = null;
+  if (apiKey) {
+    const cachedObj = getUserStorageItem(uid, 'gemini_model_cache');
+    if (cachedObj) {
+      try {
+        const cache = JSON.parse(cachedObj);
+        if (cache.keyHash === hashKey(apiKey) && Array.isArray(cache.availableModels)) {
+          keyAvailableModels = cache.availableModels;
+        }
+      } catch(e) {}
+    }
+    if (!keyAvailableModels) {
+      const metaStr = getUserStorageItem(uid, `gemini_key_metadata_${apiKey}`);
+      if (metaStr) {
+        try {
+          const meta = JSON.parse(metaStr);
+          if (Array.isArray(meta.availableModels)) {
+            keyAvailableModels = meta.availableModels.map((m: any) => m.name);
+          }
+        } catch(e) {}
+      }
+    }
+  }
+
+  let selectedModel: string | null = null;
 
   if (modelMode === 'auto') {
     if (apiKey) {
@@ -170,23 +215,38 @@ export const getActiveModel = (uid: string | null | undefined, apiKey?: string):
         try {
           const cache = JSON.parse(cachedObj);
           if (cache.keyHash === hashKey(apiKey) && cache.resolvedModel) {
-            return requireResolvedGeminiModel(cache.resolvedModel);
+            selectedModel = cache.resolvedModel;
           }
         } catch (e) {}
       }
     }
-    const resolved = getUserStorageItem(uid, 'gemini_resolved_model');
-    if (!resolved) {
-      throw new Error("MODEL_NOT_RESOLVED");
+    if (!selectedModel) {
+      selectedModel = getUserStorageItem(uid, 'gemini_resolved_model');
     }
-    return requireResolvedGeminiModel(resolved);
   } else {
-    const manual = getUserStorageItem(uid, 'ocr_model');
-    if (!manual) {
-      throw new Error("MODEL_NOT_RESOLVED");
-    }
-    return requireResolvedGeminiModel(manual);
+    selectedModel = getUserStorageItem(uid, 'ocr_model');
   }
+
+  if (!selectedModel) {
+    throw new Error("MODEL_NOT_RESOLVED");
+  }
+
+  const cleanModel = requireResolvedGeminiModel(selectedModel);
+
+  // In Manual mode, do NOT auto‑switch to another model.
+  // If the user‑selected model is not supported by the API key,
+  // throw a structured error that UI can handle.
+  if (modelMode === 'manual' && keyAvailableModels && keyAvailableModels.length > 0 && !keyAvailableModels.includes(cleanModel)) {
+    const err: any = {
+      ok: false,
+      errorType: "MANUAL_MODEL_UNSUPPORTED",
+      selectedModel: cleanModel,
+      availableModels: keyAvailableModels
+    };
+    throw err;
+  }
+
+  return cleanModel;
 };
 
 export const migrateOldStorage = (uid: string | null | undefined) => {
@@ -224,5 +284,74 @@ export const validateGeminiModel = async (apiKey: string, modelId: string): Prom
     return validModels.some(m => m.name === `models/${modelId}` || m.name === modelId);
   } catch (error) {
     return false;
+  }
+};
+
+/**
+ * Migration function for metadata (migrating old array of string structures to new format).
+ * Returns true if migration was performed.
+ */
+export const migrateMetadataObj = (metadata: any): boolean => {
+  if (metadata && Array.isArray(metadata.availableModels) && metadata.availableModels.length > 0) {
+    if (typeof metadata.availableModels[0] === 'string') {
+      metadata.availableModels = metadata.availableModels.map((m: string) => ({
+        name: m,
+        supportsGenerateContent: true
+      }));
+      return true;
+    }
+  }
+  return false;
+};
+
+/**
+ * Checks model availability for an API key and saves the metadata.
+ */
+export const checkAndSaveKeyMetadata = async (apiKey: string, uid?: string | null): Promise<void> => {
+  const checkedAt = Date.now();
+  let status = "success";
+  let availableModels: Array<{ name: string; supportsGenerateContent: boolean }> = [];
+  let errorType: string | null = null;
+  let errorMessage: string | null = null;
+
+  try {
+    const models = await listAvailableGeminiModels(apiKey);
+    availableModels = models
+      .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+      .map(m => ({
+        name: m.name.replace('models/', ''),
+        supportsGenerateContent: true
+      }));
+  } catch (error: any) {
+    status = "error";
+    errorType = error.message || "UNKNOWN";
+    errorMessage = error.toString();
+  }
+
+  const metadata = {
+    checkedAt,
+    status,
+    availableModels,
+    errorType,
+    errorMessage
+  };
+
+  setUserStorageItem(uid, `gemini_key_metadata_${apiKey}`, JSON.stringify(metadata));
+};
+
+/**
+ * Get metadata for an API key, performs on-the-fly migration to memory, and writes back if migrated.
+ */
+export const getKeyMetadataWithMigration = (apiKey: string, uid?: string | null): any => {
+  const metaStr = getUserStorageItem(uid, `gemini_key_metadata_${apiKey}`);
+  if (!metaStr) return null;
+  try {
+    const parsed = JSON.parse(metaStr);
+    if (migrateMetadataObj(parsed)) {
+      setUserStorageItem(uid, `gemini_key_metadata_${apiKey}`, JSON.stringify(parsed));
+    }
+    return parsed;
+  } catch (e) {
+    return null;
   }
 };

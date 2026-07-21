@@ -488,6 +488,55 @@ if (geminiKeyPool.length === 0) {
   isProcessingRef.current = false;
   return;
 }
+// --- PRE-FLIGHT MODEL CHECK ---
+try {
+  // Just check the first available key to see if the manual model is valid
+  if (geminiKeyPool.length > 0) {
+    getActiveModel(user?.uid, geminiKeyPool[0]);
+  }
+} catch (err: any) {
+  if (err && err.errorType === "MANUAL_MODEL_UNSUPPORTED") {
+    setErrorModalMsg(
+      <div className="flex flex-col gap-3">
+        <p>Model đang chọn không còn được API key này hỗ trợ.</p>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={() => {
+              import('../utils/userStorage').then(({ setUserStorageItem }) => {
+                setUserStorageItem(user?.uid, 'gemini_model_mode', 'auto');
+                setErrorModalMsg(null);
+                // Optionally auto-resume OCR by clicking the button again
+                setTimeout(() => {
+                  const btn = document.querySelector(".start-ocr-btn-selector");
+                  if (btn) (btn as HTMLElement).click();
+                }, 300);
+              });
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Chuyển sang Auto
+          </button>
+          <a
+            href="/settings"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.pushState({}, '', '/settings');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+              setErrorModalMsg(null);
+            }}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 text-center"
+          >
+            Chọn model khác
+          </a>
+        </div>
+      </div>
+    );
+    setIsBatchProcessing(false);
+    isProcessingRef.current = false;
+    return;
+  }
+}
+
 let activeKeyIndex = 0;
 const rateLimitedProjects = new Set<string>();
 const keyToProjectMap = new Map<string, string>();

@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { filterOcrCapableModels, resolveBestGeminiModel, autoResolveModel, getActiveModel, migrateOldStorage, validateGeminiModel } from './geminiModelResolver.ts';
+import { filterOcrCapableModels, resolveBestGeminiModel, autoResolveModel, getActiveModel, migrateOldStorage, validateGeminiModel, checkAndSaveKeyMetadata } from './geminiModelResolver.ts';
 
 // Mock localStorage for Node environment
 const store = new Map();
@@ -35,15 +35,14 @@ async function runTests() {
   ];
   assert.strictEqual(resolveBestGeminiModel(mockModelsList1), 'gemini-2.5-flash');
 
-  // Auto không chọn gemini-3.5-flash khi 2.5 không khả dụng.
-  // Auto trả NO_COMPATIBLE_MODEL nếu không có gemini-2.5-flash.
-  console.log('Test B: Auto không chọn gemini-3.5-flash và trả NO_COMPATIBLE_MODEL');
+  // Auto chọn model khác trong availableModels khi gemini-2.5-flash không khả dụng.
+  console.log('Test B: Auto chọn model khác trong availableModels khi gemini-2.5-flash không khả dụng');
   const mockModelsList2 = [
     { name: 'models/gemini-3.5-flash', supportedGenerationMethods: ['generateContent'] },
     { name: 'models/gemini-1.5-flash', supportedGenerationMethods: ['generateContent'] },
   ];
-  assert.strictEqual(resolveBestGeminiModel(mockModelsList2), null);
-  console.log('[PASS] Model priority correctly limits selection to gemini-2.5-flash.');
+  assert.strictEqual(resolveBestGeminiModel(mockModelsList2), 'gemini-3.5-flash');
+  console.log('[PASS] Model priority correctly prioritizes availableModels.');
 
   // Test C & D: filter capability filtering
   console.log('Test C & D: Filter out non-OCR models');
@@ -132,6 +131,144 @@ async function runTests() {
   const activeModel = getActiveModel(uid);
   assert.strictEqual(activeModel, 'gemini-3.5-flash');
   console.log('[PASS] Manual mode preserves user-selected model.');
+
+  // Test I: checkAndSaveKeyMetadata
+  console.log('Test I: checkAndSaveKeyMetadata');
+  store.clear();
+  fetchResponses = {
+    'key_meta_valid': () => ({ 
+      ok: true, 
+      json: async () => ({ 
+        models: [
+          { name: 'models/gemini-2.5-flash', supportedGenerationMethods: ['generateContent'] },
+          { name: 'models/gemini-embedding', supportedGenerationMethods: ['embedContent'] }
+        ] 
+      }) 
+    }),
+    'key_meta_invalid': () => ({ ok: false, status: 403 })
+  };
+
+  await checkAndSaveKeyMetadata('key_meta_valid', uid);
+  const metaValidStr = global.localStorage.getItem(`lexocr:${uid}:gemini_key_metadata_key_meta_valid`);
+  assert.ok(metaValidStr, "Metadata should be saved");
+  const metaValid = JSON.parse(metaValidStr);
+  assert.strictEqual(metaValid.status, "success");
+  assert.deepEqual(metaValid.availableModels, [{ name: "gemini-2.5-flash", supportsGenerateContent: true }]);
+  assert.strictEqual(metaValid.errorType, null);
+  
+  await checkAndSaveKeyMetadata('key_meta_invalid', uid);
+  const metaInvalidStr = global.localStorage.getItem(`lexocr:${uid}:gemini_key_metadata_key_meta_invalid`);
+  assert.ok(metaInvalidStr, "Error metadata should be saved");
+  const metaInvalid = JSON.parse(metaInvalidStr);
+  assert.strictEqual(metaInvalid.status, "error");
+  assert.strictEqual(metaInvalid.errorType, "INVALID_KEY");
+  console.log('[PASS] checkAndSaveKeyMetadata correctly saves metadata.');
+
+  // Test J: Metadata Migration
+  console.log('Test J: Metadata Migration');
+  store.clear();
+  const oldMetadata = {
+    availableModels: ["gemini-2.5-flash", "gemini-1.5-flash"]
+  };
+  global.localStorage.setItem(`lexocr:${uid}:gemini_key_metadata_old_key`, JSON.stringify(oldMetadata));
+  
+  const { getKeyMetadataWithMigration } = await import('./geminiModelResolver.ts');
+  const migratedMetadata = getKeyMetadataWithMigration('old_key', uid);
+  
+  assert.ok(migratedMetadata, "Should read old metadata");
+  assert.deepEqual(migratedMetadata.availableModels, [
+    { name: "gemini-2.5-flash", supportsGenerateContent: true },
+    { name: "gemini-1.5-flash", supportsGenerateContent: true }
+  ], "Should migrate to new format in memory");
+  
+  const writtenStr = global.localStorage.getItem(`lexocr:${uid}:gemini_key_metadata_old_key`);
+  const writtenMeta = JSON.parse(writtenStr);
+  assert.deepEqual(writtenMeta.availableModels, migratedMetadata.availableModels, "Should write migrated metadata back to storage");
+  console.log('[PASS] Metadata migration reads old, migrates, and writes new format.');
+
+  // Test K: Manual Mode does not fallback to Auto automatically
+  console.log('Test K: Manual mode does not auto-fallback');
+  store.clear();
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_mode`, 'manual');
+  global.localStorage.setItem(`lexocr:${uid}:ocr_model`, 'gemini-unsupported-model');
+  // When active model is retrieved, it should strictly remain manual and just return it, 
+  // without changing the mode to auto.
+  const manualModel = getActiveModel(uid);
+  assert.strictEqual(manualModel, 'gemini-unsupported-model', "Should return the manual model exactly as set");
+  const currentMode = global.localStorage.getItem(`lexocr:${uid}:gemini_model_mode`);
+  assert.strictEqual(currentMode, 'manual', "Mode should remain manual, no automatic switch to auto");
+  console.log('[PASS] Manual mode retains user selection without automatic switch to auto.');
+
+  // Test L: Cache staleness check, re-check, and old cache fallback
+  console.log('Test L: Cache staleness check, re-check, and old cache fallback');
+  store.clear();
+  
+  // Set up stale cache (older than 24 hours)
+  const staleTime = Date.now() - 25 * 60 * 60 * 1000;
+  const staleCacheData = {
+    policyVersion: 2, // Matches POLICY_VERSION
+    keyHash: '372439162', // Hash for 'key_stale'
+    resolvedModel: 'gemini-2.5-flash',
+    availableModels: ['gemini-2.5-flash'],
+    timestamp: staleTime
+  };
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_cache`, JSON.stringify(staleCacheData));
+
+  // 1. If stale, calling autoResolveModel triggers API re-check
+  let staleCallCount = 0;
+  fetchResponses = {
+    'key_stale': () => {
+      staleCallCount++;
+      return { ok: true, json: async () => ({ models: [{ name: 'models/gemini-2.5-flash', supportedGenerationMethods: ['generateContent'] }] }) };
+    }
+  };
+
+  const resolvedStale = await autoResolveModel(uid, 'key_stale', false);
+  assert.strictEqual(resolvedStale, 'gemini-2.5-flash');
+  assert.strictEqual(staleCallCount, 1, "Should call listAvailableGeminiModels to re-check");
+  
+  const updatedCache = JSON.parse(global.localStorage.getItem(`lexocr:${uid}:gemini_model_cache`));
+  assert.ok(updatedCache.timestamp > Date.now() - 1000, "Cache timestamp should be updated to now");
+  console.log('[PASS] Stale cache triggers re-check and updates on success.');
+
+  // 2. If stale and API check fails, fall back to old cache
+  store.clear();
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_cache`, JSON.stringify(staleCacheData));
+  
+  staleCallCount = 0;
+  fetchResponses = {
+    'key_stale': () => {
+      staleCallCount++;
+      throw new Error("API_FAIL");
+    }
+  };
+
+  const fallbackModel = await autoResolveModel(uid, 'key_stale', false);
+  assert.strictEqual(fallbackModel, 'gemini-2.5-flash', "Should fall back to resolved model from stale cache");
+  assert.strictEqual(staleCallCount, 1, "Should call listAvailableGeminiModels to re-check");
+  console.log('[PASS] Stale cache falls back to old cache resolvedModel when re-check fails.');
+
+  // Test M: getActiveModel restricts to availableModels of API key
+  console.log('Test M: getActiveModel restricts to availableModels of API key');
+  store.clear();
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_mode`, 'manual');
+  global.localStorage.setItem(`lexocr:${uid}:ocr_model`, 'gemini-3.5-flash'); // Selected model
+  
+  // key_active has only gemini-1.5-flash
+  const cacheData = {
+    policyVersion: 2,
+    keyHash: hashKey('key_active'),
+    resolvedModel: 'gemini-1.5-flash',
+    availableModels: ['gemini-1.5-flash'],
+    timestamp: Date.now()
+  };
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_cache`, JSON.stringify(cacheData));
+
+  // getActiveModel should not return gemini-3.5-flash because it is not in availableModels.
+  // Instead, it must return gemini-1.5-flash.
+  const activeModelRestricted = getActiveModel(uid, 'key_active');
+  assert.strictEqual(activeModelRestricted, 'gemini-1.5-flash', "Should restrict and choose from availableModels");
+  console.log('[PASS] getActiveModel respects availableModels and avoids unavailable models.');
 
   console.log('\nAll Gemini Model Resolver tests passed successfully!');
 }

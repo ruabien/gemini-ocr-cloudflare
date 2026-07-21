@@ -138,3 +138,5 @@ export async function runTests() {
 
   console.log(`=== KẾT QUẢ: ${passed} bài kiểm tra đạt, ${failed} bài kiểm tra thất bại ===`);
 }
+
+runTests();
