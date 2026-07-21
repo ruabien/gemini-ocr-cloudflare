@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getUserStorageItem, setUserStorageItem } from "./userStorage";
+import { getUserStorageItem, setUserStorageItem, removeUserStorageItem } from "./userStorage";
 
 // Cache time: 24 hours
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -105,13 +105,38 @@ export const resolveBestGeminiModel = (models: ModelConfig[]): string | null => 
 };
 
 // Safe way to compute a string hash for cache invalidation
-const hashKey = (key: string) => {
+export const hashKey = (key: string) => {
   let hash = 0;
   for (let i = 0; i < key.length; i++) {
     hash = ((hash << 5) - hash) + key.charCodeAt(i);
     hash |= 0;
   }
   return hash.toString();
+};
+
+export const resetModelResolverState = (uid: string | null | undefined) => {
+  removeUserStorageItem(uid, 'gemini_resolved_model');
+  removeUserStorageItem(uid, 'gemini_model_cache');
+  removeUserStorageItem(uid, 'ocr_model');
+  setUserStorageItem(uid, 'gemini_model_mode', 'auto');
+
+  // Clear any gemini_key_metadata_* keys
+  const userSegment = uid || "guest";
+  const prefix = `lexocr:${userSegment}:gemini_key_metadata_`;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      localStorage.removeItem(key);
+    }
+  } catch (e) {
+    // Fail-safe for environments without full localStorage access
+  }
 };
 
 export const autoResolveModel = async (uid: string | null | undefined, apiKey: string, force: boolean = false): Promise<string> => {
@@ -128,13 +153,14 @@ export const autoResolveModel = async (uid: string | null | undefined, apiKey: s
     if (cachedObj) {
       try {
         const cache = JSON.parse(cachedObj);
-        if (cache.policyVersion === POLICY_VERSION && cache.keyHash === keyHash) {
-          if (cache.timestamp > Date.now() - CACHE_TTL_MS) {
-            if (cache.resolvedModel) {
-              return cache.resolvedModel;
-            }
-          } else {
-            // Đánh dấu stale
+        if (cache.policyVersion === POLICY_VERSION) {
+          const isSameKey = cache.keyHash === keyHash;
+          const isFresh = cache.timestamp > Date.now() - CACHE_TTL_MS;
+          if (isFresh && isSameKey && cache.resolvedModel) {
+            // Fresh cache for the same API key – use it directly
+            return cache.resolvedModel;
+          } else if (!isFresh) {
+            // Stale cache (regardless of key hash) – allow fallback if API check fails
             staleCache = cache;
           }
         }

@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { filterOcrCapableModels, resolveBestGeminiModel, autoResolveModel, getActiveModel, migrateOldStorage, validateGeminiModel, checkAndSaveKeyMetadata } from './geminiModelResolver.ts';
+import { filterOcrCapableModels, resolveBestGeminiModel, autoResolveModel, getActiveModel, migrateOldStorage, validateGeminiModel, checkAndSaveKeyMetadata, resetModelResolverState, hashKey } from './geminiModelResolver.ts';
 
 // Mock localStorage for Node environment
 const store = new Map();
@@ -255,25 +255,73 @@ async function runTests() {
   global.localStorage.setItem(`lexocr:${uid}:ocr_model`, 'gemini-3.5-flash'); // Selected model
   
   // key_active has only gemini-1.5-flash
+  const keyActiveHash = hashKey('key_active');
   const cacheData = {
     policyVersion: 2,
-    keyHash: hashKey('key_active'),
+    keyHash: keyActiveHash,
     resolvedModel: 'gemini-1.5-flash',
     availableModels: ['gemini-1.5-flash'],
     timestamp: Date.now()
   };
   global.localStorage.setItem(`lexocr:${uid}:gemini_model_cache`, JSON.stringify(cacheData));
+  
+  // Save key metadata as well
+  const keyMetadata = {
+    status: 'success',
+    availableModels: [{ name: 'gemini-1.5-flash', supportsGenerateContent: true }],
+    errorType: null,
+    timestamp: Date.now()
+  };
+  global.localStorage.setItem(`lexocr:${uid}:gemini_key_metadata_${keyActiveHash}`, JSON.stringify(keyMetadata));
 
   // getActiveModel should not return gemini-3.5-flash because it is not in availableModels.
-  // Instead, it must return gemini-1.5-flash.
-  const activeModelRestricted = getActiveModel(uid, 'key_active');
-  assert.strictEqual(activeModelRestricted, 'gemini-1.5-flash', "Should restrict and choose from availableModels");
-  console.log('[PASS] getActiveModel respects availableModels and avoids unavailable models.');
+  // Instead, it must throw an object indicating MANUAL_MODEL_UNSUPPORTED
+  let caughtRestrictedError = null;
+  try {
+    getActiveModel(uid, 'key_active');
+  } catch (err) {
+    caughtRestrictedError = err;
+  }
+  
+  assert.notEqual(caughtRestrictedError, null, "Should throw an error object");
+  assert.deepEqual(caughtRestrictedError, {
+    ok: false,
+    errorType: 'MANUAL_MODEL_UNSUPPORTED',
+    selectedModel: 'gemini-3.5-flash',
+    availableModels: ['gemini-1.5-flash']
+  }, "Should throw error object for unsupported manual model");
+  console.log('[PASS] getActiveModel detects unsupported manual models.');
+
+  // Test N: resetModelResolverState clears storage
+  console.log('Test N: resetModelResolverState clears storage');
+  store.clear();
+  global.localStorage.setItem(`lexocr:${uid}:gemini_resolved_model`, 'gemini-2.5-flash');
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_cache`, JSON.stringify({
+    policyVersion: 2,
+    keyHash: 'hash123',
+    resolvedModel: 'gemini-2.5-flash',
+    availableModels: ['gemini-2.5-flash'],
+    timestamp: Date.now()
+  }));
+  global.localStorage.setItem(`lexocr:${uid}:ocr_model`, 'gemini-2.5-flash');
+  global.localStorage.setItem(`lexocr:${uid}:gemini_model_mode`, 'manual');
+
+  // Invoke reset
+  resetModelResolverState(uid);
+
+  // Verify cleared items
+  assert.strictEqual(global.localStorage.getItem(`lexocr:${uid}:gemini_resolved_model`), null);
+  assert.strictEqual(global.localStorage.getItem(`lexocr:${uid}:gemini_model_cache`), null);
+  assert.strictEqual(global.localStorage.getItem(`lexocr:${uid}:ocr_model`), null);
+  // Mode should be reset to auto
+  assert.strictEqual(global.localStorage.getItem(`lexocr:${uid}:gemini_model_mode`), 'auto');
+
+  console.log('[PASS] resetModelResolverState correctly clears and resets storage.');
 
   console.log('\nAll Gemini Model Resolver tests passed successfully!');
 }
 
 runTests().catch((e) => {
-  console.error('Test failed:', e);
+  console.error('Test failed. Full error object:', e);
   process.exit(1);
 });

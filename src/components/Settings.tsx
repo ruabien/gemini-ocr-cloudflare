@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserStorageItem, setUserStorageItem, removeUserStorageItem } from "../utils/userStorage";
-import { autoResolveModel, MODEL_MODES, validateGeminiModel, migrateOldStorage, checkAndSaveKeyMetadata } from "../utils/geminiModelResolver";
+import { autoResolveModel, MODEL_MODES, validateGeminiModel, migrateOldStorage, checkAndSaveKeyMetadata, resetModelResolverState } from "../utils/geminiModelResolver";
 
 interface SettingsProps {
   userGeminiKey: string;
@@ -243,6 +243,15 @@ export default function SettingsComponent({
     setKeysList(updatedKeys);
     setUserStorageItem(user?.uid, 'gemini_keys', JSON.stringify(updatedKeys));
     setUserGeminiKey(updatedKeys[0] || '');
+
+    // If all keys removed, reset resolver state and UI indicators
+    if (updatedKeys.length === 0) {
+      // Clear resolver cache, selected model, and force auto mode
+      resetModelResolverState(user?.uid);
+      setResolvedModelDisplay('');
+      setModelStatusMsg(null);
+      setGeminiModelMode(MODEL_MODES.AUTO);
+    }
   };
 
   return (
@@ -408,30 +417,39 @@ export default function SettingsComponent({
                     ? 'bg-slate-50 border-slate-200'
                     : 'bg-blue-50 border-blue-200'
                 }`}>
-                  {geminiModelMode === MODEL_MODES.AUTO ? (
-                    resolvedModelDisplay ? (
-                      <>
-                        <div className="text-[12px] font-bold text-emerald-700 flex items-center mb-1">
-                          <span className="mr-1.5">🟢</span> Model đang sử dụng
-                        </div>
-                        <div className="text-[14px] font-black text-emerald-800 mb-1">
-                          {resolvedModelDisplay.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                        </div>
-                        <div className="text-[10px] text-emerald-600 leading-snug">
-                          Model này được LexOCR tự động lựa chọn dựa trên API Key của bạn.
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-[12px] font-bold text-blue-700 mb-1">
-                          Model sẽ tự động được xác định khi bạn sử dụng API Key lần đầu.
-                        </div>
-                        <div className="text-[10px] text-blue-600 leading-snug">
-                          Sau khi xác định, LexOCR sẽ ghi nhớ model phù hợp cho API Key này và tự động sử dụng trong các lần OCR tiếp theo.
-                        </div>
-                      </>
-                    )
-                  ) : geminiModelMode === MODEL_MODES.MANUAL && geminiModel ? (
+              {keysList.length === 0 ? (
+                <>
+                  <div className="text-[12px] font-bold text-slate-700 mb-1">
+                    Chưa có API Key
+                  </div>
+                  <div className="text-[10px] text-slate-500 leading-snug">
+                    Vui lòng cấu hình API Key để hệ thống có thể xác định model.
+                  </div>
+                </>
+              ) : geminiModelMode === MODEL_MODES.AUTO ? (
+                resolvedModelDisplay ? (
+                  <>
+                    <div className="text-[12px] font-bold text-emerald-700 flex items-center mb-1">
+                      <span className="mr-1.5">🟢</span> Model đang sử dụng
+                    </div>
+                    <div className="text-[14px] font-black text-emerald-800 mb-1">
+                      {resolvedModelDisplay.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </div>
+                    <div className="text-[10px] text-emerald-600 leading-snug">
+                      Model này được LexOCR tự động lựa chọn dựa trên API Key của bạn.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-[12px] font-bold text-blue-700 mb-1">
+                      Model sẽ tự động được xác định khi bạn sử dụng API Key lần đầu.
+                    </div>
+                    <div className="text-[10px] text-blue-600 leading-snug">
+                      Sau khi xác định, LexOCR sẽ ghi nhớ model phù hợp cho API Key này và tự động sử dụng trong các lần OCR tiếp theo.
+                    </div>
+                  </>
+                )
+              ) : geminiModelMode === MODEL_MODES.MANUAL && geminiModel ? (
                     <>
                       <div className="text-[12px] font-bold text-blue-700 mb-1">
                         Bạn đang sử dụng model do mình lựa chọn.
