@@ -1988,54 +1988,51 @@ const keyToProjectMap = new Map<string, string>();
               </div>
 
               {/* OVERALL DOCUMENT STATISTICS SUMMARY */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 mb-5 text-sm font-semibold text-slate-700">
-                <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                  <div className="flex items-center">
-                    <span className="text-slate-800">📄 {totalPages} trang</span>
-                  </div>
-                  <div className="h-4 w-px bg-slate-300 hidden sm:block" />
-                  <div className="flex items-center">
-                    <span className="text-slate-800">💾 {formatSize(totalOriginalBytes)}</span>
-                  </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 text-xs sm:text-sm font-semibold text-slate-700">
+                <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
+                  <span className="text-slate-800">📄 {totalPages} trang</span>
+                  <span className="text-slate-300 hidden sm:inline">|</span>
+                  <span className="text-slate-800">💾 {formatSize(totalOriginalBytes)}</span>
                   {useImageOptimization && hasOptimizedPages && (
                     <>
-                      <div className="h-4 w-px bg-slate-300 hidden sm:block" />
-                      <div className="flex items-center text-emerald-600">
-                        <span>📉 Tiết kiệm: {Math.max(0, 100 - Math.round((totalOptimizedBytes / totalOriginalBytes) * 100))}%</span>
-                      </div>
+                      <span className="text-slate-300 hidden sm:inline">|</span>
+                      <span className="text-emerald-600">📉 Tiết kiệm: {Math.max(0, 100 - Math.round((totalOptimizedBytes / totalOriginalBytes) * 100))}%</span>
                     </>
                   )}
                 </div>
                 {isBatchProcessing && (
-                  <div className="flex items-center space-x-1.5 text-blue-600 font-bold bg-blue-50/50 px-2.5 py-1 rounded border border-blue-150 text-xs">
+                  <div className="flex items-center space-x-1.5 text-blue-600 font-bold bg-blue-50/50 px-2.5 py-1 rounded border border-blue-150 text-xs self-start sm:self-auto">
                     <Activity className="h-3.5 w-3.5 animate-spin" />
                     <span>⚡ Ước tính OCR: ~{Math.ceil((totalPages - allPageItems.filter(p => p.state.status === 'success' || p.state.status === 'error').length) * 3)} giây</span>
                   </div>
                 )}
               </div>
 
-              <div 
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-                  gap: "16px",
-                  alignItems: "start"
-                }}
-              >
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
                 {allPageItems.map(({ fileId, fileName, totalPages, pageNum, state, slicedPage, q }) => {
                   const { status, text, error } = state;
-                  const bgClass = status === 'idle' ? 'bg-slate-50/50 border-slate-200' :
-                                  status === 'processing' ? 'bg-blue-50/40 border-blue-200 animate-pulse' :
-                                  status === 'success' ? 'bg-emerald-50/30 border-emerald-200' :
-                                  status === 'error' ? 'bg-rose-50/30 border-rose-200' : 'bg-slate-50/50 border-slate-200';
+                  const bgClass = status === 'processing' ? 'bg-red-50/30 border-red-200' :
+                                  status === 'error' ? 'bg-rose-50/30 border-rose-200' :
+                                  'bg-white border-slate-200';
+
+                  const badgeClass = status === 'idle' ? 'bg-slate-100 text-slate-600 border-slate-200' :
+                                     status === 'processing' ? 'bg-red-100 text-red-700 border-red-200' :
+                                     status === 'success' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                                     'bg-rose-100 text-rose-700 border-rose-200';
+
+                  const badgeText = status === 'idle' ? 'Chờ xử lý' :
+                                    status === 'processing' ? 'Đang xử lý' :
+                                    status === 'success' ? 'Hoàn thành' :
+                                    'Lỗi';
 
                   const pageImgUrl = slicedPage?.dataUrl;
                   const pageSizeInfo = q.pageSizes?.[pageNum];
+                  const fileSizeText = pageSizeInfo ? formatSize(pageSizeInfo.originalSize) : (slicedPage?.size || null);
 
                   return (
                     <div 
                       key={`${fileId}-page-${pageNum}`} 
-                      className={`relative bg-white border rounded-lg overflow-hidden flex flex-col group hover:shadow-md transition-all duration-200 ${bgClass}`}
+                      className={`relative border rounded-lg overflow-hidden flex flex-col group hover:shadow-md transition-all duration-200 h-full ${bgClass}`}
                     >
                       {/* Header Label: top-left black ribbon badge showing page numbers context */}
                       <div className="absolute top-0 left-0 z-10 bg-slate-950 text-white text-[10px] font-bold px-2 py-0.5 rounded-br shadow-sm">
@@ -2047,7 +2044,7 @@ const keyToProjectMap = new Map<string, string>();
                         type="button"
                         onClick={() => deleteQueuedFile(fileId, fileName)}
                         disabled={isBatchProcessing}
-                        className="absolute top-1 right-1 z-20 p-1.5 rounded-md bg-white/70 hover:bg-red-100 hover:text-red-650 text-slate-600 transition-colors shadow-sm backdrop-blur-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="absolute top-1 right-1 z-20 p-1 rounded-md bg-white/75 hover:bg-red-50 hover:text-red-650 text-slate-500 transition-colors shadow-sm backdrop-blur-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                         title={isBatchProcessing ? "Không thể xóa khi đang OCR" : "Xóa khỏi danh sách"}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -2063,111 +2060,30 @@ const keyToProjectMap = new Map<string, string>();
                           />
                         ) : (
                           <div className="flex flex-col items-center justify-center text-slate-400 space-y-1.5 p-4">
-                            <Layers className="h-6 w-6 stroke-1 animate-pulse" />
+                            <Layers className="h-5 w-5 stroke-1 animate-pulse" />
                             <span className="text-[9px] text-center text-slate-500">Đang chuẩn bị trang...</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Progress & Info Container */}
-                      <div className="p-2.5 flex-grow flex flex-col justify-between">
+                      {/* Info Container with reduced padding */}
+                      <div className="p-2 flex-grow flex flex-col justify-between">
                         {/* File Name inside the Card */}
-                        <div className="mb-2">
+                        <div className="min-w-0">
                           <p className="text-[11px] font-bold text-slate-700 truncate" title={fileName}>
                             {fileName}
                           </p>
                         </div>
 
-                        {/* Progress Timeline & Status */}
-                        <div className="w-full mb-2">
-                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200/60">
-                            <div 
-                              className={`h-full transition-all duration-300 ${
-                                status === 'idle' ? 'bg-slate-300 w-0' :
-                                status === 'processing' ? 'bg-blue-500' :
-                                status === 'success' ? 'bg-emerald-500 w-full' :
-                                'bg-rose-500 w-0'
-                              }`} 
-                              style={{ 
-                                width: status === 'success' ? '100%' :
-                                       status === 'processing' ? `${progress}%` :
-                                       '0%' 
-                              }} 
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between mt-1.5">
-                            {/* Colorful badges with status */}
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                              status === 'idle' ? 'bg-slate-100 text-slate-650 border border-slate-200' :
-                              status === 'processing' ? 'bg-blue-100 text-blue-700 border border-blue-200 animate-pulse' :
-                              status === 'success' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                              'bg-rose-100 text-rose-700 border border-rose-200'
-                            }`}>
-                              {status === 'idle' && '🟡 ĐANG CHỜ'}
-                              {status === 'processing' && '🔵 ĐANG OCR'}
-                              {status === 'success' && '🟢 HOÀN THÀNH'}
-                              {status === 'error' && '🔴 LỖI'}
+                        {/* Status badge & File Size */}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${badgeClass}`}>
+                            {badgeText}
+                          </span>
+                          {fileSizeText && (
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {fileSizeText}
                             </span>
-
-                            {/* Action/Status Icon */}
-                            <div className="flex items-center">
-                              {status === 'success' && (
-                                <span className="text-emerald-600 font-extrabold text-[11px]" title="Thành công">✓</span>
-                              )}
-                              {status === 'error' && (
-                                <button
-                                  type="button"
-                                  onClick={() => setPageErrorDetail({ pageNum, error: error || "Lỗi không xác định" })}
-                                  className="text-rose-600 hover:text-rose-800 font-extrabold text-[11px] focus:outline-none p-0.5 cursor-pointer transition-colors"
-                                  title="Xem chi tiết lỗi"
-                                >
-                                  X
-                                </button>
-                              )}
-                              {status === 'processing' && (
-                                <Activity className="h-3 w-3 text-blue-500 animate-spin" />
-                              )}
-                              {status === 'idle' && (
-                                <span className="h-1.5 w-1.5 bg-slate-350 rounded-full" title="Chờ trích xuất"></span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Footer Metadata Row with Compression Ratio */}
-                        <div className="flex flex-col space-y-0.5 border-t border-slate-100 pt-2 mt-1 text-[10px] text-slate-500 font-mono">
-                          {pageSizeInfo ? (
-                            <>
-                              <div className="flex justify-between">
-                                <span className="text-slate-400 font-sans">Gốc:</span>
-                                <span className="font-semibold text-slate-700">{formatSize(pageSizeInfo.originalSize)}</span>
-                              </div>
-                              {pageSizeInfo.wasOptimized ? (
-                                <>
-                                  <div className="flex justify-between">
-                                    <span className="text-slate-400 font-sans">Sau nén:</span>
-                                    <span className="font-semibold text-emerald-650">{formatSize(pageSizeInfo.optimizedSize)}</span>
-                                  </div>
-                                  <div className="flex justify-between text-emerald-700 font-bold">
-                                    <span className="font-sans">Tiết kiệm:</span>
-                                    <span>
-                                      {Math.max(0, 100 - Math.round((pageSizeInfo.optimizedSize / pageSizeInfo.originalSize) * 100))}%
-                                    </span>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="flex justify-between">
-                                  <span className="text-slate-400 font-sans">Sau nén:</span>
-                                  <span className="font-semibold text-slate-500">Không nén</span>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="flex justify-between">
-                              <span className="text-slate-400 font-sans">Gốc:</span>
-                              <span className="font-semibold text-slate-700">{slicedPage?.size || "—"}</span>
-                            </div>
                           )}
                         </div>
                       </div>
