@@ -1709,7 +1709,7 @@ const keyToProjectMap = new Map<string, string>();
 
               {(isBatchProcessing || isSlicing) && (
                 <div className="relative z-10 mb-4 bg-slate-800 border border-slate-700 rounded-lg p-2 text-center">
-                  <p className="text-xs text-amber-400 font-medium">Cấu hình bị khóa trong khi OCR đang chạy.</p>
+                  <p className="text-xs text-amber-400 font-medium">🔒 Đang khóa trong khi xử lý</p>
                 </div>
               )}
 
@@ -1866,7 +1866,7 @@ const keyToProjectMap = new Map<string, string>();
         </div>
 
         {/* KHU VỰC TRẠNG THÁI OCR VÀ BẮT ĐẦU */}
-        <div ref={progressCardRef} className={`mt-6 flex flex-col items-center justify-center w-full ${(isBatchProcessing || isSlicing) ? 'sticky top-4 z-30' : ''}`}>
+        <div ref={progressCardRef} className={`mt-4 flex flex-col items-center justify-center w-full ${(isBatchProcessing || isSlicing) ? 'sticky top-4 z-30' : ''}`}>
           {(() => {
             if (isBatchProcessing || isSlicing) {
               const totalPagesAll = queuedFiles.reduce((acc, f) => acc + (f.totalPages || 1), 0);
@@ -1925,9 +1925,9 @@ const keyToProjectMap = new Map<string, string>();
                     type="button"
                     disabled={isCancelling}
                     onClick={handleCancelOcr}
-                    className="shrink-0 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg hover:bg-red-50 hover:border-red-500 hover:text-red-650 transition-all flex items-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="shrink-0 px-6 h-[42px] bg-white border border-slate-200 text-slate-700 text-[15px] font-semibold rounded-lg hover:bg-red-50 hover:border-red-500 hover:text-red-650 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <XCircle className="h-4 w-4" />
+                    <XCircle className="h-5 w-5" />
                     <span>{isCancelling ? "Đang hủy..." : "Hủy"}</span>
                   </button>
                 </div>
@@ -2085,7 +2085,7 @@ const keyToProjectMap = new Map<string, string>();
                 )}
               </div>
 
-              <div ref={pageGridRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4">
+              <div ref={pageGridRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
                 {allPageItems.map(({ fileId, fileName, totalPages, pageNum, state, slicedPage, q }) => {
                   const { status, text, error } = state;
                   const bgClass = status === 'processing' ? 'bg-red-50/30 border-red-200' :
