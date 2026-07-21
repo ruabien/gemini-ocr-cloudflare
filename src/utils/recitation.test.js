@@ -63,43 +63,129 @@ global.fetch = async (url, options) => {
 };
 
 // Also mock OcrScanner's fallback handler logic
-async function simulateScannerPageProcessing(pages) {
+async function simulateScannerPageProcessing(pages, keys = ['fake-key']) {
   let geminiCalls = 0;
   let ocrSpaceCalls = 0;
   let results = [];
   let error = null;
 
-  for (let i = 0; i < pages.length; i++) {
-    const originalFetchCount = fetchCallCount;
+  let activeKeyIndex = 0;
+
+  const runOcrSpaceFallback = async (pageIndex) => {
+    const ocrFetchStart = fetchCallCount;
     try {
-      const result = await processOCR(new File([''], 'test.jpg'), 'fake-key', 'gemini-1.5-pro');
-      results.push(result);
-      geminiCalls += (fetchCallCount - originalFetchCount);
-    } catch (e) {
-      geminiCalls += (fetchCallCount - originalFetchCount);
-      if (e.code === 'RECITATION_BLOCKED_AFTER_RETRY' || e.code === 'CONTENT_BLOCKED') {
-        const ocrFetchStart = fetchCallCount;
-        try {
-          if (pages[i].ocrSpaceConfigured === false) {
-             throw new Error("Vui lòng cấu hình API Key OCR.space trong phần Cài đặt hệ thống (bánh răng) để sử dụng tính năng dự phòng.");
+      if (pages[pageIndex].ocrSpaceConfigured === false) {
+        throw new Error("Vui lòng cấu hình API Key OCR.space trong phần Cài đặt hệ thống (bánh răng) để sử dụng tính năng dự phòng.");
+      }
+      const ocrResp = await fetch('/api/ocr-space');
+      if (!ocrResp.ok) {
+        const errData = await ocrResp.json();
+        const err = new Error(errData.message || 'OCR fallback error');
+        err.code = errData.errorCode || errData.error || 'OCR_ERROR';
+        throw err;
+      }
+      const ocrData = await ocrResp.json();
+      const fallbackText = ocrData.text;
+      results.push(fallbackText);
+    } catch (fallbackErr) {
+      error = fallbackErr;
+    }
+    ocrSpaceCalls += (fetchCallCount - ocrFetchStart);
+  };
+
+  for (let i = 0; i < pages.length; i++) {
+    let pageProcessed = false;
+    while (!pageProcessed) {
+      const currentKey = keys[activeKeyIndex];
+      if (!currentKey) {
+        // Fallback to OCR.Space
+        await runOcrSpaceFallback(i);
+        pageProcessed = true;
+        break;
+      }
+
+      const originalFetchCount = fetchCallCount;
+      try {
+        // First try
+        const result = await processOCR(new File([''], 'test.jpg'), currentKey, 'gemini-1.5-pro');
+        results.push(result);
+        geminiCalls += (fetchCallCount - originalFetchCount);
+        pageProcessed = true;
+      } catch (e) {
+        geminiCalls += (fetchCallCount - originalFetchCount);
+        // If RECITATION_BLOCKED (or RECITATION_BLOCKED_AFTER_RETRY in mock)
+        if (e.code === 'RECITATION_BLOCKED_AFTER_RETRY' || e.code === 'CONTENT_BLOCKED') {
+          // In the real code, makeRequest threw RECITATION_BLOCKED, then it tries strict retry with same key.
+          // Wait, mock processOCR already does the strict retry!
+          // But if the strict retry fails:
+          // Under our new requirements, if the error is RATE_LIMITED / 429, we do NOT enter OCR.Space.
+          // Instead, we switch keys.
+          // Let's see what mock processOCR throws when strict retry fails.
+          // Actually, mock processOCR in recitation.test.js responds to fetch behavior.
+          // Let's look at the fetch mock behavior we configure in tests.
+          // For RECITATION, we configure the fetch behaviors to match our test expectations.
+          
+          // Wait, let's see if the error thrown by processOCR is a key-switchable one, or RECITATION persistence.
+          const isKeySwitchable = e.code === 'QUOTA_EXCEEDED' || e.status === 429 || e.code === 'INVALID_KEY' || e.status === 401 || e.code === 'MODEL_NOT_AVAILABLE';
+          if (isKeySwitchable) {
+            activeKeyIndex++;
+            continue; // Retry processing the same page with next key
           }
-          // Directly call OCR.space fallback via fetch mock
-          const ocrResp = await fetch('/api/ocr-space');
-          if (!ocrResp.ok) {
-            const errData = await ocrResp.json();
-            const err = new Error(errData.message || 'OCR fallback error');
-            err.code = errData.errorCode || errData.error || 'OCR_ERROR';
-            throw err;
+
+          // If RECITATION still persists after all retries on this key, or safety block:
+          // Wait, does it immediately call OCR.space? Only if it's the last key!
+          // Under our requirements: "Do NOT call OCR.Space immediately after a strict retry fails with a key-switchable error. Increment activeKeyIndex, continue Gemini processing, Do NOT enter OCR.Space."
+          // But if RECITATION persists (RECITATION_BLOCKED_AFTER_RETRY or CONTENT_BLOCKED), does it switch key?
+          // Requirement: "OCR.Space should only be reached when: every Gemini key has already been exhausted OR RECITATION/content blocking still persists after all Gemini keys have been tried."
+          // Wait! Does a RECITATION block count as key-switchable? No, RECITATION is content-based, so trying a new key won't change the content, but we try all Gemini keys first just in case, OR fallback to OCR.Space immediately?
+          // Let's read requirement 3:
+          // "OCR.Space should only be reached when: every Gemini key has already been exhausted OR RECITATION/content blocking still persists after all Gemini keys have been tried."
+          // This means: if it fails with RECITATION, it can fallback to OCR.Space immediately OR only after all keys are tried.
+          // Actually, let's look at OcrScanner.tsx implementation:
+          // If e.type === "RECITATION_BLOCKED", it tries to strict retry with the same key. If that retry fails with RECITATION_BLOCKED, it falls back to OCR.Space immediately.
+          // If it fails with another error, or if we have key exhaustion, it goes to OCR.space.
+          // Let's check Scenario 1 from task:
+          // Key1 -> RECITATION -> strict retry -> 429 -> Key2 -> success
+          // Expected: OCR continues on page N. OCR.Space is NOT called.
+          // Scenario 2:
+          // All Gemini keys exhausted after RECITATION retries
+          // Expected: OCR.Space is invoked exactly once.
+          
+          // In Scenario 1, the strict retry with Key 1 fails with 429.
+          // Since 429 is a key-switchable error, it should increment activeKeyIndex, and try processing Page N with Key 2.
+          // Key 2 succeeds, so OCR continues on page N, and OCR.Space is NOT called.
+          
+          // In Scenario 2, if all Gemini keys fail (e.g. strict retry fails with 429 on Key 1, then Key 2 also fails), OCR.Space is called exactly once.
+          
+          // Let's check how our catch block handles this:
+          // If e.code === 'RECITATION_BLOCKED_AFTER_RETRY' (which processOCR throws when strict retry fails with recitation block):
+          // In the real code:
+          // try {
+          //   const fallbackText = await runOcrSpaceFallback();
+          //   return fallbackText;
+          // }
+          // This falls back immediately for RECITATION_BLOCKED_AFTER_RETRY.
+          // But wait, if processOCR throws a key-switchable error (like 429), it goes to the catch block where we increment key index.
+          // Let's trace simulateScannerPageProcessing.
+          
+          if (e.code === 'RECITATION_BLOCKED_AFTER_RETRY' || e.code === 'CONTENT_BLOCKED') {
+            await runOcrSpaceFallback(i);
+            pageProcessed = true;
+          } else {
+            error = e;
+            pageProcessed = true;
           }
-          const ocrData = await ocrResp.json();
-          const fallbackText = ocrData.text;
-          results.push(fallbackText);
-        } catch (fallbackErr) {
-          error = fallbackErr;
+        } else {
+          // Other errors (like 429, key permission, etc.)
+          const isKeySwitchable = e.code === 'QUOTA_EXCEEDED' || e.status === 429 || e.code === 'INVALID_KEY' || e.status === 401 || e.code === 'MODEL_NOT_AVAILABLE';
+          if (isKeySwitchable) {
+            activeKeyIndex++;
+            // continue loop to try next key for this page
+          } else {
+            error = e;
+            pageProcessed = true;
+          }
         }
-        ocrSpaceCalls += (fetchCallCount - ocrFetchStart);
-      } else {
-        error = e;
       }
     }
   }
@@ -257,14 +343,65 @@ async function runTests() {
       }
     );
     
-    const { geminiCalls, ocrSpaceCalls, error } = await simulateScannerPageProcessing([{}]);
+    const { geminiCalls, ocrSpaceCalls, results, error } = await simulateScannerPageProcessing([{}]);
+    // Expect Gemini calls (including internal retry) and then OCR.Space fallback
     assert.equal(geminiCalls, 2);
-    assert.equal(ocrSpaceCalls, 0);
-    assert.equal(error.code, "QUOTA_EXCEEDED");
-    console.log("✅ R7. Gemini RATE_LIMIT -> does not use RECITATION retry, does not call OCR.space.");
+    assert.equal(ocrSpaceCalls, 1);
+    assert.ok(results[0].includes("OCR Space"));
+    assert.equal(error, null);
+    console.log("✅ R7. Gemini RATE_LIMIT -> falls back to OCR.Space after keys exhausted.");
     passed++;
   } catch (e) {
     console.error("❌ R7 Failed:", e.message);
+    failed++;
+  }
+
+  // Scenario 8: Key1 -> RECITATION -> strict retry -> 429 -> Key2 -> success
+  try {
+    reset();
+    fetchMockBehavior.push(
+      // Key 1
+      { status: 200, json: { candidates: [{ finishReason: "RECITATION" }] } }, // Key 1: RECITATION on initial try
+      { status: 429, json: { error: { message: "Quota exceeded" } } }, // Key 1: 429 on strict retry
+      // Key 2
+      { status: 200, json: { candidates: [{ content: { parts: [{ text: "Key 2 Success Text" }] } }] } } // Key 2: success
+    );
+
+    const { geminiCalls, ocrSpaceCalls, results } = await simulateScannerPageProcessing([{}], ['Key1', 'Key2']);
+    assert.equal(geminiCalls, 3); // 2 on Key 1 (initial + strict retry), 1 on Key 2
+    assert.equal(ocrSpaceCalls, 0); // No OCR.Space calls!
+    assert.equal(results[0], "Key 2 Success Text");
+    console.log("✅ Scenario 8. Key1 RECITATION -> strict retry 429 -> Key2 Success -> OCR.space is NOT called.");
+    passed++;
+  } catch (e) {
+    console.error("❌ Scenario 8 Failed:", e.message);
+    failed++;
+  }
+
+  // Scenario 9: All Gemini keys exhausted after RECITATION retries
+  try {
+    reset();
+    fetchMockBehavior.push(
+      // Key 1
+      { status: 200, json: { candidates: [{ finishReason: "RECITATION" }] } }, // Key 1: RECITATION on initial try
+      { status: 429, json: { error: { message: "Quota exceeded" } } }, // Key 1: 429 on strict retry (first attempt)
+      { status: 429, json: { error: { message: "Quota exceeded" } } }, // Key 1: 429 on strict retry (second attempt after internal retry)
+      // Key 2
+      { status: 200, json: { candidates: [{ finishReason: "RECITATION" }] } }, // Key 2: RECITATION on initial try
+      { status: 429, json: { error: { message: "Quota exceeded" } } }, // Key 2: 429 on strict retry (first)
+      { status: 429, json: { error: { message: "Quota exceeded" } } }, // Key 2: 429 on strict retry (second)
+      // OCR Space fallback
+      { status: 200, text: "OCR Space Fallback Text" }
+    );
+    
+    const { geminiCalls, ocrSpaceCalls, results } = await simulateScannerPageProcessing([{}], ['Key1', 'Key2']);
+    assert.equal(geminiCalls, 6); // 3 on Key 1 (recitation + two 429 attempts), 3 on Key 2
+    assert.equal(ocrSpaceCalls, 1); // OCR.Space called exactly once
+    assert.equal(results[0], "OCR Space Fallback Text");
+    console.log("✅ Scenario 9. All Gemini keys exhausted -> OCR.space is invoked exactly once.");
+    passed++;
+  } catch (e) {
+    console.error("❌ Scenario 9 Failed:", e.message);
     failed++;
   }
 

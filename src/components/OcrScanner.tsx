@@ -1121,7 +1121,14 @@ const keyToProjectMap = new Map<string, string>();
             }
           }
           if (!currentKey) {
-            throw new Error("API key đã chạm hạn mức Gemini của project. Hãy chờ hạn mức được làm mới hoặc bật thanh toán trong Google AI Studio.");
+            console.log("[FALLBACK]\nCalled: true\nReason: ALL_KEYS_EXHAUSTED");
+            console.log(`[OCR] Toàn bộ Gemini API Key đều không khả dụng. Chuyển sang OCR dự phòng...`);
+            try {
+              const fallbackText = await runOcrSpaceFallback();
+              return fallbackText;
+            } catch (fallbackErr: any) {
+              throw new Error("Tất cả API key đã chạm hạn mức Gemini. Công cụ OCR dự phòng cũng không khả dụng.");
+            }
           }
 
           const modelMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
@@ -1190,23 +1197,64 @@ const keyToProjectMap = new Map<string, string>();
                 console.log("[RECITATION]\nRetry result: success");
                 console.log("[FALLBACK]\nCalled: false\nReason: none");
                 return retryText;
-              } catch (retryErr: any) {
-                if (retryErr?.type === "RECITATION_BLOCKED") {
-                  console.log("[RECITATION]\nRetry result: blocked");
-                  console.log("[FALLBACK]\nCalled: true\nReason: RECITATION_BLOCKED_AFTER_RETRY");
-                  console.log(`[OCR] Gemini không thể chép nguyên văn trang này. Hệ thống đang thử công cụ OCR dự phòng...`);
-                  try {
-                    const fallbackText = await runOcrSpaceFallback();
-                    return fallbackText;
-                  } catch (fallbackErr: any) {
-                    throw { 
-                      type: "RECITATION_FALLBACK_FAILED", 
-                      message: fallbackErr.message || "Gemini không thể chép nguyên văn trang này và công cụ OCR dự phòng hiện chưa khả dụng." 
-                    };
-                  }
-                }
-                throw retryErr;
-              }
+  } catch (retryErr: any) {
+    // If retry still fails with RECITATION_BLOCKED, fallback to OCR.Space
+    if (retryErr?.type === "RECITATION_BLOCKED") {
+      console.log("[RECITATION]\nRetry result: blocked");
+      console.log("[FALLBACK]\nCalled: true\nReason: RECITATION_BLOCKED_AFTER_RETRY");
+      console.log(`[OCR] Gemini không thể chép nguyên văn trang này. Hệ thống đang thử công cụ OCR dự phòng...`);
+      try {
+        const fallbackText = await runOcrSpaceFallback();
+        return fallbackText;
+      } catch (fallbackErr: any) {
+        throw {
+          type: "RECITATION_FALLBACK_FAILED",
+          message:
+            fallbackErr.message ||
+            "Gemini không thể chép nguyên văn trang này và công cụ OCR dự phòng hiện chưa khả dụng."
+        };
+      }
+    }
+    // Handle key‑switchable errors after strict retry
+    if (retryErr?.type === "RATE_LIMITED") {
+      const match = retryErr?.message?.match(/for\s+project\s+['"]?([a-zA-Z0-9_-]+)/i);
+      if (match && match[1]) {
+        const projectId = match[1];
+        rateLimitedProjects.add(projectId);
+        keyToProjectMap.set(currentKey, projectId);
+      } else {
+        const dummyProj = `unknown_proj_${activeKeyIndex}`;
+        rateLimitedProjects.add(dummyProj);
+        keyToProjectMap.set(currentKey, dummyProj);
+      }
+      activeKeyIndex++;
+      continue;
+    }
+    if (retryErr?.type === "KEY_PERMISSION_ERROR" || retryErr?.status === 401) {
+      activeKeyIndex++;
+      continue;
+    }
+    if (retryErr?.type === "MODEL_NOT_AVAILABLE") {
+      // Re‑use existing model‑not‑available handling
+      const currentMode = getUserStorageItem(user?.uid, 'gemini_model_mode') || 'auto';
+      if (currentMode === 'auto' && !hasRetriedAuto404) {
+        hasRetriedAuto404 = true;
+        try {
+          console.log(`[OCR] Model không khả dụng, đang dò tìm model mới cho Trang ${pageNum}...`);
+          await autoResolveModel(user?.uid, currentKey, true);
+          continue;
+        } catch (resErr: any) {
+          throw new Error("Mô hình không khả dụng và không thể tự động tìm thấy mô hình thay thế.");
+        }
+      }
+      if (currentMode === 'manual') {
+        throw new Error("Mô hình này không khả dụng với Gemini API Key hiện tại. Vui lòng chọn model khác hoặc chuyển sang chế độ Tự động.");
+      }
+      throw new Error(retryErr?.message || "Mô hình không khả dụng.");
+    }
+    // Propagate other errors
+    throw retryErr;
+  }
             }
 
             if (e?.type === "CONTENT_BLOCKED" || e?.type === "SAFETY_BLOCKED" || e?.type === "PROMPT_BLOCKED") {
