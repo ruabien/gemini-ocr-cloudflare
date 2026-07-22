@@ -643,7 +643,7 @@ const keyToProjectMap = new Map<string, string>();
           reader.readAsDataURL(file);
         });
 
-        const runOcrSpaceFallback = (): Promise<string> => {
+        const runOcrSpaceFallback = (reason: string): Promise<string> => {
           return new Promise<string>((resolveFallback, rejectFallback) => {
             const logSuccess = (val: string) => {
               console.log("[FALLBACK] Result: success");
@@ -654,7 +654,7 @@ const keyToProjectMap = new Map<string, string>();
               rejectFallback(err);
             };
 
-            console.log(`[OCR] Gemini quá tải, chuyển sang OCR dự phòng - Trang ${pageNum}...`);
+            console.log(`[OCR] ${reason} - Trang ${pageNum}...`);
             
             fetch("/api/ocr")
               .then(res => {
@@ -1122,9 +1122,8 @@ const keyToProjectMap = new Map<string, string>();
           }
           if (!currentKey) {
             console.log("[FALLBACK]\nCalled: true\nReason: ALL_KEYS_EXHAUSTED");
-            console.log(`[OCR] Toàn bộ Gemini API Key đều không khả dụng. Chuyển sang OCR dự phòng...`);
             try {
-              const fallbackText = await runOcrSpaceFallback();
+              const fallbackText = await runOcrSpaceFallback("Toàn bộ Gemini API Key đều không khả dụng, đang chuyển sang OCR dự phòng");
               return fallbackText;
             } catch (fallbackErr: any) {
               throw new Error("Tất cả API key đã chạm hạn mức Gemini. Công cụ OCR dự phòng cũng không khả dụng.");
@@ -1202,9 +1201,8 @@ const keyToProjectMap = new Map<string, string>();
     if (retryErr?.type === "RECITATION_BLOCKED") {
       console.log("[RECITATION]\nRetry result: blocked");
       console.log("[FALLBACK]\nCalled: true\nReason: RECITATION_BLOCKED_AFTER_RETRY");
-      console.log(`[OCR] Gemini không thể chép nguyên văn trang này. Hệ thống đang thử công cụ OCR dự phòng...`);
       try {
-        const fallbackText = await runOcrSpaceFallback();
+        const fallbackText = await runOcrSpaceFallback("Gemini không thể chép nguyên văn trang này sau lần thử lại, đang chuyển sang OCR dự phòng");
         return fallbackText;
       } catch (fallbackErr: any) {
         throw {
@@ -1260,9 +1258,8 @@ const keyToProjectMap = new Map<string, string>();
             if (e?.type === "CONTENT_BLOCKED" || e?.type === "SAFETY_BLOCKED" || e?.type === "PROMPT_BLOCKED") {
               console.log("[OCR PATH]\nHandler: startOcrProcess\nRequest function: makeRequest");
               console.log(`[FALLBACK]\nCalled: true\nReason: ${e.type}`);
-              console.log(`[OCR] Nội dung bị chặn (${e.type}). Hệ thống đang thử công cụ OCR dự phòng...`);
               try {
-                const fallbackText = await runOcrSpaceFallback();
+                const fallbackText = await runOcrSpaceFallback(`Nội dung bị chặn (${e.type}), đang chuyển sang OCR dự phòng`);
                 return fallbackText;
               } catch (fallbackErr: any) {
                 throw {
