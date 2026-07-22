@@ -834,7 +834,9 @@ const keyToProjectMap = new Map<string, string>();
             const onAbort = () => {
               try {
                 xhr.abort();
-              } catch (e) {}
+        } catch (e) {
+          // ignore abort errors – best‑effort cleanup
+        }
               reject({ type: "ABORTED", message: "Đã hủy quá trình bóc tách." });
             };
             signal?.addEventListener('abort', onAbort);
