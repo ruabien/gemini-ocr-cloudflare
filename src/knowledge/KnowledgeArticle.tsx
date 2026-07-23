@@ -8,6 +8,7 @@ import { KnowledgeImage } from './components/KnowledgeImage';
 import ChuyenPdfScanSangWord from './content/ChuyenPdfScanSangWord';
 import HuongDanTaoGeminiApiKey from './content/HuongDanTaoGeminiApiKey';
 import OcrPdfScanSangWordMienPhi from './content/OcrPdfScanSangWordMienPhi';
+import OcrPdfScanSangWordBangAi from './content/OcrPdfScanSangWordBangAi';
 
 interface Props {
   slug: string;
@@ -86,6 +87,8 @@ export default function KnowledgeArticle({ slug }: Props) {
     ContentComponent = HuongDanTaoGeminiApiKey;
   } else if (slug === 'ocr-pdf-scan-sang-word-mien-phi') {
     ContentComponent = OcrPdfScanSangWordMienPhi;
+  } else if (slug === 'ocr-pdf-scan-sang-word-bang-ai') {
+    ContentComponent = OcrPdfScanSangWordBangAi;
   }
 
   // Find next/prev articles based on current index in the main list

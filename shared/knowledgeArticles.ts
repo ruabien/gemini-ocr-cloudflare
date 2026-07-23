@@ -67,6 +67,25 @@ export const knowledgeArticles: KnowledgeArticleMeta[] = [
     ],
     ogImage: "https://lexocr.com/knowledge/ocr-pdf-scan-sang-word-mien-phi/hero.webp",
     relatedSlugs: ["chuyen-pdf-scan-sang-word", "huong-dan-tao-gemini-api-key"]
+  },
+  {
+    slug: "ocr-pdf-scan-sang-word-bang-ai",
+    title: "OCR PDF Scan sang Word bằng AI: AI khác gì OCR truyền thống?",
+    description: "Tìm hiểu AI OCR khác gì OCR truyền thống, khi nào nên dùng để chuyển PDF scan sang Word và vì sao AI nhận dạng tài liệu tiếng Việt chính xác hơn.",
+    category: "Hướng dẫn sử dụng",
+    publishedAt: "2026-07-23T00:00:00Z",
+    readingTime: "8 phút đọc",
+    coverImage: "/images/knowledge/ocr-pdf-scan-sang-word-bang-ai/hero.webp",
+    ogImage: "https://lexocr.com/images/knowledge/ocr-pdf-scan-sang-word-bang-ai/hero.webp",
+    keywords: [
+      "OCR PDF bằng AI",
+      "AI OCR",
+      "OCR PDF Scan",
+      "OCR tiếng Việt",
+      "OCR tài liệu scan",
+      "Chuyển PDF scan sang Word"
+    ],
+    relatedSlugs: ["chuyen-pdf-scan-sang-word", "huong-dan-tao-gemini-api-key", "ocr-pdf-scan-sang-word-mien-phi"]
   }
 ];
 
