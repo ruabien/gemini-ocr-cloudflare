@@ -132,7 +132,7 @@ onClick={() => { const el = document.getElementById('security-architecture'); if
             LexOCR giúp gì cho cán bộ ngành tư pháp?
           </h2>
           <p className="mt-3 text-slate-500 text-sm sm:text-base">
-            Giải phóng cán bộ khỏi công việc thủ công, tập trung nghiên cứu hồ sơ vụ án và thực hành quyền công tố hiệu quả.
+            Giải phóng cán bộ khỏi công việc thủ công, hỗ trợ soạn thảo nhanh chóng và tập trung nghiên cứu hồ sơ vụ án hiệu quả.
           </p>
         </div>
 
@@ -190,7 +190,7 @@ onClick={() => { const el = document.getElementById('security-architecture'); if
               Từ hồ sơ giấy đến dữ liệu nghiên cứu
             </h2>
             <p className="mt-3 text-slate-500 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
-              Minh họa quy trình chuyển đổi từ ảnh chụp hồ sơ thực tế sang dữ liệu có cấu trúc phục vụ nghiên cứu và thực hành quyền công tố.
+              Minh họa quy trình chuyển đổi từ ảnh chụp hồ sơ thực tế sang dữ liệu có cấu trúc phục vụ quản lý án, nghiên cứu hồ sơ và soạn thảo văn bản tố tụng.
             </p>
           </div>
 
