@@ -17,14 +17,6 @@ export default function OcrPdfScanSangWordBangAi() {
         </ul>
       </NoteBox>
 
-      <ArticleImage
-        src="/images/knowledge/ocr-pdf-scan-sang-word-bang-ai/hero.webp"
-        alt="Chuyển PDF scan sang Word bằng AI OCR"
-        caption=""
-      />
-
-      <hr />
-
       {/* 1️⃣ PDF scan là gì và vì sao khó nhận dạng? */}
       <h2 id="pdf-scan-la-gi-va-vi-sao-kho-nhan-dang" className="scroll-mt-20 text-2xl font-bold text-slate-900 mt-8 mb-4 border-b border-slate-100 pb-2">
         PDF scan là gì và vì sao khó nhận dạng?

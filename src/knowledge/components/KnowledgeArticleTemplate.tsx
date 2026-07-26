@@ -31,17 +31,6 @@ export const KnowledgeArticleTemplate: React.FC<KnowledgeArticleTemplateProps> =
         <KnowledgeHero article={article} />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* ② Breadcrumb */}
-          <nav className="text-sm text-slate-500 mb-8 flex items-center space-x-2" aria-label="Breadcrumb">
-            <a href="/" className="hover:text-blue-600 transition-colors">Trang chủ</a>
-            <span>&rsaquo;</span>
-            <a href="/knowledge" className="hover:text-blue-600 transition-colors">Hướng dẫn</a>
-            <span>&rsaquo;</span>
-            <span className="text-slate-900 font-medium truncate max-w-[200px] sm:max-w-none">
-              {article.title}
-            </span>
-          </nav>
-
           <div className="flex flex-col lg:flex-row gap-12">
             {/* Main Content Area */}
             <div className="flex-1 lg:max-w-[760px] xl:max-w-[820px]">
