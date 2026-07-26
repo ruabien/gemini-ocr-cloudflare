@@ -80,19 +80,19 @@ export const KnowledgeHero: React.FC<KnowledgeHeroProps> = ({
       )}
 
       {/* CTA */}
-      <div className="my-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-800">{ctaText}</h3>
-        </div>
-        {onCtaClick && (
+      {onCtaClick && (
+        <div className="my-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800">{ctaText}</h3>
+          </div>
           <button
             onClick={onCtaClick}
             className="shrink-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-white text-xs font-semibold rounded-lg shadow-sm transition duration-150"
           >
             {ctaText}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 };

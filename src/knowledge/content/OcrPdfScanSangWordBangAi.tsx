@@ -2,7 +2,6 @@ import React from 'react';
 import { ArticleImage, NoteBox } from '../KnowledgeArticle';
 import { KnowledgeFAQ } from '../components/KnowledgeFAQ';
 import { KnowledgeCTA } from '../components/KnowledgeCTA';
-import { KnowledgeRelatedArticles } from '../components/KnowledgeRelatedArticles';
 
 export default function OcrPdfScanSangWordBangAi() {
   return (
@@ -383,14 +382,6 @@ export default function OcrPdfScanSangWordBangAi() {
       />
 
       <hr />
-
-      {/* 10️⃣ Bài viết liên quan */}
-      <section className="mb-10">
-        <h2 id="bai-viet-lien-quan" className="scroll-mt-20 text-2xl font-bold text-slate-900 mt-8 mb-4 border-b border-slate-100 pb-2">
-          Bài viết liên quan
-        </h2>
-        <KnowledgeRelatedArticles />
-      </section>
 
       {/* 11️⃣ CTA */}
       <section className="mb-10">
