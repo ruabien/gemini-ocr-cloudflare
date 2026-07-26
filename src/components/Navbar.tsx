@@ -86,7 +86,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
               LEXOCR
               <span className="ml-1.5 px-1.5 py-0.5 text-[9px] bg-red-600/30 text-red-500 rounded border border-red-500/30 uppercase tracking-widest font-mono">PROCURACY v2.5</span>
             </h1>
-            <p className="text-[10px] text-slate-400 font-medium">Hệ thống bóc tách hồ sơ & trợ lý Kiểm sát viên</p>
+            <p className="text-[10px] text-slate-400 font-medium">Hệ thống bóc tách hồ sơ</p>
           </div>
         </div>
 
