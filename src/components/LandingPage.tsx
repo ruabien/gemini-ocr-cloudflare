@@ -57,7 +57,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
     },
     {
       question: "LexOCR có hỗ trợ OCR tiếng Việt không?",
-      answer: "Có. LexOCR được tối ưu cho tài liệu tiếng Việt."
+      answer: "Có. LexOCR được tối ưu cho tài liệu tiếng Việt, kể cả chữ viết tay (tương đối)."
     },
     {
       question: "Sau khi hết hạn PRO thì sao?",
@@ -84,7 +84,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         <div className="relative max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-1.5 rounded-full text-xs font-medium mb-6 max-w-full text-center">
             <Shield className="h-4 w-4 text-rose-400 flex-shrink-0" />
-            <span>Một công cụ miễn phí hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng dành cho Kiểm sát viên</span>
+            <span>Một công cụ miễn phí hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng dành cho cán bộ ngành tư pháp</span>
           </div>
           
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight max-w-4xl mx-auto">
@@ -129,7 +129,7 @@ onClick={() => { const el = document.getElementById('security-architecture'); if
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            LexOCR giúp gì cho Kiểm sát viên?
+            LexOCR giúp gì cho cán bộ ngành tư pháp?
           </h2>
           <p className="mt-3 text-slate-500 text-sm sm:text-base">
             Giải phóng cán bộ khỏi công việc thủ công, tập trung nghiên cứu hồ sơ vụ án và thực hành quyền công tố hiệu quả.
