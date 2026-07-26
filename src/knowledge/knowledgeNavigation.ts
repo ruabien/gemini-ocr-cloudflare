@@ -18,3 +18,8 @@ export function navigateToKnowledgeArticle(slug: string): void {
   const navEvent = new PopStateEvent('popstate');
   window.dispatchEvent(navEvent);
 }
+
+export function navigateToScanner(): void {
+  window.history.pushState({ activeTab: 'scanner' }, '', '/');
+  window.dispatchEvent(new PopStateEvent('popstate', { state: { activeTab: 'scanner' } }));
+}

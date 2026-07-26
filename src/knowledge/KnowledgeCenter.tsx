@@ -1,11 +1,10 @@
 import React from 'react';
 import { knowledgeArticles } from '../../shared/knowledgeArticles';
-import { navigateToKnowledgeArticle } from './knowledgeNavigation';
+import { navigateToKnowledgeArticle, navigateToScanner } from './knowledgeNavigation';
 
 export default function KnowledgeCenter() {
   const handleStartOcr = () => {
-    window.history.pushState({ activeTab: 'scanner' }, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { activeTab: 'scanner' } }));
+    navigateToScanner();
   };
 
   return (

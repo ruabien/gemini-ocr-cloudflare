@@ -2,6 +2,7 @@ import React from 'react';
 import { ArticleImage, NoteBox } from '../KnowledgeArticle';
 import { KnowledgeFAQ } from '../components/KnowledgeFAQ';
 import { KnowledgeCTA } from '../components/KnowledgeCTA';
+import { navigateToScanner } from '../knowledgeNavigation';
 
 export default function OcrPdfScanSangWordBangAi() {
   return (
@@ -385,7 +386,7 @@ export default function OcrPdfScanSangWordBangAi() {
 
       {/* 11️⃣ CTA */}
       <section className="mb-10">
-        <KnowledgeCTA />
+        <KnowledgeCTA onClick={navigateToScanner} />
       </section>
     </div>
   );
