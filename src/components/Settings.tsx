@@ -485,7 +485,17 @@ export default function SettingsComponent({
               </h4>
               <ul className="list-disc pl-5 text-[10.5px] text-slate-500 space-y-1.5 leading-relaxed">
                 <li>Key được dùng trực tiếp để OCR và trích xuất dữ liệu.</li>
-                <li>Bạn có thể tạo Gemini API Key miễn phí tại Google AI Studio.</li>
+                <li>
+                  Bạn có thể tạo Gemini API Key miễn phí tại{" "}
+                  <a
+                    href="https://aistudio.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Google AI Studio
+                  </a>
+                  .
+                </li>
                 <li>Nếu chưa có key, hệ thống chỉ khả dụng với các tính năng dự phòng hiện có.</li>
               </ul>
             </div>
