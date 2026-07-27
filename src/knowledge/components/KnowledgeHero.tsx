@@ -63,11 +63,11 @@ export const KnowledgeHero: React.FC<KnowledgeHeroProps> = ({
       {/* Hero Image */}
       {coverImage && (
         <figure className="my-6">
-          <div className="w-full aspect-video overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-slate-50">
+          <div className="w-full rounded-xl border border-slate-200 shadow-sm bg-slate-50">
             <img
               src={coverImage}
               alt={`Ảnh minh họa: ${title}`}
-              className="w-full h-full object-cover"
+              className="block w-full h-auto object-contain rounded-xl"
               loading="eager"
               width={1200}
               height={675}
