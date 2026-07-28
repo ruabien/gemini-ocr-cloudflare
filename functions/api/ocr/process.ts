@@ -1,5 +1,6 @@
 /* ==== MOCK DATA ==== */
 import { requireResolvedGeminiModel } from '../../../shared/geminiModelResolver';
+import { cleanOcrPageText } from '../../../shared/ocrPostProcessing';
 let ocrKeyRoundRobinIndex = 0;
 let ocrSpaceKeyRoundRobinIndex = 0;
 const MOCK_LEGAL_DOC_TEXT = `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
@@ -68,7 +69,7 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
     throw new Error("OCR_SPACE_NOT_CONFIGURED");
   }
 
-  let fullText = "";
+  const cleanedPageTexts: string[] = [];
 
   for (let pageIdx = 0; pageIdx < pagesToProcess.length; pageIdx++) {
     const pageIndex = pageIdx + 1;
@@ -144,10 +145,13 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
       pageText = `[TRANG SỐ ${pageIndex} BỊ LỖI ĐỌC DỮ LIỆU - ĐÃ TỰ ĐỘNG BỎ QUA]`;
     }
 
-    fullText += pageText + "\n\n";
+    const cleanedPageText = cleanOcrPageText(pageText);
+    if (cleanedPageText.length > 0) {
+      cleanedPageTexts.push(cleanedPageText);
+    }
   }
 
-  return fullText.trim();
+  return cleanedPageTexts.join("\n\n");
 }
 
 export const onRequestPost = async (context: { request: Request; env: any }) => {
@@ -394,7 +398,10 @@ if (env) {
 
           let aggregatedWarnings: any[] = [];
           results.sort((a, b) => a.index - b.index);
-          finalOcrText = results.map((r) => r.text).join("\n\n");
+          const cleanedPageTexts = results
+            .map((r) => cleanOcrPageText(r.text || ""))
+            .filter((text) => text.length > 0);
+          finalOcrText = cleanedPageTexts.join("\n\n");
           results.forEach(r => {
             if (r.warnings && r.warnings.length > 0) {
               aggregatedWarnings.push(...r.warnings);
