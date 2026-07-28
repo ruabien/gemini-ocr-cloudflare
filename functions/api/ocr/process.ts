@@ -145,7 +145,7 @@ async function processWithOcrSpaceFallback(pagesToProcess: string[], mimeType: s
       pageText = `[TRANG SỐ ${pageIndex} BỊ LỖI ĐỌC DỮ LIỆU - ĐÃ TỰ ĐỘNG BỎ QUA]`;
     }
 
-    const cleanedPageText = cleanOcrPageText(pageText);
+    const cleanedPageText = cleanOcrPageText(pageText, { pageIndex });
     if (cleanedPageText.length > 0) {
       cleanedPageTexts.push(cleanedPageText);
     }
@@ -399,7 +399,7 @@ if (env) {
           let aggregatedWarnings: any[] = [];
           results.sort((a, b) => a.index - b.index);
           const cleanedPageTexts = results
-            .map((r) => cleanOcrPageText(r.text || ""))
+            .map((r) => cleanOcrPageText(r.text || "", { pageIndex: r.index }))
             .filter((text) => text.length > 0);
           finalOcrText = cleanedPageTexts.join("\n\n");
           results.forEach(r => {

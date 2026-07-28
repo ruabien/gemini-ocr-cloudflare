@@ -14,6 +14,12 @@ import {
   removePageBreakMarkers
 } from "../../../../shared/docxTextNormalizer";
 
+export function getRenderableDocxLines(text: string): string[] {
+  return docClean(text)
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0);
+}
+
 export async function onRequestPost({ request }: { request: any }) {
   try {
     const { text, fileName, mode } = await request.json();
@@ -43,19 +49,28 @@ export async function onRequestPost({ request }: { request: any }) {
         }),
       ];
     } else {
-      const normalizedText = docClean(cleanedContent);
-      const lines = normalizedText.split(/\r?\n/);
-      paragraphs = lines.map((line: string) => {
-        const config = getParagraphConfig(line, mode);
-        return new Paragraph({
-          alignment: config.alignment === 1 ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
-          indent: config.indent,
-          spacing: config.spacing,
-          heading: config.heading === 3 ? HeadingLevel.HEADING_3 : undefined,
-          keepNext: (config as any).keepNext,
-          children: config.children.map((c) => new TextRun(c)),
+      const lines = getRenderableDocxLines(cleanedContent);
+
+      if (lines.length === 0) {
+        paragraphs = [
+          new Paragraph({
+            alignment: AlignmentType.JUSTIFIED,
+            children: [new TextRun({ text: "Không có nội dung để xuất DOCX." })],
+          }),
+        ];
+      } else {
+        paragraphs = lines.map((line: string) => {
+          const config = getParagraphConfig(line, mode);
+          return new Paragraph({
+            alignment: config.alignment === 1 ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+            indent: config.indent,
+            spacing: config.spacing,
+            heading: config.heading === 3 ? HeadingLevel.HEADING_3 : undefined,
+            keepNext: (config as any).keepNext,
+            children: config.children.map((c) => new TextRun(c)),
+          });
         });
-      });
+      }
     }
 
     const doc = new Document({
