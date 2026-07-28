@@ -14,6 +14,7 @@ import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
 import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
 import { getActiveModel, autoResolveModel, MODEL_MODES } from "../utils/geminiModelResolver";
 import { optimizeImageForOcr } from "../utils/imageOptimizer";
+import { cleanOcrPageText } from "../../shared/ocrPostProcessing";
 
 interface OcrScannerProps {
   onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[]; outputMode?: "text" | "structured" }) => void;
@@ -749,7 +750,14 @@ const keyToProjectMap = new Map<string, string>();
                         data = JSON.parse(txt);
                       } catch {
                         const finalText = txt.trim();
-                        const sanitizedFinalText = sanitizeError(finalText);
+                        const cleanedPageText = cleanOcrPageText(finalText, {
+                          pageIndex: pageNum
+                        });
+                        if (cleanedPageText.length === 0) {
+                          logSuccess("");
+                          return;
+                        }
+                        const sanitizedFinalText = sanitizeError(cleanedPageText);
                         setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
                         editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
                         logSuccess(sanitizedFinalText);
@@ -776,7 +784,14 @@ const keyToProjectMap = new Map<string, string>();
                         return;
                       }
                       const finalText = extractedText.trim();
-                      const sanitizedFinalText = sanitizeError(finalText);
+                      const cleanedPageText = cleanOcrPageText(finalText, {
+                        pageIndex: pageNum
+                      });
+                      if (cleanedPageText.length === 0) {
+                        logSuccess("");
+                        return;
+                      }
+                      const sanitizedFinalText = sanitizeError(cleanedPageText);
                       setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
                       editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
                       logSuccess(sanitizedFinalText);
@@ -970,12 +985,19 @@ const keyToProjectMap = new Map<string, string>();
                     }
                   }
                   const sanitizedText = lines.join('\n').trim();
-                  const hasUsableText = Boolean(sanitizedText);
+                  const cleanedPageText = cleanOcrPageText(sanitizedText, {
+                    pageIndex: pageNum
+                  });
+                  if (!cleanedPageText) {
+                    resolve("");
+                    return;
+                  }
+                  const hasUsableText = true;
 
                   if (hasUsableText) {
                     // @ts-ignore
                     if (import.meta.env.DEV) console.info(`[OCR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} END] ${Date.now()}`);
-                    const sanitizedFinalText = sanitizeError(sanitizedText);
+                    const sanitizedFinalText = sanitizeError(cleanedPageText);
                     setEditorContent((prev) => prev + (prev ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText);
                     editorContentRef.current += (editorContentRef.current ? "\n\n--- [TRANG KẾ TIẾP] ---\n\n" : "") + sanitizedFinalText;
                     resolve(sanitizedFinalText);
