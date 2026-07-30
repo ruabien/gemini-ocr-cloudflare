@@ -117,6 +117,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   
   const [isSlicing, setIsSlicing] = useState(false);
   const [slicingMessage, setSlicingMessage] = useState("");
+  const [isSplittingPdf, setIsSplittingPdf] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [processingFile, setProcessingFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -238,6 +239,7 @@ const handleSelectedFiles = async (files: File[]) => {
 
   for (const qFile of newQueued) {
     if (qFile.file.name.toLowerCase().endsWith('.pdf')) {
+      setIsSplittingPdf(true);
       try {
         const pageFiles = await splitPdfToImages(qFile.file, () => {});
         const numPages = pageFiles.length;
@@ -272,6 +274,8 @@ const handleSelectedFiles = async (files: File[]) => {
         } : f));
       } catch (err) {
         console.error("Lỗi phân tách PDF khi tải tệp:", err);
+      } finally {
+        setIsSplittingPdf(false);
       }
     }
   }
@@ -370,7 +374,7 @@ const handleSelectedFiles = async (files: File[]) => {
 
 const startOcrProcess = async () => {
   // LOCK THE RUNTIME PROCESSING FUNCTION WITH A DEFENSIVE LOADING GUARD
-  if (isProcessingRef.current || isBatchProcessing || isSlicing) return;
+  if (isProcessingRef.current || isBatchProcessing || isSlicing || isSplittingPdf) return;
 
   const controller = new AbortController();
   cancelOcrRef.current = controller;
@@ -1752,11 +1756,20 @@ const keyToProjectMap = new Map<string, string>();
                   <div className="w-full flex justify-center">
                     <button
                       onClick={startOcrProcess}
-                      disabled={(queuedFiles || []).length === 0}
+                      disabled={(queuedFiles || []).length === 0 || isSplittingPdf}
                       className="start-ocr-btn-selector w-full sm:w-[320px] h-[50px] bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:shadow-red-500/20 transition-all flex items-center justify-center space-x-2 text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
-                      <ScanLine className="h-5 w-5" />
-                      <span>Bắt đầu bóc tách hồ sơ</span>
+                      {isSplittingPdf ? (
+                        <>
+                          <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Đang phân tách PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ScanLine className="h-5 w-5" />
+                          <span>Bắt đầu bóc tách hồ sơ</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 )}
