@@ -1,0 +1,11 @@
+[
+  { "kind": "PERSON_NAME", "text": "Hoàng Thị Lan", "occurrences": 2 },
+  { "kind": "PERSON_NAME", "text": "Đỗ Văn Hùng", "occurrences": 2 },
+  { "kind": "PERSON_NAME", "text": "Trần Văn Minh", "occurrences": 1 },
+  { "kind": "ORGANIZATION_NAME", "text": "CÔNG AN HUYỆN C", "occurrences": 1 },
+  { "kind": "ADDRESS", "text": "Thôn 5, Xã Z, Huyện C", "occurrences": 1 },
+  { "kind": "DATE", "text": "25/03/2025", "occurrences": 1 },
+  { "kind": "DATE", "text": "20/03/2025", "occurrences": 1 },
+  { "kind": "DATE", "text": "18/03/2025", "occurrences": 1 },
+  { "kind": "MONEY_AMOUNT", "text": "15.000.000 đồng", "occurrences": 1 }
+]

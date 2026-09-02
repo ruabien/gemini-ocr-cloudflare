@@ -1,0 +1,11 @@
+[
+  { "kind": "PERSON_NAME", "text": "Lê Văn Cường", "occurrences": 2 },
+  { "kind": "PERSON_NAME", "text": "Phạm Văn Dũng", "occurrences": 1 },
+  { "kind": "ORGANIZATION_NAME", "text": "TÒA ÁN NHÂN DÂN HUYỆN B", "occurrences": 1 },
+  { "kind": "ADDRESS", "text": "Thôn 2, Xã Y, Huyện B", "occurrences": 1 },
+  { "kind": "DATE", "text": "10/01/2025", "occurrences": 1 },
+  { "kind": "DATE", "text": "20 tháng 02 năm 2025", "occurrences": 1 },
+  { "kind": "MONEY_AMOUNT", "text": "30.000.000 đồng", "occurrences": 2 },
+  { "kind": "DOCUMENT_NUMBER", "text": "02/2025/HS-ST", "occurrences": 1 },
+  { "kind": "LEGAL_ARTICLE", "text": "Điều 173", "occurrences": 1 }
+]

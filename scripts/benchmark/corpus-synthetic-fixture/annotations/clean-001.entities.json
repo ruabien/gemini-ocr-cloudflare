@@ -1,0 +1,14 @@
+[
+  { "kind": "PERSON_NAME", "text": "Nguyễn Văn An", "occurrences": 2 },
+  { "kind": "PERSON_NAME", "text": "Trần Thị Bình", "occurrences": 1 },
+  { "kind": "ORGANIZATION_NAME", "text": "TÒA ÁN NHÂN DÂN THỊ XÃ A", "occurrences": 1 },
+  { "kind": "ADDRESS", "text": "123 Đường Lê Lợi, Phường 1, Thị xã A", "occurrences": 1 },
+  { "kind": "ADDRESS", "text": "456 Đường Nguyễn Huệ, Phường 2, Thị xã A", "occurrences": 1 },
+  { "kind": "DATE", "text": "01/6/2024", "occurrences": 1 },
+  { "kind": "DATE", "text": "15 tháng 01 năm 2025", "occurrences": 1 },
+  { "kind": "MONEY_AMOUNT", "text": "100.000.000 đồng", "occurrences": 2 },
+  { "kind": "MONEY_AMOUNT", "text": "5.000.000 đồng", "occurrences": 1 },
+  { "kind": "DOCUMENT_NUMBER", "text": "01/2025/DS-ST", "occurrences": 1 },
+  { "kind": "LEGAL_ARTICLE", "text": "Điều 463", "occurrences": 1 },
+  { "kind": "LEGAL_ARTICLE", "text": "Điều 466", "occurrences": 1 }
+]

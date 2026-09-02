@@ -23,6 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 
-# LexOCR OCR benchmark — operator workspace (results, dry-run outputs, real corpus).
+# LexOCR OCR benchmark ï¿½ operator workspace (results, dry-run outputs, real corpus).
 # Safe templates (tmp/ocr-benchmark-*.template.*) are tracked.
 tmp/ocr-benchmark/
+tmp/ocr-benchmark/pages/
+tmp/ocr-benchmark/references/
+tmp/ocr-benchmark/annotations/
+tmp/ocr-benchmark/corpus-versions/
+tmp/ocr-benchmark/manifest.json
+tmp/ocr-benchmark/corpus-review.json
+tmp/ocr-benchmark/corpus-freeze.json
+tmp/ocr-benchmark/corpus-hash.txt
+tmp/ocr-benchmark/readiness-report.txt

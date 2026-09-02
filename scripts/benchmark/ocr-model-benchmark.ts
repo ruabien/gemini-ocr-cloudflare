@@ -94,7 +94,7 @@ function buildDryRunPricing(): import("./types").BenchmarkPricing {
   };
 }
 
-function buildDryRunReferences(): Map<string, PageReference> {
+export function buildDryRunReferences(): Map<string, PageReference> {
   const refs = new Map<string, PageReference>();
   refs.set("DRY_PAGE_001", {
     benchmarkPageId: "DRY_PAGE_001", referenceStatus: "REFERENCE_VERIFIED",

@@ -15,6 +15,9 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { validateCorpus } from "./corpus-validator";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const ORCHESTRATOR = join(__dirname, "ocr-model-benchmark.ts");
@@ -73,6 +76,38 @@ assert(stdout.includes("DRY_PAGE_001"), "report lists DRY_PAGE_001");
   );
   const out2 = (r2.stdout || "") + (r2.stderr || "");
   assert(r2.status === 2 || (r2.status !== 0 && out2.includes("does not support live API execution")), "non-dry-run refuses loudly (exit != 0)");
+}
+
+// Test 10 — inline dry-run manifest -> CORPUS_NOT_READY (separate artifact)
+{
+  // The inline dry-run manifest in ocr-model-benchmark.ts is NOT a frozen
+  // corpus. It must NOT pass corpus readiness. We import the function and
+  // call validateCorpus against a manifest loaded from a temporary file.
+  // The dry-run manifest has a REFERENCE_DRAFT page (DRY_PAGE_003) so
+  // readiness must fail. This is a separate, explicit negative assertion.
+  const tmp = mkdtempSync(join(tmpdir(), "lexocr-dry-"));
+  try {
+    const manifest = {
+      schemaVersion: "1.0",
+      name: "[DRY RUN] LexOCR OCR Model Benchmark — Synthetic Fixture",
+      description: "Synthetic inline fixture for dry-run validation. All content is fictional.",
+      created: "2025-01-01T00:00:00.000Z",
+      pages: [
+        { benchmarkPageId: "DRY_PAGE_001", fileName: "x.png", imageFormat: "png",
+          category: "CLEAN_JUDGMENT", difficulty: "easy",
+          referenceStatus: "REFERENCE_VERIFIED", referenceFileName: "x.ref.txt" },
+        { benchmarkPageId: "DRY_PAGE_003", fileName: "y.png", imageFormat: "png",
+          category: "POOR_SCAN", difficulty: "hard",
+          referenceStatus: "REFERENCE_DRAFT", referenceFileName: null },
+      ],
+    };
+    writeFileSync(join(tmp, "manifest.json"), JSON.stringify(manifest, null, 2), "utf8");
+    const r = validateCorpus({ manifestPath: join(tmp, "manifest.json"), rootDir: tmp });
+    assert(!r.ok, "dry-run manifest with REFERENCE_DRAFT page -> CORPUS_NOT_READY (separate artifact, does NOT pass)");
+    assert(r.errors.some((e) => e.code === "REFERENCE_NOT_VERIFIED"), "dry-run manifest reports REFERENCE_NOT_VERIFIED");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 }
 
 console.log("--- benchmark-dry-run.test.ts ---");

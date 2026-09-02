@@ -1,0 +1,13 @@
+[
+  { "kind": "PERSON_NAME", "text": "Ngô Thị Mai", "occurrences": 2 },
+  { "kind": "ORGANIZATION_NAME", "text": "TAND THÀNH PHỐ E", "occurrences": 1 },
+  { "kind": "ORGANIZATION_NAME", "text": "UBND thành phố E", "occurrences": 1 },
+  { "kind": "ADDRESS", "text": "phường F", "occurrences": 1 },
+  { "kind": "DATE", "text": "12/05/2025", "occurrences": 1 },
+  { "kind": "DATE", "text": "03/01/2025", "occurrences": 1 },
+  { "kind": "MONEY_AMOUNT", "text": "400.000.000 đồng", "occurrences": 1 },
+  { "kind": "DOCUMENT_NUMBER", "text": "05/2025/HC-PT", "occurrences": 1 },
+  { "kind": "DOCUMENT_NUMBER", "text": "88/QĐ-UBND", "occurrences": 1 },
+  { "kind": "LEGAL_ARTICLE", "text": "khoản 2 Điều 193", "occurrences": 1 },
+  { "kind": "LEGAL_ARTICLE", "text": "khoản 1 Điều 30", "occurrences": 1 }
+]

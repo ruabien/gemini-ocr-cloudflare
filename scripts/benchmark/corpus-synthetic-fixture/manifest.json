@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0",
+  "name": "LexOCR Synthetic Corpus (PHASE C1 Canonical Fixture)",
+  "description": "Canonical 5-page synthetic fixture for offline corpus preparation tooling. All content fictional.",
+  "created": "2025-01-01T00:00:00.000Z",
+  "pages": [
+    {
+      "benchmarkPageId": "clean-001",
+      "fileName": "clean-001.png",
+      "imageFormat": "png",
+      "category": "CLEAN_JUDGMENT",
+      "difficulty": "easy",
+      "referenceStatus": "REFERENCE_VERIFIED",
+      "referenceFileName": "clean-001.ref.txt",
+      "notes": "Synthetic clean judgment fixture. Fictional parties. No real CCCD/CMND."
+    },
+    {
+      "benchmarkPageId": "poor-001",
+      "fileName": "poor-001.png",
+      "imageFormat": "png",
+      "category": "POOR_SCAN",
+      "difficulty": "hard",
+      "referenceStatus": "REFERENCE_VERIFIED",
+      "referenceFileName": "poor-001.ref.txt",
+      "notes": "Synthetic poor-scan fixture. Skewed and low-contrast. Fictional."
+    },
+    {
+      "benchmarkPageId": "minutes-001",
+      "fileName": "minutes-001.png",
+      "imageFormat": "png",
+      "category": "MINUTES_STATEMENTS",
+      "difficulty": "medium",
+      "referenceStatus": "REFERENCE_VERIFIED",
+      "referenceFileName": "minutes-001.ref.txt",
+      "notes": "Synthetic witness-statement fixture. Fictional witness."
+    },
+    {
+      "benchmarkPageId": "structured-001",
+      "fileName": "structured-001.png",
+      "imageFormat": "png",
+      "category": "STRUCTURED_DOCUMENT",
+      "difficulty": "medium",
+      "referenceStatus": "REFERENCE_VERIFIED",
+      "referenceFileName": "structured-001.ref.txt",
+      "notes": "Synthetic land-allocation decision. Fictional."
+    },
+    {
+      "benchmarkPageId": "difficult-001",
+      "fileName": "difficult-001.png",
+      "imageFormat": "png",
+      "category": "DIFFICULT_LEGAL_PAGE",
+      "difficulty": "hard",
+      "referenceStatus": "REFERENCE_VERIFIED",
+      "referenceFileName": "difficult-001.ref.txt",
+      "notes": "Synthetic difficult legal page. Stamp + handwriting + skew. Fictional."
+    }
+  ]
+}

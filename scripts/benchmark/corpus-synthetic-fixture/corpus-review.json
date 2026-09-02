@@ -1,0 +1,35 @@
+{
+  "pages": {
+    "clean-001": {
+      "piiChecked": true,
+      "piiHeuristicHits": [],
+      "piiNotes": "All names, addresses, amounts are fictional synthetic values. No real PII.",
+      "notes": "Reviewed. Reference verified. Entities and layout annotations complete."
+    },
+    "poor-001": {
+      "piiChecked": true,
+      "piiHeuristicHits": [],
+      "piiNotes": "All names, addresses, amounts are fictional synthetic values. No real PII.",
+      "notes": "Reviewed. Reference verified. Entities and layout annotations complete."
+    },
+    "minutes-001": {
+      "piiChecked": true,
+      "piiHeuristicHits": [],
+      "piiNotes": "All names, addresses, amounts are fictional synthetic values. No real PII.",
+      "notes": "Reviewed. Reference verified. Entities and layout annotations complete."
+    },
+    "structured-001": {
+      "piiChecked": true,
+      "piiHeuristicHits": [],
+      "piiNotes": "All names, addresses, amounts are fictional synthetic values. No real PII.",
+      "notes": "Reviewed. Reference verified. Entities and layout annotations complete."
+    },
+    "difficult-001": {
+      "piiChecked": true,
+      "piiHeuristicHits": [],
+      "piiNotes": "All names, addresses, amounts are fictional synthetic values. No real PII.",
+      "notes": "Reviewed. Reference verified. Entities and layout annotations complete."
+    }
+  },
+  "spotCheckNotes": "Canonical synthetic fixture: all 5 pages reviewed and REFERENCE_VERIFIED."
+}
