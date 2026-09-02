@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# LexOCR OCR benchmark — operator workspace (results, dry-run outputs, real corpus).
+# Safe templates (tmp/ocr-benchmark-*.template.*) are tracked.
+tmp/ocr-benchmark/

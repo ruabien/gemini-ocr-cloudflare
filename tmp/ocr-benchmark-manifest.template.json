@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "name": "LexOCR OCR Model Benchmark — Manifest Template",
+  "description": "Replace with actual benchmark corpus metadata. NO real case data, NO CCCD, NO real addresses.",
+  "created": "2025-01-01T00:00:00.000Z",
+  "pages": [
+    {
+      "benchmarkPageId": "PAGE_001",
+      "fileName": "page_001.png",
+      "imageFormat": "png",
+      "category": "CLEAN_JUDGMENT",
+      "difficulty": "easy",
+      "referenceStatus": "REFERENCE_VERIFIED",
+      "referenceFileName": "page_001.ref.txt",
+      "notes": "Example entry — replace with actual corpus page."
+    }
+  ]
+}
