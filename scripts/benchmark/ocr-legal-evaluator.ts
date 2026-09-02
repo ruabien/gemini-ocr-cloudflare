@@ -19,7 +19,14 @@ import {
   type PageReference,
 } from "./types";
 
-/** Diacritic-insensitive normalization for exact-match comparison. */
+/**
+ * Low-level diacritic-insensitive normalization. Intended ONLY for diagnostic
+ * use (via {@link diagnosticDiacriticInsensitiveMatch}); it is NOT used by
+ * any authoritative legal-critical matching function.
+ *
+ * Authoritative matching uses {@link normalizeForAuthoritativeMatch} which
+ * preserves all Vietnamese diacritics.
+ */
 export function stripDiacritics(s: string): string {
   return s
     .normalize("NFD")
@@ -29,9 +36,59 @@ export function stripDiacritics(s: string): string {
     .trim();
 }
 
-/** Simple literal containment (diacritic/whitespace-insensitive). */
-export function referenceEntityPresent(referenceText: string, candidate: string): boolean {
+/**
+ * AUTHORITATIVE normalization for legal-critical exact matching.
+ *
+ * Contract (locked):
+ *  - Unicode normalization: NFC (precomposed). Required so canonically
+ *    equivalent forms (e.g. U+1EA5 vs U+00C2+U+0309) compare equal.
+ *  - Vietnamese diacritics are PRESERVED. Two strings that differ only in
+ *    the presence of diacritics (e.g. "Nguyễn" vs "Nguyen") are NOT equal.
+ *  - Whitespace is collapsed to single spaces; leading/trailing trimmed.
+ *  - Case is preserved (no lowercasing). Vietnamese convention already
+ *    distinguishes the capital "Đ" / "đ" and diacritics, and case folding
+ *    is outside the scope of legal-critical authoritative matching.
+ *
+ * This function does NOT introduce fuzzy matching.
+ */
+export function normalizeForAuthoritativeMatch(s: string): string {
+  return s
+    .normalize("NFC")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Non-authoritative DIAGNOSTIC: diacritic-insensitive containment.
+ *
+ * This MAY be used only for diagnostic reporting (e.g. "would this match
+ * if diacritics were ignored?") and MUST NOT affect any authoritative
+ * metric: not exactRecall, not precision, not recall, not f1, not
+ * humanReviewRequired, not PASS/FAIL, not model recommendation.
+ */
+export function diagnosticDiacriticInsensitiveMatch(
+  referenceText: string,
+  candidate: string
+): boolean {
   return stripDiacritics(referenceText).includes(stripDiacritics(candidate));
+}
+
+/**
+ * AUTHORITATIVE reference-entity presence check (diacritic-sensitive, NFC).
+ *
+ * Tier A and Tier C reference checks use this function. Vietnamese
+ * diacritics are preserved: "Nguyễn Văn X" is NOT considered present in
+ * text that contains only "Nguyen Van X".
+ *
+ * Whitespace is normalized via {@link normalizeForAuthoritativeMatch} so
+ * "Nguyễn   Văn   X" matches "Nguyễn Văn X" (whitespace-only difference
+ * is part of the approved normalization contract).
+ */
+export function referenceEntityPresent(referenceText: string, candidate: string): boolean {
+  const normRef = normalizeForAuthoritativeMatch(referenceText);
+  const normCand = normalizeForAuthoritativeMatch(candidate);
+  if (normCand.length === 0) return false;
+  return normRef.includes(normCand);
 }
 
 // ── Auto-measured extractors (documented regex contracts) ───────
@@ -157,16 +214,23 @@ export function evaluateAutoMeasured(
   const extracted = extractCandidates(type, modelText);
   const extractedCount = extracted.length;
 
-  // Match reference entities to extracted candidates (diacritic-insensitive).
+  // Match reference entities to extracted candidates (authoritative NFC,
+  // diacritic-sensitive — see normalizeForAuthoritativeMatch).
   const unmatchedRef = refEntities.filter(
-    (r) => !extracted.some((c) => stripDiacritics(c) === stripDiacritics(r.text))
+    (r) =>
+      !extracted.some(
+        (c) => normalizeForAuthoritativeMatch(c) === normalizeForAuthoritativeMatch(r.text)
+      )
   );
   const missing = unmatchedRef.length;
 
   // Extras = extracted that match no reference entity (potential hallucinations).
   // These are flagged separately via humanReviewRequired when ambiguous.
   const extras = extracted.filter(
-    (c) => !refEntities.some((r) => stripDiacritics(r.text) === stripDiacritics(c))
+    (c) =>
+      !refEntities.some(
+        (r) => normalizeForAuthoritativeMatch(r.text) === normalizeForAuthoritativeMatch(c)
+      )
   );
 
   const correct = refCount - missing;
@@ -211,7 +275,7 @@ export function collectHumanReviewRequired(
     const extracted = extractCandidates(type, modelText);
     for (const c of extracted) {
       const matchesRef = refEntities.some(
-        (r) => stripDiacritics(r.text) === stripDiacritics(c)
+        (r) => normalizeForAuthoritativeMatch(r.text) === normalizeForAuthoritativeMatch(c)
       );
       if (!matchesRef) {
         out.push({ kind: `EXTRA_${type}`, candidate: c });
