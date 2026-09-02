@@ -582,8 +582,16 @@ useEffect(() => {
                 <p className="text-[10px] text-slate-400 font-bold uppercase">
                   Độ chính xác bóc tách
                 </p>
-                <p className="text-xl font-mono font-black text-emerald-600 mt-0.5">
-                  {accuracy}%
+                <p
+                  className={
+                    accuracy === null || accuracy === undefined
+                      ? "text-base font-mono font-black text-slate-500 mt-0.5"
+                      : "text-xl font-mono font-black text-emerald-600 mt-0.5"
+                  }
+                >
+                  {accuracy === null || accuracy === undefined
+                    ? "Chưa đo được"
+                    : `${accuracy}%`}
                 </p>
               </div>
               <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[9px] font-bold border border-emerald-200">

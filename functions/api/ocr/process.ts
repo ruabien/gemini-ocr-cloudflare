@@ -1,6 +1,13 @@
 /* ==== MOCK DATA ==== */
 import { requireResolvedGeminiModel } from '../../../shared/geminiModelResolver';
 import { cleanOcrPageText } from '../../../shared/ocrPostProcessing';
+import {
+  createBenchmarkRun,
+  extractGeminiUsageMetadata,
+  type OcrTelemetryEvent,
+} from '../../../shared/ocrTelemetry';
+import { applyOcrRequestGuard } from '../utils/usageGuard';
+import { verifyFirebaseIdToken, getOAuth2Token, getVNDateString } from '../utils/firebaseAdmin';
 let ocrKeyRoundRobinIndex = 0;
 let ocrSpaceKeyRoundRobinIndex = 0;
 const MOCK_LEGAL_DOC_TEXT = `CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
@@ -212,6 +219,87 @@ if (env) {
       }
     }
 
+    // ============ LEXOCR BENCHMARK TELEMETRY + PRE-INFERENCE GUARD ============
+    // One gate per request governs both per-attempt events AND the summary.
+    // Telemetry sink is structured console lines only (no DB, no remote sink).
+    const bench = createBenchmarkRun({ runtimeEnv: env });
+    // BYOK = user provided a key on the request OR a custom header key.
+    // The X-Gemini-Keys header is the user-supplied key path; userGeminiKey
+    // is the body-supplied key path. Either one puts the call on the BYOK
+    // trust boundary, where caller owns the cost.
+    const hasUserProvidedKey =
+      !!userGeminiKey ||
+      (Array.isArray(geminiKeys) && geminiKeys.length > 0 && !!keysHeader);
+
+    // Auth + usage lookup — only needed for the managed path. We do this
+    // BEFORE any Gemini fetch so a fail-fast quota rejection costs zero
+    // Gemini requests.
+    let decodedToken: { uid: string } | null = null;
+    let isPro = false;
+    let pagesUsedToday = 0;
+    if (!hasUserProvidedKey) {
+      try {
+        const authHeader = request.headers.get("Authorization") || "";
+        if (authHeader.startsWith("Bearer ")) {
+          const idToken = authHeader.split("Bearer ")[1];
+          const projectId = env?.VITE_FIREBASE_PROJECT_ID || "lexocr-ec982";
+          decodedToken = await verifyFirebaseIdToken(idToken, projectId);
+        }
+      } catch (e: any) {
+        // Unverified token: keep decodedToken=null; guard will 401.
+        decodedToken = null;
+      }
+      // Fetch today's usage + plan. Best-effort: failure -> treat as 0 / free.
+      try {
+        const sa = env?.FIREBASE_SERVICE_ACCOUNT_JSON;
+        if (decodedToken && sa) {
+          const serviceAccount = JSON.parse(sa);
+          const accessToken = await getOAuth2Token(serviceAccount);
+          const projId = serviceAccount.project_id;
+          const url = `https://firestore.googleapis.com/v1/projects/${projId}/databases/(default)/documents/users/${decodedToken.uid}`;
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+          if (res.ok) {
+            const item: any = await res.json();
+            const fields = item?.fields || {};
+            const plan = fields.plan?.stringValue;
+            const expiredAt = fields.expiredAt?.timestampValue
+              ? new Date(fields.expiredAt.timestampValue).getTime() : null;
+            if (plan === "pro" && expiredAt && expiredAt > Date.now()) isPro = true;
+            const du = fields.dailyUsage?.mapValue?.fields;
+            if (du) {
+              const vnDate = getVNDateString();
+              if (du.date?.stringValue === vnDate) {
+                pagesUsedToday = parseInt(du.pages?.integerValue || "0", 10) || 0;
+              }
+            }
+          }
+        }
+      } catch (_) {
+        // Best-effort: treat as 0 / free.
+      }
+    }
+
+    // Compute requestedPages from the parsed pages array when possible.
+    let requestedPages = 1;
+    try {
+      if (base64File && base64File.startsWith("[")) {
+        const arr = JSON.parse(base64File);
+        if (Array.isArray(arr)) requestedPages = arr.length;
+      }
+    } catch (_) { /* invalid body shape: default to 1 */ }
+
+    const guardResp = await applyOcrRequestGuard({
+      request,
+      env,
+      decodedToken,
+      pagesUsedToday,
+      isPro,
+      hasUserProvidedKey,
+      requestedPages,
+    });
+    if (guardResp) return guardResp;
+    // ============ END GUARD ============
+
     // Determine if mock file
     const isMock1 = fileName && fileName.toLowerCase().includes("ban_an");
     const isMock2 = fileName && fileName.toLowerCase().includes("cao_trang");
@@ -224,7 +312,7 @@ if (env) {
     ];
 
     let finalOcrText = MOCK_LEGAL_DOC_TEXT;
-    let computedAccuracy = 99.4;
+    let computedAccuracy: number | null = 99.4;
     let activePagesCount = 15;
     let activeKeyIndex = 0;
     let warningsToSend = mockWarnings;
@@ -294,6 +382,7 @@ if (env) {
 
 /* Model name resolved dynamically via GeminiModelResolver */
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
+                const benchStart = Date.now();
                 const apiResp = await fetch(url, {
                   method: "POST",
                   headers: {
@@ -304,9 +393,30 @@ if (env) {
                     contents: [{ parts: [filePart, promptPart] }]
                   })
                 });
+                const benchLatency = Date.now() - benchStart;
 
                 if (!apiResp.ok) {
                   const errText = await apiResp.text();
+                  // Telemetry: per-attempt failure (gate-checked inside recordAttempt).
+                  if (bench.enabled) {
+                    let errCategory: string | null = null;
+                    if (apiResp.status === 429) errCategory = "rate_limited";
+                    else if (apiResp.status === 401 || apiResp.status === 403) errCategory = "auth";
+                    else if (apiResp.status === 404) errCategory = "model_not_found";
+                    else if (apiResp.status >= 500) errCategory = "transient";
+                    else errCategory = "client_error";
+                    bench.recordAttempt({
+                      requestId: bench.requestId, pageIndex, pageCount: pagesToProcess.length,
+                      provider: "gemini", model: modelName, keyIndex: i, attempt: retryCount + 1,
+                      success: false, errorCategory: errCategory,
+                      nextAction: apiResp.status === 429 && retryCount < 1 ? "retry_same_key" : "rotate_key",
+                      fallbackUsed: false, httpStatus: apiResp.status,
+                      imageSizeBytes: typeof pageData === "string" ? pageData.length : null,
+                      latencyMs: benchLatency,
+                      promptTokenCount: null, candidatesTokenCount: null, totalTokenCount: null,
+                      cachedContentTokenCount: null, thoughtsTokenCount: null,
+                    });
+                  }
                   if (apiResp.status === 429 && retryCount < 1) {
                     console.warn(`[OCR WARN] 429 Too Many Requests at page ${pageIndex}. Retrying in 2.5s...`);
                     retryCount++;
@@ -321,6 +431,30 @@ if (env) {
                 const finishReason = candidate?.finishReason;
                 const generatedText = candidate?.content?.parts?.[0]?.text;
                 const hasUsableText = Boolean(generatedText && generatedText.trim());
+
+                // Telemetry: per-attempt success (gate-checked inside).
+                if (bench.enabled) {
+                  const usage = extractGeminiUsageMetadata(responseData);
+                  let nextAction: "success" | "rotate_key" | "retry_same_key" | "fallback" = "success";
+                  if (finishReason === "RECITATION" || finishReason === "SAFETY") {
+                    nextAction = "rotate_key";
+                  }
+                  bench.recordAttempt({
+                    requestId: bench.requestId, pageIndex, pageCount: pagesToProcess.length,
+                    provider: "gemini", model: modelName, keyIndex: i, attempt: retryCount + 1,
+                    success: hasUsableText,
+                    errorCategory: hasUsableText ? null : (finishReason || "empty_response"),
+                    nextAction,
+                    fallbackUsed: false, httpStatus: apiResp.status,
+                    imageSizeBytes: typeof pageData === "string" ? pageData.length : null,
+                    latencyMs: benchLatency,
+                    promptTokenCount: usage.promptTokenCount,
+                    candidatesTokenCount: usage.candidatesTokenCount,
+                    totalTokenCount: usage.totalTokenCount,
+                    cachedContentTokenCount: usage.cachedContentTokenCount,
+                    thoughtsTokenCount: usage.thoughtsTokenCount,
+                  });
+                }
 
                 // Development log for each request
                 // @ts-ignore
@@ -408,14 +542,19 @@ if (env) {
             }
           });
 
-          computedAccuracy = parseFloat((95 + Math.random() * 4.9).toFixed(1));
+          // Synthetic/random accuracy has been removed: we no longer report a
+          // fabricated "95–99.9%" number. Truthful state is null + "Chưa đo
+          // được" in the editor. Real measured accuracy is out of scope here
+          // and is a deferred blocker (SECURITY_DEBT_DEFERRED).
+          computedAccuracy = null;
           activePagesCount = pagesToProcess.length;
           activeKeyIndex = i;
           ocrSuccess = true;
           warningsToSend = aggregatedWarnings;
           break;
         } catch (err: any) {
-          console.warn(`Gemini API Key chỉ số ${i} thất bại:`, err.message || err);
+          // Key identity never logged. Only an ephemeral non-secret index.
+          console.warn(`Gemini key index ${i} failed:`, err.message || err);
           lastError = err;
           const errorMessage = err.message || String(err);
           if (errorMessage.toLowerCase().includes("recitation")) {
@@ -430,11 +569,22 @@ if (env) {
         try {
           const fallbackMimeType = base64File.startsWith("[") ? "image/jpeg" : mimeType;
           finalOcrText = await processWithOcrSpaceFallback(pagesToProcess, fallbackMimeType, ocrSpaceKeys);
-          computedAccuracy = 85.0;
+          computedAccuracy = null; // truthful: not measured
           activePagesCount = pagesToProcess.length;
           activeKeyIndex = -1;
           warningsToSend = [];
           ocrSuccess = true;
+          if (bench.enabled) {
+            bench.recordAttempt({
+              requestId: bench.requestId, pageIndex: 0, pageCount: pagesToProcess.length,
+              provider: "ocr-space", model: null, keyIndex: -1, attempt: 1,
+              success: true, errorCategory: null, nextAction: "success",
+              fallbackUsed: true, httpStatus: 200,
+              imageSizeBytes: null, latencyMs: null,
+              promptTokenCount: null, candidatesTokenCount: null, totalTokenCount: null,
+              cachedContentTokenCount: null, thoughtsTokenCount: null,
+            });
+          }
         } catch (fallbackErr: any) {
           throw new Error(
             `Gemini API lỗi (${lastError?.message || lastError}) và OCR.space fallback cũng thất bại: ${fallbackErr.message}`
@@ -442,6 +592,9 @@ if (env) {
         }
       }
     }
+
+    // Emit telemetry summary (gated; no-op when disabled).
+    bench.emitSummary();
 
     const securePayload = encryptText(finalOcrText);
 
@@ -455,7 +608,7 @@ if (env) {
         fileType: mimeType && mimeType.includes("pdf") ? "PDF/A-1" : "JPEG Image",
         uploader: "Admin-01",
         progress: 100,
-        accuracy: computedAccuracy,
+        accuracy: computedAccuracy, // null = "Chưa đo được"
         pagesCount: activePagesCount,
         warnings: warningsToSend,
         encryptedPayload: securePayload.encryptedData,

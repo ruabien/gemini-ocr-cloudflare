@@ -55,7 +55,7 @@ export interface OcrDocument {
   fileType: string;
   resolution: string;
   uploader: string;
-  accuracy: number | string;
+  accuracy: number | string | null;
   warnings: Array<{
     line: string | number;
     text: string;

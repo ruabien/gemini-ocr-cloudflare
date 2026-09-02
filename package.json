@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "npx tsx src/utils/ocrConfig.test.js && npx tsx src/utils/retry.test.js && npx tsx src/utils/recitation.test.js && npx tsx src/utils/fallback.test.js && npx tsx src/utils/geminiModelResolver.test.js && npx tsx src/utils/extractionService.test.js"
+    "test": "npx tsx src/utils/ocrConfig.test.js && npx tsx src/utils/retry.test.js && npx tsx src/utils/recitation.test.js && npx tsx src/utils/fallback.test.js && npx tsx src/utils/geminiModelResolver.test.js && npx tsx src/utils/extractionService.test.js && npx tsx shared/ocrTelemetry.test.ts && npx tsx shared/ocrRequestGuard.test.ts && npx tsx shared/ocrProcessAccuracy.test.ts"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",

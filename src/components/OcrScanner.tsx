@@ -15,6 +15,11 @@ import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
 import { getActiveModel, autoResolveModel, MODEL_MODES } from "../utils/geminiModelResolver";
 import { optimizeImageForOcr } from "../utils/imageOptimizer";
 import { cleanOcrPageText } from "../../shared/ocrPostProcessing";
+import {
+  createBenchmarkRun,
+  extractGeminiUsageMetadata,
+  type BenchmarkRun,
+} from "../../shared/ocrTelemetry";
 
 interface OcrScannerProps {
   onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[]; outputMode?: "text" | "structured" }) => void;
@@ -622,6 +627,14 @@ const keyToProjectMap = new Map<string, string>();
       }
       pageProcessingLockRef.current[pageNum] = true;
 
+      // One benchmark run per sendFileToBackend invocation. Resolved once,
+      // governs BOTH per-attempt events AND the summary line. Disabled
+      // (default): no requestId is generated and every method is a no-op.
+      const bench: BenchmarkRun = createBenchmarkRun({
+        // @ts-ignore — Vite statically inlines import.meta.env at build time.
+        enabled: ((import.meta as any).env?.VITE_LEXOCR_BENCH_TELEMETRY) === "true",
+      });
+
       // @ts-ignore
       if (import.meta.env.DEV) console.info(`--- EXECUTING SINGLE OCR RUN FOR ${file.type?.startsWith("image/") ? `Image_1_${file.name || "unknown"}` : `Page_${pageNum}`} ---`);
       try {
@@ -652,10 +665,36 @@ const keyToProjectMap = new Map<string, string>();
           return new Promise<string>((resolveFallback, rejectFallback) => {
             const logSuccess = (val: string) => {
               console.log("[FALLBACK] Result: success");
+              if (bench.enabled) {
+                bench.recordAttempt({
+                  requestId: bench.requestId,
+                  pageIndex: pageNum, pageCount: 1,
+                  provider: "ocr-space", model: null,
+                  keyIndex: -1, attempt: 1,
+                  success: true, errorCategory: null, nextAction: "success",
+                  fallbackUsed: true, httpStatus: 200,
+                  imageSizeBytes: null, latencyMs: null,
+                  promptTokenCount: null, candidatesTokenCount: null, totalTokenCount: null,
+                  cachedContentTokenCount: null, thoughtsTokenCount: null,
+                });
+              }
               resolveFallback(val);
             };
             const logFailure = (err: Error) => {
               console.log("[FALLBACK] Result: failed", err.message);
+              if (bench.enabled) {
+                bench.recordAttempt({
+                  requestId: bench.requestId,
+                  pageIndex: pageNum, pageCount: 1,
+                  provider: "ocr-space", model: null,
+                  keyIndex: -1, attempt: 1,
+                  success: false, errorCategory: "ocr_space_failed", nextAction: "abort",
+                  fallbackUsed: true, httpStatus: null,
+                  imageSizeBytes: null, latencyMs: null,
+                  promptTokenCount: null, candidatesTokenCount: null, totalTokenCount: null,
+                  cachedContentTokenCount: null, thoughtsTokenCount: null,
+                });
+              }
               rejectFallback(err);
             };
 
@@ -831,7 +870,6 @@ const keyToProjectMap = new Map<string, string>();
               console.info("[OCR ENGINE] Gemini");
               const model = getActiveModel(user?.uid, activeKey);
               console.info("[GEMINI CONFIG] Key index:", activeKeyIndex);
-              console.info("[GEMINI CONFIG] Key suffix:", `${activeKey.slice(-4)}`);
               console.info("[GEMINI CONFIG] Model:", model);
             }
             // @ts-ignore
@@ -919,6 +957,20 @@ const keyToProjectMap = new Map<string, string>();
               const isTransientError = xhr.status === 408 || xhr.status === 500 || xhr.status === 502 || xhr.status === 503 || xhr.status === 504;
 
               if (errorType === "RATE_LIMITED" || errorType === "MODEL_NOT_AVAILABLE" || errorType === "KEY_PERMISSION_ERROR" || errorType === "CLIENT_ERROR" || xhr.status === 401) {
+                // Telemetry: per-attempt failure (gate-checked inside).
+                if (bench.enabled) {
+                  bench.recordAttempt({
+                    requestId: bench.requestId,
+                    pageIndex: pageNum, pageCount: 1,
+                    provider: "gemini", model: selectedModel,
+                    keyIndex: activeKeyIndex, attempt: retryAttempt + 1,
+                    success: false, errorCategory: errorType,
+                    nextAction: "rotate_key", fallbackUsed: false, httpStatus: errorCode,
+                    imageSizeBytes: null, latencyMs: null,
+                    promptTokenCount: null, candidatesTokenCount: null, totalTokenCount: null,
+                    cachedContentTokenCount: null, thoughtsTokenCount: null,
+                  });
+                }
                 reject({
                   status: errorCode,
                   type: errorType,
@@ -971,11 +1023,35 @@ const keyToProjectMap = new Map<string, string>();
                 try {
                   const rawText = xhr.responseText;
                   const cleanJson = JSON.parse(rawText);
-                  
+
                   const blockReason = cleanJson.promptFeedback?.blockReason;
                   const candidate = cleanJson.candidates?.[0];
                   const finishReason = candidate?.finishReason;
                   const safetyRatings = candidate?.safetyRatings || [];
+
+                  // Telemetry: per-attempt success (gate-checked inside).
+                  if (bench.enabled) {
+                    const usage = extractGeminiUsageMetadata(cleanJson);
+                    let nextAction: "success" | "rotate_key" | "retry_same_key" | "fallback" = "success";
+                    if (finishReason === "RECITATION" || finishReason === "SAFETY") nextAction = "rotate_key";
+                    bench.recordAttempt({
+                      requestId: bench.requestId,
+                      pageIndex: pageNum, pageCount: 1,
+                      provider: "gemini",
+                      model: selectedModel,
+                      keyIndex: activeKeyIndex, attempt: retryAttempt + 1,
+                      success: true,
+                      errorCategory: blockReason || null,
+                      nextAction, fallbackUsed: false, httpStatus: xhr.status,
+                      imageSizeBytes: base64Data ? base64Data.length : null,
+                      latencyMs: null,
+                      promptTokenCount: usage.promptTokenCount,
+                      candidatesTokenCount: usage.candidatesTokenCount,
+                      totalTokenCount: usage.totalTokenCount,
+                      cachedContentTokenCount: usage.cachedContentTokenCount,
+                      thoughtsTokenCount: usage.thoughtsTokenCount,
+                    });
+                  }
 
                   const geminiText = candidate?.content?.parts?.[0]?.text;
                   const actualText = geminiText || cleanJson.text || "";
@@ -1310,6 +1386,9 @@ const keyToProjectMap = new Map<string, string>();
           }
         }
       } finally {
+        // Telemetry summary (gated; no-op when disabled). Emitted exactly
+        // once per sendFileToBackend run, regardless of success/failure path.
+        bench.emitSummary();
         pageProcessingLockRef.current[pageNum] = false;
       }
     };
