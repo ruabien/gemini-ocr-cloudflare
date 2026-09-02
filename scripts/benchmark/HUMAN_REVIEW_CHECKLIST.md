@@ -66,6 +66,7 @@ For each page, open the source image side-by-side with the candidate transcripti
 - [ ] Signatures replaced with `[SIGNATURE]`
 - [ ] Obvious source typos preserved (not silently corrected)
 - [ ] Stamp-obscured regions marked with `[STAMP_OBSCURING]` if applicable
+- [ ] Reference file is PURE: no workflow/control metadata lines (`[DRAFT]`, `[OPERATOR NOTE]`, `[PII CHECKED]`, etc.) — only transcription plus contract-approved markers (`[ILLEGIBLE]`, `[PARTIALLY_ILLEGIBLE]`, `[SIGNATURE]`, `[STAMP_OBSCURING]`, `[TABLE_START]`, `[TABLE_END]`, `[ ]`, `[X]`). Unapproved standalone markers fail validation with `REFERENCE_CONTAINS_UNAPPROVED_MARKER`.
 
 ### H. Annotation Completeness
 

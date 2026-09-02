@@ -51,6 +51,7 @@ export type CorpusValidationErrorCode =
   | "REFERENCE_NOT_VERIFIED"
   | "PII_NOT_CONFIRMED"
   | "PII_HIT_NOT_ACKNOWLEDGED"
+  | "REFERENCE_CONTAINS_UNAPPROVED_MARKER"
   | "MISSING_CORPUS_REVIEW"
   | "CORPUS_REVIEW_INCOMPLETE"
   | "LOAD_ERROR";
@@ -150,6 +151,59 @@ function scanForPii(text: string): PiiHeuristicHit[] {
     }
   }
   return hits;
+}
+
+// ── Reference purity: fail-closed marker grammar ──────────────────
+//
+// The reference file must contain ONLY pure transcription plus source-content
+// markers explicitly approved by REFERENCE_TRANSCRIPTION_CONTRACT.md.
+//
+// Marker grammar (deterministic, fail-closed):
+//   1. A line is a "standalone marker line" iff, after trimming surrounding
+//      whitespace, its shape matches /^\[[^\]]*\]$/  (starts with '[', ends
+//      with ']', no ']' in between).
+//   2. Ordinary source text that merely contains square brackets inline
+//      (e.g. "Điều 1 (khoản [a])", "Trang [1] / [4]") is NOT standalone and
+//      is never rejected by this rule.
+//   3. Every standalone marker line must EXACTLY equal one of the
+//      contract-approved markers below. Any other standalone marker line —
+//      whether workflow metadata ([DRAFT], [OPERATOR NOTE]) or an unsupported
+//      / malformed source marker ([ X], [TABLE], [UNKNOWN]) — fails closed.
+//
+// This is a FILE-FORMAT invariant: it applies regardless of referenceStatus
+// (REFERENCE_DRAFT is unverified transcription, NOT relaxed file format).
+
+export const REFERENCE_SOURCE_MARKERS = [
+  "[STAMP_OBSCURING]",
+  "[ILLEGIBLE]",
+  "[PARTIALLY_ILLEGIBLE]",
+  "[TABLE_START]",
+  "[TABLE_END]",
+  "[ ]",
+  "[X]",
+  "[SIGNATURE]",
+] as const;
+
+const UNAPPROVED_MARKER_RE = /^\[[^\]]*\]$/u;
+
+/**
+ * Validate reference text purity.
+ * Returns one error per offending standalone marker line that is not
+ * contract-approved. Returns an empty array when the text is pure.
+ */
+export function validateReferencePurity(
+  text: string,
+  pageId: string
+): { number: number; line: string }[] {
+  const offending: { number: number; line: string }[] = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (UNAPPROVED_MARKER_RE.test(trimmed) && !(REFERENCE_SOURCE_MARKERS as readonly string[]).includes(trimmed)) {
+      offending.push({ number: i + 1, line: trimmed });
+    }
+  }
+  return offending;
 }
 
 // ── Main validator ─────────────────────────────────────────────────
@@ -369,6 +423,18 @@ export function validateCorpus(opts: CorpusValidatorOptions): CorpusValidationRe
     const refFilePath = join(rootDir, "references", page.referenceFileName ?? "");
     if (existsSync(refFilePath)) {
       const refText = readFileSync(refFilePath, "utf8");
+
+      // Reference purity guard (fail-closed marker grammar) — runs BEFORE the
+      // PII heuristic scan so workflow/malformed metadata never reaches PII.
+      const impure = validateReferencePurity(refText, page.benchmarkPageId);
+      for (const m of impure) {
+        errors.push({
+          code: "REFERENCE_CONTAINS_UNAPPROVED_MARKER",
+          path: refFilePath,
+          message: `Page ${page.benchmarkPageId}: reference line ${m.number} contains an unapproved marker '${m.line}' (not in REFERENCE_TRANSCRIPTION_CONTRACT.md allowlist)`,
+        });
+      }
+
       const hits = scanForPii(refText);
       if (hits.length > 0) {
         const ackLabels = new Set(

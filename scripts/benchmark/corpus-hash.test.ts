@@ -349,6 +349,42 @@ function hashCorpus(c: BuiltCorpus): string {
   } finally { cleanup(c); }
 }
 
+// ── Test 13: exact reference content sensitivity (no hidden stripping) ──
+
+{
+  const c = buildCorpus();
+  try {
+    const pageInputs = (refText: string) => c.manifest.pages.map((p) => {
+      // Write the mutated reference for P001, others unchanged
+      if (p.benchmarkPageId === "P001") {
+        writeFileSync(join(c.dir, "references", p.referenceFileName!), refText, "utf8");
+      }
+      return {
+        page: p,
+        pageFilePath: join(c.dir, "pages", p.fileName),
+        referenceFilePath: join(c.dir, "references", p.referenceFileName!),
+        entities: JSON.parse(readFileSync(join(c.dir, "annotations", `${p.benchmarkPageId}.entities.json`), "utf8")),
+        layout: JSON.parse(readFileSync(join(c.dir, "annotations", `${p.benchmarkPageId}.layout.json`), "utf8")),
+      };
+    });
+    const review = JSON.parse(readFileSync(join(c.dir, "corpus-review.json"), "utf8"));
+
+    // Pure reference
+    const pure = "Nguyễn Văn An — Điều 463\n100.000.000 đồng";
+    const hPure = computeCorpusHash({ manifest: c.manifest, pageInputs: pageInputs(pure), review });
+
+    // Contaminated reference: same body, one [DRAFT] marker line prepended
+    const contam = "[DRAFT]\nNguyễn Văn An — Điều 463\n100.000.000 đồng";
+    const hContam = computeCorpusHash({ manifest: c.manifest, pageInputs: pageInputs(contam), review });
+
+    assert(hPure !== hContam, "hash(reference='ABC') !== hash(reference='[DRAFT]\\nABC') — computeCorpusHash performs NO hidden stripping");
+
+    // Restore pure reference and confirm it reproduces the original corpus hash
+    const hPure2 = computeCorpusHash({ manifest: c.manifest, pageInputs: pageInputs(pure), review });
+    assert(hPure === hPure2, "pure reference hash is reproducible");
+  } finally { cleanup(c); }
+}
+
 console.log("--- corpus-hash.test.ts ---");
 console.log("PASS " + pass);
 console.log("FAIL " + fail);

@@ -92,6 +92,21 @@ assert(levenshteinDistance("kitten", "sitting") === 3, "Levenshtein kitten->sitt
   assert(n.normalize("NFC") === n, "normalizeForComparison returns NFC");
 }
 
+// 16. Metric-layer invariant: computeCer/computeWer do NOT strip workflow-looking content
+{
+  const ref = "[DRAFT]\nABC";
+  const cand = "ABC";
+  const cer = computeCer(ref, cand);
+  const wer = computeWer(ref, cand);
+  // The contaminated reference deliberately bypasses the corpus validator to prove
+  // the metric functions treat ALL reference content as reference text (no stripper).
+  assert(cer !== null && cer > 0, "CER reflects additional '[DRAFT]' content (no silent stripping)");
+  assert(wer !== null && wer > 0, "WER reflects additional '[DRAFT]' token (no silent stripping)");
+  // Control: identical reference/candidate must still be 0
+  assert(computeCer("ABC", "ABC") === 0, "control: CER = 0 on identical strings");
+  assert(computeWer("ABC", "ABC") === 0, "control: WER = 0 on identical strings");
+}
+
 console.log("--- ocr-quality-evaluator.test.ts ---");
 console.log("PASS " + pass);
 console.log("FAIL " + fail);

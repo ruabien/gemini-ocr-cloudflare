@@ -88,8 +88,33 @@ The reference text is the **ground truth** for OCR quality evaluation. Every cha
 - Plain text, no markup.
 - Single file per page, placed in `references/<pageId>.ref.txt`.
 
-## 18. Verification
+## 19. Reference Purity (File-Format Invariant)
 
-- After transcription, verify the reference text against the source image.
-- Check: diacritics, numbers, names, dates, legal citations, illegible regions, source typos.
-- Update `referenceStatus` to `REFERENCE_VERIFIED` only after verification.
+The reference text file must contain ONLY pure transcription plus source-content markers explicitly approved by this contract. No workflow or control metadata of any kind is permitted.
+
+### Marker grammar (deterministic, fail-closed)
+
+1. A line is a **standalone marker line** iff, after trimming surrounding whitespace, its shape matches `^\[[^\]]*\]$` (starts with `[`, ends with `]`, no `]` in between).
+2. Ordinary source text that merely contains square brackets inline (e.g. `Điều 1 (khoản [a])`, `Trang [1] / [4]`) is **not** a standalone marker line and is never rejected by this rule.
+3. Every standalone marker line must **exactly** equal one of the contract-approved markers below. Any other standalone marker line — whether workflow metadata (`[DRAFT]`, `[OPERATOR NOTE]`) or an unsupported/malformed source marker (`[ X]`, `[TABLE]`, `[UNKNOWN]`) — **fails closed**.
+
+### Contract-approved source-content markers (case-sensitive, byte-for-byte)
+
+| Marker | Source meaning | § |
+|--------|---------------|---|
+| `[STAMP_OBSCURING]` | stamp obstructs a region | §7 |
+| `[ILLEGIBLE]` | genuinely unreadable region | §8, §9 |
+| `[PARTIALLY_ILLEGIBLE]` | partially legible region | §9 |
+| `[TABLE_START]` | complex table start | §10 |
+| `[TABLE_END]` | complex table end | §10 |
+| `[ ]` | empty checkbox | §11 |
+| `[X]` | checked checkbox | §11 |
+| `[SIGNATURE]` | signature placeholder | §12 |
+
+### Error code
+
+Validation reports `REFERENCE_CONTAINS_UNAPPROVED_MARKER` for each offending line. This is a **hard error** that blocks corpus readiness.
+
+### File-format invariant
+
+This rule applies regardless of `referenceStatus`. `REFERENCE_DRAFT` means unverified transcription, not relaxed file format. Even a draft reference file must never contain workflow metadata. Purity is enforced before the PII heuristic scan. The corpus content hash operates on the exact bytes of the reference file; there is no stripping layer.

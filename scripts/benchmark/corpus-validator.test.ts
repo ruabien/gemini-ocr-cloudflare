@@ -136,7 +136,126 @@ function copyTree(src: string, dest: string): void {
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 }
 
-// ── Negative test isolation: changed reference -> different hash ───
+// ── Test 6–13: Reference purity — fail-closed marker grammar ──────
+
+{
+  const PURE_BODY = "Nguyễn Văn An — Điều 463\n100.000.000 đồng\n";
+
+  // Helper: create a temp corpus with a single reference file
+  function purityTestRef(
+    pageId: string,
+    refContent: string,
+    status: "REFERENCE_VERIFIED" | "REFERENCE_DRAFT" = "REFERENCE_VERIFIED"
+  ): {
+    tmp: string;
+    manifestPath: string;
+    rootDir: string;
+  } {
+    const tmp = mkdtempSync(join(tmpdir(), "lexocr-purity-"));
+    copyTree(CANONICAL_FIXTURE, tmp);
+    writeFileSync(join(tmp, "references", "clean-001.ref.txt"), refContent, "utf8");
+    if (status !== "REFERENCE_VERIFIED") {
+      const manifestPath = join(tmp, "manifest.json");
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+        pages: { benchmarkPageId: string; referenceStatus: string }[];
+      };
+      manifest.pages[0].referenceStatus = status;
+      writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
+    }
+    return { tmp, manifestPath: join(tmp, "manifest.json"), rootDir: tmp };
+  }
+
+  // Test 6: All 8 contract-approved markers pass
+  for (const marker of [
+    "[STAMP_OBSCURING]",
+    "[ILLEGIBLE]",
+    "[PARTIALLY_ILLEGIBLE]",
+    "[TABLE_START]",
+    "[TABLE_END]",
+    "[ ]",
+    "[X]",
+    "[SIGNATURE]",
+  ] as const) {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", marker + "\n" + PURE_BODY);
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(r.ok, `purity guard: approved marker '${marker}' passes validation`);
+      const purityErrors = r.errors.filter((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+      assert(purityErrors.length === 0, `purity guard: approved marker '${marker}' produces no purity error`);
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+
+  // Test 7: [DRAFT] standalone marker line fails
+  {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", "[DRAFT]\n" + PURE_BODY);
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(!r.ok, "purity guard: [DRAFT] standalone marker line -> validation FAILS");
+      assert(r.errors.some((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "purity guard: [DRAFT] produces REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+
+  // Test 8: [OPERATOR NOTE] fails
+  {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", "[OPERATOR NOTE]\n" + PURE_BODY);
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(!r.ok, "purity guard: [OPERATOR NOTE] -> FAILS");
+      assert(r.errors.some((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "purity guard: [OPERATOR NOTE] produces REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+// Test 9: [ X] (space before X, not contract's [X]) fails closed
+  {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", "[ X]\n" + PURE_BODY);
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(!r.ok, "purity guard: [ X] (space before X) -> FAILS closed");
+      assert(r.errors.some((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "purity guard: [ X] produces REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+
+  // Test 10: Workflow metadata hidden by leading whitespace is still caught
+  {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", "  [DRAFT]\n" + PURE_BODY);
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(!r.ok, "purity guard: whitespace-hidden [DRAFT] -> FAILS");
+      assert(r.errors.some((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "purity guard: whitespace-hidden [DRAFT] produces REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+
+  // Test 11: Ordinary source text with inline brackets (e.g. "Trang [1] / [4]") passes
+  {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", "Trang [1] / [4] — Nội dung thật\n");
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(r.ok, "purity guard: ordinary source text with inline brackets [1] [4] passes");
+      assert(r.errors.length === 0 || !r.errors.some((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "purity guard: no purity error on inline brackets");
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+
+  // Test 12: REFERENCE_DRAFT reference with unapproved marker still fails (file-format invariant)
+  {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", "[DRAFT — awaiting verification]\n" + PURE_BODY, "REFERENCE_DRAFT");
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(!r.ok, "purity guard: REFERENCE_DRAFT + unapproved marker -> FAILS");
+      assert(r.errors.some((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "purity guard: REFERENCE_DRAFT + unapproved marker produces REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+      // Also still has REFERENCE_NOT_VERIFIED for the draft status
+      assert(r.errors.some((e) => e.code === "REFERENCE_NOT_VERIFIED"), "purity guard: REFERENCE_DRAFT also produces REFERENCE_NOT_VERIFIED");
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+
+  // Test 13: [TABLE] (not contract-approved, no underscore) fails closed
+  {
+    const { tmp, manifestPath, rootDir } = purityTestRef("clean-001", "[TABLE]\n" + PURE_BODY);
+    try {
+      const r = validateCorpus({ manifestPath, rootDir });
+      assert(!r.ok, "purity guard: [TABLE] (no underscore) -> FAILS closed");
+      assert(r.errors.some((e) => e.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "purity guard: [TABLE] produces REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+    } finally { rmSync(tmp, { recursive: true, force: true }); }
+  }
+}
 
 {
   const tmp = mkdtempSync(join(tmpdir(), "lexocr-val-"));

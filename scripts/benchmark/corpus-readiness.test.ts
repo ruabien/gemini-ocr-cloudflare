@@ -9,7 +9,9 @@
  */
 import { validateCorpus } from "./corpus-validator";
 import { computeReadiness, checkReadiness } from "./corpus-readiness";
+import { mkdtempSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, rmSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 let pass = 0, fail = 0; const failures: string[] = [];
@@ -76,6 +78,44 @@ const CANONICAL_FIXTURE = join(__dirname, "corpus-synthetic-fixture");
   assert(Array.isArray(report.hardFailures), "hardFailures is an array");
   assert(Array.isArray(report.softWarnings), "softWarnings is an array");
   assert(report.summary !== null, "summary is present");
+}
+
+// ── Test 5: contamination → CORPUS_NOT_READY ───────────────────────
+
+{
+  const tmp = mkdtempSync(join(tmpdir(), "lexocr-readiness-"));
+  try {
+    // Copy canonical fixture, then contaminate a reference file
+    function copyTree(src: string, dest: string): void {
+      mkdirSync(dest, { recursive: true });
+      const entries = ["manifest.json", "corpus-review.json"];
+      for (const e of entries) {
+        const srcFile = join(src, e);
+        if (existsSync(srcFile)) copyFileSync(srcFile, join(dest, e));
+      }
+      const dirs = ["pages", "references", "annotations"];
+      for (const d of dirs) {
+        const srcDir = join(src, d);
+        const destDir = join(dest, d);
+        mkdirSync(destDir, { recursive: true });
+        for (const f of readdirSync(srcDir)) {
+          copyFileSync(join(srcDir, f), join(destDir, f));
+        }
+      }
+    }
+    const __dirname = fileURLToPath(new URL(".", import.meta.url));
+    const CANONICAL_FIXTURE = join(__dirname, "corpus-synthetic-fixture");
+    copyTree(CANONICAL_FIXTURE, tmp);
+    // Contaminate clean-001.ref.txt with [DRAFT] marker
+    const refFile = join(tmp, "references", "clean-001.ref.txt");
+    const original = readFileSync(refFile, "utf8");
+    writeFileSync(refFile, "[DRAFT]\n" + original, "utf8");
+    const r = validateCorpus({ manifestPath: join(tmp, "manifest.json"), rootDir: tmp });
+    const report = computeReadiness(r);
+    assert(report.verdict === "CORPUS_NOT_READY", "contaminated reference -> CORPUS_NOT_READY");
+    assert(report.hardFailureCount > 0, "contaminated reference -> hard failures > 0");
+    assert(report.hardFailures.some((f) => f.code === "REFERENCE_CONTAINS_UNAPPROVED_MARKER"), "contaminated reference -> includes REFERENCE_CONTAINS_UNAPPROVED_MARKER");
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
 }
 
 console.log("--- corpus-readiness.test.ts ---");

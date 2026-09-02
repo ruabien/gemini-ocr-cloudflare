@@ -65,6 +65,8 @@ npx tsx scripts/benchmark/corpus-cli.ts validate \
   --root tmp/ocr-benchmark
 ```
 
+The validate command now checks reference purity. If a `.ref.txt` contains an unapproved standalone marker (e.g. `[DRAFT]`, `[OPERATOR NOTE]`, `[PII CHECKED]`), validation fails with `REFERENCE_CONTAINS_UNAPPROVED_MARKER`. Only pure transcription plus contract-approved source markers (`[ILLEGIBLE]`, `[SIGNATURE]`, `[STAMP_OBSCURING]`, `[PARTIALLY_ILLEGIBLE]`, `[TABLE_START]`, `[TABLE_END]`, `[ ]`, `[X]`) are accepted.
+
 ### 3. Review and confirm
 
 Follow `HUMAN_REVIEW_CHECKLIST.md`. Update `corpus-review.json`.
