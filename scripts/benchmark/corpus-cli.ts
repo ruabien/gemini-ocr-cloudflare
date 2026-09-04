@@ -4,10 +4,11 @@
  * Offline, no-network command-line interface for PHASE C corpus tooling.
  *
  * Commands:
- *  validate  - validate a corpus (offline)
+ *  validate   - validate a corpus (offline)
  *  ready     - compute corpus readiness verdict
  *  hash      - compute canonical corpus hash
  *  freeze    - write a machine-readable freeze record
+ *  reconcile - reconcile declared entity counts against reference text
  *
  * Examples:
  *  npx tsx scripts/benchmark/corpus-cli.ts validate \
@@ -18,7 +19,9 @@
  *    --review .../corpus-review.json
  */
 import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { validateCorpus } from "./corpus-validator";
+import { reconcileCorpus, formatReconcileReport } from "./corpus-reconciler";
 import { computeReadiness, type ReadinessReport } from "./corpus-readiness";
 import { readJsonFile } from "./corpus-hash";
 import type { BenchmarkManifest } from "./types";
@@ -32,6 +35,8 @@ const USAGE = `LEXOCR OCR Corpus CLI - usage:
     --manifest <path> [--root <dir>] [--review <path>] [--out <path>]
   npx tsx scripts/benchmark/corpus-cli.ts freeze \\
     --manifest <path> [--root <dir>] [--review <path>] [--out <path>] [--version <n>]
+  npx tsx scripts/benchmark/corpus-cli.ts reconcile \\
+    --manifest <path> [--root <dir>] [--out <path>]
 `;
 
 interface CliArgs {
@@ -107,12 +112,12 @@ function cmdReady(args: CliArgs): number {
   });
   const report = computeReadiness(validation);
   console.log("--- corpus ready ---");
-  console.log(`VERDICT    : ${report.verdict}`);
+  console.log(`MANIFEST   : ${args.manifestPath}`);
   console.log(`HASH       : ${report.hash ?? "N/A"}`);
-  console.log(`HARD_FAILS : ${report.hardFailureCount}`);
+  console.log(`HARD FAIL  : ${report.hardFailures.length}`);
   for (const hf of report.hardFailures) console.log(`  [H] ${hf.code} ${hf.message}`);
-  console.log(`SOFT_WARNS : ${report.softWarningCount}`);
-  for (const sw of report.softWarnings) console.log(`  [W] ${sw.code} ${sw.message}`);
+  console.log(`SOFT WARN  : ${report.softWarnings.length}`);
+  for (const sw of report.softWarnings) console.log(`  [S] ${sw.code} ${sw.message}`);
   console.log("--- summary ---");
   console.log(formatSummary(report.summary));
   console.log(report.verdict === "CORPUS_READY" ? "CORPUS_READY = YES" : "CORPUS_READY = NO");
@@ -163,6 +168,12 @@ function cmdFreeze(args: CliArgs): number {
   }
 
   const manifest = readJsonFile<BenchmarkManifest>(args.manifestPath);
+  const reconciliation = reconcileCorpus(manifest, args.rootDir);
+  if (reconciliation.totalMismatches !== 0) {
+    console.error("FREEZE REFUSED: corpus reconciliation has mismatches.");
+    console.error(formatReconcileReport(reconciliation));
+    return 1;
+  }
   const categoryCounts: Record<string, number> = {};
   for (const page of manifest.pages) {
     categoryCounts[page.category] = (categoryCounts[page.category] ?? 0) + 1;
@@ -182,11 +193,27 @@ function cmdFreeze(args: CliArgs): number {
   console.log(`VERDICT    : ${report.verdict}`);
   console.log(`CORPUS_HASH: ${report.hash}`);
   console.log(JSON.stringify(freezeRecord, null, 2));
+  const freezePath = args.outPath ?? join(args.rootDir, "corpus-freeze.json");
+  writeFileSync(freezePath, JSON.stringify(freezeRecord, null, 2) + "\n", "utf8");
+  console.log(`WROTE      : ${freezePath}`);
+  const hashPath = join(args.rootDir, "corpus-hash.txt");
+  writeFileSync(hashPath, report.hash + "\n", "utf8");
+  console.log(`WROTE      : ${hashPath}`);
+  return 0;
+}
+
+function cmdReconcile(args: CliArgs): number {
+  const manifest = readJsonFile<BenchmarkManifest>(args.manifestPath);
+  const result = reconcileCorpus(manifest, args.rootDir);
+  console.log("--- corpus reconcile ---");
+  console.log(`MANIFEST   : ${args.manifestPath}`);
+  console.log(`ROOT       : ${args.rootDir}`);
+  console.log(formatReconcileReport(result));
   if (args.outPath) {
-    writeFileSync(args.outPath, JSON.stringify(freezeRecord, null, 2) + "\n", "utf8");
+    writeFileSync(args.outPath, JSON.stringify(result, null, 2) + "\n", "utf8");
     console.log(`WROTE      : ${args.outPath}`);
   }
-  return 0;
+  return result.totalMismatches === 0 ? 0 : 1;
 }
 
 function main(): number {
@@ -207,6 +234,7 @@ function main(): number {
     case "ready": return cmdReady(args);
     case "hash": return cmdHash(args);
     case "freeze": return cmdFreeze(args);
+    case "reconcile": return cmdReconcile(args);
     default:
       console.error(`ERROR: unknown command '${args.command}'`);
       console.log(USAGE);
