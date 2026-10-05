@@ -2,7 +2,7 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } fro
 import { clean as docClean } from "../../../../shared/docFormatter";
 import { isHeading } from "../../../../shared/docFormatter/heading";
 import { getParagraphConfig } from "../../../../shared/docFormatter/docxStyles";
-import { verifyFirebaseIdToken, getUserProfile } from "../../../utils/firebaseAdmin";
+import { verifyFirebaseIdToken, getUserProfile } from "../../utils/firebaseAdmin";
 import {
   normalizeTextForDocx,
   isQuocHieuTieuNgu,

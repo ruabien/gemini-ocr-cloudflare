@@ -1,4 +1,4 @@
-import { verifyFirebaseIdToken, getUserProfile } from "../../../utils/firebaseAdmin";
+import { verifyFirebaseIdToken, getUserProfile } from "../../utils/firebaseAdmin";
 
 export const onRequestPost = async (context: { request: Request; env: any }) => {
   const { request, env } = context;
