@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { OcrDocument } from "../types";
 import { useAuth } from "../contexts/AuthContext";
+import { auth } from "../lib/firebase";
 import LoginPromptModal from "./LoginPromptModal";
 import * as pdfjs from "pdfjs-dist";
 
@@ -392,15 +393,29 @@ useEffect(() => {
     }
     setIsExportingDocx(true);
     try {
+      const idToken = await auth.currentUser?.getIdToken();
       const response = await fetch("/api/ocr/export/docx", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": idToken ? `Bearer ${idToken}` : "",
+        },
         body: JSON.stringify({
           text: sanitizeText(editorText),
           fileName: document.name,
           mode: exportMode
         })
       });
+      if (!response.ok) {
+        let errorMessage = "Xuất DOCX thất bại.";
+        try {
+          const data = await response.json();
+          if (data?.error) errorMessage = data.error;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(errorMessage);
+      }
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = window.document.createElement("a");
@@ -412,6 +427,7 @@ useEffect(() => {
       link.remove();
     } catch (err) {
       console.error("Export DOCX error:", err);
+      alert(err instanceof Error ? err.message : "Xuất DOCX thất bại.");
     } finally {
       setIsExportingDocx(false);
     }
