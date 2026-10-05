@@ -2,6 +2,7 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } fro
 import { clean as docClean } from "../../../../shared/docFormatter";
 import { isHeading } from "../../../../shared/docFormatter/heading";
 import { getParagraphConfig } from "../../../../shared/docFormatter/docxStyles";
+import { verifyFirebaseIdToken, getUserProfile } from "../../../utils/firebaseAdmin";
 import {
   normalizeTextForDocx,
   isQuocHieuTieuNgu,
@@ -20,8 +21,61 @@ export function getRenderableDocxLines(text: string): string[] {
     .filter((line) => line.trim().length > 0);
 }
 
-export async function onRequestPost({ request }: { request: any }) {
+export const onRequestPost = async (context: { request: Request; env: any }) => {
+  const { request, env } = context;
+
   try {
+    // --- Auth + Pro entitlement check ---
+    const authHeader = request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing or invalid Authorization header" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const idToken = authHeader.split("Bearer ")[1];
+    const projectId =
+      env.FIREBASE_PROJECT_ID ||
+      env.VITE_FIREBASE_PROJECT_ID ||
+      "lexocr-ec982";
+
+    let decodedToken;
+    try {
+      decodedToken = await verifyFirebaseIdToken(idToken, projectId);
+    } catch (err: any) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Unauthorized: ${err.message}` }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const { uid } = decodedToken;
+
+    const serviceAccountJson = env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!serviceAccountJson) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Server configuration error" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const profile = await getUserProfile(serviceAccountJson, uid);
+    const isPro = !!(
+      profile &&
+      profile.plan === "pro" &&
+      profile.expiredAt &&
+      new Date(profile.expiredAt).getTime() > Date.now()
+    );
+
+    if (!isPro) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Pro subscription required" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    // --- End auth check ---
+
     const { text, fileName, mode } = await request.json();
     const contentText = text || "";
     const cleanedContent = removePageBreakMarkers(contentText);
@@ -140,4 +194,4 @@ export async function onRequestPost({ request }: { request: any }) {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
-}
+};
