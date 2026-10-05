@@ -35,7 +35,7 @@ export interface RecentActivity {
 }
 
 export interface OcrConfig {
-  engine: string;
+  engine: "tesseract" | "gemini";
   outputFormat: string;
   language?: string;
   preserveLayout?: boolean;
