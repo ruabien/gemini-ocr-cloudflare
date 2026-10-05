@@ -98,15 +98,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Cập nhật lại user.plan và dailyUsage
         const currentPlan = isCurrentlyPro ? "pro" : "free";
-        setUser(prev => prev ? { 
-          ...prev, 
-          plan: currentPlan,
-          dailyUsage: data.dailyUsage ? {
-            date: data.dailyUsage.date,
-            pages: Number(data.dailyUsage.pages || 0),
-            updatedAt: data.dailyUsage.updatedAt
-          } : undefined
-        } : null);
+        setUser(prev => {
+          if (!prev) return prev;
+
+          const updated = {
+            ...prev,
+            plan: currentPlan,
+            dailyUsage: data.dailyUsage ? {
+              date: data.dailyUsage.date,
+              pages: Number(data.dailyUsage.pages || 0),
+              updatedAt: data.dailyUsage.updatedAt
+            } : undefined
+          };
+
+          // Persist updated entitlement so localStorage does not go stale.
+          try {
+            localStorage.setItem("lexocr_user", JSON.stringify(updated));
+          } catch (e) {}
+
+          return updated;
+        });
         
       } else {
         // Fallback to FREE if no document

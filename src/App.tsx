@@ -25,29 +25,55 @@ import { migrateOldStorage } from "./utils/geminiModelResolver";
 const KnowledgeCenter = lazy(() => import("./knowledge/KnowledgeCenter"));
 const KnowledgeArticle = lazy(() => import("./knowledge/KnowledgeArticle"));
 
+const getDefaultOcrConfig = (isPro: boolean) => ({
+  engine: isPro ? "gemini" : "tesseract",
+  outputFormat: "TXT",
+  language: "vie",
+  preserveLayout: true,
+});
+
 function AppContent() {
+  const { user, updateUserPlan, isPro } = useAuth();
   // State to hold OCR configuration, document data
-  const [config, setConfig] = useState<any>(() => {
-    const saved = localStorage.getItem('ocr_config');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return {
-      engine: 'precision',
-      outputFormat: 'TXT',
-      language: 'vi',
-      preserveLayout: true
-    };
-  });
+  const [config, setConfig] = useState<any>(() => getDefaultOcrConfig(isPro));
   const [document, setDocument] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("landing");
   const [articleSlug, setArticleSlug] = useState<string>("");
   const [userGeminiKey, setUserGeminiKey] = useState<string>("");
   const [showPaymentSuccessToast, setShowPaymentSuccessToast] = useState(false);
 
-  const { user, updateUserPlan, isPro } = useAuth();
+  useEffect(() => {
+    const saved = localStorage.getItem("ocr_config");
+    let parsed: any = null;
+    try {
+      parsed = saved ? JSON.parse(saved) : null;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        parsed = null;
+      }
+    } catch (e) {
+      parsed = null;
+    }
+
+    // Authoritative engine selection: isPro decides gemini vs tesseract.
+    // A saved value is only used to preserve language/outputFormat/etc,
+    // not to override the entitlement-based engine choice.
+    const targetEngine: "gemini" | "tesseract" =
+      isPro ? "gemini" : "tesseract";
+
+    const nextConfig = {
+      outputFormat: "TXT",
+      language: parsed?.language === "vi" ? "vie" : (parsed?.language ?? "vie"),
+      preserveLayout: true,
+      ...parsed,
+      engine: targetEngine,
+    };
+
+    try {
+      localStorage.setItem("ocr_config", JSON.stringify(nextConfig));
+    } catch (e) {}
+
+    setConfig(nextConfig);
+  }, [isPro]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
