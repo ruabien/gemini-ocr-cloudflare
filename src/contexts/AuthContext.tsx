@@ -90,7 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setExpiredAt(expTime);
         setPlanType(data.planType || null);
         
-        const isCurrentlyPro = expTime !== null && expTime > Date.now();
+        const isCurrentlyPro =
+          data.plan === "pro" &&
+          expTime !== null &&
+          expTime > Date.now();
         setIsPro(isCurrentlyPro);
         
         // Cập nhật lại user.plan và dailyUsage
