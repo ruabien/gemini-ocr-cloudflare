@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { OcrConfig } from "../types";
@@ -15,6 +15,8 @@ import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
 import { getActiveModel, autoResolveModel, MODEL_MODES } from "../utils/geminiModelResolver";
 import { optimizeImageForOcr } from "../utils/imageOptimizer";
 import { cleanOcrPageText } from "../../shared/ocrPostProcessing";
+import { getOcrEngine } from "../ocr/getOcrEngine";
+import type { OcrEngine } from "../ocr/types";
 import {
   createBenchmarkRun,
   extractGeminiUsageMetadata,
@@ -131,6 +133,7 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   const [ocrStatus, setOcrStatus] = useState<"idle" | "slicing" | "processing" | "success" | "error">("idle");
   const [processedPagesCount, setProcessedPagesCount] = useState(0);
   const cancelOcrRef = useRef<AbortController | null>(null);
+  const activeTesseractEngineRef = useRef<OcrEngine | null>(null);
 
   const [editorContent, setEditorContent] = useState("");
 
@@ -176,6 +179,19 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
         }
       });
       revocationRefs.current.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      cancelOcrRef.current?.abort();
+      const engine = activeTesseractEngineRef.current;
+      activeTesseractEngineRef.current = null;
+      if (engine) {
+        void engine.terminate().catch(() => {
+          // Best-effort cleanup during unmount.
+        });
+      }
     };
   }, []);
 
@@ -384,6 +400,9 @@ const startOcrProcess = async () => {
   const controller = new AbortController();
   cancelOcrRef.current = controller;
   const signal = controller.signal;
+  const selectedEngineId = config.engine;
+  const selectedLanguage = config.language ?? "vi";
+  let selectedTesseractEngine: OcrEngine | null = null;
 
   // ---- Pre‑flight usage checks for FREE users ----
   let isPro = false;
@@ -498,6 +517,11 @@ const startOcrProcess = async () => {
     editorContentRef.current = "";
     setFileErrors({});
 
+    if (selectedEngineId === "tesseract") {
+      selectedTesseractEngine = getOcrEngine("tesseract");
+      activeTesseractEngineRef.current = selectedTesseractEngine;
+    }
+
     // Scroll viewport to top when OCR starts
     setTimeout(() => {
       requestAnimationFrame(() => {
@@ -517,6 +541,8 @@ const startOcrProcess = async () => {
       setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
     };
 
+let geminiKeyPool: string[] = [];
+if (selectedEngineId === "gemini") {
 /* Build a deduplicated, trimmed pool of Gemini API keys */
 const rawKeys = getUserStorageItem(user?.uid, 'gemini_keys') || '';
 let parsedKeyStrings: string[] = [];
@@ -536,7 +562,7 @@ if (parsedKeyStrings.length === 0) {
   if (fallback) parsedKeyStrings = [fallback.trim()];
 }
 /* Final pool – remove empty, null, undefined and duplicates */
-const geminiKeyPool = Array.from(
+geminiKeyPool = Array.from(
   new Set(
     parsedKeyStrings
       .map(k => k?.trim())
@@ -613,6 +639,7 @@ try {
     setOcrStatus("idle");
     return;
   }
+}
 }
 
 let activeKeyIndex = 0;
@@ -1473,9 +1500,30 @@ const keyToProjectMap = new Map<string, string>();
               ));
             }
           }
-          const extractedText = await sendFileToBackend(fileToSend, pageIdx);
+          let extractedText: string;
+          if (selectedEngineId === "tesseract") {
+            if (!selectedTesseractEngine) {
+              throw new Error("Tesseract OCR engine chưa sẵn sàng.");
+            }
+            const result = await selectedTesseractEngine.recognize(fileToSend, {
+              language: selectedLanguage,
+              pageNumber: pageIdx,
+              signal,
+              onProgress: (p) => setProgress(Math.round(p.progress * 100)),
+            });
+            extractedText = cleanOcrPageText(result.text, { pageIndex: pageIdx });
+            setEditorContent((prev) => prev + (prev ? "\n\n" : "") + extractedText);
+            editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + extractedText;
+          } else if (selectedEngineId === "gemini") {
+            extractedText = await sendFileToBackend(fileToSend, pageIdx);
+          } else {
+            throw new Error(`OCR engine chưa được hỗ trợ: ${String(selectedEngineId)}. Vui lòng chọn Free hoặc Pro.`);
+          }
           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
         } catch (err: any) {
+          if (signal.aborted || err?.name === "AbortError" || err?.type === "ABORTED") {
+            throw err;
+          }
           const errorMsgObj = typeof err === 'object' && err?.message ? err.message : String(err);
           const sanitizedMsg = sanitizeError(errorMsgObj);
           updatePageStatus(qFile.id, pageIdx, 'error', undefined, sanitizedMsg);
@@ -1584,7 +1632,7 @@ const keyToProjectMap = new Map<string, string>();
             }
             throw e;
           }
-          if (p < endPage) {
+          if (selectedEngineId === "gemini" && p < endPage) {
             await new Promise((res) => setTimeout(res, 2500));
           }
         }
@@ -1624,7 +1672,7 @@ const keyToProjectMap = new Map<string, string>();
         }
       }
 
-      if (i < filesToProcess.length - 1) {
+      if (selectedEngineId === "gemini" && i < filesToProcess.length - 1) {
         await new Promise((res) => setTimeout(res, 2500));
       }
     }
@@ -1725,7 +1773,10 @@ const keyToProjectMap = new Map<string, string>();
       }
     }, 1000);
   } catch (error: any) {
-    console.error("OCR process error:", error);
+    const wasAborted = signal.aborted || error?.name === "AbortError" || error?.type === "ABORTED";
+    if (!wasAborted) {
+      console.error("OCR process error:", error);
+    }
     let friendlyError = "Đã xảy ra lỗi trong quá trình xử lý.";
     if (error?.type === "503_EXHAUSTED") {
       friendlyError = "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.";
@@ -1736,13 +1787,23 @@ const keyToProjectMap = new Map<string, string>();
     }
 
     setOcrError(friendlyError);
-    setOcrStatus(error?.type === "ABORTED" ? "idle" : "error");
+    setOcrStatus(wasAborted ? "idle" : "error");
 
     setIsBatchProcessing(false);
     setProcessingFile(null);
     setProgress(0);
     isProcessingRef.current = false;
   } finally {
+    if (selectedTesseractEngine) {
+      try {
+        await selectedTesseractEngine.terminate();
+      } catch (error) {
+        console.warn("Failed to terminate Tesseract OCR worker:", error);
+      }
+      if (activeTesseractEngineRef.current === selectedTesseractEngine) {
+        activeTesseractEngineRef.current = null;
+      }
+    }
     setIsBatchProcessing(false);
     isProcessingRef.current = false;
   }
