@@ -6,6 +6,8 @@ import TermsOfUse from "./components/TermsOfUse";
 import Navbar from "./components/Navbar";
 import AppLayout from "./components/AppLayout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import type { OcrConfig } from "./types";
+import { migrateOcrConfig } from "./utils/ocrConfigMigration";
 
 const OcrScanner = lazy(() => import("./components/OcrScanner"));
 const OcrEditor = lazy(() => import("./components/OcrEditor"));
@@ -25,7 +27,7 @@ import { migrateOldStorage } from "./utils/geminiModelResolver";
 const KnowledgeCenter = lazy(() => import("./knowledge/KnowledgeCenter"));
 const KnowledgeArticle = lazy(() => import("./knowledge/KnowledgeArticle"));
 
-const getDefaultOcrConfig = (isPro: boolean) => ({
+const getDefaultOcrConfig = (isPro: boolean): OcrConfig => ({
   engine: isPro ? "gemini" : "tesseract",
   outputFormat: "TXT",
   language: "vie",
@@ -33,9 +35,9 @@ const getDefaultOcrConfig = (isPro: boolean) => ({
 });
 
 function AppContent() {
-  const { user, updateUserPlan, isPro } = useAuth();
+  const { user, updateUserPlan, isPro, loadingSubscription } = useAuth();
   // State to hold OCR configuration, document data
-  const [config, setConfig] = useState<any>(() => getDefaultOcrConfig(isPro));
+  const [config, setConfig] = useState<OcrConfig>(() => getDefaultOcrConfig(isPro));
   const [document, setDocument] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("landing");
   const [articleSlug, setArticleSlug] = useState<string>("");
@@ -43,37 +45,32 @@ function AppContent() {
   const [showPaymentSuccessToast, setShowPaymentSuccessToast] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("ocr_config");
-    let parsed: any = null;
+    if (loadingSubscription) {
+      return;
+    }
+
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem("ocr_config");
+    } catch (e) {
+      saved = null;
+    }
+
+    let parsed: unknown = null;
     try {
       parsed = saved ? JSON.parse(saved) : null;
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        parsed = null;
-      }
     } catch (e) {
       parsed = null;
     }
 
-    // Authoritative engine selection: isPro decides gemini vs tesseract.
-    // A saved value is only used to preserve language/outputFormat/etc,
-    // not to override the entitlement-based engine choice.
-    const targetEngine: "gemini" | "tesseract" =
-      isPro ? "gemini" : "tesseract";
-
-    const nextConfig = {
-      outputFormat: "TXT",
-      language: parsed?.language === "vi" ? "vie" : (parsed?.language ?? "vie"),
-      preserveLayout: true,
-      ...parsed,
-      engine: targetEngine,
-    };
+    const nextConfig = migrateOcrConfig(parsed, isPro);
 
     try {
       localStorage.setItem("ocr_config", JSON.stringify(nextConfig));
     } catch (e) {}
 
     setConfig(nextConfig);
-  }, [isPro]);
+  }, [isPro, loadingSubscription]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
