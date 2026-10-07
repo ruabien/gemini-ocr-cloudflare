@@ -1,8 +1,8 @@
 import './index.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import { registerWebMCP } from './webmcp.ts';
+import App from './App';
+import { registerWebMCP } from './webmcp';
 
 // Register WebMCP tools
 registerWebMCP();

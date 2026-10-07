@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsPro(isCurrentlyPro);
         
         // Cập nhật lại user.plan và dailyUsage
-        const currentPlan = isCurrentlyPro ? "pro" : "free";
+        const currentPlan: "free" | "pro" = isCurrentlyPro ? "pro" : "free";
         setUser(prev => {
           if (!prev) return prev;
 

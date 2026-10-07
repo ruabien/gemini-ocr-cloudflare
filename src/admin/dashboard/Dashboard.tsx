@@ -5,7 +5,7 @@
 
 import React from "react";
 import { LayoutDashboard, FileText, Activity, Shield, CheckCircle2, ChevronRight, AlertTriangle, ScanLine, Clock } from "lucide-react";
-import { RecentActivity } from "../types";
+import { RecentActivity } from "../../types";
 
 interface DashboardProps {
   onStartOcr: () => void;

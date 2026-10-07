@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:benchmark:corpus": "npx tsx scripts/benchmark/corpus-hash.test.ts && npx tsx scripts/benchmark/corpus-validator.test.ts && npx tsx scripts/benchmark/corpus-readiness.test.ts",
@@ -40,6 +41,7 @@
     "globals": "^17.6.0",
     "tailwindcss": "^4.3.0",
     "tsx": "^4.22.4",
+    "typescript": "^5.9.3",
     "vite": "^8.0.12"
   }
 }
