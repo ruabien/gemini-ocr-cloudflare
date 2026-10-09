@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useSearchParams, useParams } from "react-router-dom";
 import LandingPage from "./components/LandingPage";
 // Dashboard component removed per MVP simplification
 import PrivacyPolicy from "./components/PrivacyPolicy";
@@ -27,6 +28,43 @@ import { migrateOldStorage } from "./utils/geminiModelResolver";
 const KnowledgeCenter = lazy(() => import("./knowledge/KnowledgeCenter"));
 const KnowledgeArticle = lazy(() => import("./knowledge/KnowledgeArticle"));
 
+const pathToTab = (path: string) => {
+  if (path.startsWith("/knowledge/")) return "knowledge-article";
+
+  const tabs: Record<string, string> = {
+    "/": "landing",
+    "/scanner": "scanner",
+    "/editor": "editor",
+    "/upgrade": "upgrade",
+    "/settings": "settings",
+    "/privacy": "privacy",
+    "/terms": "terms",
+    "/knowledge": "knowledge",
+  };
+
+  return tabs[path] || "landing";
+};
+
+const tabToPath = (tab: string) => {
+  const paths: Record<string, string> = {
+    landing: "/",
+    scanner: "/scanner",
+    editor: "/editor",
+    upgrade: "/upgrade",
+    settings: "/settings",
+    privacy: "/privacy",
+    terms: "/terms",
+    knowledge: "/knowledge",
+  };
+
+  return paths[tab];
+};
+
+function KnowledgeArticleRoute() {
+  const { slug = "" } = useParams();
+  return <KnowledgeArticle slug={slug} />;
+}
+
 const getDefaultOcrConfig = (isPro: boolean): OcrConfig => ({
   engine: isPro ? "gemini" : "tesseract",
   outputFormat: "TXT",
@@ -36,11 +74,17 @@ const getDefaultOcrConfig = (isPro: boolean): OcrConfig => ({
 
 function AppContent() {
   const { user, updateUserPlan, isPro, loadingSubscription } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = pathToTab(location.pathname);
+  const setActiveTab = (tab: string) => {
+    const path = tabToPath(tab);
+    if (path) navigate(path);
+  };
   // State to hold OCR configuration, document data
   const [config, setConfig] = useState<OcrConfig>(() => getDefaultOcrConfig(isPro));
   const [document, setDocument] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("landing");
-  const [articleSlug, setArticleSlug] = useState<string>("");
   const [userGeminiKey, setUserGeminiKey] = useState<string>("");
   const [showPaymentSuccessToast, setShowPaymentSuccessToast] = useState(false);
 
@@ -73,16 +117,15 @@ function AppContent() {
   }, [isPro, loadingSubscription]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const paymentSuccess = params.get("payment_success") === "true";
-    const status = params.get("status");
+    const paymentSuccess = searchParams.get("payment_success") === "true";
+    const status = searchParams.get("status");
 
     if (paymentSuccess || status === "PAID") {
-      setActiveTab("upgrade");
       setShowPaymentSuccessToast(true);
-      window.history.replaceState({}, "", window.location.pathname);
+      setSearchParams({}, { replace: true });
+      navigate("/upgrade", { replace: true });
     }
-  }, []);
+  }, [searchParams, setSearchParams, navigate]);
 
   useEffect(() => {
     if (showPaymentSuccessToast) {
@@ -92,26 +135,6 @@ function AppContent() {
       return () => clearTimeout(timer);
     }
   }, [showPaymentSuccessToast]);
-
-  useEffect(() => {
-    const handleLocation = (event?: PopStateEvent) => {
-      const path = window.location.pathname;
-      if (path === "/knowledge") {
-        setActiveTab("knowledge");
-        setArticleSlug("");
-      } else if (path.startsWith("/knowledge/")) {
-        const slug = path.split("/")[2] || "";
-        setActiveTab("knowledge-article");
-        setArticleSlug(slug);
-      } else if (path === "/" || path === "") {
-        const targetTab = (event && event.state && event.state.activeTab) || "landing";
-        setActiveTab(targetTab);
-      }
-    };
-    handleLocation();
-    window.addEventListener("popstate", handleLocation as any);
-    return () => window.removeEventListener("popstate", handleLocation as any);
-  }, []);
 
   const membershipRole = isPro ? "Pro" : "Free";
   const setMembershipRole = (role: "Free" | "Pro") => {
@@ -137,94 +160,72 @@ function AppContent() {
 
 
   // Handlers for navigation and tab changes
-  const handleStart = () => {
-    setActiveTab("scanner");
-  };
-  const handleActiveTab = (tab: string) => {
-    setActiveTab(tab);
-    if (tab !== "knowledge" && tab !== "knowledge-article") {
-      if (window.location.pathname.startsWith('/knowledge')) {
-        window.history.pushState({}, '', '/');
-      }
-    }
-  };
+  const handleStart = () => navigate("/scanner");
 
   return (
     <>
-      <AppLayout activeTab={activeTab} setActiveTab={handleActiveTab} membershipRole={membershipRole}>
-        {activeTab === "landing" && (
-          <LandingPage onStart={handleStart} setActiveTab={handleActiveTab} />
-        )}
-        {/* Dashboard view removed */}
-        {activeTab === "scanner" && (
-          <Suspense fallback={<PageLoader />}>
+      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab} membershipRole={membershipRole}>
+        <Routes>
+          <Route path="/" element={<LandingPage onStart={handleStart} setActiveTab={setActiveTab} />} />
+          <Route path="/scanner" element={
+            <Suspense fallback={<PageLoader />}>
             <OcrScanner
               onFileLoaded={(fileData) => {
                 setDocument(fileData);
-                setActiveTab("editor");
+                navigate("/editor");
               }}
               config={config}
               setConfig={setConfig}
-              setActiveTab={handleActiveTab}
+              setActiveTab={setActiveTab}
             />
-          </Suspense>
-        )}
-        {activeTab === "editor" && (
+            </Suspense>
+          } />
+          <Route path="/editor" element={
           <Suspense fallback={<PageLoader />}>
             {document?.outputMode === "structured" ? (
                 <StructuredExtractionEditor
                   document={document}
-                  onBack={handleStart}
+                  onBack={() => navigate("/scanner")}
                   membershipRole={membershipRole}
-                  setActiveTab={handleActiveTab}
+                  setActiveTab={setActiveTab}
                   userGeminiKey={userGeminiKey}
                 />
             ) : (
               <OcrEditor
                 document={document}
-                onBack={handleStart}
+                onBack={() => navigate("/scanner")}
                 membershipRole={membershipRole}
-                setActiveTab={handleActiveTab}
+                setActiveTab={setActiveTab}
               />
             )}
           </Suspense>
-        )}
-        {activeTab === "upgrade" && (
+          } />
+          <Route path="/upgrade" element={
           <Suspense fallback={<PageLoader />}>
             <Upgrade
               membershipRole={membershipRole}
               setMembershipRole={setMembershipRole}
-              setActiveTab={handleActiveTab}
+              setActiveTab={setActiveTab}
             />
           </Suspense>
-        )}
-        {activeTab === "settings" && (
+          } />
+          <Route path="/settings" element={
           <Suspense fallback={<PageLoader />}>
             <Settings
               userGeminiKey={userGeminiKey}
               setUserGeminiKey={setUserGeminiKey}
               membershipRole={membershipRole}
               setMembershipRole={setMembershipRole}
-              setActiveTab={handleActiveTab}
+              setActiveTab={setActiveTab}
             />
           </Suspense>
-        )}
-        {activeTab === "privacy" && (
-          <PrivacyPolicy />
-        )}
-        {activeTab === "terms" && (
-          <TermsOfUse />
-        )}
-        {activeTab === "knowledge" && (
-          <Suspense fallback={<PageLoader />}>
-            <KnowledgeCenter />
-          </Suspense>
-        )}
-        {activeTab === "knowledge-article" && (
-          <Suspense fallback={<PageLoader />}>
-            <KnowledgeArticle slug={articleSlug} />
-          </Suspense>
-        )}
+          } />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
+          <Route path="/knowledge" element={<Suspense fallback={<PageLoader />}><KnowledgeCenter /></Suspense>} />
+          <Route path="/knowledge/:slug" element={<Suspense fallback={<PageLoader />}><KnowledgeArticleRoute /></Suspense>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </AppLayout>
 
       {showPaymentSuccessToast && (
@@ -258,7 +259,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
     </AuthProvider>
   );
 }
