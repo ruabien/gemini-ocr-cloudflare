@@ -1,6 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { KnowledgeArticleMeta } from '../../../shared/knowledgeArticles';
-import { navigateToKnowledgeArticle } from '../knowledgeNavigation';
 
 interface KnowledgeRelatedArticlesProps {
   articles: KnowledgeArticleMeta[];
@@ -9,6 +9,7 @@ interface KnowledgeRelatedArticlesProps {
 export const KnowledgeRelatedArticles: React.FC<KnowledgeRelatedArticlesProps> = ({
   articles,
 }) => {
+  const navigate = useNavigate();
   if (!articles || articles.length === 0) return null;
 
   return (
@@ -22,7 +23,7 @@ export const KnowledgeRelatedArticles: React.FC<KnowledgeRelatedArticlesProps> =
           >
             {rel.coverImage && (
               <button
-                onClick={() => navigateToKnowledgeArticle(rel.slug)}
+                onClick={() => navigate(`/knowledge/${rel.slug}`)}
                 className="relative w-full aspect-video overflow-hidden bg-slate-100 focus:outline-none"
                 aria-label={rel.title}
               >
@@ -41,7 +42,7 @@ export const KnowledgeRelatedArticles: React.FC<KnowledgeRelatedArticlesProps> =
                 </span>
                 <h4 className="text-base font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
                   <button
-                    onClick={() => navigateToKnowledgeArticle(rel.slug)}
+                    onClick={() => navigate(`/knowledge/${rel.slug}`)}
                     className="text-left focus:outline-none focus:underline leading-snug"
                   >
                     {rel.title}
@@ -51,7 +52,7 @@ export const KnowledgeRelatedArticles: React.FC<KnowledgeRelatedArticlesProps> =
               <div className="flex items-center justify-between mt-4 text-[10px] text-slate-400">
                 <span>{rel.readingTime}</span>
                 <button
-                  onClick={() => navigateToKnowledgeArticle(rel.slug)}
+                  onClick={() => navigate(`/knowledge/${rel.slug}`)}
                   className="font-bold text-blue-600 hover:text-blue-855"
                 >
                   Đọc bài &rarr;

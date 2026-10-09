@@ -1,10 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArticleImage, NoteBox } from '../KnowledgeArticle';
 import { KnowledgeFAQ } from '../components/KnowledgeFAQ';
 import { KnowledgeCTA } from '../components/KnowledgeCTA';
-import { navigateToScanner } from '../knowledgeNavigation';
 
 export default function OcrPdfScanSangWordBangAi() {
+  const navigate = useNavigate();
   return (
     <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed">
       {/* Quick Summary Callout */}
@@ -386,7 +387,7 @@ export default function OcrPdfScanSangWordBangAi() {
 
       {/* 11️⃣ CTA */}
       <section className="mb-10">
-        <KnowledgeCTA onClick={navigateToScanner} />
+        <KnowledgeCTA onClick={() => navigate('/scanner')} />
       </section>
     </div>
   );

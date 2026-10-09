@@ -1,6 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getKnowledgeArticleBySlug, knowledgeArticles } from '../../shared/knowledgeArticles';
-import { navigateToKnowledgeCenter } from './knowledgeNavigation';
 import { KnowledgeArticleTemplate } from './components/KnowledgeArticleTemplate';
 import { KnowledgeCallout } from './components/KnowledgeCallout';
 import { KnowledgeImage } from './components/KnowledgeImage';
@@ -38,6 +38,7 @@ export function ArticleImage({ src, alt, caption }: ArticleImageProps) {
 }
 
 export default function KnowledgeArticle({ slug }: Props) {
+  const navigate = useNavigate();
   const article = getKnowledgeArticleBySlug(slug);
 
   React.useEffect(() => {
@@ -67,7 +68,7 @@ export default function KnowledgeArticle({ slug }: Props) {
       <div className="max-w-3xl mx-auto py-8 px-4 text-left mt-16">
         <h1 className="text-2xl font-bold mb-4 text-slate-900">Không tìm thấy bài viết</h1>
         <button
-          onClick={navigateToKnowledgeCenter}
+          onClick={() => navigate('/knowledge')}
           className="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold focus:outline-none focus:underline"
         >
           <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">

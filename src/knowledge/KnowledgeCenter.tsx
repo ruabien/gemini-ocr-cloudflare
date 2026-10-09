@@ -1,10 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { knowledgeArticles } from '../../shared/knowledgeArticles';
-import { navigateToKnowledgeArticle, navigateToScanner } from './knowledgeNavigation';
 
 export default function KnowledgeCenter() {
+  const navigate = useNavigate();
   const handleStartOcr = () => {
-    navigateToScanner();
+    navigate('/scanner');
   };
 
   return (
@@ -38,7 +39,7 @@ export default function KnowledgeCenter() {
                 {/* 16:9 Image Thumbnail Container */}
                 {article.coverImage && (
                   <button
-                    onClick={() => navigateToKnowledgeArticle(article.slug)}
+                    onClick={() => navigate(`/knowledge/${article.slug}`)}
                     className="relative w-full aspect-video overflow-hidden bg-slate-100 block focus:outline-none"
                     aria-label={article.title}
                   >
@@ -64,7 +65,7 @@ export default function KnowledgeCenter() {
                     {/* Title */}
                     <h3 className="text-lg font-bold text-slate-900 mb-2 leading-snug group-hover:text-blue-600 transition-colors">
                       <button
-                        onClick={() => navigateToKnowledgeArticle(article.slug)}
+                        onClick={() => navigate(`/knowledge/${article.slug}`)}
                         className="text-left focus:outline-none focus:underline"
                       >
                         {article.title}
@@ -81,7 +82,7 @@ export default function KnowledgeCenter() {
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto text-xs text-slate-400">
                     <span>{article.readingTime}</span>
                     <button
-                      onClick={() => navigateToKnowledgeArticle(article.slug)}
+                      onClick={() => navigate(`/knowledge/${article.slug}`)}
                       className="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 focus:outline-none group/btn"
                     >
                       Đọc bài

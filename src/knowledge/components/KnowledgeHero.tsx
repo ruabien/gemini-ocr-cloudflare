@@ -1,5 +1,5 @@
 import React from 'react';
-import { navigateToKnowledgeCenter } from '../knowledgeNavigation';
+import { useNavigate } from 'react-router-dom';
 import { KnowledgeArticleMeta } from '../../../shared/knowledgeArticles';
 
 interface KnowledgeHeroProps {
@@ -13,6 +13,7 @@ export const KnowledgeHero: React.FC<KnowledgeHeroProps> = ({
   ctaText = 'Bắt đầu OCR miễn phí',
   onCtaClick,
 }) => {
+  const navigate = useNavigate();
   const {
     category,
     title,
@@ -26,7 +27,7 @@ export const KnowledgeHero: React.FC<KnowledgeHeroProps> = ({
       {/* Breadcrumb */}
       <nav className="flex flex-wrap items-center space-x-1.5 text-xs text-slate-500 mb-6 bg-slate-50 p-3 rounded-lg border border-slate-100 leading-normal" aria-label="Breadcrumb">
         <button
-          onClick={navigateToKnowledgeCenter}
+          onClick={() => navigate('/knowledge')}
           className="hover:text-blue-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 transition duration-150"
         >
           Hướng dẫn

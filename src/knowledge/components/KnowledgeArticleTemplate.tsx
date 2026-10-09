@@ -1,9 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { KnowledgeArticleMeta } from '../../../shared/knowledgeArticles';
 import { KnowledgeHero } from './KnowledgeHero';
 import { KnowledgeTOC } from './KnowledgeTOC';
 import { KnowledgeRelatedArticles } from './KnowledgeRelatedArticles';
-import { navigateToKnowledgeArticle } from '../knowledgeNavigation';
 
 interface KnowledgeArticleTemplateProps {
   article: KnowledgeArticleMeta;
@@ -20,6 +20,7 @@ export const KnowledgeArticleTemplate: React.FC<KnowledgeArticleTemplateProps> =
   prevArticle,
   nextArticle,
 }) => {
+  const navigate = useNavigate();
   React.useEffect(() => {
     document.title = article.title;
   }, [article.title]);
@@ -74,7 +75,7 @@ export const KnowledgeArticleTemplate: React.FC<KnowledgeArticleTemplateProps> =
                 <div className="mt-12 pt-8 border-t border-slate-200 grid grid-cols-2 gap-4">
                   {prevArticle ? (
                     <button
-                      onClick={() => navigateToKnowledgeArticle(prevArticle.slug)}
+                      onClick={() => navigate(`/knowledge/${prevArticle.slug}`)}
                       className="text-left group flex flex-col p-4 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
                     >
                       <span className="text-sm text-slate-500 mb-1 group-hover:text-blue-600 transition-colors flex items-center">
@@ -90,7 +91,7 @@ export const KnowledgeArticleTemplate: React.FC<KnowledgeArticleTemplateProps> =
                   
                   {nextArticle ? (
                     <button
-                      onClick={() => navigateToKnowledgeArticle(nextArticle.slug)}
+                      onClick={() => navigate(`/knowledge/${nextArticle.slug}`)}
                       className="text-right group flex flex-col p-4 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
                     >
                       <span className="text-sm text-slate-500 mb-1 group-hover:text-blue-600 transition-colors flex items-center justify-end">
