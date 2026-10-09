@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Shield, UserCheck, LogOut, ScanLine, Settings, Sparkles, User, Key, ChevronDown, Menu, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -14,6 +15,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ activeTab, setActiveTab, membershipRole }: NavbarProps) {
+  const navigate = useNavigate();
   const { user, loginWithGoogle, logout, isPro } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -105,13 +107,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
           </button>
 
 <button
-  onClick={() => {
-    // Navigate to Knowledge Center using History API
-    window.history.pushState({}, "", "/knowledge");
-    const ev = new PopStateEvent('popstate');
-    window.dispatchEvent(ev);
-    setActiveTab("knowledge");
-  }}
+  onClick={() => navigate("/knowledge")}
   className={`px-3 py-2 rounded-lg text-xs font-semibold tracking-wide flex items-center space-x-1.5 transition-all ${
     activeTab === "knowledge"
       ? "bg-slate-800 text-yellow-400 font-bold border border-slate-700"
@@ -284,13 +280,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
 
 <button
   type="button"
-  onClick={() => {
-    // Mobile Knowledge Center navigation
-    window.history.pushState({}, "", "/knowledge");
-    const ev = new PopStateEvent('popstate');
-    window.dispatchEvent(ev);
-    setActiveTab("knowledge");
-  }}
+  onClick={() => navigate("/knowledge")}
   className="min-h-[48px] w-full cursor-pointer touch-manipulation bg-slate-900 hover:bg-slate-800 text-white rounded-lg flex items-center justify-center space-x-3 text-base font-semibold border border-slate-800 transition-colors"
 >
   <Sparkles className="h-5 w-5 text-yellow-400" />

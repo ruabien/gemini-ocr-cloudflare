@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { OcrConfig } from "../types";
@@ -113,6 +114,7 @@ const renderStatusBadge = (status: 'idle' | 'processing' | 'success' | 'error') 
 };
 
 export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveTab }: OcrScannerProps) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
@@ -527,8 +529,7 @@ if (geminiKeyPool.length === 0) {
         href="/knowledge/huong-dan-tao-gemini-api-key"
         onClick={(e) => {
           e.preventDefault();
-          window.history.pushState({}, '', '/knowledge/huong-dan-tao-gemini-api-key');
-          window.dispatchEvent(new PopStateEvent('popstate'));
+          navigate("/knowledge/huong-dan-tao-gemini-api-key");
         }}
         className="text-blue-600 hover:underline font-semibold"
       >
@@ -573,9 +574,8 @@ try {
             href="/settings"
             onClick={(e) => {
               e.preventDefault();
-              window.history.pushState({}, '', '/settings');
-              window.dispatchEvent(new PopStateEvent('popstate'));
               setErrorModalMsg(null);
+              navigate("/settings");
             }}
             className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 text-center"
           >

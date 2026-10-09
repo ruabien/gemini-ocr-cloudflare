@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Settings, Key, ShieldCheck, Check, Award, Zap, AlertCircle, Trash2, User, Calendar, LogOut, Sparkles
 } from "lucide-react";
@@ -26,6 +27,7 @@ export default function SettingsComponent({
   setMembershipRole,
   setActiveTab
 }: SettingsProps) {
+  const navigate = useNavigate();
   const { user, isPro, planType, expiredAt, logout, loginWithGoogle, loading } = useAuth();
   
   const [keysList, setKeysList] = useState<string[]>(() => {
@@ -506,8 +508,7 @@ export default function SettingsComponent({
                 href="/knowledge/huong-dan-tao-gemini-api-key"
                 onClick={(e) => {
                   e.preventDefault();
-                  window.history.pushState({}, '', '/knowledge/huong-dan-tao-gemini-api-key');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
+                  navigate("/knowledge/huong-dan-tao-gemini-api-key");
                 }}
                 className="inline-flex items-center text-[13px] text-blue-600 hover:text-blue-700 hover:underline font-semibold transition-colors"
               >
