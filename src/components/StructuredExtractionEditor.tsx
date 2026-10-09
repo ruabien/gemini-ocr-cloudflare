@@ -24,6 +24,7 @@ import { OcrDocument } from "../types";
 import { extractStructuredData } from "../utils/extractionService";
 import { useAuth } from "../contexts/AuthContext";
 import LoginPromptModal from "./LoginPromptModal";
+import { useNavigate } from 'react-router-dom';
 
 export type CaseType = "dan_su" | "hinh_su" | "hanh_chinh" | "khac";
 
@@ -562,7 +563,8 @@ async function runSchemaBasedExtraction(
   text: string,
   schema: string[],
   caseType: CaseType,
-  userGeminiKey?: string
+  userGeminiKey?: string,
+  onNavigateToHelp?: (path: string) => void
 ): Promise<ExtractionRow[]> {
   const cleanText = text || "";
   const lines = cleanText.split("\n");
@@ -906,10 +908,7 @@ if (import.meta.env.DEV && caseType === "hinh_su") {
     // Yêu cầu 5: Không fallback âm thầm sang heuristic mà không thông báo
     if (e.message && e.message.includes("Chưa cấu hình Gemini API Key")) {
       const gotoSettings = confirm("Chưa tìm thấy Gemini API Key. Bạn có muốn xem hướng dẫn tạo Gemini API Key không?");
-      if (gotoSettings) {
-        window.history.pushState({}, '', '/knowledge/huong-dan-tao-gemini-api-key');
-        window.dispatchEvent(new PopStateEvent('popstate'));
-      }
+      if (gotoSettings) onNavigateToHelp?.("/knowledge/huong-dan-tao-gemini-api-key");
       // Trả về heuristic rows nhưng đánh dấu rõ đây là kết quả dự phòng
       return heuristicRows.map(r => ({
         ...r,
@@ -932,6 +931,8 @@ export default function StructuredExtractionEditor({
   setActiveTab,
   userGeminiKey
 }: StructuredExtractionEditorProps) {
+  const navigate = useNavigate();
+
   if (!document) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 text-center">
@@ -995,7 +996,13 @@ export default function StructuredExtractionEditor({
   // Chạy bóc tách dữ liệu sử dụng mặc định
 const handleExtract = async () => {
   const schema = defaultSchemas[caseType];
-  const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType, userGeminiKey);
+  const extracted = await runSchemaBasedExtraction(
+    rawContentText,
+    schema,
+    caseType,
+    userGeminiKey,
+    (path) => navigate(path)
+  );
   setRows(extracted);
 };
 
@@ -1128,7 +1135,13 @@ const handleExtract = async () => {
 
       const templateFields: { label: string; key: string }[] = template.fields;
       const schema = templateFields.map((f: { label: string }) => f.label);
-      const extracted = await runSchemaBasedExtraction(rawContentText, schema, caseType, userGeminiKey);
+      const extracted = await runSchemaBasedExtraction(
+        rawContentText,
+        schema,
+        caseType,
+        userGeminiKey,
+        (path) => navigate(path)
+      );
       
       setRows(extracted);
       alert("Đã áp dụng mẫu thành công!");

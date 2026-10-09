@@ -31,8 +31,6 @@ export default function UpgradeComponent({
   const currentCycle = planType === "month" ? "monthly" : planType === "year" ? "yearly" : (localStorage.getItem('lexocr_pro_cycle') || 'yearly');
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success">("pending");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [showToast, setShowToast] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState<number>(300); // countdown in seconds
   const [logs, setLogs] = useState<string[]>([
     "Khởi tạo hóa đơn nghiệp vụ...",
@@ -188,28 +186,6 @@ export default function UpgradeComponent({
       }
     }
   }, [showQRModal, isPro, expiredAt, planType, paymentStatus, paymentSession, initialExpiredAt, initialPlanType, initialIsPro]);
-
-  // Toast handling for successful payment via URL query param (Requirement 6)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const isSuccessParam = params.get("payment_success") === "true";
-      const statusParam = params.get("status");
-      
-      if (isSuccessParam || statusParam === "PAID") {
-        setToastMessage("Thanh toán thành công. Gói LexOCR PRO đã được kích hoạt.");
-        setShowToast(true);
-        // Auto hide after 3 seconds
-        const timer = setTimeout(() => {
-          setShowToast(false);
-          // Clean query params from URL without reload
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, "", newUrl);
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, []);
 
   // Handle auto‑close countdown on success
   useEffect(() => {

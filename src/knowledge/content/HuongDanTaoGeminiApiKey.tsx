@@ -2,11 +2,6 @@ import React from 'react';
 import { TipBox, NoteBox, ResultBox, ArticleImage } from '../KnowledgeArticle';
 
 export default function HuongDanTaoGeminiApiKey() {
-  const handleStartOcr = () => {
-    window.history.pushState({ activeTab: 'scanner' }, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { activeTab: 'scanner' } }));
-  };
-
   return (
     <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed">
       {/* Giới thiệu */}
