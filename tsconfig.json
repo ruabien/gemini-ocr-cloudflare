@@ -2,7 +2,7 @@
   "compilerOptions": {
     "noEmit": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "allowJs": true,
     "esModuleInterop": true,
     "module": "ESNext",
