@@ -160,7 +160,6 @@ function AppContent() {
             <OcrEditor
               document={document}
               onBack={() => navigate("/scanner")}
-              membershipRole={membershipRole}
               setActiveTab={setActiveTab}
             />
           </Suspense>

@@ -4,16 +4,10 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { anonymizeLegalText } from "../utils/anonymizer";
-import { detectNames } from "../anonymizer/detector";
-import { anonymizeNameString, defaultProvinceMappings, buildDictionary } from "../anonymizer/dictionary";
 import {
   ArrowLeft,
   FileText,
   Download,
-  Shield,
-  Eye,
-  EyeOff,
   AlertTriangle,
   CheckCircle2,
   X,
@@ -22,9 +16,6 @@ import {
   Check
 } from "lucide-react";
 import { OcrDocument } from "../types";
-import { useAuth } from "../contexts/AuthContext";
-import { auth } from "../lib/firebase";
-import LoginPromptModal from "./LoginPromptModal";
 import * as pdfjs from "pdfjs-dist";
 
 const sanitizeText = (raw: string) => {
@@ -36,59 +27,14 @@ const sanitizeText = (raw: string) => {
     .trim();
 };
 
-function getHeaderLength(text: string): number {
-  const contentMarkers = [
-    "Kính gửi",
-    "Căn cứ",
-    "Thực hiện",
-    "Hồi",
-    "Ngày",
-    "Theo đơn",
-    "I\\.",
-    "II\\.",
-    "1\\.",
-    "Nguyên đơn",
-    "Bị đơn"
-  ];
-  const markerRegex = new RegExp(`(^|\\n)\\s*(?:${contentMarkers.join('|')})\\b`, 'mi');
-  const match = markerRegex.exec(text);
-  if (match) {
-    return match.index;
-  }
-
-  // Fallback: Check if the text is structured as a header snippet without content.
-  const hasMotto = /CỘNG HÒA\s+XÃ HỘI\s+CHỦ NGHĨA\s+VIỆT\s+NAM/i.test(text) ||
-                   /Độc lập\s*-\s*Tự do\s*-\s*Hạnh phúc/i.test(text);
-  
-  const startsWithAuthority = /^\s*(?:UỶ BAN NHÂN DÂN|ỦY BAN NHÂN DÂN|UBND|TÒA ÁN NHÂN DÂN|VIỆN KIỂM SÁT NHÂN DÂN)/i.test(text);
-  
-  const hasContentIndicator = /\b(?:Địa chỉ|Nơi cư trú|Trú tại|Thường trú|Tạm trú|tọa lạc)\b/i.test(text);
-
-  if ((hasMotto || startsWithAuthority) && !hasContentIndicator) {
-    return text.length;
-  }
-
-  return 0;
-}
-
 interface OcrEditorProps {
   document: OcrDocument | null;
   onBack: () => void;
-  membershipRole: "Free" | "Pro";
   setActiveTab: (tab: string) => void;
 }
-type ReplacementRule = {
-  id: string;
-  original: string;
-  replaceWith: string;
-  type: "Tên người" | "Địa danh" | "CCCD" | "SĐT";
-  enabled: boolean;
-};
-
 export default function OcrEditor({
   document,
   onBack,
-  membershipRole,
   setActiveTab
 }: OcrEditorProps) {
   if (!document) {
@@ -115,11 +61,6 @@ export default function OcrEditor({
   }
 
   // Upgrade/Login modal states
-  const { user } = useAuth();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeFeature, setUpgradeFeature] = useState("");
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [loginFeatureName, setLoginFeatureName] = useState("");
 
   // Parse OCR data
   const parsedData = (() => {
@@ -147,22 +88,8 @@ export default function OcrEditor({
   const warnings = parsedData.warnings ?? document?.warnings ?? [];
 
   const [editorText, setEditorText] = useState(ocrText);
-  const [isAnonymized, setIsAnonymized] = useState(false);
-  const [isAnonymizeModalOpen, setIsAnonymizeModalOpen] = useState(false);
-  const [originalBackup, setOriginalBackup] = useState(ocrText);
-  const [replacementRules, setReplacementRules] = useState<ReplacementRule[]>([]);
-  const [anonymizePreviewText, setAnonymizePreviewText] = useState("");
   const [isEncryptActive, setIsEncryptActive] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isRedacting, setIsRedacting] = useState(false);
-  const [isExportingDocx, setIsExportingDocx] = useState(false);
-  const [anonymizeStats, setAnonymizeStats] = useState<{
-    names: number;
-    provinces: number;
-    idNumbers: number;
-    phones: number;
-  } | null>(null);
-  const [exportMode, setExportMode] = useState<"nd30" | "manual_edit">("nd30");
   const [isCopied, setIsCopied] = useState(false);
 
   // PDF / image preview
@@ -224,127 +151,10 @@ export default function OcrEditor({
 useEffect(() => {
   const nextText = ocrText || "";
   setEditorText(nextText);
-  setOriginalBackup(nextText);
-  setIsAnonymized(false);
-  setAnonymizeStats(null);
 }, [document?.name, document?.content]);
-
-// Add ESC to close anonymize modal
-useEffect(() => {
-  if (!isAnonymizeModalOpen) return;
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Escape") setIsAnonymizeModalOpen(false);
-  };
-  window.addEventListener("keydown", onKeyDown);
-  return () => window.removeEventListener("keydown", onKeyDown);
-}, [isAnonymizeModalOpen]);
-
-// Update preview text based on replacement rules
-useEffect(() => {
-  if (!isAnonymizeModalOpen) return;
-  const headerLength = getHeaderLength(originalBackup);
-  const header = originalBackup.substring(0, headerLength);
-  let content = originalBackup.substring(headerLength);
-
-  replacementRules.forEach(rule => {
-    if (rule.enabled && rule.original) {
-      const escaped = rule.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(escaped, 'g');
-      content = content.replace(regex, rule.replaceWith);
-    }
-  });
-  setAnonymizePreviewText(header + content);
-}, [originalBackup, replacementRules, isAnonymizeModalOpen]);
-
-  // Anonymization toggle (opens modal for manual confirmation)
-  const handleToggleAnonymize = () => {
-    // @ts-ignore
-    if (import.meta.env.DEV) console.info("[ANONYMIZE CLICK]");
-    // @ts-ignore
-    if (import.meta.env.DEV) console.info("[ANONYMIZE] editor length:", editorText?.length || 0);
-
-    if (isAnonymized) {
-      // Restore original
-      setEditorText(originalBackup);
-      setIsAnonymized(false);
-      setAnonymizeStats(null);
-      return;
-    }
-
-    if (!user) {
-      setLoginFeatureName("Ẩn danh đương sự (Mật danh hoá)");
-      setShowLoginPrompt(true);
-      return;
-    }
-    if (membershipRole !== "Pro") {
-      setUpgradeFeature("Ẩn danh đương sự tự động (Mật danh hoá)");
-      setShowUpgradeModal(true);
-      return;
-    }
-
-    const currentText = editorText || "";
-    // Length safety check (avoid processing overly large texts)
-    if (currentText.length > 50000) {
-      alert("Văn bản quá dài (trên 50.000 ký tự). Vui lòng chia nhỏ để ẩn danh.");
-      return;
-    }
-    if (!currentText.trim()) {
-      alert("Không có nội dung để ẩn danh");
-      return;
-    }
-
-    try {
-      // @ts-ignore
-      if (import.meta.env.DEV) console.time("[ANONYMIZE] total");
-      // @ts-ignore
-      if (import.meta.env.DEV) console.time("[ANONYMIZE] run");
-      const result = anonymizeLegalText(currentText);
-      // @ts-ignore
-      if (import.meta.env.DEV) console.timeEnd("[ANONYMIZE] run");
-
-      // Apply result automatically (no modal confirmation)
-      setOriginalBackup(currentText);
-      setEditorText(result.text);
-      setIsAnonymized(true);
-
-      // Generate counts for stats display
-      const nameSet = detectNames(currentText);
-      const dict = buildDictionary(currentText, nameSet);
-      const idRegex = /(cccd|cmnd|căn\s+cước\s+công\s+dân|số\s+định\s+danh\s+cá\s+nhân)(?:\s+|:\s*|số\s+|-\s*)*(\d{9,12})\b/gi;
-      const idMatches = new Set<string>();
-      let idMatch;
-      while ((idMatch = idRegex.exec(currentText)) !== null) {
-        idMatches.add(idMatch[2]);
-      }
-      const phoneRegex = /((?:\+?\d{1,3}[\s-]?)?(?:\(\d{2,3}\)[\s-]?|\d{2,4}[\s-])?\d{3,4}[\s-]?\d{3,4})/g;
-      const phoneMatches = new Set<string>();
-      let phoneMatch;
-      while ((phoneMatch = phoneRegex.exec(currentText)) !== null) {
-        phoneMatches.add(phoneMatch[0]);
-      }
-
-      setAnonymizeStats({
-        names: nameSet.size,
-        provinces: dict.provinceMap.size + dict.communeMap.size,
-        idNumbers: idMatches.size,
-        phones: phoneMatches.size
-      });
-      // @ts-ignore
-      if (import.meta.env.DEV) console.timeEnd("[ANONYMIZE] total");
-    } catch (err) {
-      console.error("Anonymize error:", err);
-      alert("Không thể tạo bản ẩn danh.");
-    }
-  };
 
   // Copy All (Free for everyone)
   const handleCopyAll = async () => {
-    if (!user) {
-      setLoginFeatureName("Sao chép tất cả nội dung (Copy All)");
-      setShowLoginPrompt(true);
-      return;
-    }
-
     const text = editorText || "";
     if (!text.trim()) {
       alert("Không có nội dung để sao chép.");
@@ -377,62 +187,6 @@ useEffect(() => {
     }
   };
 
-  // Export DOCX (Pro only)
-  const handleExportDocx = async () => {
-    if (!user) {
-      setLoginFeatureName("Xuất tệp Word (.DOCX) chuẩn Nghị định 30");
-      setShowLoginPrompt(true);
-      return;
-    }
-    if (membershipRole !== "Pro") {
-      setUpgradeFeature(
-        "Xuất tệp Word (.DOCX) chuẩn Nghị định 30/2020/NĐ-CP"
-      );
-      setShowUpgradeModal(true);
-      return;
-    }
-    setIsExportingDocx(true);
-    try {
-      const idToken = await auth.currentUser?.getIdToken();
-      const response = await fetch("/api/ocr/export/docx", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": idToken ? `Bearer ${idToken}` : "",
-        },
-        body: JSON.stringify({
-          text: sanitizeText(editorText),
-          fileName: document.name,
-          mode: exportMode
-        })
-      });
-      if (!response.ok) {
-        let errorMessage = "Xuất DOCX thất bại.";
-        try {
-          const data = await response.json();
-          if (data?.error) errorMessage = data.error;
-        } catch {
-          // ignore parse error
-        }
-        throw new Error(errorMessage);
-      }
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = window.document.createElement("a");
-      link.href = downloadUrl;
-      const suffix = exportMode === "manual_edit" ? "ThuCong" : "ND30";
-      link.download = `${document.name.replace(/\.[^/.]+$/, "")}_${suffix}.docx`;
-      window.document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error("Export DOCX error:", err);
-      alert(err instanceof Error ? err.message : "Xuất DOCX thất bại.");
-    } finally {
-      setIsExportingDocx(false);
-    }
-  };
-
   // Export TXT (always free)
   const handleExportTxt = () => {
     try {
@@ -454,31 +208,6 @@ useEffect(() => {
       id="ocr-editor-view"
       className="space-y-6 w-full overflow-x-hidden"
     >
-      {isAnonymized && anonymizeStats && (
-        <div className="bg-emerald-50 border border-emerald-250 p-4 rounded-xl flex items-center justify-between shadow-sm animate-fadeIn">
-          <div className="flex items-center space-x-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-            <div>
-              <p className="text-xs sm:text-sm font-bold text-emerald-800">
-                Đã ẩn danh đương sự thông minh thành công (Chạy hoàn toàn local trong trình duyệt)
-              </p>
-              <div className="text-[11px] text-emerald-700 mt-1 flex flex-wrap gap-x-4 gap-y-1 font-medium">
-                <span>• {anonymizeStats.names} họ tên</span>
-                <span>• {anonymizeStats.provinces} tỉnh/thành</span>
-                <span>• {anonymizeStats.idNumbers} CCCD/CMND</span>
-                <span>• {anonymizeStats.phones} số điện thoại</span>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={handleToggleAnonymize}
-            className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 underline ml-4 flex-shrink-0"
-          >
-            Hiện thông tin đương sự
-          </button>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center space-x-3">
@@ -505,25 +234,6 @@ useEffect(() => {
         <div className="w-full lg:w-auto flex flex-wrap items-center gap-2 mt-2 lg:mt-0">
           <div className="flex w-full sm:w-auto gap-2">
             <button
-              onClick={handleToggleAnonymize}
-              disabled={isRedacting}
-              className={`flex-1 sm:flex-none sm:w-[115px] px-3 py-2 sm:py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all min-h-[40px] sm:min-h-0 ${
-                isAnonymized
-                  ? "bg-yellow-500 text-white border-yellow-600"
-                  : "bg-white hover:bg-slate-50 text-slate-700 border-slate-300"
-              }`}
-            >
-              {isAnonymized ? <Eye className="h-4 w-4 flex-shrink-0" /> : <EyeOff className="h-4 w-4 text-slate-500 flex-shrink-0" />}
-              <span className="truncate">
-                {isRedacting
-                  ? "Mã hoá..."
-                  : isAnonymized
-                  ? "Hiện tên"
-                  : "Ẩn danh"}
-              </span>
-            </button>
-
-            <button
               onClick={handleCopyAll}
               className="flex-1 sm:flex-none sm:w-[115px] px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5 shadow-sm min-h-[40px] sm:min-h-0 transition-all bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent"
             >
@@ -544,24 +254,6 @@ useEffect(() => {
               <span className="truncate">Xuất Text</span>
             </button>
 
-            <button
-              onClick={handleExportDocx}
-              disabled={isExportingDocx}
-              className={`flex-1 sm:flex-none sm:w-[115px] font-bold px-3 py-2 sm:py-1.5 rounded-lg text-xs flex items-center justify-center space-x-1.5 shadow-md transition-all min-h-[40px] sm:min-h-0 ${
-                membershipRole === "Pro"
-                  ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-rose-500/10"
-                  : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 border-amber-300/45"
-              }`}
-            >
-              {membershipRole === "Pro" ? (
-                <FileText className="h-4 w-4 flex-shrink-0" />
-              ) : (
-                <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse flex-shrink-0" />
-              )}
-              <span className="truncate">
-                {isExportingDocx ? "Đang xuất..." : "Xuất Word"}
-              </span>
-            </button>
           </div>
         </div>
       </div>
@@ -674,7 +366,7 @@ useEffect(() => {
             <div className="bg-slate-50 p-3 border-t border-slate-200 text-xs flex items-center justify-between text-slate-500 font-medium">
               <span className="flex items-center space-x-1.5 text-emerald-600 font-semibold">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Xuất Word chuẩn Nghị định 30</span>
+                <span>Đã sẵn sàng xuất bản</span>
               </span>
               <span className="font-mono">
                 Số ký tự: {editorText.length}
@@ -683,89 +375,6 @@ useEffect(() => {
           </div>
         </div>
       </div>
-
-      {/* Login Prompt Modal */}
-      {showLoginPrompt && (
-        <LoginPromptModal
-          onClose={() => setShowLoginPrompt(false)}
-          featureName={loginFeatureName}
-        />
-      )}
-
-      {/* Upgrade modal */}
-      {showUpgradeModal && (
-        <div
-          id="upgrade-modal"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/65 backdrop-blur-xs p-4 animate-fadeIn"
-        >
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-sm w-full overflow-hidden">
-            <div className="bg-slate-900 p-5 text-white relative">
-              <button
-                onClick={() => setShowUpgradeModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex items-center space-x-2">
-                <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
-                <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400">
-                  Hội viên đặc quyền
-                </span>
-              </div>
-              <h3 className="text-sm font-bold text-slate-100 mt-1">
-                Nâng cấp tài khoản PRO khối tư pháp
-              </h3>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="flex items-start space-x-2.5 text-xs bg-amber-50 text-amber-900 p-3 rounded-lg border border-amber-200/55">
-                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-                <div>
-                  <p className="font-extrabold text-[11px]">
-                    Cần nâng cấp PRO để sử dụng:
-                  </p>
-                  <p className="mt-0.5 text-slate-700 text-[11px] leading-relaxed font-semibold">
-                    {upgradeFeature}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2.5">
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Thiết kế chuyên biệt cho Kiểm sát viên. Giúp tự động
-                  hiệu chỉnh văn bản đạt chuẩn Nghị định 30 và xuất Word.
-                </p>
-                <div className="border border-slate-150 rounded-lg p-3 bg-slate-50 space-y-1.5 text-[10.5px] text-slate-750">
-                  <p className="font-bold text-slate-700 flex items-center">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mr-1.5" />
-                    Mở khóa xuất Word (.DOCX) chuẩn tố tụng
-                  </p>
-                  <p className="font-bold text-slate-700 flex items-center">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mr-1.5" />
-                    Xuất Excel (.XLSX) cho tài liệu có cấu trúc (PRO)
-                  </p>
-                </div>
-              </div>
-              <div className="flex space-x-2 pt-1 text-xs">
-                <button
-                  onClick={() => setShowUpgradeModal(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 py-1.5 rounded-lg text-slate-700 font-bold border border-slate-300"
-                >
-                  Để sau
-                </button>
-                <button
-                  onClick={() => {
-                    setShowUpgradeModal(false);
-                    setActiveTab("upgrade");
-                  }}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-1.5 rounded-lg text-slate-950 font-black tracking-wide shadow-md flex items-center justify-center space-x-1"
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span>Kích hoạt PRO</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
