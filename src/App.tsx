@@ -73,7 +73,7 @@ const getDefaultOcrConfig = (isPro: boolean): OcrConfig => ({
 });
 
 function AppContent() {
-  const { user, updateUserPlan, isPro, loadingSubscription } = useAuth();
+  const { user, isPro, loadingSubscription } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -137,9 +137,6 @@ function AppContent() {
   }, [showPaymentSuccessToast]);
 
   const membershipRole = isPro ? "Pro" : "Free";
-  const setMembershipRole = (role: "Free" | "Pro") => {
-    updateUserPlan(role === "Pro" ? "pro" : "free");
-  };
 
   useEffect(() => {
     // Migrate old model storage to auto mode
@@ -207,13 +204,7 @@ function AppContent() {
           } />
           <Route path="/settings" element={
           <Suspense fallback={<PageLoader />}>
-            <Settings
-              userGeminiKey={userGeminiKey}
-              setUserGeminiKey={setUserGeminiKey}
-              membershipRole={membershipRole}
-              setMembershipRole={setMembershipRole}
-              setActiveTab={setActiveTab}
-            />
+            <Settings setActiveTab={setActiveTab} />
           </Suspense>
           } />
           <Route path="/privacy" element={<PrivacyPolicy />} />
