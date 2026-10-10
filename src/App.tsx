@@ -13,7 +13,7 @@ import { migrateOcrConfig } from "./utils/ocrConfigMigration";
 const OcrScanner = lazy(() => import("./components/OcrScanner"));
 const OcrEditor = lazy(() => import("./components/OcrEditor"));
 const StructuredExtractionEditor = lazy(() => import("./components/StructuredExtractionEditor"));
-const Upgrade = lazy(() => import("./components/Upgrade"));
+const DesktopProPage = lazy(() => import("./components/DesktopProPage"));
 const Settings = lazy(() => import("./components/Settings"));
 
 const PageLoader = () => (
@@ -202,11 +202,7 @@ function AppContent() {
           } />
           <Route path="/upgrade" element={
           <Suspense fallback={<PageLoader />}>
-            <Upgrade
-              membershipRole={membershipRole}
-              setMembershipRole={setMembershipRole}
-              setActiveTab={setActiveTab}
-            />
+            <DesktopProPage />
           </Suspense>
           } />
           <Route path="/settings" element={
