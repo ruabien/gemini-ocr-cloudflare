@@ -36,32 +36,32 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       answer: "Không. LexOCR không lưu PDF, hình ảnh, nội dung OCR hoặc dữ liệu trích xuất sau khi hoàn tất xử lý."
     },
     {
-      question: "Vì sao tôi phải sử dụng API Gemini của riêng mình?",
-      answer: "Điều này giúp dữ liệu được xử lý trực tiếp thông qua tài khoản Google AI Studio của bạn và giảm thiểu việc chia sẻ dữ liệu qua bên thứ ba."
+      question: "LexOCR Web Free hoạt động như thế nào?",
+      answer: "LexOCR Web Free sử dụng Tesseract để nhận dạng văn bản trực tiếp trên trình duyệt, phù hợp với nhu cầu OCR cơ bản."
     },
     {
-      question: "Gói Free có giới hạn gì?",
-      answer: "Gói Free đáp ứng nhu cầu OCR cơ bản bằng API Gemini của chính người dùng. Một số tính năng nâng cao như DOCX chuẩn Nghị định 30, Ẩn danh và Trích xuất Excel nâng cao thuộc gói PRO."
+      question: "LexOCR Pro Desktop là gì?",
+      answer: "LexOCR Pro Desktop là ứng dụng trả phí dành cho máy tính, giúp bóc tách hồ sơ và tài liệu nhạy cảm trong môi trường làm việc riêng."
     },
     {
-      question: "Gói PRO có cộng dồn thời gian không?",
-      answer: "Có. Nếu mua thêm khi gói PRO còn hạn, thời gian sẽ được cộng dồn."
+      question: "Pro Desktop có xử lý hồ sơ khi không có Internet không?",
+      answer: "Có. Pro Desktop được thiết kế để xử lý hồ sơ offline ngay trên máy tính, phù hợp với tài liệu cần kiểm soát chặt chẽ."
+    },
+    {
+      question: "Tôi có cần cấu hình API hoặc khóa truy cập để dùng LexOCR không?",
+      answer: "Không. Web Free và Pro Desktop không yêu cầu bạn tự cấu hình API hoặc khóa truy cập."
     },
     {
       question: "Tôi có thể sử dụng LexOCR trong cơ quan không?",
       answer: "Có. LexOCR được thiết kế phục vụ nhu cầu số hóa và nghiên cứu hồ sơ trong lĩnh vực tư pháp."
     },
     {
-      question: "Tôi có thể sử dụng API Gemini miễn phí không?",
-      answer: "Có. Google AI Studio cung cấp quota miễn phí phù hợp với nhu cầu sử dụng thông thường."
-    },
-    {
       question: "LexOCR có hỗ trợ OCR tiếng Việt không?",
-      answer: "Có. LexOCR được tối ưu cho tài liệu tiếng Việt, kể cả chữ viết tay (tương đối)."
+      answer: "Có. LexOCR hỗ trợ nhận dạng tài liệu tiếng Việt; chất lượng kết quả phụ thuộc vào độ rõ nét và bố cục tài liệu gốc."
     },
     {
-      question: "Sau khi hết hạn PRO thì sao?",
-      answer: "Tài khoản sẽ tự động chuyển về gói Free, dữ liệu tài khoản vẫn được giữ nguyên."
+      question: "Tôi tìm hiểu thêm về Pro Desktop ở đâu?",
+      answer: "Bạn có thể truy cập trang Pro Desktop để xem thông tin về giải pháp xử lý hồ sơ offline của LexOCR."
     }
   ];
 
@@ -95,7 +95,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
           </h1>
           
           <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Tự động chuyển hồ sơ giấy thành dữ liệu nghiên cứu có cấu trúc. Hỗ trợ bóc tách Cáo trạng, Bản án, Quyết định, Thông báo thụ lý và Biên bản tố tụng trong vài giây.
+            Dùng LexOCR Web Free với Tesseract để số hóa tài liệu cơ bản trên trình duyệt, hoặc khám phá Pro Desktop Offline cho hồ sơ cần xử lý ngay trên máy tính.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -103,17 +103,18 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
               onClick={onStart}
               className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-sm tracking-wide rounded-lg flex items-center justify-center space-x-2 shadow-lg border border-yellow-500/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
             >
-              <span>Bắt đầu sử dụng ngay</span>
+              <span>Dùng ngay</span>
               <ArrowRight className="h-4 w-4" />
             </button>
             
             <button
-onClick={() => { const el = document.getElementById('security-architecture'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
-              className="w-full sm:w-auto px-6 py-4 bg-slate-800 hover:bg-slate-700/80 text-slate-200 hover:text-white font-bold text-sm rounded-lg border border-slate-700 flex items-center justify-center space-x-2 transition-all cursor-pointer"
+              onClick={() => setActiveTab("upgrade")}
+              className="w-full sm:w-auto px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold text-sm rounded-lg flex items-center justify-center space-x-2 shadow-lg border border-amber-400/30 transform hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
             >
-              <Shield className="h-4 w-4 text-yellow-400" />
-              <span>Kiến trúc & Bảo mật nghiệp vụ</span>
+              <Lock className="h-4 w-4 text-amber-200" />
+              <span>Khám phá Pro Desktop</span>
             </button>
+
           </div>
 
           <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-xs text-slate-400 font-medium">
