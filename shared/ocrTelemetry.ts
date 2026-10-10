@@ -1,9 +1,8 @@
 /**
  * LEXOCR benchmark telemetry — shared, environment-agnostic helper.
  *
- * Covers BOTH Gemini execution paths with one implementation:
+ * Covers the client-side Gemini execution path:
  *   - client BYOK path (src/components/OcrScanner.tsx, browser)
- *   - server Pages Function path (functions/api/ocr/process.ts, workerd)
  *
  * DESIGN CONTRACT (locked by plan review):
  * - GATED, not always-on: default OFF. Enablement ONLY via explicit
