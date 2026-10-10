@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "test:benchmark:corpus": "npx tsx scripts/benchmark/corpus-hash.test.ts && npx tsx scripts/benchmark/corpus-validator.test.ts && npx tsx scripts/benchmark/corpus-readiness.test.ts",
     "test:benchmark": "npx tsx scripts/benchmark/canonicalContract.test.ts && npx tsx scripts/benchmark/ocr-quality-evaluator.test.ts && npx tsx scripts/benchmark/ocr-legal-evaluator.test.ts && npx tsx scripts/benchmark/ocr-layout-evaluator.test.ts && npx tsx scripts/benchmark/ocr-cost-calculator.test.ts && npx tsx scripts/benchmark/pricing.test.ts && npx tsx scripts/benchmark/manifest.test.ts && npx tsx scripts/benchmark/corpus-hash.test.ts && npx tsx scripts/benchmark/corpus-validator.test.ts && npx tsx scripts/benchmark/corpus-readiness.test.ts && npx tsx scripts/benchmark/benchmark-dry-run.test.ts",
-    "test": "npx tsx src/ocr/tesseract/tesseract.test.ts && npx tsx src/utils/ocrConfig.test.js && npx tsx src/utils/retry.test.js && npx tsx src/utils/recitation.test.js && npx tsx src/utils/fallback.test.js && npx tsx src/utils/geminiModelResolver.test.js && npx tsx src/utils/extractionService.test.js && npx tsx shared/ocrTelemetry.test.ts && npx tsx shared/ocrRequestGuard.test.ts && npm run test:benchmark"
+    "test": "npx tsx src/ocr/tesseract/tesseract.test.ts && npx tsx src/utils/ocrConfig.test.js && npx tsx src/utils/retry.test.js && npx tsx src/utils/recitation.test.js && npx tsx src/utils/fallback.test.js && npx tsx src/utils/geminiModelResolver.test.js && npx tsx shared/ocrTelemetry.test.ts && npx tsx shared/ocrRequestGuard.test.ts && npm run test:benchmark"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",

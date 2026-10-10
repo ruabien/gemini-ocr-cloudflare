@@ -12,7 +12,6 @@ import { migrateOcrConfig } from "./utils/ocrConfigMigration";
 
 const OcrScanner = lazy(() => import("./components/OcrScanner"));
 const OcrEditor = lazy(() => import("./components/OcrEditor"));
-const StructuredExtractionEditor = lazy(() => import("./components/StructuredExtractionEditor"));
 const DesktopProPage = lazy(() => import("./components/DesktopProPage"));
 const Settings = lazy(() => import("./components/Settings"));
 
@@ -22,8 +21,6 @@ const PageLoader = () => (
     <p className="mt-2 text-sm text-slate-500">Loading...</p>
   </div>
 );
-import { getUserStorageItem } from "./utils/userStorage";
-import { migrateOldStorage } from "./utils/geminiModelResolver";
 
 const KnowledgeCenter = lazy(() => import("./knowledge/KnowledgeCenter"));
 const KnowledgeArticle = lazy(() => import("./knowledge/KnowledgeArticle"));
@@ -85,7 +82,6 @@ function AppContent() {
   // State to hold OCR configuration, document data
   const [config, setConfig] = useState<OcrConfig>(() => getDefaultOcrConfig(isPro));
   const [document, setDocument] = useState<any>(null);
-  const [userGeminiKey, setUserGeminiKey] = useState<string>("");
   const [showPaymentSuccessToast, setShowPaymentSuccessToast] = useState(false);
 
   useEffect(() => {
@@ -138,24 +134,6 @@ function AppContent() {
 
   const membershipRole = isPro ? "Pro" : "Free";
 
-  useEffect(() => {
-    // Migrate old model storage to auto mode
-    migrateOldStorage(user?.uid);
-
-    try {
-      const saved = getUserStorageItem(user?.uid, 'gemini_keys');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setUserGeminiKey(parsed[0]);
-          return;
-        }
-      }
-    } catch (e) {}
-    setUserGeminiKey("");
-  }, [user]);
-
-
   // Handlers for navigation and tab changes
   const handleStart = () => navigate("/scanner");
 
@@ -179,22 +157,12 @@ function AppContent() {
           } />
           <Route path="/editor" element={
           <Suspense fallback={<PageLoader />}>
-            {document?.outputMode === "structured" ? (
-                <StructuredExtractionEditor
-                  document={document}
-                  onBack={() => navigate("/scanner")}
-                  membershipRole={membershipRole}
-                  setActiveTab={setActiveTab}
-                  userGeminiKey={userGeminiKey}
-                />
-            ) : (
-              <OcrEditor
-                document={document}
-                onBack={() => navigate("/scanner")}
-                membershipRole={membershipRole}
-                setActiveTab={setActiveTab}
-              />
-            )}
+            <OcrEditor
+              document={document}
+              onBack={() => navigate("/scanner")}
+              membershipRole={membershipRole}
+              setActiveTab={setActiveTab}
+            />
           </Suspense>
           } />
           <Route path="/upgrade" element={
