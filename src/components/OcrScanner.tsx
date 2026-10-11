@@ -659,18 +659,15 @@ const startOcrProcess = async () => {
           try {
             await processSinglePage(pageFile, p, endPage);
           } catch (e: any) {
-            if (e?.type === "503_EXHAUSTED" || e?.type === "ABORTED") {
+            if (e?.type === "ABORTED") {
               updateFileStatus(i, "error");
               setFileErrors(prev => ({
                 ...prev,
-                [i]: sanitizeError(e.message || "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.")
+                [i]: sanitizeError(e.message || "Đã hủy quá trình bóc tách.")
               }));
               throw e;
             }
             throw e;
-          }
-          if (selectedEngineId === "gemini" && p < endPage) {
-            await new Promise((res) => setTimeout(res, 2500));
           }
         }
 
@@ -692,11 +689,11 @@ const startOcrProcess = async () => {
             return prev;
           });
         } catch (err: any) {
-          if (err?.type === "503_EXHAUSTED" || err?.type === "ABORTED") {
+          if (err?.type === "ABORTED") {
             updateFileStatus(i, "error");
             setFileErrors(prev => ({
               ...prev,
-              [i]: sanitizeError(err.message || "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.")
+              [i]: sanitizeError(err.message || "Đã hủy quá trình bóc tách.")
             }));
             throw err;
           }
@@ -709,9 +706,6 @@ const startOcrProcess = async () => {
         }
       }
 
-      if (selectedEngineId === "gemini" && i < filesToProcess.length - 1) {
-        await new Promise((res) => setTimeout(res, 2500));
-      }
     }
 
     setTimeout(async () => {
@@ -741,9 +735,7 @@ const startOcrProcess = async () => {
       console.error("OCR process error:", error);
     }
     let friendlyError = "Đã xảy ra lỗi trong quá trình xử lý.";
-    if (error?.type === "503_EXHAUSTED") {
-      friendlyError = "Gemini đang tạm thời quá tải. Vui lòng chờ một lát rồi thử lại.";
-    } else if (error?.type === "ABORTED") {
+    if (error?.type === "ABORTED") {
       friendlyError = "Đã hủy quá trình bóc tách.";
     } else {
       friendlyError = sanitizeError(error?.message || "Đã xảy ra lỗi trong quá trình xử lý.");
