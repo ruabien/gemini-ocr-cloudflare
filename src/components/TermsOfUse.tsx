@@ -47,7 +47,7 @@ export default function TermsOfUse() {
               LexOCR cung cấp các tùy chọn gói dịch vụ đáp ứng các nhu cầu khác nhau:
             </p>
             <ul className="list-disc pl-6 space-y-1.5 text-slate-650">
-              <li><strong>Gói Free:</strong> Phù hợp nhu cầu OCR cơ bản. Người dùng tự cấu hình API Gemini của riêng mình để sử dụng dịch vụ.</li>
+              <li><strong>Gói Free:</strong> Phù hợp nhu cầu OCR cơ bản. Xử lý trực tiếp trên trình duyệt bằng Tesseract, không cần API key, không cần đăng nhập.</li>
               <li><strong>Gói PRO:</strong> Mở khóa các tính năng nâng cao như xuất file DOCX chuẩn Nghị định 30, tính năng Ẩn danh (Anonymize), trích xuất Excel nâng cao và không yêu cầu cấu hình API cá nhân. Khi hết hạn PRO, tài khoản sẽ tự động chuyển về gói Free.</li>
             </ul>
           </section>
