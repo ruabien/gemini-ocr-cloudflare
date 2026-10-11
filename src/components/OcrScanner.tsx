@@ -6,7 +6,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle, Trash2 } from "lucide-react";
-import { auth } from "../lib/firebase";
 import { OcrConfig } from "../types";
 import { useAuth } from "../contexts/AuthContext";
 import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
@@ -400,28 +399,6 @@ const startOcrProcess = async () => {
   const selectedEngineId = config.engine;
   const selectedLanguage = config.language ?? "vi";
   let selectedTesseractEngine: OcrEngine | null = null;
-  let successfulPagesCount = 0;
-
-  // ---- Pre‑flight usage checks for FREE users ----
-  let isPro = false;
-  if (selectedEngineId === "gemini" && user?.uid) {
-    try {
-      const idToken = await auth.currentUser?.getIdToken();
-      const checkRes = await fetch("/api/usage/check", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": idToken ? `Bearer ${idToken}` : "",
-        },
-      });
-      if (checkRes.ok) {
-        const data = await checkRes.json();
-        isPro = data.isPro;
-      }
-    } catch (e) {
-      console.error("Failed to check usage:", e);
-    }
-  }
 
   // Count requested pages
   const filesToProcess = (queuedFiles || []).filter(q => q && q.status !== 'done');
@@ -1570,7 +1547,6 @@ const keyToProjectMap = new Map<string, string>();
           console.log(`[OCR] Đang bóc tách ${file.name} - Trang ${p}/${endPage}...`);
           try {
             await processSinglePage(pageFile, p, endPage);
-            successfulPagesCount += 1;
           } catch (e: any) {
             if (e?.type === "503_EXHAUSTED" || e?.type === "ABORTED") {
               updateFileStatus(i, "error");
@@ -1591,7 +1567,6 @@ const keyToProjectMap = new Map<string, string>();
       } else {
         try {
           await processSinglePage(file, 1, 1);
-          successfulPagesCount += 1;
           setQueuedFiles(prev => {
             const currentFile = prev.find(f => f.id === qFile.id);
             if (currentFile?.pageStates?.[1]?.status === 'error') {
@@ -1637,47 +1612,6 @@ const keyToProjectMap = new Map<string, string>();
       const totalPagesAll = queuedFiles.reduce((acc, f) => acc + (f.totalPages || 1), 0);
       setProcessedPagesCount(totalPagesAll);
       setOcrStatus("success");
-
-      // -------------------------------------------------
-      // Record successful page usage (FREE users only)
-      // -------------------------------------------------
-      if (selectedEngineId === "gemini" && !isPro && user?.uid) {
-        try {
-          const successfulPages = successfulPagesCount;
-
-          if (successfulPages > 0) {
-            const idToken = await auth.currentUser?.getIdToken();
-            const response = await fetch("/api/usage/commit", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": idToken ? `Bearer ${idToken}` : "",
-              },
-              body: JSON.stringify({ successfulPages }),
-            });
-
-            let data;
-            try {
-              data = await response.json();
-            } catch (e) {
-              data = null;
-            }
-
-            if (!response.ok || !data || !data.success) {
-              const code = data?.code || data?.error;
-              if (code === "quota_exceeded") {
-                 setErrorModalMsg("Kết quả OCR đã hoàn tất, nhưng hạn mức miễn phí hôm nay đã được sử dụng đồng thời ở phiên khác.");
-              } else if (code === "transaction_failed" || code === "server_error") {
-                 console.error("Usage commit failed safely.", data?.message || "server error");
-              } else if (response.status === 400) {
-                 setErrorModalMsg(data?.message || "Dữ liệu không hợp lệ. Kết quả OCR vẫn được giữ nguyên.");
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Network or parsing error on commit:", e);
-        }
-      }
 
       const finalContent = editorContentRef.current;
       if (finalContent && finalContent.trim() !== "") {
