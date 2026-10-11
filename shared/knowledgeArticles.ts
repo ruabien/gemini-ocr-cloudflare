@@ -13,6 +13,11 @@ export interface KnowledgeArticleMeta {
 }
 
 export const knowledgeArticles: KnowledgeArticleMeta[] = [
+  /*
+   * Tạm ẩn bài "Hướng dẫn tạo Gemini API Key" — nội dung Gemini không còn phù hợp với sản phẩm Web Free hiện tại.
+   * Giữ file src/knowledge/content/HuongDanTaoGeminiApiKey.tsx và route KnowledgeArticle để viết lại khi Desktop Pro ra mắt.
+   */
+  /*
   {
     slug: "huong-dan-tao-gemini-api-key",
     title: "Hướng dẫn tạo Gemini API Key và cấu hình LexOCR trong 3 phút",
@@ -31,6 +36,7 @@ export const knowledgeArticles: KnowledgeArticleMeta[] = [
     ogImage: "https://lexocr.com/knowledge/huong-dan-tao-gemini-api-key/hero.webp",
     relatedSlugs: ["chuyen-pdf-scan-sang-word"]
   },
+  */
   {
     slug: "chuyen-pdf-scan-sang-word",
     title: "Chuyển PDF scan sang Word: Hướng dẫn đơn giản bằng OCR",
