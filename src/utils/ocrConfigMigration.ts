@@ -21,7 +21,7 @@ export function migrateOcrConfig(raw: unknown, isPro: boolean): OcrConfig {
   const savedConfig = isRecord(raw) ? raw : {};
 
   return {
-    engine: isPro ? "gemini" : "tesseract",
+    engine: "tesseract",
     outputFormat:
       typeof savedConfig.outputFormat === "string" &&
       savedConfig.outputFormat.trim() !== ""

@@ -62,8 +62,8 @@ function KnowledgeArticleRoute() {
   return <KnowledgeArticle slug={slug} />;
 }
 
-const getDefaultOcrConfig = (isPro: boolean): OcrConfig => ({
-  engine: isPro ? "gemini" : "tesseract",
+const getDefaultOcrConfig = (): OcrConfig => ({
+  engine: "tesseract",
   outputFormat: "TXT",
   language: "vie",
   preserveLayout: true,
@@ -80,7 +80,7 @@ function AppContent() {
     if (path) navigate(path);
   };
   // State to hold OCR configuration, document data
-  const [config, setConfig] = useState<OcrConfig>(() => getDefaultOcrConfig(isPro));
+  const [config, setConfig] = useState<OcrConfig>(() => getDefaultOcrConfig());
   const [document, setDocument] = useState<any>(null);
   const [showPaymentSuccessToast, setShowPaymentSuccessToast] = useState(false);
 
