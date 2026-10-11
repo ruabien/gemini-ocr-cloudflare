@@ -75,7 +75,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         <div className="relative z-10 mx-auto max-w-5xl text-center">
           <h1 className="mx-auto max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl">
             Chuyển PDF & Ảnh sang{" "}
-            <span className="bg-gradient-to-r from-yellow-500 to-emerald-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-red-500 bg-clip-text text-transparent">
               Text tiếng Việt
             </span>
           </h1>
@@ -185,10 +185,10 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
                 </div>
               </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none" aria-hidden="true" />
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none" aria-hidden="true" />
             </div>
           </div>
-          <div className="mt-8 max-w-3xl mx-auto border-t border-white/10 pt-6">
+          <div className="mt-12 max-w-3xl mx-auto border-t border-white/10 pt-6">
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-3">
             {[
               "Hỗ trợ PDF, JPG, PNG",

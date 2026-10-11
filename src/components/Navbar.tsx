@@ -86,7 +86,6 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
           <div>
             <h1 className="font-sans font-bold text-sm tracking-tight text-white flex items-center">
               LEXOCR
-              <span className="ml-1.5 px-1.5 py-0.5 text-[9px] bg-red-600/30 text-red-500 rounded border border-red-500/30 uppercase tracking-widest font-mono">PROCURACY v2.5</span>
             </h1>
             <p className="text-[10px] text-slate-400 font-medium">Hệ thống bóc tách hồ sơ</p>
           </div>
@@ -214,7 +213,7 @@ export default function Navbar({ activeTab, setActiveTab, membershipRole }: Navb
             ) : (
               <button
                 onClick={handleLogin}
-                className="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 md:px-3.5 rounded-lg text-xs font-bold tracking-wide flex items-center space-x-1 md:space-x-2 border border-red-500/50 shadow-md transition-all cursor-pointer"
+                className="bg-transparent border border-red-500/60 text-red-500 hover:bg-red-500/10 hover:border-red-500 px-2.5 py-1.5 md:px-3.5 rounded-lg text-xs font-bold tracking-wide flex items-center space-x-1 md:space-x-2 transition-colors cursor-pointer"
               >
                 <svg className="h-3.5 w-3.5 fill-current text-white" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
