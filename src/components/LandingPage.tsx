@@ -20,11 +20,6 @@ const faqs = [
     answer: "PDF, JPG, PNG. Bạn có thể tải lên nhiều ảnh cùng lúc.",
   },
   {
-    question: "Tôi có cần đăng nhập hoặc cài đặt phần mềm không?",
-    answer:
-      "Không. LexOCR Web Free sử dụng trực tiếp, không cần đăng nhập hay cài đặt gì.",
-  },
-  {
     question: "Giới hạn số trang cho mỗi lần OCR là bao nhiêu?",
     answer:
       "Tối đa 20 trang mỗi lần bóc tách. Bạn có thể chia nhỏ tài liệu dài thành nhiều lần xử lý.",
@@ -33,11 +28,6 @@ const faqs = [
     question: "Tôi có thể xuất kết quả ở định dạng nào?",
     answer:
       "Web Free hỗ trợ xuất text thuần (TXT) và copy nhanh vào clipboard. Các định dạng tài liệu và bảng tính sẽ có ở bản Desktop Pro.",
-  },
-  {
-    question: "Chất lượng OCR tiếng Việt phụ thuộc vào những yếu tố nào?",
-    answer:
-      "Chất lượng phụ thuộc vào độ rõ nét và bố cục tài liệu gốc. Ảnh scan rõ, độ phân giải cao cho kết quả tốt nhất.",
   },
   {
     question: "LexOCR Desktop Pro khác gì Web Free?",
@@ -207,7 +197,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
       </section>
 
       {/* How it works */}
-      <section className="w-full bg-white px-6 py-16 sm:px-12">
+      <section className="w-full bg-white px-6 py-14 sm:px-12">
         <div className="mx-auto max-w-5xl">
           <div className="mx-auto mb-10 max-w-2xl text-center">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-600">
@@ -278,7 +268,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
           </div>
           <button
             onClick={() => setActiveTab("upgrade")}
-            className="inline-flex shrink-0 items-center space-x-1.5 whitespace-nowrap text-sm font-bold text-amber-400 transition-colors hover:text-amber-300"
+            className="inline-flex shrink-0 items-center space-x-1.5 whitespace-nowrap rounded-lg border border-amber-400/60 px-4 py-2 text-sm font-bold text-amber-400 transition-colors hover:border-amber-400 hover:bg-amber-400/10 hover:text-amber-300"
           >
             <span>Tìm hiểu Desktop Pro</span>
             <ArrowRight className="h-4 w-4" />
@@ -297,7 +287,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
               Một vài thông tin hữu ích trước khi bạn bắt đầu.
             </p>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {faqs.map((faq, index) => {
               const isOpen = openIndex === index;
               return (
@@ -307,7 +297,7 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
                 >
                   <button
                     onClick={() => toggleFaq(index)}
-                    className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-bold text-slate-800 transition-colors hover:bg-slate-50"
+                    className="flex w-full items-center justify-between px-5 py-3.5 text-left text-sm font-bold text-slate-800 transition-colors hover:bg-slate-50"
                   >
                     <span>{faq.question}</span>
                     <ChevronDown
