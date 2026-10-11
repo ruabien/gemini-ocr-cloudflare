@@ -7,21 +7,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { OcrConfig } from "../types";
-import { useAuth } from "../contexts/AuthContext";
-import { getUserStorageItem } from "../utils/userStorage";
  // @ts-ignore
 import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
-import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
-import { getActiveModel, autoResolveModel, MODEL_MODES } from "../utils/geminiModelResolver";
 import { optimizeImageForOcr } from "../utils/imageOptimizer";
 import { cleanOcrPageText } from "../../shared/ocrPostProcessing";
 import { getOcrEngine } from "../ocr/getOcrEngine";
 import type { OcrEngine } from "../ocr/types";
-import {
-  createBenchmarkRun,
-  extractGeminiUsageMetadata,
-  type BenchmarkRun,
-} from "../../shared/ocrTelemetry";
 
 interface OcrScannerProps {
   onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[] }) => void;
@@ -114,7 +105,6 @@ const renderStatusBadge = (status: 'idle' | 'processing' | 'success' | 'error') 
 
 export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveTab }: OcrScannerProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [autoMerge, setAutoMerge] = useState(false);
@@ -469,18 +459,6 @@ const startOcrProcess = async () => {
       setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
     };
 
-    let geminiKeyPool: string[] = [];
-    let activeKeyIndex = 0;
-    const rateLimitedProjects = new Set<string>();
-    const keyToProjectMap = new Map<string, string>();
-
-
-    const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
-        void file;
-        void pageNumParam;
-        throw new Error("Gemini engine has been removed. Only Tesseract is supported.");
-    };
-
     // Inside the true sequential handler
     for (let i = 0; i < filesToProcess.length; i++) {
       const qFile = filesToProcess[i];
@@ -575,8 +553,6 @@ const startOcrProcess = async () => {
             extractedText = cleanOcrPageText(result.text, { pageIndex: pageIdx });
             setEditorContent((prev) => prev + (prev ? "\n\n" : "") + extractedText);
             editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + extractedText;
-          } else if (selectedEngineId === "gemini") {
-            extractedText = await sendFileToBackend(fileToSend, pageIdx);
           } else {
             throw new Error(`OCR engine chưa được hỗ trợ: ${String(selectedEngineId)}. Vui lòng chọn Free hoặc Pro.`);
           }
