@@ -1,25 +1,12 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React from "react";
-import { 
-  Shield, 
-  Lock, 
-  FileText, 
-  LayoutGrid, 
-  Terminal, 
-  Activity, 
-  ArrowRight, 
-  CheckCircle2, 
-  ShieldCheck,
-  Clock,
-  Users,
-  Calendar,
-  FileSpreadsheet,
-  Check,
-  ChevronDown
+import { useState } from "react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Copy,
+  FileText,
+  Lock,
+  ScanLine,
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -27,439 +14,316 @@ interface LandingPageProps {
   setActiveTab: (tab: string) => void;
 }
 
-export default function LandingPage({ onStart, setActiveTab }: LandingPageProps) {
-  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
+const faqs = [
+  {
+    question: "LexOCR Web Free hỗ trợ những loại tệp nào?",
+    answer: "PDF, JPG, PNG. Bạn có thể tải lên nhiều ảnh cùng lúc.",
+  },
+  {
+    question: "Tôi có cần đăng nhập hoặc cài đặt phần mềm không?",
+    answer:
+      "Không. LexOCR Web Free sử dụng trực tiếp, không cần đăng nhập hay cài đặt gì.",
+  },
+  {
+    question: "Giới hạn số trang cho mỗi lần OCR là bao nhiêu?",
+    answer:
+      "Tối đa 20 trang mỗi lần bóc tách. Bạn có thể chia nhỏ tài liệu dài thành nhiều lần xử lý.",
+  },
+  {
+    question: "Tôi có thể xuất kết quả ở định dạng nào?",
+    answer:
+      "Web Free hỗ trợ xuất text thuần (TXT) và copy nhanh vào clipboard. Các định dạng tài liệu và bảng tính sẽ có ở bản Desktop Pro.",
+  },
+  {
+    question: "Chất lượng OCR tiếng Việt phụ thuộc vào những yếu tố nào?",
+    answer:
+      "Chất lượng phụ thuộc vào độ rõ nét và bố cục tài liệu gốc. Ảnh scan rõ, độ phân giải cao cho kết quả tốt nhất.",
+  },
+  {
+    question: "LexOCR Desktop Pro khác gì Web Free?",
+    answer:
+      "Desktop Pro là bản offline cho nhu cầu xử lý khối lượng lớn hoặc tài liệu cần bảo mật cao. Xem chi tiết tại trang Pro Desktop.",
+  },
+];
 
-  const faqs = [
-    {
-      question: "LexOCR có lưu hồ sơ của tôi không?",
-      answer: "Không. LexOCR không lưu PDF, hình ảnh, nội dung OCR hoặc dữ liệu trích xuất sau khi hoàn tất xử lý."
-    },
-    {
-      question: "LexOCR Web Free hoạt động như thế nào?",
-      answer: "LexOCR Web Free sử dụng Tesseract để nhận dạng văn bản trực tiếp trên trình duyệt, phù hợp với nhu cầu OCR cơ bản."
-    },
-    {
-      question: "LexOCR Pro Desktop là gì?",
-      answer: "LexOCR Pro Desktop là ứng dụng trả phí dành cho máy tính, giúp bóc tách hồ sơ và tài liệu nhạy cảm trong môi trường làm việc riêng."
-    },
-    {
-      question: "Pro Desktop có xử lý hồ sơ khi không có Internet không?",
-      answer: "Có. Pro Desktop được thiết kế để xử lý hồ sơ offline ngay trên máy tính, phù hợp với tài liệu cần kiểm soát chặt chẽ."
-    },
-    {
-      question: "Tôi có cần cấu hình API hoặc khóa truy cập để dùng LexOCR không?",
-      answer: "Không. Web Free và Pro Desktop không yêu cầu bạn tự cấu hình API hoặc khóa truy cập."
-    },
-    {
-      question: "Tôi có thể sử dụng LexOCR trong cơ quan không?",
-      answer: "Có. LexOCR được thiết kế phục vụ nhu cầu số hóa và nghiên cứu hồ sơ trong lĩnh vực tư pháp."
-    },
-    {
-      question: "LexOCR có hỗ trợ OCR tiếng Việt không?",
-      answer: "Có. LexOCR hỗ trợ nhận dạng tài liệu tiếng Việt; chất lượng kết quả phụ thuộc vào độ rõ nét và bố cục tài liệu gốc."
-    },
-    {
-      question: "Tôi tìm hiểu thêm về Pro Desktop ở đâu?",
-      answer: "Bạn có thể truy cập trang Pro Desktop để xem thông tin về giải pháp xử lý hồ sơ offline của LexOCR."
-    }
-  ];
+export default function LandingPage({ onStart, setActiveTab }: LandingPageProps) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggleFaq = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
   return (
-    <div id="landing-container" className="flex flex-col w-full animate-fade-in">
-      
-      {/* Hero section */}
-      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white py-20 px-6 sm:px-12 overflow-hidden w-full">
-        {/* Background decorative grids */}
-        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:3rem_3rem]" />
-        
-        {/* Ambient shadow glow red/gold */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl" />
-
-        <div className="relative max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 px-4 py-1.5 rounded-full text-xs font-medium mb-6 max-w-full text-center">
-            <Shield className="h-4 w-4 text-rose-400 flex-shrink-0" />
-            <span>Một công cụ miễn phí hỗ trợ số hóa và nghiên cứu hồ sơ tố tụng dành cho cán bộ ngành tư pháp</span>
-          </div>
-          
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight max-w-4xl mx-auto">
-            Giảm 90% thời gian nhập liệu{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-yellow-300 to-red-500">
-              hồ sơ vụ án
+    <div id="landing-container" className="flex w-full flex-col animate-fade-in">
+      {/* Hero */}
+      <section className="relative w-full overflow-hidden bg-gradient-to-b from-slate-900 to-slate-800 px-6 py-14 text-white sm:px-12">
+        {/* Grid pattern overlay */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-[0.08]"
+          aria-hidden="true"
+        />
+        {/* Ambient glow — red (top center) */}
+        <div
+          className="pointer-events-none absolute top-1/4 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-600/15 blur-3xl"
+          aria-hidden="true"
+        />
+        {/* Ambient glow — amber (bottom right) */}
+        <div
+          className="pointer-events-none absolute right-10 bottom-10 h-80 w-80 rounded-full bg-yellow-500/10 blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative z-10 mx-auto max-w-5xl text-center">
+          <h1 className="mx-auto max-w-4xl text-4xl font-black leading-tight tracking-tight sm:text-5xl">
+            Chuyển PDF & Ảnh sang{" "}
+            <span className="bg-gradient-to-r from-yellow-500 to-emerald-500 bg-clip-text text-transparent">
+              Text tiếng Việt
             </span>
           </h1>
-          
-          <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Dùng LexOCR Web Free với Tesseract để số hóa tài liệu cơ bản trên trình duyệt, hoặc khám phá Pro Desktop Offline cho hồ sơ cần xử lý ngay trên máy tính.
+          <p className="mt-5 text-lg sm:text-xl text-slate-200 max-w-3xl mx-auto leading-relaxed">
+            Miễn phí, không cần đăng nhập. Nhận văn bản chỉ trong vài giây.
           </p>
-
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 flex justify-center">
             <button
               onClick={onStart}
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold text-sm tracking-wide rounded-lg flex items-center justify-center space-x-2 shadow-lg border border-yellow-500/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-red-500 sm:w-auto"
             >
-              <span>Dùng ngay</span>
+              Chọn file PDF hoặc Ảnh
               <ArrowRight className="h-4 w-4" />
             </button>
-            
-            <button
-              onClick={() => setActiveTab("upgrade")}
-              className="w-full sm:w-auto px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold text-sm rounded-lg flex items-center justify-center space-x-2 shadow-lg border border-amber-400/30 transform hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
-            >
-              <Lock className="h-4 w-4 text-amber-200" />
-              <span>Khám phá Pro Desktop</span>
-            </button>
-
           </div>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-xs text-slate-400 font-medium">
-            <span className="flex items-center space-x-1"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> <span>Không lưu vết tệp tin tố tụng (Stateless)</span></span>
-            <span className="flex items-center space-x-1"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> <span>Mã hóa AES-256 nội bộ ngành</span></span>
-            <span className="flex items-center space-x-1"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> <span>Hỗ trợ xuất Excel trường dữ liệu tự định nghĩa</span></span>
-          </div>
-        </div>
-      </section>
-
-      {/* PHẦN 4 - THÊM KHỐI LỢI ÍCH NGAY SAU HERO */}
-      <section className="py-16 px-6 sm:px-12 bg-white w-full border-b border-slate-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            LexOCR giúp gì cho cán bộ ngành tư pháp?
-          </h2>
-          <p className="mt-3 text-slate-500 text-sm sm:text-base">
-            Giải phóng cán bộ khỏi công việc thủ công, hỗ trợ soạn thảo nhanh chóng và tập trung nghiên cứu hồ sơ vụ án hiệu quả.
-          </p>
-        </div>
-
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* Lợi ích 1 */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col justify-between">
-            <div className="absolute top-0 left-0 h-1 bg-red-600 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            <div>
-              <div className="flex items-center space-x-2 mb-3">
-                <Clock className="h-5 w-5 text-red-600 flex-shrink-0" />
-                <h3 className="text-sm font-bold text-slate-850">Giảm thời gian nhập liệu</h3>
-              </div>
-              <p className="text-slate-500 text-xs leading-relaxed">
-                Tự động chuyển đổi toàn bộ tài liệu hồ sơ vụ án, cáo trạng dạng giấy hoặc ảnh chụp sang văn bản số trong vài giây mà không cần gõ lại thủ công.
-              </p>
-            </div>
-          </div>
-
-          {/* Lợi ích 2 */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col justify-between">
-            <div className="absolute top-0 left-0 h-1 bg-yellow-500 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            <div>
-              <div className="flex items-center space-x-2 mb-3">
-                <Users className="h-5 w-5 text-yellow-600 flex-shrink-0" />
-                <h3 className="text-sm font-bold text-slate-850">Tự động lập bảng bị can, bị cáo</h3>
-              </div>
-              <p className="text-slate-500 text-xs leading-relaxed">
-                Trích xuất tự động danh sách bị can, bị cáo, đồng phạm cùng các thông tin nhân thân, hành vi phạm tội cụ thể và điều khoản truy tố.
-              </p>
-            </div>
-          </div>
-
-          {/* Lợi ích 4 */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col justify-between">
-            <div className="absolute top-0 left-0 h-1 bg-emerald-600 w-full transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-            <div>
-              <div className="flex items-center space-x-2 mb-3">
-                <FileSpreadsheet className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-                <h3 className="text-sm font-bold text-slate-855">Xuất DOCX phục vụ nghiên cứu hồ sơ</h3>
-              </div>
-              <p className="text-slate-500 text-xs leading-relaxed">
-                Kết xuất toàn bộ văn bản và dữ liệu cấu trúc hóa ra file Word (.docx) chuẩn quy định hành chính, làm tài liệu nền tảng cho báo cáo án hình sự.
-              </p>
-            </div>
-          </div>
-        </div>
-        </div>
-      </section>
-
-      {/* PHẦN 5 - DEMO OCR THỰC TẾ */}
-      <section className="bg-slate-100/50 py-16 px-6 sm:px-12 w-full border-y border-slate-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              Từ hồ sơ giấy đến dữ liệu nghiên cứu
-            </h2>
-            <p className="mt-3 text-slate-500 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
-              Minh họa quy trình chuyển đổi từ ảnh chụp hồ sơ thực tế sang dữ liệu có cấu trúc phục vụ quản lý án, nghiên cứu hồ sơ và soạn thảo văn bản tố tụng.
-            </p>
-          </div>
-
-          {/* Demo content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Cột 1: Ảnh hồ sơ gốc (mô phỏng) */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
-              <div className="bg-slate-900 text-white px-4 py-3 text-xs font-bold flex items-center justify-between border-b border-slate-800">
-                <span>1. Hồ sơ gốc</span>
-                <span className="px-2 py-0.5 bg-red-600/80 rounded text-[10px]">Tài liệu gốc</span>
-              </div>
-              <div className="p-4 flex-1 overflow-hidden font-mono text-[10px] text-slate-650 leading-relaxed select-none bg-slate-50/50 relative">
-                <div className="space-y-2 border border-slate-200 p-3 bg-white shadow-inner relative h-full overflow-hidden">
-                  <div className="text-center font-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>Độc lập - Tự do - Hạnh phúc</div>
-                  <div className="h-px bg-slate-200 my-2" />
-                  <div>TÒA ÁN NHÂN DÂN QUẬN HOÀN KIẾM</div>
-                  <div>Số: 12/2026/TLST-DS</div>
-                  <div className="text-center font-bold text-xs py-2">THÔNG BÁO THỤ LÝ VỤ ÁN</div>
-                  <p>Kính gửi: Các đương sự trong vụ án.</p>
-                  <p>Tòa án nhân dân quận Hoàn Kiếm thông báo thụ lý vụ án dân sự:</p>
-                  <p className="bg-yellow-100 font-semibold p-1">Ngày thụ lý: 12 tháng 03 năm 2026.</p>
-                  <p className="bg-yellow-100 font-semibold p-1">Quan hệ pháp luật: "Tranh chấp hợp đồng đặt cọc mua bán nhà".</p>
-                  <p className="bg-yellow-100 font-semibold p-1">Nguyên đơn: Ông LÊ VĂN C</p>
-                  <p className="bg-yellow-100 font-semibold p-1">Bị đơn: Bà PHẠM THỊ D</p>
-                  
-                  {/* Fade effect */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+          <div className="mt-8 sm:mt-12 max-w-2xl mx-auto w-full relative">
+            <div className="absolute inset-0 -z-0 bg-red-500/10 blur-3xl rounded-full" aria-hidden="true" />
+            <div className="relative max-h-[380px] overflow-hidden rounded-xl">
+              <div className="relative bg-white rounded-xl shadow-2xl ring-1 ring-white/10 overflow-hidden">
+              {/* Window chrome bar */}
+              <div className="bg-slate-100 border-b border-slate-200 px-4 py-3 flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-red-400"></div>
+                <div className="h-2.5 w-2.5 rounded-full bg-yellow-400"></div>
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-400"></div>
+                <div className="ml-4 flex-1 bg-white border border-slate-200 rounded-md px-3 py-1 text-[11px] text-slate-400 font-mono truncate">
+                  lexocr.com/scanner
                 </div>
               </div>
-            </div>
 
-            {/* Cột 2: Kết quả số hóa văn bản (OCR) */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
-              <div className="bg-slate-900 text-white px-4 py-3 text-xs font-bold flex items-center justify-between border-b border-slate-800">
-                <span>2. Văn bản OCR</span>
-                <span className="px-2 py-0.5 bg-emerald-600 rounded text-[10px]">Độ chính xác 98%</span>
-              </div>
-              <div className="p-4 flex-1 overflow-hidden font-mono text-[10px] text-slate-650 leading-relaxed select-none bg-slate-50/50">
-                <div className="space-y-1">
-                  <p className="text-slate-400">// Trích xuất văn bản có định cấu trúc</p>
-                  <p className="font-bold text-slate-900">TÒA ÁN NHÂN DÂN QUẬN HOÀN KIẾM</p>
-                  <p>Số: 12/2026/TLST-DS</p>
-                  <p className="text-center font-bold py-1 text-slate-900">THÔNG BÁO THỤ LÝ VỤ ÁN</p>
-                  <p>Ngày thụ lý: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">12/03/2026</span></p>
-                  <p>Quan hệ pháp luật: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">Tranh chấp hợp đồng đặt cọc mua bán nhà</span></p>
-                  <p>Nguyên đơn: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">LÊ VĂN C</span></p>
-                  <p>Bị đơn: <span className="bg-emerald-100 px-1 font-semibold rounded text-slate-900">PHẠM THỈ D</span></p>
+              {/* App body — 2-column layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                {/* Left: image preview mockup */}
+                <div className="p-5 bg-slate-50/60 border-r border-slate-100">
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-3">
+                    Tài liệu gốc
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm aspect-[3/4] flex flex-col justify-start pt-6">
+                    <div className="text-center text-[11px] font-bold text-slate-700 mb-2">
+                      CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                    </div>
+                    <div className="text-center text-[10px] text-slate-500 mb-3">
+                      Độc lập - Tự do - Hạnh phúc
+                    </div>
+                    <div className="h-px bg-slate-200 my-2"></div>
+                    <div className="space-y-1.5 text-[10px] text-slate-600">
+                      <div className="flex gap-2">
+                        <span className="text-slate-400 w-20 shrink-0">Nguyên đơn:</span>
+                        <span className="bg-yellow-100 px-1 rounded font-semibold text-slate-800">
+                          Ông LÊ VĂN C
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-slate-400 w-20 shrink-0">Bị đơn:</span>
+                        <span className="bg-yellow-100 px-1 rounded font-semibold text-slate-800">
+                          Bà PHẠM THỊ D
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-slate-400 w-20 shrink-0">Ngày thụ lý:</span>
+                        <span className="bg-yellow-100 px-1 rounded font-semibold text-slate-800">
+                          12/03/2026
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: OCR result mockup */}
+                <div className="p-5 bg-white">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                      Văn bản nhận dạng
+                    </div>
+                    <div className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <svg className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Hoàn tất
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-[13px] leading-relaxed text-slate-700 font-mono">
+                    <p className="text-[13px] font-bold text-slate-900">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                    <p>Độc lập - Tự do - Hạnh phúc</p>
+                    <p className="pt-1">
+                      Nguyên đơn: <span className="bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-900">LÊ VĂN C</span>
+                    </p>
+                    <p>
+                      Bị đơn: <span className="bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-900">PHẠM THỊ D</span>
+                    </p>
+                    <p>
+                      Ngày thụ lý:{" "}
+                      <span className="bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-900">12/03/2026</span>
+                    </p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2">
+                    <div className="text-[10px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md">
+                      Copy
+                    </div>
+                    <div className="text-[10px] font-semibold text-white bg-red-600 px-3 py-1.5 rounded-md">
+                      Tải TXT
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Cột 3: Bảng dữ liệu trích xuất cấu trúc */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
-              <div className="bg-slate-900 text-white px-4 py-3 text-xs font-bold flex items-center justify-between border-b border-slate-800">
-                <span>3. Dữ liệu trích xuất</span>
-                <span className="px-2 py-0.5 bg-yellow-600 rounded text-[10px]">Xuất Excel/Word</span>
               </div>
-              <div className="p-4 flex-1 overflow-hidden text-xs bg-slate-50/50">
-                <table className="w-full text-left border-collapse border border-slate-200 bg-white rounded-lg overflow-hidden shadow-sm">
-                  <thead>
-                    <tr className="bg-slate-100 text-[10px] uppercase font-bold text-slate-700">
-                      <th className="border border-slate-200 p-2">Thông tin</th>
-                      <th className="border border-slate-200 p-2">Kết quả bóc tách</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Ngày thụ lý</td>
-                      <td className="border border-slate-200 p-2 text-slate-800 font-bold">12/03/2026</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Quan hệ pháp luật</td>
-                      <td className="border border-slate-200 p-2 text-slate-800">Tranh chấp hợp đồng đặt cọc</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Nguyên đơn</td>
-                      <td className="border border-slate-200 p-2 text-slate-800 font-semibold">LÊ VĂN C</td>
-                    </tr>
-                    <tr>
-                      <td className="border border-slate-200 p-2 font-semibold text-slate-655">Bị đơn</td>
-                      <td className="border border-slate-200 p-2 text-slate-800 font-semibold">PHẠM THỊ D</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div className="flex justify-end pt-2">
-                  <span className="text-[10px] text-emerald-600 font-bold flex items-center bg-emerald-50 border border-emerald-250 px-2 py-1 rounded">
-                    <Check className="h-3 w-3 mr-1" /> Đã bóc tách thông tin đương sự
-                  </span>
+              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none" aria-hidden="true" />
+            </div>
+          </div>
+          <div className="mt-8 max-w-3xl mx-auto border-t border-white/10 pt-6">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-3">
+            {[
+              "Hỗ trợ PDF, JPG, PNG",
+              "Không gửi file lên server",
+              "Tối đa 20 trang mỗi lần",
+              "Kết quả trong vài giây",
+            ].map((fact) => (
+              <div key={fact} className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                {fact}
+              </div>
+            ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="w-full bg-white px-6 py-16 sm:px-12">
+        <div className="mx-auto max-w-5xl">
+          <div className="mx-auto mb-10 max-w-2xl text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-600">
+                CÁCH HOẠT ĐỘNG
+              </p>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Từ tài liệu đến văn bản trong 3 bước
+            </h2>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            {[
+              {
+                icon: FileText,
+                title: "Tải file lên",
+                description: "Chọn PDF hoặc ảnh từ thiết bị của bạn.",
+                cardClassName: "border-t-4 border-t-red-600",
+                iconClassName: "h-11 w-11 rounded-lg bg-red-50 text-red-600 flex items-center justify-center",
+              },
+              {
+                icon: ScanLine,
+                title: "Tự động nhận dạng",
+                description: "Văn bản tiếng Việt được nhận dạng và giữ nguyên bố cục.",
+                cardClassName: "border-t-4 border-t-amber-500",
+                iconClassName: "h-11 w-11 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center",
+              },
+              {
+                icon: Copy,
+                title: "Copy hoặc tải TXT",
+                description: "Lấy kết quả dạng text thuần, copy nhanh hoặc tải về máy.",
+                cardClassName: "border-t-4 border-t-emerald-600",
+                iconClassName: "h-11 w-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center",
+              },
+            ].map(({ icon: Icon, title, description, cardClassName, iconClassName }, index) => (
+              <div key={title} className={`rounded-2xl border border-slate-200 p-6 ${cardClassName}`}>
+                <div className="flex items-center justify-between">
+                  <div className={iconClassName}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-black text-slate-300">0{index + 1}</span>
                 </div>
+                <h3 className="mt-5 text-base font-bold text-slate-800">
+                  {title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {description}
+                </p>
               </div>
-            </div>
-
+            ))}
           </div>
         </div>
       </section>
 
-      {/* PHẦN 7 - SỐ LIỆU (Hiệu quả thực tế) */}
-      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white py-20 px-6 sm:px-12 overflow-hidden w-full">
-        {/* Background decorative grids */}
-        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:3rem_3rem]" />
-        
-        {/* Ambient shadow glow red/gold */}
-        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-80 bg-red-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-5 right-5 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl" />
+      {/* Desktop Pro teaser */}
+      <section className="w-full bg-slate-900 px-6 py-10 text-white sm:px-12">
+        <div className="mx-auto flex max-w-5xl flex-col items-start gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-amber-400">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold sm:text-xl">
+                Cần xử lý khối lượng lớn hoặc bảo mật cao?
+              </h2>
+              <p className="mt-0.5 text-sm text-slate-400">
+                LexOCR Desktop Pro là bản offline cho nhu cầu xử lý hàng trăm trang hoặc tài liệu cần kiểm soát chặt chẽ.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab("upgrade")}
+            className="inline-flex shrink-0 items-center space-x-1.5 whitespace-nowrap text-sm font-bold text-amber-400 transition-colors hover:text-amber-300"
+          >
+            <span>Tìm hiểu Desktop Pro</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </section>
 
-        <div className="relative max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Hiệu quả thực tế của LexOCR
+      {/* FAQ */}
+      <section className="w-full bg-white px-6 py-16 sm:px-12">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-10 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
+              Câu hỏi thường gặp
             </h2>
-            <p className="mt-3 text-slate-300 text-xs sm:text-sm leading-relaxed">
-              Thông số thử nghiệm hiệu năng thực tế dựa trên các tài liệu tố tụng hành chính phổ biến.
+            <p className="mt-3 text-sm text-slate-600">
+              Một vài thông tin hữu ích trước khi bạn bắt đầu.
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center max-w-5xl mx-auto">
-            
-            {/* Metric 1 */}
-            <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-300">
-              <div className="text-red-500 text-4xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(239,68,68,0.15)]">~20 giây</div>
-              <div className="text-sm font-bold text-slate-200 mb-1">10 trang Cáo trạng</div>
-              <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
-                Bóc tách toàn bộ nội dung, lập bảng bị can, xác định rõ tội danh và các mốc thời gian tố tụng.
-              </p>
-            </div>
-
-            {/* Metric 2 */}
-            <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-300">
-              <div className="text-yellow-400 text-4xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(234,179,8,0.15)]">~1 phút</div>
-              <div className="text-sm font-bold text-slate-200 mb-1">50 trang Bản án</div>
-              <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
-                Số hóa và trích xuất các nhận định của Tòa án, quyết định hình phạt, xử lý án phí và các chi tiết thi hành án.
-              </p>
-            </div>
-
-            {/* Metric 3 */}
-            <div className="bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-300">
-              <div className="text-emerald-400 text-3xl font-black mb-2 drop-shadow-[0_2px_10px_rgba(16,185,129,0.15)]">Tối ưu</div>
-              <div className="text-sm font-bold text-slate-200 mb-1">Hỗ trợ nhận diện tiếng Việt pháp lý</div>
-              <p className="text-slate-400 text-xs leading-relaxed max-w-xs mx-auto">
-                Phù hợp tài liệu scan rõ nét của các cơ quan tố tụng.
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* PHẦN 8 - BẢO MẬT & QUY TRÌNH STATELESS */}
-<section id="security-architecture" className="bg-slate-50 py-16 px-6 sm:px-12 w-full border-t border-slate-200">
-        <div className="max-w-7xl mx-auto">
-          <h3 className="text-xl font-bold text-slate-900 mb-8 flex items-center">
-            <Shield className="h-5 w-5 text-red-600 mr-2" />
-            <span>KIẾN TRÚC BẢO MẬT & TIÊU CHUẨN AN TOÀN TƯ PHÁP</span>
-          </h3>
-
-          {/* SƠ ĐỒ 4 BƯỚC STATELESS */}
-          <div className="flex flex-col lg:flex-row items-stretch justify-center gap-4 lg:gap-2 mb-6">
-            {/* Step 1 */}
-            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#2563eb" }}>
-              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#2563eb" }}>
-                1
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#2563eb" }}>1. Tải hồ sơ & mã hóa</h4>
-                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
-                  Hồ sơ được nạp trực tiếp từ thiết bị người dùng và xử lý trong môi trường an toàn.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center text-slate-400 self-center py-1 lg:py-0 flex-shrink-0">
-              <span className="hidden lg:inline text-xl font-black px-1 opacity-60">→</span>
-              <span className="inline lg:hidden text-xl font-black py-1 opacity-60">↓</span>
-            </div>
-
-            {/* Step 2 */}
-            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#7c3aed" }}>
-              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#7c3aed" }}>
-                2
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#7c3aed" }}>2. OCR & bóc tách dữ liệu</h4>
-                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
-                  Hệ thống tự động nhận diện và bóc tách nội dung từ PDF hoặc ảnh chụp hồ sơ.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center text-slate-400 self-center py-1 lg:py-0 flex-shrink-0">
-              <span className="hidden lg:inline text-xl font-black px-1 opacity-60">→</span>
-              <span className="inline lg:hidden text-xl font-black py-1 opacity-60">↓</span>
-            </div>
-
-            {/* Step 3 */}
-            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#f59e0b" }}>
-              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#f59e0b" }}>
-                3
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#f59e0b" }}>3. Chuẩn hóa & ẩn danh</h4>
-                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
-                  Dữ liệu được chuẩn hóa để phục vụ nghiên cứu hồ sơ, báo cáo và lưu trữ.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center text-slate-400 self-center py-1 lg:py-0 flex-shrink-0">
-              <span className="hidden lg:inline text-xl font-black px-1 opacity-60">→</span>
-              <span className="inline lg:hidden text-xl font-black py-1 opacity-60">↓</span>
-            </div>
-
-            {/* Step 4 */}
-            <div className="bg-white border border-slate-250 rounded-xl p-5 shadow-sm flex items-start space-x-3 flex-1 border-t-4" style={{ borderTopColor: "#10b981" }}>
-              <div className="h-6 w-6 rounded-full text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm" style={{ backgroundColor: "#10b981" }}>
-                4
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#10b981" }}>4. Xuất kết quả nghiên cứu</h4>
-                <p className="text-xs text-slate-500 leading-relaxed mt-1.5">
-                  Kết xuất dữ liệu dưới dạng văn bản hoặc bảng biểu phục vụ công việc chuyên môn.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-16 px-6 sm:px-12 bg-white w-full border-t border-slate-200">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              Câu hỏi thường gặp (FAQ)
-            </h2>
-            <p className="mt-3 text-slate-500 text-xs sm:text-sm">
-              Giải đáp các thắc mắc phổ biến về dịch vụ, bảo mật và tính năng của LexOCR.
-            </p>
-          </div>
-
           <div className="space-y-3">
             {faqs.map((faq, index) => {
               const isOpen = openIndex === index;
               return (
-                <div 
-                  key={index}
-                  className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/30 hover:bg-slate-50/80 transition-colors duration-200"
+                <div
+                  key={faq.question}
+                  className="overflow-hidden rounded-xl border border-slate-200"
                 >
                   <button
                     onClick={() => toggleFaq(index)}
-                    className="w-full px-5 py-4 flex items-center justify-between text-left font-bold text-slate-800 text-sm sm:text-base hover:text-red-650 transition-colors duration-200 focus:outline-none"
+                    className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-bold text-slate-800 transition-colors hover:bg-slate-50"
                   >
                     <span>{faq.question}</span>
-                    <ChevronDown 
-                      className={`h-5 w-5 text-slate-400 transform transition-transform duration-300 flex-shrink-0 ml-4 ${
+                    <ChevronDown
+                      className={`ml-4 h-5 w-5 shrink-0 text-slate-500 transition-transform duration-300 ${
                         isOpen ? "rotate-180 text-red-600" : ""
                       }`}
                     />
                   </button>
-                  <div 
-                    className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                      isOpen ? "max-h-[500px] opacity-100 border-t border-slate-150" : "max-h-0 opacity-0 pointer-events-none"
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      isOpen ? "max-h-48 border-t border-slate-200 opacity-100" : "max-h-0 opacity-0"
                     }`}
                   >
-                    <div className="px-5 py-4 text-xs sm:text-sm text-slate-600 leading-relaxed bg-white">
+                    <p className="bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-600">
                       {faq.answer}
-                    </div>
+                    </p>
                   </div>
                 </div>
               );
@@ -468,26 +332,29 @@ export default function LandingPage({ onStart, setActiveTab }: LandingPageProps)
         </div>
       </section>
 
-      {/* Footer hành chính */}
-      <footer className="bg-slate-900 text-slate-400 py-6 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-2">
+      {/* Footer */}
+      <footer className="border-t border-slate-800 bg-slate-900 py-6 text-slate-400">
+        <div className="mx-auto max-w-7xl px-6 text-center text-xs sm:px-12">
+          <div className="mb-2 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
             <button
               onClick={() => setActiveTab("privacy")}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="transition-colors hover:text-white"
             >
               Chính sách bảo mật
             </button>
             <button
               onClick={() => setActiveTab("terms")}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="transition-colors hover:text-white"
             >
               Điều khoản sử dụng
             </button>
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-1 mb-2 text-slate-500">
-            <span>Hỗ trợ kỹ thuật: <a href="mailto:support@lexocr.com" className="hover:text-slate-300 transition-colors">support@lexocr.com</a></span>
-          </div>
+          <p className="mb-2 text-slate-500">
+            Hỗ trợ kỹ thuật: {" "}
+            <a href="mailto:support@lexocr.com" className="transition-colors hover:text-slate-300">
+              support@lexocr.com
+            </a>
+          </p>
           <p>© 2026 LexOCR</p>
         </div>
       </footer>
