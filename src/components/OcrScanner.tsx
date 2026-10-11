@@ -25,7 +25,7 @@ import {
 } from "../../shared/ocrTelemetry";
 
 interface OcrScannerProps {
-  onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[]; outputMode?: "text" | "structured" }) => void;
+  onFileLoaded: (fileData: { name: string; content: string; mimeType: string; selectedFile?: File | File[] }) => void;
   config: OcrConfig;
   setConfig: React.Dispatch<React.SetStateAction<OcrConfig>>;
   setActiveTab?: (tab: string) => void;
@@ -119,7 +119,6 @@ export default function OcrScanner({ onFileLoaded, config, setConfig, setActiveT
   const [dragActive, setDragActive] = useState(false);
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [autoMerge, setAutoMerge] = useState(false);
-  const [outputMode, setOutputMode] = useState<"text" | "structured">("text");
   
   const progressCardRef = useRef<HTMLDivElement>(null);
   const pageGridRef = useRef<HTMLDivElement>(null);
@@ -1687,8 +1686,7 @@ const keyToProjectMap = new Map<string, string>();
           name: filesToProcess.length > 1 && autoMerge ? "Hồ Sơ Gộp Nhiều Tài Liệu" : (filesToProcess[0]?.file?.name || "Tài Liệu OCR"), 
           content: finalContent, 
           mimeType: outputMime, 
-          selectedFile: filesToProcess.map(f => f.file),
-          outputMode
+          selectedFile: filesToProcess.map(f => f.file)
         });
       }
     }, 1000);
@@ -1834,50 +1832,10 @@ const keyToProjectMap = new Map<string, string>();
               <div className="relative z-10 space-y-4">
                 {/* CHỌN MỤC ĐÍCH XỬ LÝ */}
                 <div className="space-y-2 border-b border-slate-800 pb-4">
-                  <span className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">🎯 Chọn mục đích xử lý</span>
-                  <div className="space-y-2">
-                    <label className={`block p-2.5 rounded-lg border cursor-pointer transition-all ${
-                      outputMode === 'text' 
-                        ? 'border-red-600 bg-red-950/40 text-white' 
-                        : 'border-slate-700 bg-slate-900/50 text-slate-400 hover:bg-slate-800/80'
-                    }`}>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name="outputMode"
-                          value="text"
-                          checked={outputMode === "text"}
-                          onChange={() => setOutputMode("text")}
-                          className="text-red-600 focus:ring-red-500 h-4 w-4 bg-slate-800 border-slate-600"
-                        />
-                        <span className="text-xs font-bold">Chuyển File → Text/Word</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 pl-6 leading-relaxed">
-                        Dành cho Bản án, Cáo trạng, Kết luận điều tra, Biên bản ghi lời khai.
-                      </p>
-                    </label>
-
-                    <label className={`block p-2.5 rounded-lg border cursor-pointer transition-all ${
-                      outputMode === 'structured' 
-                        ? 'border-red-600 bg-red-950/40 text-white' 
-                        : 'border-slate-700 bg-slate-900/50 text-slate-400 hover:bg-slate-800/80'
-                    }`}>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          name="outputMode"
-                          value="structured"
-                          checked={outputMode === "structured"}
-                          onChange={() => setOutputMode("structured")}
-                          className="text-red-600 focus:ring-red-500 h-4 w-4 bg-slate-800 border-slate-600"
-                        />
-                        <span className="text-xs font-bold">Trích xuất dữ liệu → Excel</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1 pl-6 leading-relaxed">
-                        Dành cho Thông báo thụ lý, Quyết định khởi tố bị can và các biểu mẫu cần xuất bảng.
-                      </p>
-                    </label>
-                  </div>
+                  <span className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">🎯 Mục đích xử lý</span>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Chuyển File → Text/Word. Dành cho Bản án, Cáo trạng, Kết luận điều tra, Biên bản ghi lời khai.
+                  </p>
                 </div>
 
                 {/* PHẠM VI TRÍCH XUẤT (PAGE RANGE) */}
@@ -2300,17 +2258,6 @@ const keyToProjectMap = new Map<string, string>();
               >
                 Quay lại chọn phạm vi
               </button>
-              <button
-                onClick={() => {
-                  setLimitModal(null);
-                  if (setActiveTab) {
-                    setActiveTab("upgrade");
-                  }
-                }}
-                className="w-full px-4 py-2 text-center text-sm font-semibold rounded-lg transition-colors text-red-600 bg-red-50 hover:bg-red-100"
-              >
-                Khám phá LexOCR PRO
-              </button>
             </div>
           </div>
         </div>
@@ -2328,19 +2275,6 @@ const keyToProjectMap = new Map<string, string>();
               {errorModalMsg}
             </p>
             <div className="flex flex-col space-y-2">
-              {typeof errorModalMsg === "string" && errorModalMsg.includes("hạn mức miễn phí") && (
-                <button 
-                  onClick={() => {
-                    setErrorModalMsg(null);
-                    if (setActiveTab) {
-                      setActiveTab("upgrade");
-                    }
-                  }}
-                  className="w-full px-4 py-2 text-center text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
-                >
-                  Xem gói PRO
-                </button>
-              )}
               <button 
                 onClick={() => setErrorModalMsg(null)}
                 className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-lg transition-colors"
