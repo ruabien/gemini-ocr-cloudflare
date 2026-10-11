@@ -386,7 +386,6 @@ const startOcrProcess = async () => {
   const controller = new AbortController();
   cancelOcrRef.current = controller;
   const signal = controller.signal;
-  const selectedEngineId = config.engine;
   const selectedLanguage = config.language ?? "vi";
   let selectedTesseractEngine: OcrEngine | null = null;
 
@@ -396,30 +395,28 @@ const startOcrProcess = async () => {
     return;
   }
 
-  if (selectedEngineId === "tesseract") {
-    let totalRequestedPages = 0;
-    for (const q of filesToProcess) {
-      if (q.totalPages) {
-        // PDF – respect range
-        const start = fromPage ? parseInt(fromPage, 10) : 1;
-        const end = toPage ? parseInt(toPage, 10) : q.totalPages;
-        totalRequestedPages += Math.min(end, q.totalPages) - Math.max(start, 1) + 1;
-      } else {
-        totalRequestedPages += 1;
-      }
+  let totalRequestedPages = 0;
+  for (const q of filesToProcess) {
+    if (q.totalPages) {
+      // PDF – respect range
+      const start = fromPage ? parseInt(fromPage, 10) : 1;
+      const end = toPage ? parseInt(toPage, 10) : q.totalPages;
+      totalRequestedPages += Math.min(end, q.totalPages) - Math.max(start, 1) + 1;
+    } else {
+      totalRequestedPages += 1;
     }
+  }
 
-    // Check per-run limit of 20 pages
-    if (totalRequestedPages > 20) {
-      setLimitModal({
-        type: "batch",
-        requested: totalRequestedPages,
-        onReject: () => {
-          setLimitModal(null);
-        },
-      });
-      return;
-    }
+  // Check per-run limit of 20 pages
+  if (totalRequestedPages > 20) {
+    setLimitModal({
+      type: "batch",
+      requested: totalRequestedPages,
+      onReject: () => {
+        setLimitModal(null);
+      },
+    });
+    return;
   }
 
   isProcessingRef.current = true;
@@ -435,10 +432,8 @@ const startOcrProcess = async () => {
     editorContentRef.current = "";
     setFileErrors({});
 
-    if (selectedEngineId === "tesseract") {
-      selectedTesseractEngine = getOcrEngine("tesseract");
-      activeTesseractEngineRef.current = selectedTesseractEngine;
-    }
+    selectedTesseractEngine = getOcrEngine("tesseract");
+    activeTesseractEngineRef.current = selectedTesseractEngine;
 
     // Scroll viewport to top when OCR starts
     setTimeout(() => {
@@ -540,22 +535,18 @@ const startOcrProcess = async () => {
             }
           }
           let extractedText: string;
-          if (selectedEngineId === "tesseract") {
-            if (!selectedTesseractEngine) {
-              throw new Error("Tesseract OCR engine chưa sẵn sàng.");
-            }
-            const result = await selectedTesseractEngine.recognize(fileToSend, {
-              language: selectedLanguage,
-              pageNumber: pageIdx,
-              signal,
-              onProgress: (p) => setProgress(Math.round(p.progress * 100)),
-            });
-            extractedText = cleanOcrPageText(result.text, { pageIndex: pageIdx });
-            setEditorContent((prev) => prev + (prev ? "\n\n" : "") + extractedText);
-            editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + extractedText;
-          } else {
-            throw new Error(`OCR engine chưa được hỗ trợ: ${String(selectedEngineId)}. Vui lòng chọn Free hoặc Pro.`);
+          if (!selectedTesseractEngine) {
+            throw new Error("Tesseract OCR engine chưa sẵn sàng.");
           }
+          const result = await selectedTesseractEngine.recognize(fileToSend, {
+            language: selectedLanguage,
+            pageNumber: pageIdx,
+            signal,
+            onProgress: (p) => setProgress(Math.round(p.progress * 100)),
+          });
+          extractedText = cleanOcrPageText(result.text, { pageIndex: pageIdx });
+          setEditorContent((prev) => prev + (prev ? "\n\n" : "") + extractedText);
+          editorContentRef.current += (editorContentRef.current ? "\n\n" : "") + extractedText;
           updatePageStatus(qFile.id, pageIdx, 'success', extractedText);
         } catch (err: any) {
           if (signal.aborted || err?.name === "AbortError" || err?.type === "ABORTED") {
