@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { UploadCloud, Settings, Shield, AlertTriangle, Layers, Activity, ScanLine, CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { OcrConfig } from "../types";
 import { useAuth } from "../contexts/AuthContext";
-import { getUserStorageItem, setUserStorageItem } from "../utils/userStorage";
+import { getUserStorageItem } from "../utils/userStorage";
  // @ts-ignore
 import { loadPdfJs, splitPdfToImages } from "../utils/pdfProcessor";
 import { classifyGeminiResponse } from "../utils/geminiResponseClassifier";
@@ -469,108 +469,10 @@ const startOcrProcess = async () => {
       setQueuedFiles(prev => (prev || []).map(f => f.id === qFile.id ? { ...f, status: mappedStatus as any } : f));
     };
 
-let geminiKeyPool: string[] = [];
-if (selectedEngineId === "gemini") {
-/* Build a deduplicated, trimmed pool of Gemini API keys */
-const rawKeys = getUserStorageItem(user?.uid, 'gemini_keys') || '';
-let parsedKeyStrings: string[] = [];
-try {
-  const parsed = JSON.parse(rawKeys);
-  if (Array.isArray(parsed)) {
-    parsedKeyStrings = parsed.map(k => String(k));
-  } else {
-    parsedKeyStrings = rawKeys.split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
-  }
-} catch {
-  parsedKeyStrings = rawKeys.split(/[\n,]+/).map(k => k.trim()).filter(Boolean);
-}
-/* Legacy single‑key fallback */
-if (parsedKeyStrings.length === 0) {
-  const fallback = localStorage.getItem("apiKey") || localStorage.getItem("gemini_api_key");
-  if (fallback) parsedKeyStrings = [fallback.trim()];
-}
-/* Final pool – remove empty, null, undefined and duplicates */
-geminiKeyPool = Array.from(
-  new Set(
-    parsedKeyStrings
-      .map(k => k?.trim())
-      .filter(Boolean)
-  )
-);
-if (geminiKeyPool.length === 0) {
-  setErrorModalMsg(
-    <span>
-      Chưa có Gemini API Key?{" "}
-      <a
-        href="/knowledge/huong-dan-tao-gemini-api-key"
-        onClick={(e) => {
-          e.preventDefault();
-          navigate("/knowledge/huong-dan-tao-gemini-api-key");
-        }}
-        className="text-blue-600 hover:underline font-semibold"
-      >
-        Xem hướng dẫn tạo trong 3 phút.
-      </a>
-    </span>
-  );
-  setIsBatchProcessing(false);
-  isProcessingRef.current = false;
-  setOcrStatus("idle");
-  return;
-}
-// --- PRE-FLIGHT MODEL CHECK ---
-try {
-  // Just check the first available key to see if the manual model is valid
-  if (geminiKeyPool.length > 0) {
-    getActiveModel(user?.uid, geminiKeyPool[0]);
-  }
-} catch (err: any) {
-  if (err && err.errorType === "MANUAL_MODEL_UNSUPPORTED") {
-    setErrorModalMsg(
-      <div className="flex flex-col gap-3">
-        <p>Model đang chọn không còn được API key này hỗ trợ.</p>
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={() => {
-              import('../utils/userStorage').then(({ setUserStorageItem }) => {
-                setUserStorageItem(user?.uid, 'gemini_model_mode', 'auto');
-                setErrorModalMsg(null);
-                // Optionally auto-resume OCR by clicking the button again
-                setTimeout(() => {
-                  const btn = document.querySelector(".start-ocr-btn-selector");
-                  if (btn) (btn as HTMLElement).click();
-                }, 300);
-              });
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Chuyển sang Auto
-          </button>
-          <a
-            href="/settings"
-            onClick={(e) => {
-              e.preventDefault();
-              setErrorModalMsg(null);
-              navigate("/settings");
-            }}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 text-center"
-          >
-            Chọn model khác
-          </a>
-        </div>
-      </div>
-    );
-    setIsBatchProcessing(false);
-    isProcessingRef.current = false;
-    setOcrStatus("idle");
-    return;
-  }
-}
-}
-
-let activeKeyIndex = 0;
-const rateLimitedProjects = new Set<string>();
-const keyToProjectMap = new Map<string, string>();
+    let geminiKeyPool: string[] = [];
+    let activeKeyIndex = 0;
+    const rateLimitedProjects = new Set<string>();
+    const keyToProjectMap = new Map<string, string>();
 
 
     const sendFileToBackend = async (file: File, pageNumParam: number = 1): Promise<string> => {
