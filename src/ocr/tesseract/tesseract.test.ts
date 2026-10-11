@@ -28,9 +28,6 @@ function runTests() {
   assert.strictEqual(secondEngine, firstEngine);
   passed += 1;
 
-  assert.throws(() => getOcrEngine("gemini"));
-  passed += 1;
-
   assert.deepEqual(TESSERACT_ASSETS, {
     workerPath: "/tesseract/worker/worker.min.js",
     corePath: "/tesseract/core/tesseract-core-simd-lstm.wasm.js",
@@ -38,7 +35,7 @@ function runTests() {
   });
   passed += 1;
 
-  console.log(`Tesseract engine tests passed: ${passed}/8`);
+  console.log(`Tesseract engine tests passed: ${passed}/7`);
 }
 
 try {

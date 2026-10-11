@@ -102,7 +102,7 @@ export function formatTextToMarkdown(text, metadata = {}) {
   metaLines.push('');
   metaLines.push('## Thông tin xử lý');
   metaLines.push(`- Tệp gốc: ${metadata.fileName || 'N/A'}`);
-  metaLines.push(`- Engine: ${metadata.engine || 'Gemini'}`);
+  metaLines.push(`- Engine: ${metadata.engine || 'Tesseract'}`);
   metaLines.push(`- Thời gian: ${metadata.duration ? metadata.duration + 's' : 'N/A'}`);
   metaLines.push(`- Số ký tự: ${metadata.charCount || text.length}`);
   metaLines.push(`- Chế độ OCR: ${metadata.ocrMode || 'Mặc định'}`);

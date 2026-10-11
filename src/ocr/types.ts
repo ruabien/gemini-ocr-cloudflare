@@ -1,4 +1,4 @@
-export type OcrEngineId = "tesseract" | "gemini";
+export type OcrEngineId = "tesseract";
 
 export interface OcrProgress {
   status: string;

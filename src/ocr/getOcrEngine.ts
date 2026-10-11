@@ -10,8 +10,5 @@ export function getOcrEngine(id: OcrEngineId): OcrEngine {
     }
     return engines.tesseract;
   }
-  throw new Error(
-    `Engine "${id}" chưa được đăng ký ở bước A. ` +
-    `Gemini sẽ được nối ở bước B.`,
-  );
+  throw new Error(`Engine "${id}" chưa được đăng ký.`);
 }

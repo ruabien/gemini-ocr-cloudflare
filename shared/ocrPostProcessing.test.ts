@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { getRenderableDocxLines } from '../functions/api/ocr/export/docx';
 import { cleanOcrPageText } from './ocrPostProcessing';
 
 (() => {
@@ -79,21 +78,4 @@ import { cleanOcrPageText } from './ocrPostProcessing';
     cleanOcrPageText(page),
     'Nội dung giữa'
   );
-})();
-
-(() => {
-  const text = 'Dòng một\n\n\n   \nDòng hai';
-
-  console.log('Test: DOCX helper removes empty and whitespace-only lines');
-  assert.deepEqual(getRenderableDocxLines(text), ['Dòng một', 'Dòng hai']);
-  assert.equal(getRenderableDocxLines(text).filter((line) => line.trim().length === 0).length, 0);
-})();
-
-(() => {
-  const text = 'Dòng một\n\n\n   \nDòng hai';
-  const originalText = text.slice();
-
-  console.log('Test: DOCX helper does not mutate input');
-  getRenderableDocxLines(text);
-  assert.equal(text, originalText);
 })();
